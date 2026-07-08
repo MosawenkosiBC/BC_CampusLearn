@@ -1,0 +1,365 @@
+﻿body {
+}
+
+
+.heading-section {
+    /*        background-color: palegoldenrod;*/
+    /*    margin-bottom: 10px !important;*/
+    /*    border-bottom: 3px solid black;*/
+    /*    padding-bottom: 35px;*/
+    min-height: calc(100vh - 82px);
+    align-items: center;
+}
+
+
+    .heading-section h1 {
+        font-size: 2.7rem;
+    }
+
+    .heading-section p {
+        font-size: 1.1rem;
+        margin-top: 30px !important;
+        /*    color: #555;*/
+    }
+
+.quotes {
+    margin-top: 35px;
+    background-color: #EBEBEB;
+    height: 100px;
+    padding: 20px;
+    font-style: italic;
+    color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+    .quotes h5 {
+        font-size: 1.5rem;
+        /*    color: red;*/
+    }
+
+.benefits-section {
+    margin-top: 85px !important;
+}
+
+    .benefits-section p {
+        font-size: 1.1rem;
+    }
+
+    /* Fix icon alignment in benefits section */
+    .benefits-section .benefit-item {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start; /* Align to top instead of center */
+        margin-top: 15px;
+        margin-bottom: 20px;
+    }
+
+    .benefits-section .benefit-icon {
+        width: 45px;
+        height: 45px;
+        flex-shrink: 0; /* Prevent icon from shrinking */
+        margin-top: 5px; /* Slight adjustment for better visual alignment */
+    }
+
+    .benefits-section .benefit-text {
+        flex: 1; /* Take remaining space */
+        margin: 0; /* Remove default margins */
+    }
+
+.getToKnow {
+    margin-top: 65px;
+    /*    background-color: orange;*/
+    padding: 0;
+}
+
+    .getToKnow p {
+        /*    width: 80%;*/
+        font-size: 1.1rem;
+    }
+
+.top-tutors {
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 20px;
+}
+
+
+    .top-tutors .tutor-card {
+        width: 350px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        background-color: #F0F0F0;
+    }
+
+.img-frame-tutor {
+    width: 200px;
+    height: 200px;
+}
+
+.course {
+    font-weight: bold;
+}
+
+.img-frame-tutor img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.student-review {
+    height: 420px;
+    background-color: #D6D6D6;
+    padding: 20px;
+    margin-top: 80px;
+    /*    width: 100%;*/
+}
+
+.review {
+    background-color: white;
+    height: 300px;
+    width: 900px !important;
+    margin: auto;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 25px;
+}
+
+
+.mobile-accordion {
+    display: none;
+}
+
+.heading-responsive {
+    display: none;
+}
+
+mobile-quotes {
+    display: none;
+}
+
+/*#quoteDisplay {
+    display: none;
+}*/
+/*responsive form tablet*/
+@media only screen and (max-width:1007px) {
+    h1 {
+        font-size: 30px !important;
+    }
+
+    .student-review {
+        /*        height: 370px;*/
+        /*        width: 10%;*/
+        margin-top: 35px;
+    }
+
+    .review {
+        width: 700px !important;
+    }
+
+    .carousel-control-prev {
+        left: -45px;
+    }
+
+    .carousel-control-next {
+        right: -45px;
+        fill: red;
+    }
+
+    .quotes {
+        display: none;
+    }
+}
+
+
+
+@media only screen and (max-width:992px) {
+
+    /*    .review {
+        width: auto !important;
+        background-color: yellow;
+        padding: 15px;
+        height: 270px;
+    }
+
+    .student-review {
+        height: 370px;
+        padding: 15px 55px;
+    }*/
+
+
+}
+
+@media only screen and (max-width:768px) {
+
+    /*    .review {
+        width: auto !important;
+        background-color: yellow;
+        padding: 15px;
+        height: 270px;
+    }
+
+    .student-review {
+        height: 370px;
+        padding: 15px 55px;
+    }*/
+    .carousel-control-prev {
+        left: -35px;
+    }
+
+    .carousel-control-next {
+        right: -35px;
+    }
+
+    .review {
+        width: 350px !important;
+    }
+
+    .top-tutors {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        padding: 10px;
+    }
+
+        .top-tutors .tutor-card {
+            flex: 0 0 80%;
+            /*            max-width: 150px;
+        min-width: 250px;*/
+            scroll-snap-align: start;
+        }
+
+        .top-tutors h4 {
+            font-size: 15px !important;
+        }
+}
+
+@media only screen and (max-width:992px) {
+    .top-tutors {
+        justify-content: flex-start;
+    }
+
+        .top-tutors .tutor-card {
+            width: 200px;
+        }
+
+    .img-frame-tutor {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto;
+        /*        overflow: hidden;*/
+        /*        border-radius: 50%;*/
+        background-color: #ddd;
+    }
+
+    .top-tutors h4 {
+        font-size: 20px !important;
+    }
+
+    .mobile-quotes {
+        display: none;
+    }
+
+    .heading-section {
+        display: none;
+    }
+
+    .heading-responsive {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .mobile-intro {
+        grid-column: span 2;
+    }
+
+    .carousel-control-prev {
+        left: -35px;
+    }
+
+    .carousel-control-next {
+        right: -35px;
+    }
+
+    .review {
+        width: 560px !important;
+        /*        background-color: blue;*/
+    }
+
+    .quotes {
+        display: none;
+    }
+
+    .mobile-quotes {
+        display: block;
+        margin-top: 20px;
+    }
+
+    #quoteDisplay {
+        display: block;
+    }
+}
+
+
+@media only screen and (max-width:576px) {
+    .benefits-section {
+        background-color: teal;
+        display: none;
+    }
+
+    .mobile-accordion {
+        display: block;
+        margin-top: 50px;
+    }
+
+    .benefit-icon {
+        width: 30px;
+        height: 30px;
+    }
+
+    .mobile-accordion strong {
+        margin-left: 10px;
+    }
+
+    .heading-responsive {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 50vh;
+        background: linear-gradient(rgba(0, 0, 0, 0.795), rgba(0, 0, 0, 0.795)), url("/Media/webimages/tutoring.jpg");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        text-align: center;
+        padding: 40px 15px;
+    }
+
+        .heading-responsive h1 {
+            color: white;
+            margin-bottom: 20px;
+        }
+
+    .no-img {
+        display: none;
+    }
+
+    .mobile-intro {
+        color: white;
+        margin-top: 15px;
+        max-width: 500px;
+    }
+
+    .heading-responsive .btn {
+        display: none;
+    }
+
+    .review {
+        width: 250px !important;
+    }
+}

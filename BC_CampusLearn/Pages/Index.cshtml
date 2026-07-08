@@ -4,7 +4,335 @@
     ViewData["Title"] = "Home page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@* homePage Styles *@
+<link rel="stylesheet" href="/css/HomePage.css" asp-append-version="true" />
+
+<div class="row heading-section">
+    <div class="col-6 pt-5">
+        <h1>Transform Your Learning Experience with CampusLearn™</h1>
+        <p class="mt-3 mobile-intro">
+            Get instant academic support from qualified peer tutors, 24/7 AI assistance,
+            and a collaborative learning community—all designed specifically for Belgium
+            Campus students.
+        </p>
+
+        <a class="btn btn-primary mt-4" style="background-color:#AD0151; border-color:#AD0151;" href="/Tutor/AllTutors">Find A Tutor</a>
+    </div>
+    <div class="col-6" style="display:block; overflow:hidden;">
+        <img src="/Media/webimages/tutoring.jpg" style="width:100%" />
+    </div>
+
+    <div class="quotes" style="background-color:#fff; border-radius:8px; box-shadow:0px 4px 14px rgba(0,0,0,.14);">
+        <h5 class="text-center" id="quoteDisplay">
+            Education is the most powerful weapon which you can use to change the world. – Nelson Mandela
+        </h5>
+    </div>
 </div>
+
+
+<div class="row heading-responsive">
+    <div class="">
+        <h1>Transform Your Learning Experience with CampusLearn™</h1>
+
+    </div>
+
+    <div class="no-img">
+        <img src="/Media/webimages/tutoring.jpg" style="width:100%" />
+    </div>
+
+    <p class="mt-3 mobile-intro">
+        Get instant academic support from qualified peer tutors, 24/7 AI assistance,
+        and a collaborative learning community—all designed specifically for Belgium
+        Campus students.
+    </p>
+    <a class="btn btn-primary mt-4" style="background-color:#AD0151; border-color:#AD0151;" href="/Tutor/AllTutors">Find A Tutor</a>
+</div>
+
+
+
+
+
+<div class="row mt-5 benefits-section">
+    <h2 class="text-center mb-5">Everything You Get with CampusLearn™</h2>
+    <div class="benefit-item">
+        <div class="benefit-icon">
+            <img src="/Media/icons/approved.png" style="width:100%; height:100%" />
+        </div>
+        <p class="benefit-text">
+            Connect with peer tutors who know your BCom, BIT, and Diploma modules inside out.
+            Get one-on-one support, clarify tough concepts, and prepare with confidence for exams and
+            assignments.
+        </p>
+    </div>
+
+    <div class="benefit-item">
+        <div class="benefit-icon">
+            <img src="/Media/icons/chatai.png" style="width:100%; height:100%" />
+        </div>
+        <p class="benefit-text">
+            Our intelligent chatbot gives instant answers to common academic questions.
+            It's like having a study buddy who's always available.
+        </p>
+    </div>
+
+    <div class="benefit-item">
+        <div class="benefit-icon">
+            <img src="/Media/icons/Book.png" style="width:100%; height:100%" />
+        </div>
+        <p class="benefit-text">
+            Access tutor-uploaded videos, PDFs, and interactive materials designed to match your coursework.
+            Learn at your own pace with high-quality study materials.
+        </p>
+    </div>
+
+    <div class="benefit-item">
+        <div class="benefit-icon">
+            <img src="/Media/icons/forum.png" style="width:100%; height:100%" />
+        </div>
+        <p class="benefit-text">
+            Join our moderated forum for anonymous academic discussions.
+            Share ideas, ask questions, and collaborate without pressure or judgment.
+        </p>
+    </div>
+
+    <div class="benefit-item">
+        <div class="benefit-icon">
+            <img src="/Media/icons/globe.png" style="width:100%; height:100%" />
+        </div>
+        <p class="benefit-text">
+            Whether at home, on campus, or on the go, CampusLearn™ is with you 24/7.
+            Study support is available whenever and wherever you need it.
+        </p>
+    </div>
+</div>
+
+@* mobile benefits *@
+<div class="accordion accordion-flush mobile-accordion" id="accordionFlushExample">
+
+    <h2 class="text-center mb-5">CampusLearn™ Package</h2>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#flush-collapseOne"
+                    aria-expanded="false" aria-controls="flush-collapseOne">
+                <div class="benefit-icon">
+                    <img src="/Media/icons/approved.png" style="width:100%; height:100%" />
+                </div>
+                <strong>One-on-One Tutor Support</strong>
+            </button>
+        </h2>
+        <div id="flush-collapseOne" class="accordion-collapse collapse"
+             data-bs-parent="#accordionFlushExample">
+            <div class="accordion-body">
+                <p class="benefit-text">
+                    Connect with peer tutors who know your BCom, BIT, and Diploma modules inside out.
+                    Get one-on-one support, clarify tough concepts, and prepare with confidence for exams and
+                    assignments.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#flush-collapseTwo"
+                    aria-expanded="false" aria-controls="flush-collapseTwo">
+                <div class="benefit-icon">
+                    <img src="/Media/icons/chatai.png" style="width:100%; height:100%" />
+                </div>
+                <strong>24/7 Study Assistance</strong>
+            </button>
+        </h2>
+        <div id="flush-collapseTwo" class="accordion-collapse collapse"
+             data-bs-parent="#accordionFlushExample">
+            <div class="accordion-body">
+                <p class="benefit-text">
+                    Our intelligent chatbot gives instant answers to common academic questions.
+                    It's like having a study buddy who's always available.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#flush-collapseThree"
+                    aria-expanded="false" aria-controls="flush-collapseThree">
+                <div class="benefit-icon">
+                    <img src="/Media/icons/Book.png" style="width:100%; height:100%" />
+                </div>
+                <strong>High-Quality Study Content</strong>
+            </button>
+        </h2>
+        <div id="flush-collapseThree" class="accordion-collapse collapse"
+             data-bs-parent="#accordionFlushExample">
+            <div class="accordion-body">
+                Access tutor-uploaded videos, PDFs, and interactive materials designed to match your coursework.
+                Learn at your own pace with high-quality study materials.
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#flush-collapseFour"
+                    aria-expanded="false" aria-controls="flush-collapseFour">
+                <div class="benefit-icon">
+                    <img src="/Media/icons/forum.png" style="width:100%; height:100%" />
+                </div>
+                <strong>Collaborate & Discuss Safely</strong>
+            </button>
+        </h2>
+        <div id="flush-collapseFour" class="accordion-collapse collapse"
+             data-bs-parent="#accordionFlushExample">
+            <div class="accordion-body">
+                Join our moderated forum for anonymous academic discussions.
+                Share ideas, ask questions, and collaborate without pressure or judgment.
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#flush-collapseFive"
+                    aria-expanded="false" aria-controls="flush-collapseFive">
+                <div class="benefit-icon">
+                    <img src="/Media/icons/globe.png" style="width:100%; height:100%" />
+                </div>
+                <strong>Study Anytime, Anywhere</strong>
+            </button>
+        </h2>
+        <div id="flush-collapseFive" class="accordion-collapse collapse"
+             data-bs-parent="#accordionFlushExample">
+            <div class="accordion-body">
+                Whether at home, on campus, or on the go, CampusLearn™ is with you 24/7.
+                Study support is available whenever and wherever you need it.
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<div class="getToKnow p-0">
+    <h2 class="p-0 mb-3 text-center">Get To Know Your Tutors</h2>
+    <p class="p-0 text-center">
+        Browse through our featured tutors and find the right support for your courses.
+        Each tutor is here to help you excel in your <span class="course">BCom, BIT, and Diploma modules</span>
+    </p>
+    <div class="top-tutors mt-4">
+        @* @foreach (var item in Model.TopTutors)
+        {
+            <a href="/Tutor/TutorProfile?tutorId=@item.TutorId" style="color:black; text-decoration:none">
+                <div class="tutor-card p-3">
+                    <div class="img-frame-tutor mb-3">
+                        <img src="@item.ProfilePicture" class="card-img-top" alt="@item.FullName" onerror="this.src='/Media/tutors/tutor1.jpg'">
+                    </div>
+                    <h4 class="me-3">@item.FullName <i class="bi bi-patch-check-fill" style="color:blue"></i></h4>
+                    <p>@item.Program</p>
+                    <p>@item.YearsOfStudy year</p>
+                </div>
+            </a>
+
+        } *@
+    </div>
+
+    <div class="p-0 mb-4" style="text-align:center">
+        <a class="btn btn-primary" style="background-color:#AD0151; border-color:#AD0151;" href="/Tutor/AllTutors">Meet All Tutors</a>
+    </div>
+</div>
+
+<style>
+    .event-nav-button {
+        width: 46px;
+        height: 46px;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        background-color: transparent;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+    }
+
+    .event-nav-button:hover {
+        background-color: rgba(74, 193, 193, .25);
+        border-color: #4AC1C1;
+        box-shadow: 0 0 0 4px rgba(74, 193, 193, .18);
+        transform: translateY(-2px);
+    }
+
+    .event-nav-button i {
+        color: #fff;
+        font-size: 1.25rem;
+        line-height: 1;
+    }
+</style>
+
+<div class="student-review mb-0" style="height:auto; overflow:visible; width:100vw; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw); margin-bottom:-1rem; background:linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,.65)), url('/Media/events/event%20background.png'); background-size:cover; background-position:center; padding:45px clamp(28px, 5vw, 80px) 32px;">
+    <h2 class="text-start mb-4 text-white">Industry Connect</h2>
+    <div class="row g-4 align-items-stretch">
+        <div class="col-12 col-lg-7">
+            <div style="background-color:#000; border-radius:8px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,.35);">
+                <img src="/Media/events/2026%20Industry%20connect_PTA%20%26%20KP.png" alt="2026 Industry Connect event" style="width:100%; display:block;" />
+            </div>
+        </div>
+        <div class="col-12 col-lg-5">
+            <div class="h-100 text-white" style="background-color:rgba(0,0,0,.55); border-radius:8px; padding:24px; box-shadow:0 8px 24px rgba(0,0,0,.25);">
+                <h4 class="mb-3">Event Information</h4>
+                <p class="mb-3">
+                    <strong>Disclaimer:</strong> This event is only for students who received the email invitation.
+                </p>
+                <p class="mb-0">
+                    <strong>Location:</strong> Pretoria Campus and Kempton Park Campus.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="d-flex gap-3 mt-4">
+        <button type="button" class="event-nav-button" aria-label="Previous event">
+            <i class="bi bi-caret-left-fill"></i>
+        </button>
+        <button type="button" class="event-nav-button" aria-label="Next event">
+            <i class="bi bi-caret-right-fill"></i>
+        </button>
+    </div>
+</div>
+
+
+
+
+
+<script>
+        const quotes = [
+        "The expert in anything was once a beginner. – Helen Hayes",
+        "Success is not about being the best. It's about being better than you were yesterday. – Unknown",
+        "Education is not preparation for life; education is life itself. – John Dewey",
+        "The only way to do great work is to love what you do. – Steve Jobs",
+        "Learning never exhausts the mind. – Leonardo da Vinci",
+        "Your limitation—it's only your imagination. Push yourself, because no one else is going to do it for you. – Unknown",
+        "The future belongs to those who learn more skills and combine them in creative ways. – Robert Greene",
+        "Don't let what you cannot do interfere with what you can do. – John Wooden",
+        "The beautiful thing about learning is that no one can take it away from you. – B.B. King",
+        "Success is the sum of small efforts repeated day in and day out. – Robert Collier",
+        "The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice. – Brian Herbert",
+        "IT'S HOW WE ARE WIRED ~ Belgium Campus"
+    ];
+
+    let currentQuoteIndex = 0;
+    const quoteDisplay = document.getElementById('quoteDisplay');
+
+    function showNextQuote() {
+        currentQuoteIndex = (currentQuoteIndex + 1) % quotes.length;
+        quoteDisplay.textContent = quotes[currentQuoteIndex];
+    }
+
+    // Change quote every 3.5 seconds
+    setInterval(showNextQuote, 5500);
+</script>
