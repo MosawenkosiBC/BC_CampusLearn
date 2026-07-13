@@ -92,12 +92,40 @@
             color: #000 !important;
             font-weight: 600;
         }
+
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1030;
+        }
+
+        @@media (max-width: 575.98px) {
+            .navbar .container-fluid {
+                padding-left: 16px !important;
+                padding-right: 16px !important;
+            }
+
+            .navbar-brand img {
+                height: 44px !important;
+            }
+
+            .navbar-collapse {
+                padding-top: 12px;
+            }
+
+            .navbar-nav:last-child .btn {
+                width: 100%;
+                margin-top: 8px;
+            }
+        }
     </style>
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container">
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow">
+            <div class="container-fluid px-4">
                 <a class="navbar-brand" asp-area="" asp-page="/Index">
                     <img src="/Media/common/CampusLearnLogo.png" alt="CampusLearn Logo" style="height:50px;" />
                 </a>
@@ -121,9 +149,6 @@
                     <ul class="navbar-nav">
                         @if (Context.Session.GetString("role") == null)
                         {
-                            <li class="nav-item">
-                                <a class="btn btn-primary me-3" href="/Authentication/SignUp">Sign Up</a>
-                            </li>
                             <li class="nav-item">
                                 <a class="btn btn-primary" href="/Authentication/LogIn">Log In</a>
                             </li>

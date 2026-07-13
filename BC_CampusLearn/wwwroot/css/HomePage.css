@@ -3,29 +3,137 @@
 
 
 .heading-section {
+    --bs-gutter-x: 0;
     /*        background-color: palegoldenrod;*/
     /*    margin-bottom: 10px !important;*/
-    /*    border-bottom: 3px solid black;*/
+    border-bottom: 3px solid black;
     /*    padding-bottom: 35px;*/
     min-height: calc(100vh - 82px);
     align-items: center;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding: clamp(70px, 9vw, 120px) clamp(24px, 8vw, 130px);
+    background: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), url("/Media/webimages/tutoring.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 
     .heading-section h1 {
-        font-size: 2.7rem;
+        font-size: clamp(4rem, 4vw, 6rem);
+        line-height: 1.02;
+        color: white;
+        max-width: 950px;
     }
 
     .heading-section p {
-        font-size: 1.1rem;
+        font-size: 1.35rem;
+        line-height: 1.65;
         margin-top: 30px !important;
+        color: white;
+        max-width: 850px;
         /*    color: #555;*/
     }
 
+.hero-cta-group .btn {
+        min-width: 175px;
+        min-height: 56px;
+        padding: 14px 28px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+
+.hero-content {
+    width: 100%;
+    max-width: 980px;
+}
+
+.hero-cta-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    max-width: 100%;
+}
+
+.hero-outline-cta {
+    border: 2px solid #fff;
+    background-color: transparent;
+    color: #fff;
+    padding: 13px 27px;
+}
+
+    .hero-outline-cta:hover {
+        background-color: #4AC1C1;
+        border-color: #4AC1C1;
+        color: #fff;
+    }
+
+.hero-quote-wrap {
+    width: 100%;
+    max-width: 760px;
+}
+
+.hero-stat-strip {
+    display: flex;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0;
+    width: fit-content;
+    max-width: 100%;
+    padding: 14px 18px;
+    border: 1px solid rgba(17, 17, 17, .08);
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, .82);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+}
+
+.hero-stat-item {
+    min-width: 118px;
+    padding: 0 18px;
+    text-align: center;
+    border-right: 1px solid rgba(17, 17, 17, .18);
+}
+
+    .hero-stat-item:first-child {
+        padding-left: 0;
+    }
+
+    .hero-stat-item:last-child {
+        border-right: 0;
+    }
+
+    .hero-stat-item span,
+    .hero-stat-item strong {
+        display: block;
+    }
+
+    .hero-stat-item span {
+        font-size: .82rem;
+        line-height: 1.2;
+        color: #4b5563;
+    }
+
+    .hero-stat-item strong {
+        margin-top: 6px;
+        font-size: 1.2rem;
+        line-height: 1.1;
+        font-weight: 800;
+        color: #AD0151;
+    }
+
 .quotes {
-    margin-top: 35px;
+    width: 100%;
+    margin-top: 18px;
     background-color: #EBEBEB;
-    height: 100px;
+    min-height: 76px;
     padding: 20px;
     font-style: italic;
     color: black;
@@ -36,8 +144,15 @@
 }
 
     .quotes h5 {
-        font-size: 1.5rem;
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.45;
         /*    color: red;*/
+    }
+
+    .quotes .carousel-inner,
+    .quotes .carousel-item {
+        width: 100%;
     }
 
 .benefits-section {
@@ -97,6 +212,99 @@
         background-color: #F0F0F0;
     }
 
+.top-tutors-slider {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+}
+
+.top-tutors-static {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+    width: 100%;
+    padding: 6px 2px 18px;
+}
+
+.top-tutors-static::-webkit-scrollbar {
+    display: none;
+}
+
+.top-tutors-dots {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.top-tutors-dot {
+    width: 12px;
+    height: 12px;
+    border: 2px solid #AD0151;
+    border-radius: 50%;
+    background-color: transparent;
+    padding: 0;
+    transition: background-color .2s ease, transform .2s ease;
+}
+
+.top-tutors-dot.active,
+.top-tutors-dot:hover {
+    background-color: #AD0151;
+    transform: scale(1.12);
+}
+
+.static-tutor-card {
+    background-color: #fff;
+    border: 1px solid rgba(17, 17, 17, .08);
+    border-radius: 8px;
+    box-shadow: none;
+    padding: 0 0 24px;
+    text-align: center;
+    overflow: hidden;
+}
+
+.static-tutor-image-frame {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    margin-bottom: 24px;
+    overflow: hidden;
+    background-color: #F2F7F7;
+}
+
+.static-tutor-image-frame img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.static-tutor-card h4 {
+    font-size: 1.05rem;
+    margin-bottom: 10px;
+}
+
+.static-tutor-card h4 i {
+    color: #4AC1C1;
+    font-size: .95rem;
+}
+
+.static-tutor-card p {
+    margin-bottom: 6px;
+}
+
+.static-tutor-program {
+    font-weight: 600;
+    color: #20242c;
+}
+
+.static-tutor-meta {
+    color: #667085;
+    font-size: .92rem !important;
+}
+
 .img-frame-tutor {
     width: 200px;
     height: 200px;
@@ -139,13 +347,6 @@
     display: none;
 }
 
-mobile-quotes {
-    display: none;
-}
-
-/*#quoteDisplay {
-    display: none;
-}*/
 /*responsive form tablet*/
 @media only screen and (max-width:1007px) {
     h1 {
@@ -171,9 +372,6 @@ mobile-quotes {
         fill: red;
     }
 
-    .quotes {
-        display: none;
-    }
 }
 
 
@@ -262,8 +460,22 @@ mobile-quotes {
         font-size: 20px !important;
     }
 
-    .mobile-quotes {
-        display: none;
+    .top-tutors-static {
+        display: flex;
+        gap: 18px;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+    }
+
+    .static-tutor-card {
+        flex: 0 0 clamp(260px, 44vw, 360px);
+        scroll-snap-align: start;
+    }
+
+    .top-tutors-dots {
+        display: flex;
     }
 
     .heading-section {
@@ -271,13 +483,63 @@ mobile-quotes {
     }
 
     .heading-responsive {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
+        --bs-gutter-x: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 0;
+        min-height: calc(100vh - 82px);
+        width: 100vw;
+        margin-left: calc(50% - 50vw);
+        margin-right: calc(50% - 50vw);
+        padding: clamp(56px, 8vw, 88px) clamp(24px, 7vw, 72px);
+        background: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), url("/Media/webimages/tutoring.jpg");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    .heading-responsive h1 {
+        font-size: clamp(2rem, 5vw, 3rem) !important;
+        line-height: 1.12;
+        color: #fff;
+        max-width: 780px;
+    }
+
+    .heading-responsive p {
+        font-size: 1rem;
+        line-height: 1.55;
+        color: #fff;
+        max-width: 720px;
+    }
+
+    .no-img {
+        display: none;
     }
 
     .mobile-intro {
-        grid-column: span 2;
+        margin-top: 20px !important;
     }
+
+    .heading-responsive .hero-stat-strip {
+        width: fit-content;
+    }
+
+    .heading-responsive .hero-cta-group {
+        justify-content: flex-start;
+    }
+
+    .heading-responsive .hero-outline-cta {
+        border-color: #fff;
+        color: #fff;
+    }
+
+        .heading-responsive .hero-outline-cta:hover {
+            background-color: #4AC1C1;
+            border-color: #4AC1C1;
+            color: #fff;
+        }
 
     .carousel-control-prev {
         left: -35px;
@@ -292,17 +554,29 @@ mobile-quotes {
         /*        background-color: blue;*/
     }
 
-    .quotes {
+    .student-review {
+        padding-left: 24px !important;
+        padding-right: 24px !important;
+    }
+
+}
+
+@media only screen and (min-width:577px) and (max-width:992px) {
+    .top-tutors-static {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+        overflow: visible;
+        scroll-snap-type: none;
+    }
+
+    .static-tutor-card {
+        min-width: 0;
+        scroll-snap-align: none;
+    }
+
+    .top-tutors-dots {
         display: none;
-    }
-
-    .mobile-quotes {
-        display: block;
-        margin-top: 20px;
-    }
-
-    #quoteDisplay {
-        display: block;
     }
 }
 
@@ -328,14 +602,8 @@ mobile-quotes {
     }
 
     .heading-responsive {
-        display: flex;
-        flex-direction: column;
         align-items: center;
-        height: 50vh;
-        background: linear-gradient(rgba(0, 0, 0, 0.795), rgba(0, 0, 0, 0.795)), url("/Media/webimages/tutoring.jpg");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
+        min-height: 0;
         text-align: center;
         padding: 40px 15px;
     }
@@ -343,6 +611,7 @@ mobile-quotes {
         .heading-responsive h1 {
             color: white;
             margin-bottom: 20px;
+            font-size: clamp(2rem, 9vw, 2.7rem) !important;
         }
 
     .no-img {
@@ -353,10 +622,71 @@ mobile-quotes {
         color: white;
         margin-top: 15px;
         max-width: 500px;
+        font-size: .95rem !important;
     }
 
     .heading-responsive .btn {
-        display: none;
+        display: inline-flex;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .heading-responsive .hero-stat-strip {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        justify-content: stretch;
+        width: 100%;
+        background-color: rgba(255, 255, 255, .94);
+        padding: 12px;
+    }
+
+    .heading-responsive .hero-stat-item {
+        min-width: 0;
+        padding: 0 8px;
+        border-right-color: rgba(17, 17, 17, .18);
+    }
+
+        .heading-responsive .hero-stat-item:first-child {
+            padding-left: 0;
+        }
+
+    .heading-responsive .hero-stat-item span,
+    .heading-responsive .hero-stat-item strong {
+        color: inherit;
+    }
+
+    .heading-responsive .hero-stat-item span {
+        font-size: .74rem;
+        color: #4b5563;
+    }
+
+    .heading-responsive .hero-stat-item strong {
+        font-size: 1.05rem;
+        color: #AD0151;
+    }
+
+    .heading-responsive .hero-cta-group {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .heading-responsive .hero-outline-cta {
+        border-color: #fff;
+        color: #fff;
+    }
+
+    .top-tutors-static {
+        gap: 18px;
+    }
+
+    .top-tutors-slider {
+        gap: 10px;
+    }
+
+    .static-tutor-card {
+        flex-basis: calc(100% - 8px);
     }
 
     .review {

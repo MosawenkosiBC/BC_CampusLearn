@@ -17,8 +17,32 @@ html {
   min-height: 100%;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
 body {
   margin-bottom: 0;
+  padding-top: 76px;
+}
+
+@media (max-width: 575.98px) {
+  body {
+    padding-top: 68px;
+  }
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {

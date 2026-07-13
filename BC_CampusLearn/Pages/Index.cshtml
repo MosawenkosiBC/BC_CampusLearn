@@ -8,25 +8,55 @@
 <link rel="stylesheet" href="/css/HomePage.css" asp-append-version="true" />
 
 <div class="row heading-section">
-    <div class="col-6 pt-5">
+    <div class="hero-content">
         <h1>Transform Your Learning Experience with CampusLearn™</h1>
         <p class="mt-3 mobile-intro">
-            Get instant academic support from qualified peer tutors, 24/7 AI assistance,
-            and a collaborative learning community—all designed specifically for Belgium
-            Campus students.
+            Learn with support that fits your campus life. Connect with peer tutors, 
+            get study help anytime, and stay on track with a community made for 
+            Belgium Campus students.
         </p>
 
-        <a class="btn btn-primary mt-4" style="background-color:#AD0151; border-color:#AD0151;" href="/Tutor/AllTutors">Find A Tutor</a>
-    </div>
-    <div class="col-6" style="display:block; overflow:hidden;">
-        <img src="/Media/webimages/tutoring.jpg" style="width:100%" />
-    </div>
+        <div class="hero-stat-strip mt-4">
+            <div class="hero-stat-item">
+                <span>Tutors</span>
+                <strong>20+</strong>
+            </div>
+            <div class="hero-stat-item">
+                <span>Sessions Completed</span>
+                <strong>200+</strong>
+            </div>
+            <div class="hero-stat-item">
+                <span>Modules Covered</span>
+                <strong>40+</strong>
+            </div>
+        </div>
 
-    <div class="quotes" style="background-color:#fff; border-radius:8px; box-shadow:0px 4px 14px rgba(0,0,0,.14);">
-        <h5 class="text-center" id="quoteDisplay">
-            Education is the most powerful weapon which you can use to change the world. – Nelson Mandela
-        </h5>
+        <div class="hero-cta-group mt-5">
+            <a class="btn btn-primary" style="background-color:#AD0151; border-color:#AD0151;" href="/Tutor/AllTutors">Find A Tutor</a>
+            <a class="btn hero-outline-cta" href="/Authentication/LogIn">Start Learning</a>
+        </div>
     </div>
+    @* <div class="hero-quote-wrap">
+        <div id="heroQuoteCarousel" class="carousel slide quotes" data-bs-ride="carousel" data-bs-interval="5500" style="background-color:#fff; border-radius:8px; box-shadow:0px 4px 14px rgba(0,0,0,.14);">
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <h5 class="text-center">Education is the most powerful weapon which you can use to change the world. – Nelson Mandela</h5>
+                </div>
+                <div class="carousel-item">
+                    <h5 class="text-center">The expert in anything was once a beginner. – Helen Hayes</h5>
+                </div>
+                <div class="carousel-item">
+                    <h5 class="text-center">Success is not about being the best. It's about being better than you were yesterday. – Unknown</h5>
+                </div>
+                <div class="carousel-item">
+                    <h5 class="text-center">The only way to do great work is to love what you do. – Steve Jobs</h5>
+                </div>
+                <div class="carousel-item">
+                    <h5 class="text-center">IT'S HOW WE ARE WIRED ~ Belgium Campus</h5>
+                </div>
+            </div>
+        </div>
+    </div> *@
 </div>
 
 
@@ -41,16 +71,30 @@
     </div>
 
     <p class="mt-3 mobile-intro">
-        Get instant academic support from qualified peer tutors, 24/7 AI assistance,
-        and a collaborative learning community—all designed specifically for Belgium
-        Campus students.
+        Learn with support that fits your campus life. Connect with peer tutors,
+        get study help anytime, and stay on track with a community made for
+        Belgium Campus students.
     </p>
-    <a class="btn btn-primary mt-4" style="background-color:#AD0151; border-color:#AD0151;" href="/Tutor/AllTutors">Find A Tutor</a>
+    <div class="hero-stat-strip mt-4">
+        <div class="hero-stat-item">
+            <span>Tutors</span>
+            <strong>20+</strong>
+        </div>
+        <div class="hero-stat-item">
+            <span>Sessions Completed</span>
+            <strong>200+</strong>
+        </div>
+        <div class="hero-stat-item">
+            <span>Modules Covered</span>
+            <strong>40+</strong>
+        </div>
+    </div>
+
+    <div class="hero-cta-group mt-4">
+        <a class="btn btn-primary" style="background-color:#AD0151; border-color:#AD0151;" href="/Tutor/AllTutors">Find A Tutor</a>
+        <a class="btn hero-outline-cta" href="/Authentication/LogIn">Start Learning</a>
+    </div>
 </div>
-
-
-
-
 
 <div class="row mt-5 benefits-section">
     <h2 class="text-center mb-5">Everything You Get with CampusLearn™</h2>
@@ -242,10 +286,85 @@
         } *@
     </div>
 
+    <div class="top-tutors-slider mt-4">
+        <div class="top-tutors-static" id="topTutorsStaticSlider">
+            <div class="static-tutor-card">
+                <div class="static-tutor-image-frame">
+                    <img src="/Media/tutorsProfiles/image.png" alt="Neo Mokoena" />
+                </div>
+                <h4>Neo Mokoena <i class="bi bi-patch-check-fill"></i></h4>
+                <p class="static-tutor-program">BCom Information Systems</p>
+                <p class="static-tutor-meta">2nd year tutor</p>
+            </div>
+
+            <div class="static-tutor-card">
+                <div class="static-tutor-image-frame">
+                    <img src="/Media/tutorsProfiles/Tutor 1.webp" alt="Lerato Khumalo" />
+                </div>
+                <h4>Lerato Khumalo <i class="bi bi-patch-check-fill"></i></h4>
+                <p class="static-tutor-program">BIT Software Engineering</p>
+                <p class="static-tutor-meta">3rd year tutor</p>
+            </div>
+
+            <div class="static-tutor-card">
+                <div class="static-tutor-image-frame">
+                    <img src="/Media/tutorsProfiles/Tutor 3.webp" alt="Thabo Molefe" />
+                </div>
+                <h4>Thabo Molefe <i class="bi bi-patch-check-fill"></i></h4>
+                <p class="static-tutor-program">Diploma IT</p>
+                <p class="static-tutor-meta">2nd year tutor</p>
+            </div>
+
+            <div class="static-tutor-card">
+                <div class="static-tutor-image-frame">
+                    <img src="/Media/tutorsProfiles/Tutor 5.webp" alt="Amahle Radebe" />
+                </div>
+                <h4>Amahle Radebe <i class="bi bi-patch-check-fill"></i></h4>
+                <p class="static-tutor-program">BIT Data Science</p>
+                <p class="static-tutor-meta">3rd year tutor</p>
+            </div>
+        </div>
+
+        <div class="top-tutors-dots" aria-label="Tutor carousel navigation">
+            <button type="button" class="top-tutors-dot active" aria-label="Show tutor 1"></button>
+            <button type="button" class="top-tutors-dot" aria-label="Show tutor 2"></button>
+            <button type="button" class="top-tutors-dot" aria-label="Show tutor 3"></button>
+            <button type="button" class="top-tutors-dot" aria-label="Show tutor 4"></button>
+        </div>
+    </div>
+
     <div class="p-0 mb-4" style="text-align:center">
         <a class="btn btn-primary" style="background-color:#AD0151; border-color:#AD0151;" href="/Tutor/AllTutors">Meet All Tutors</a>
     </div>
 </div>
+
+<script>
+    (() => {
+        const slider = document.getElementById('topTutorsStaticSlider');
+        const dots = document.querySelectorAll('.top-tutors-dot');
+        const cards = slider ? slider.querySelectorAll('.static-tutor-card') : [];
+
+        if (!slider || !dots.length || !cards.length) return;
+
+        const setActiveDot = () => {
+            const activeIndex = Array.from(cards).reduce((closestIndex, card, index) => {
+                const currentDistance = Math.abs(card.offsetLeft - slider.scrollLeft);
+                const closestDistance = Math.abs(cards[closestIndex].offsetLeft - slider.scrollLeft);
+                return currentDistance < closestDistance ? index : closestIndex;
+            }, 0);
+
+            dots.forEach((dot, index) => dot.classList.toggle('active', index === activeIndex));
+        };
+
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                cards[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+            });
+        });
+
+        slider.addEventListener('scroll', setActiveDot, { passive: true });
+    })();
+</script>
 
 <style>
     .event-nav-button {
@@ -305,34 +424,3 @@
     </div>
 </div>
 
-
-
-
-
-<script>
-        const quotes = [
-        "The expert in anything was once a beginner. – Helen Hayes",
-        "Success is not about being the best. It's about being better than you were yesterday. – Unknown",
-        "Education is not preparation for life; education is life itself. – John Dewey",
-        "The only way to do great work is to love what you do. – Steve Jobs",
-        "Learning never exhausts the mind. – Leonardo da Vinci",
-        "Your limitation—it's only your imagination. Push yourself, because no one else is going to do it for you. – Unknown",
-        "The future belongs to those who learn more skills and combine them in creative ways. – Robert Greene",
-        "Don't let what you cannot do interfere with what you can do. – John Wooden",
-        "The beautiful thing about learning is that no one can take it away from you. – B.B. King",
-        "Success is the sum of small efforts repeated day in and day out. – Robert Collier",
-        "The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice. – Brian Herbert",
-        "IT'S HOW WE ARE WIRED ~ Belgium Campus"
-    ];
-
-    let currentQuoteIndex = 0;
-    const quoteDisplay = document.getElementById('quoteDisplay');
-
-    function showNextQuote() {
-        currentQuoteIndex = (currentQuoteIndex + 1) % quotes.length;
-        quoteDisplay.textContent = quotes[currentQuoteIndex];
-    }
-
-    // Change quote every 3.5 seconds
-    setInterval(showNextQuote, 5500);
-</script>
