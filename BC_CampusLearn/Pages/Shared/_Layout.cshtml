@@ -146,67 +146,41 @@
                         </li>
                     </ul>
 
-                    <ul class="navbar-nav">
-                        @if (Context.Session.GetString("role") == null)
+                    <div class="navbar-nav">
+                        @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item">
-                                <a class="btn btn-primary" href="/Account/SignIn">Log In</a>
-                            </li>
+                            <a asp-page="/Student/Dashboard"
+                               class="nav-link">
+                                Dashboard
+                            </a>
+
+                            <a asp-page="/Tutors/Index"
+                               class="nav-link">
+                                Tutors
+                            </a>
+
+                            <a asp-page="/Bookings/Index"
+                               class="nav-link">
+                                My bookings
+                            </a>
+
+                            <form method="post"
+                                  asp-page="/Account/SignOut"
+                                  class="d-inline">
+                                <button type="submit"
+                                        class="btn btn-link nav-link">
+                                    Sign out
+                                </button>
+                            </form>
                         }
-                        else if (Context.Session.GetString("role") == "Student")
+                        else
                         {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    @Context.Session.GetString("firstName")
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#">Bookmarks</a></li>
-                                    <li><a class="dropdown-item" href="#">Notifications</a></li>
-                                    <li><a class="dropdown-item" href="/Communication/PrivateMessaging">Chats</a></li>
-                                    <li><a class="dropdown-item" href="#">Manage Account</a></li>
-                                    <li><a class="dropdown-item" href="/Authentication/Logout">Log out</a></li>
-                                </ul>
-                            </li>
+                            <a asp-page="/Account/SignIn"
+                               class="nav-link">
+                                Sign in
+                            </a>
                         }
-                        else if (Context.Session.GetString("role") == "Tutor")
-                        {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    @Context.Session.GetString("firstName") (Tutor)
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#">Bookmarks</a></li>
-                                    <li><a class="dropdown-item" href="#">Notifications</a></li>
-                                    <li><a class="dropdown-item" href="/Tutor/TutorDashboard">Tutor Dashboard</a></li>
-                                    <li><a class="dropdown-item" href="/Tutor/tutorBookings">Manage Sessions</a></li>
-                                    <li><a class="dropdown-item" href="#">Create Resource</a></li>
-                                    <li><a class="dropdown-item" href="/Admin/UnansweredQueries">Unanswered Queries</a></li>
-                                    <li><a class="dropdown-item" href="/Admin/KnowledgeBase">AI Knowledge Base</a></li>
-                                    <li><a class="dropdown-item" href="/Communication/PrivateMessaging">Chats</a></li>
-                                    <li><a class="dropdown-item" href="#">Manage Account</a></li>
-                                    <li><a class="dropdown-item" href="/Authentication/Logout">Log out</a></li>
-                                </ul>
-                            </li>
-                        }
-                        else if (Context.Session.GetString("role") == "Admin")
-                        {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    @Context.Session.GetString("firstName") (Admin)
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#">Bookmarks</a></li>
-                                    <li><a class="dropdown-item" asp-page="/Admin/Dashboard">Admin Dashboard</a></li>
-                                    <li><a class="dropdown-item" href="#">Create Post</a></li>
-                                    <li><a class="dropdown-item" href="/Admin/UnansweredQueries">Unanswered Queries</a></li>
-                                    <li><a class="dropdown-item" href="/Admin/KnowledgeBase">AI Knowledge Base</a></li>
-                                    <li><a class="dropdown-item" href="/Communication/PrivateMessaging">Chats</a></li>
-                                    <li><a class="dropdown-item" href="#">Manage Account</a></li>
-                                    <li><a class="dropdown-item" href="/Authentication/Logout">Log out</a></li>
-                                </ul>
-                            </li>
-                        }
-                    </ul>
+                    </div>
                 </div>
             </div>
         </nav>
