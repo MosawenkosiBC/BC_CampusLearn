@@ -1,0 +1,71 @@
+@page
+@model BC_CampusLearn.Pages.Tutors.IndexModel
+
+@{
+    ViewData["Title"] = "Browse tutors";
+}
+
+<section class="container py-4">
+    <h1>Available tutors</h1>
+
+    <form method="get"
+          class="row g-2 align-items-end mb-4">
+
+        <div class="col-md-6">
+            <label asp-for="CourseModuleId"
+                   class="form-label">
+                Filter by module
+            </label>
+
+            <select asp-for="CourseModuleId"
+                    asp-items="Model.ModuleOptions"
+                    class="form-select">
+
+                <option value="">All modules</option>
+            </select>
+        </div>
+
+        <div class="col-auto">
+            <button type="submit"
+                    class="btn btn-primary">
+                Filter
+            </button>
+        </div>
+    </form>
+
+    <div class="row g-4">
+        @foreach (var tutor in Model.Tutors)
+        {
+            <div class="col-md-6 col-lg-4">
+                <article class="card h-100 shadow-sm">
+                    @if (!string.IsNullOrWhiteSpace(
+                        tutor.ProfileImagePath))
+                    {
+                        <img src="@tutor.ProfileImagePath"
+                             class="card-img-top"
+                             alt="@tutor.DisplayName" />
+                    }
+
+                    <div class="card-body">
+                        <h2 class="h5">
+                            @tutor.DisplayName
+                        </h2>
+
+                        <p>@tutor.Biography</p>
+
+                        <p>
+                            <strong>Modules:</strong>
+                            @string.Join(", ", tutor.Modules)
+                        </p>
+
+                        <a asp-page="/Tutors/Details"
+                           asp-route-id="@tutor.TutorId"
+                           class="btn btn-primary">
+                            View availability
+                        </a>
+                    </div>
+                </article>
+            </div>
+        }
+    </div>
+</section>

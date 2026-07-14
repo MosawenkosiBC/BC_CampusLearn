@@ -1,0 +1,71 @@
+@page "{id:int}"
+@model BC_CampusLearn.Pages.Tutors.DetailsModel
+
+@{
+    ViewData["Title"] = Model.Tutor.DisplayName;
+}
+
+<section class="container py-4">
+    <a asp-page="/Tutors/Index">
+        ← Back to tutors
+    </a>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            @if (!string.IsNullOrWhiteSpace(
+                Model.Tutor.ProfileImagePath))
+            {
+                <img src="@Model.Tutor.ProfileImagePath"
+                     alt="@Model.Tutor.DisplayName"
+                     class="img-fluid rounded" />
+            }
+        </div>
+
+        <div class="col-md-8">
+            <h1>@Model.Tutor.DisplayName</h1>
+
+            <p>@Model.Tutor.Biography</p>
+
+            <p>
+                <strong>Modules:</strong>
+                @string.Join(", ", Model.Tutor.Modules)
+            </p>
+        </div>
+    </div>
+
+    <hr />
+
+    <h2 class="h4">Available sessions</h2>
+
+    @if (Model.Tutor.AvailabilitySlots.Count == 0)
+    {
+        <p>This tutor currently has no available sessions.</p>
+    }
+    else
+    {
+        <div class="list-group">
+            @foreach (
+                var slot in Model.Tutor.AvailabilitySlots)
+            {
+                <div class="list-group-item
+                    d-flex
+                    justify-content-between
+                    align-items-center">
+
+                    <span>
+                        @slot.StartTime.ToString(
+                            "ddd, dd MMM yyyy HH:mm")
+                        -
+                        @slot.EndTime.ToString("HH:mm")
+                    </span>
+
+                    <a asp-page="/Bookings/Create"
+                       asp-route-slotId="@slot.TutorAvailabilityId"
+                       class="btn btn-primary">
+                        Book session
+                    </a>
+                </div>
+            }
+        </div>
+    }
+</section>

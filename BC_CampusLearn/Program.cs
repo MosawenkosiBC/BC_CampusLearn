@@ -1,30 +1,118 @@
+using BC_CampusLearn.Authentication;
+using BC_CampusLearn.Authentication.Development;
+using BC_CampusLearn.Data;
+using BC_CampusLearn.Data.Seed;
+using BC_CampusLearn.Services.Bookings;
+using BC_CampusLearn.Services.Tutors;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Web;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddRazorPages();
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession();
+string connectionString =
+    builder.Configuration.GetConnectionString(
+        "DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "DefaultConnection was not configured.");
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseSqlServer(
+        connectionString,
+        sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure();
+        });
+});
+
+builder.Services.Configure<DevelopmentUserOptions>(
+    builder.Configuration.GetSection(
+        DevelopmentUserOptions.SectionName));
+
+bool useDevelopmentAuthentication =
+    builder.Environment.IsDevelopment() &&
+    builder.Configuration.GetValue<bool>(
+        "Authentication:UseDevelopmentAuthentication");
+
+if (useDevelopmentAuthentication)
+{
+    builder.Services
+        .AddAuthentication(
+            CookieAuthenticationDefaults.AuthenticationScheme)
+        .AddCookie(options =>
+        {
+            options.LoginPath = "/Account/SignIn";
+            options.AccessDeniedPath = "/Account/AccessDenied";
+        });
+}
+else
+{
+    builder.Services
+        .AddAuthentication(
+            OpenIdConnectDefaults.AuthenticationScheme)
+        .AddMicrosoftIdentityWebApp(
+            builder.Configuration.GetSection("AzureAd"));
+}
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddScoped<
+    ICurrentUserService,
+    ClaimsCurrentUserService>();
+
+builder.Services.AddScoped<
+    ITutorService,
+    TutorService>();
+
+builder.Services.AddScoped<
+    IBookingService,
+    BookingService>();
+
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AllowAnonymousToPage("/Index");
+    options.Conventions.AllowAnonymousToPage(
+        "/Account/SignIn");
+    options.Conventions.AllowAnonymousToPage(
+        "/Account/AccessDenied");
+
+    options.Conventions.AuthorizeFolder("/Student");
+    options.Conventions.AuthorizeFolder("/Tutors");
+    options.Conventions.AuthorizeFolder("/Bookings");
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseSession();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapStaticAssets();
-app.MapRazorPages()
-   .WithStaticAssets();
+app.MapRazorPages();
+
+if (app.Environment.IsDevelopment())
+{
+    using IServiceScope scope =
+        app.Services.CreateScope();
+
+    ApplicationDbContext context =
+        scope.ServiceProvider
+            .GetRequiredService<ApplicationDbContext>();
+
+    await DevelopmentDataSeeder.SeedAsync(context);
+}
 
 app.Run();

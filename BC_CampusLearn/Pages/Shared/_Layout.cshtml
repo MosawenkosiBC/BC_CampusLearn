@@ -150,7 +150,7 @@
                         @if (Context.Session.GetString("role") == null)
                         {
                             <li class="nav-item">
-                                <a class="btn btn-primary" href="/Authentication/LogIn">Log In</a>
+                                <a class="btn btn-primary" href="/Account/SignIn">Log In</a>
                             </li>
                         }
                         else if (Context.Session.GetString("role") == "Student")

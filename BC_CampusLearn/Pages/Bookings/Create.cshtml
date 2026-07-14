@@ -1,0 +1,62 @@
+@page
+@model BC_CampusLearn.Pages.Bookings.CreateModel
+
+@{
+    ViewData["Title"] = "Book session";
+}
+
+<section class="container py-4"
+         style="max-width: 720px;">
+
+    <h1>Confirm your booking</h1>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h5">
+                @Model.Preview.TutorName
+            </h2>
+
+            <p>
+                @Model.Preview.StartTime.ToString(
+                    "dddd, dd MMMM yyyy")
+            </p>
+
+            <p>
+                @Model.Preview.StartTime.ToString("HH:mm")
+                -
+                @Model.Preview.EndTime.ToString("HH:mm")
+            </p>
+        </div>
+    </div>
+
+    <form method="post">
+        <input type="hidden"
+               asp-for="Input.TutorAvailabilityId" />
+
+        <div asp-validation-summary="ModelOnly"
+             class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="Input.Reason"
+                   class="form-label"></label>
+
+            <textarea asp-for="Input.Reason"
+                      class="form-control"
+                      rows="4"></textarea>
+
+            <span asp-validation-for="Input.Reason"
+                  class="text-danger"></span>
+        </div>
+
+        <button type="submit"
+                class="btn btn-primary">
+            Confirm booking
+        </button>
+
+        <a asp-page="/Tutors/Details"
+           asp-route-id="@Model.Preview.TutorAvailabilityId"
+           class="btn btn-link">
+            Cancel
+        </a>
+    </form>
+</section>

@@ -1,0 +1,66 @@
+@page
+@model BC_CampusLearn.Pages.Bookings.IndexModel
+
+@{
+    ViewData["Title"] = "My bookings";
+}
+
+<section class="container py-4">
+    <h1>My bookings</h1>
+
+    @if (TempData["SuccessMessage"] is string message)
+    {
+        <div class="alert alert-success">
+            @message
+        </div>
+    }
+
+    @if (Model.Bookings.Count == 0)
+    {
+        <p>You have not booked any sessions.</p>
+
+        <a asp-page="/Tutors/Index"
+           class="btn btn-primary">
+            Browse tutors
+        </a>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var booking in Model.Bookings)
+            {
+                <div class="col-md-6">
+                    <article class="card h-100">
+                        <div class="card-body">
+                            <h2 class="h5">
+                                @booking.TutorName
+                            </h2>
+
+                            <p>
+                                @booking.SessionStart.ToString(
+                                    "ddd, dd MMM yyyy HH:mm")
+                                -
+                                @booking.SessionEnd.ToString(
+                                    "HH:mm")
+                            </p>
+
+                            <p>
+                                <strong>Status:</strong>
+                                @booking.Status
+                            </p>
+
+                            @if (!string.IsNullOrWhiteSpace(
+                                booking.Reason))
+                            {
+                                <p>
+                                    <strong>Reason:</strong>
+                                    @booking.Reason
+                                </p>
+                            }
+                        </div>
+                    </article>
+                </div>
+            }
+        </div>
+    }
+</section>

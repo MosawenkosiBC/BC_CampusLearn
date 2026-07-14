@@ -1,0 +1,77 @@
+@page
+@model BC_CampusLearn.Pages.Student.DashboardModel
+
+@{
+    ViewData["Title"] = "Student dashboard";
+}
+
+<section class="container py-4">
+    <h1>Welcome, @Model.CurrentUser.DisplayName</h1>
+
+    <p class="text-muted">
+        Find tutors and manage your upcoming sessions.
+    </p>
+
+    <div class="row g-3 my-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h5">Available tutors</h2>
+
+                    <p class="display-6">
+                        @Model.AvailableTutorCount
+                    </p>
+
+                    <a asp-page="/Tutors/Index"
+                       class="btn btn-primary">
+                        Browse tutors
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h5">Upcoming sessions</h2>
+
+                    <p class="display-6">
+                        @Model.UpcomingBookings.Count
+                    </p>
+
+                    <a asp-page="/Bookings/Index"
+                       class="btn btn-outline-primary">
+                        View bookings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="h4">Next sessions</h2>
+
+    @if (Model.UpcomingBookings.Count == 0)
+    {
+        <p>You do not have any upcoming sessions.</p>
+    }
+    else
+    {
+        @foreach (var booking in Model.UpcomingBookings)
+        {
+            <div class="card mb-3">
+                <div class="card-body">
+                    <strong>@booking.TutorName</strong>
+
+                    <div>
+                        @booking.SessionStart.ToString(
+                            "ddd, dd MMM yyyy HH:mm")
+                    </div>
+
+                    <span class="badge bg-secondary">
+                        @booking.Status
+                    </span>
+                </div>
+            </div>
+        }
+    }
+</section>
