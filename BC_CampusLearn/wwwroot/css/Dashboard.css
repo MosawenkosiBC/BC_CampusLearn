@@ -1,0 +1,438 @@
+.dashboard-page {
+    isolation: isolate;
+    position: relative;
+}
+
+.dashboard-page::before {
+    background-color: #fff;
+    background-image:
+        linear-gradient(
+            rgba(255, 255, 255, 0.88),
+            rgba(255, 255, 255, 0.88)),
+        url("/Media/common/backgroundNew.jpg");
+    background-position: center top;
+    background-repeat: repeat;
+    background-size: auto, 890px 360px;
+    bottom: 0;
+    content: "";
+    left: 50%;
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    width: 100vw;
+    z-index: -1;
+}
+
+.dashboard-summary .dashboard-summary-card {
+    align-items: center;
+    background-color: #fff;
+    border: 0;
+    border-radius: 0.25rem;
+    box-shadow: var(--campus-card-shadow);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: center;
+    min-height: 10.25rem;
+    padding: 0.9rem 1rem;
+    text-align: center;
+    transition:
+        transform 180ms ease,
+        box-shadow 180ms ease;
+}
+
+.dashboard-summary .dashboard-summary-card:hover {
+    box-shadow: var(--campus-card-shadow);
+    transform: translateY(-0.25rem) scale(1.02);
+}
+
+.dashboard-summary .dashboard-summary-icon {
+    align-items: center;
+    border-radius: 50%;
+    display: inline-flex;
+    flex: 0 0 2.9rem;
+    height: 2.9rem;
+    justify-content: center;
+    margin-bottom: 0.45rem;
+    transition: transform 180ms ease;
+    width: 2.9rem;
+}
+
+.dashboard-summary .dashboard-summary-card:hover .dashboard-summary-icon {
+    transform: scale(1.1);
+}
+
+.dashboard-summary .dashboard-summary-icon svg {
+    display: block;
+    flex: 0 0 1.5rem;
+    height: 1.5rem !important;
+    max-height: 1.5rem;
+    max-width: 1.5rem;
+    width: 1.5rem !important;
+}
+
+.dashboard-summary .dashboard-summary-icon--magenta {
+    background-color: rgba(173, 1, 81, 0.12);
+    color: #ad0151;
+}
+
+.dashboard-summary .dashboard-summary-icon--teal {
+    background-color: rgba(74, 193, 193, 0.17);
+    color: #4ac1c1;
+}
+
+.dashboard-summary .dashboard-summary-card h2 {
+    color: #050505;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25;
+    margin: 0 0 0.35rem;
+}
+
+.dashboard-summary .dashboard-summary-card p {
+    color: #050505;
+    font-size: 3.75rem;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    margin: 0;
+}
+
+.dashboard-bookings {
+    margin-top: 2rem;
+}
+
+.dashboard-bookings-heading {
+    align-items: center;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.8rem;
+}
+
+.dashboard-bookings-heading a,
+.dashboard-bookings-action {
+    color: #ad0151;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.dashboard-bookings-heading a:hover,
+.dashboard-bookings-action:hover {
+    color: #81003c;
+    text-decoration: underline;
+}
+
+.dashboard-bookings-card {
+    background-color: #fff;
+    border-radius: 0.25rem;
+    box-shadow: var(--campus-card-shadow);
+    min-height: 20.5rem;
+    overflow: hidden;
+}
+
+.dashboard-bookings-empty {
+    align-items: center;
+    color: #637083;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 17rem;
+    padding: 2rem;
+    text-align: center;
+}
+
+.dashboard-bookings-table td.dashboard-bookings-empty-cell {
+    padding: 0;
+}
+
+.dashboard-bookings-empty svg {
+    display: block;
+    height: 2.15rem;
+    margin-bottom: 0.65rem;
+    width: 2.15rem;
+}
+
+.dashboard-bookings-empty p {
+    color: #252525;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.dashboard-bookings-table {
+    border-collapse: collapse;
+    min-width: 760px;
+    width: 100%;
+}
+
+.dashboard-bookings-table th,
+.dashboard-bookings-table td {
+    padding: 1rem 1.4rem;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.dashboard-bookings-table th {
+    border-bottom: 1px solid #edf0f2;
+    color: #111;
+    font-size: 0.95rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.dashboard-bookings-table td {
+    border-bottom: 1px solid #f1f2f4;
+    color: #363636;
+    font-size: 0.84rem;
+}
+
+.dashboard-bookings-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.booking-status {
+    border-radius: 999px;
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.3rem 0.65rem;
+}
+
+.booking-status--pending {
+    background-color: rgba(74, 193, 193, 0.17);
+    color: #287f7f;
+}
+
+.booking-status--confirmed {
+    background-color: rgba(173, 1, 81, 0.12);
+    color: #ad0151;
+}
+
+.dashboard-support-grid {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 4.5rem;
+}
+
+.dashboard-support-card {
+    background-color: #fff;
+    border-radius: 0.25rem;
+    box-shadow: var(--campus-card-shadow);
+    min-height: 15.5rem;
+    padding: 1.65rem;
+}
+
+.dashboard-tutor-card {
+    display: flex;
+    gap: 1rem;
+}
+
+.dashboard-tutor-icon {
+    color: #4ac1c1;
+    flex: 0 0 2.75rem;
+}
+
+.dashboard-tutor-icon svg {
+    display: block;
+    height: 2.75rem;
+    width: 2.75rem;
+}
+
+.dashboard-tutor-content h2,
+.dashboard-subscriptions-title h2 {
+    color: #090909;
+    font-size: 1.4rem;
+    font-weight: 600;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.dashboard-tutor-content p {
+    color: #272727;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    margin: 0.75rem 0 2rem;
+    max-width: 22rem;
+}
+
+.dashboard-find-tutor {
+    align-items: center;
+    background-color: #4ac1c1;
+    border-radius: 0.3rem;
+    color: #fff;
+    display: inline-flex;
+    font-size: 1.15rem;
+    font-weight: 600;
+    gap: 1rem;
+    justify-content: center;
+    min-height: 3.55rem;
+    padding: 0.75rem 1.15rem;
+    text-decoration: none;
+    transition:
+        background-color 160ms ease,
+        transform 160ms ease;
+}
+
+.dashboard-find-tutor:hover {
+    background-color: #3aabab;
+    color: #fff;
+    transform: translateY(-0.1rem);
+}
+
+.dashboard-subscriptions-header,
+.dashboard-subscriptions-title {
+    align-items: center;
+    display: flex;
+}
+
+.dashboard-subscriptions-header {
+    justify-content: space-between;
+}
+
+.dashboard-subscriptions-title {
+    gap: 1rem;
+}
+
+.dashboard-subscriptions-title svg {
+    color: #ad0151;
+    flex: 0 0 2.15rem;
+    height: 2.15rem;
+    width: 2.15rem;
+}
+
+.dashboard-subscriptions-help {
+    align-items: center;
+    border: 1.5px solid #252525;
+    border-radius: 50%;
+    color: #252525;
+    display: inline-flex;
+    flex: 0 0 1.5rem;
+    font-size: 0.95rem;
+    height: 1.5rem;
+    justify-content: center;
+    line-height: 1;
+    width: 1.5rem;
+}
+
+.dashboard-subscriptions-fields {
+    display: grid;
+    gap: 0.65rem;
+    margin: 1.4rem 0 0 3.15rem;
+}
+
+.dashboard-subscriptions-fields label {
+    color: #252525;
+    font-size: 0.88rem;
+}
+
+.dashboard-subscriptions-fields select {
+    appearance: auto;
+    background-color: #fff;
+    border: 1px solid #aeb2b6;
+    border-radius: 0;
+    color: #252525;
+    height: 2.2rem;
+    margin-bottom: 0.35rem;
+    opacity: 1;
+    width: 100%;
+}
+
+.dashboard-subscriptions-fields select:disabled {
+    background-color: #fff;
+    cursor: not-allowed;
+}
+
+.dashboard-resources {
+    margin-top: 4.5rem;
+}
+
+.dashboard-resources > h2 {
+    color: #090909;
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin: 0 0 1rem;
+}
+
+.dashboard-resources-empty {
+    align-items: center;
+    background-color: #fff;
+    border-radius: 0.25rem;
+    box-shadow: var(--campus-card-shadow);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 11rem;
+    padding: 2rem;
+    text-align: center;
+}
+
+.dashboard-resources-empty svg {
+    color: #ad0151;
+    height: 2.4rem;
+    margin-bottom: 0.7rem;
+    width: 2.4rem;
+}
+
+.dashboard-resources-empty h3 {
+    color: #171717;
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0 0 0.35rem;
+}
+
+.dashboard-resources-empty p {
+    color: #666;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    margin: 0;
+    max-width: 31rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dashboard-summary .dashboard-summary-card,
+    .dashboard-summary .dashboard-summary-icon,
+    .dashboard-find-tutor {
+        transition: none;
+    }
+
+    .dashboard-summary .dashboard-summary-card:hover,
+    .dashboard-summary .dashboard-summary-card:hover .dashboard-summary-icon,
+    .dashboard-find-tutor:hover {
+        transform: none;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .dashboard-support-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .dashboard-summary .dashboard-summary-card {
+        min-height: 9.5rem;
+    }
+
+    .dashboard-support-card {
+        padding: 1.25rem;
+    }
+
+    .dashboard-tutor-card {
+        gap: 0.75rem;
+    }
+
+    .dashboard-tutor-content h2,
+    .dashboard-subscriptions-title h2 {
+        font-size: 1.15rem;
+    }
+
+    .dashboard-subscriptions-title {
+        gap: 0.65rem;
+    }
+
+    .dashboard-subscriptions-fields {
+        margin-left: 0;
+    }
+
+}

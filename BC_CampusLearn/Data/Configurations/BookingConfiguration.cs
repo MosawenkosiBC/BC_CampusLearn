@@ -26,25 +26,18 @@ public class BookingConfiguration
         builder.Property(booking => booking.StudentEmail)
             .HasMaxLength(320);
 
-        builder.Property(booking => booking.Reason)
-            .HasMaxLength(500);
+        builder.Property(booking => booking.Location)
+            .HasMaxLength(200)
+            .IsRequired();
 
-        builder.Property(booking => booking.SessionStart)
-            .HasColumnType("datetimeoffset");
+        builder.Property(booking => booking.Summary)
+            .HasMaxLength(1000);
 
-        builder.Property(booking => booking.SessionEnd)
-            .HasColumnType("datetimeoffset");
-
-        builder.Property(booking => booking.CreatedAt)
+        builder.Property(booking => booking.DateBooked)
             .HasColumnType("datetimeoffset");
 
         builder.HasIndex(booking => booking.TutorAvailabilityId)
             .IsUnique();
-
-        builder.HasOne(booking => booking.Tutor)
-            .WithMany(tutor => tutor.Bookings)
-            .HasForeignKey(booking => booking.TutorId)
-            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(booking => booking.TutorAvailability)
             .WithOne(slot => slot.Booking)

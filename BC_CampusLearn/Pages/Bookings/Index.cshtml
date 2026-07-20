@@ -37,11 +37,21 @@
                             </h2>
 
                             <p>
-                                @booking.SessionStart.ToString(
+                                @booking.AvailableTime.ToString(
                                     "ddd, dd MMM yyyy HH:mm")
                                 -
                                 @booking.SessionEnd.ToString(
                                     "HH:mm")
+                            </p>
+
+                            <p>
+                                <strong>Module:</strong>
+                                @booking.ModuleName
+                            </p>
+
+                            <p>
+                                <strong>Location:</strong>
+                                @booking.Location
                             </p>
 
                             <p>
@@ -50,11 +60,11 @@
                             </p>
 
                             @if (!string.IsNullOrWhiteSpace(
-                                booking.Reason))
+                                booking.Summary))
                             {
                                 <p>
-                                    <strong>Reason:</strong>
-                                    @booking.Reason
+                                    <strong>Summary:</strong>
+                                    @booking.Summary
                                 </p>
                             }
                         </div>

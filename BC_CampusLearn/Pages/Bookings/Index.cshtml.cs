@@ -40,24 +40,34 @@ public class IndexModel : PageModel
                 booking.StudentTenantId ==
                     student.TenantId)
             .OrderByDescending(booking =>
-                booking.SessionStart)
+                booking.TutorAvailability.AvailableTime)
             .Select(booking =>
                 new BookingListItemViewModel
                 {
                     BookingId = booking.BookingId,
 
                     TutorName =
-                        booking.Tutor.DisplayName,
+                        booking.TutorAvailability
+                            .Tutor.DisplayName,
 
-                    SessionStart =
-                        booking.SessionStart,
+                    ModuleName =
+                        booking.TutorAvailability
+                            .CourseModule.Name,
 
-                    SessionEnd =
-                        booking.SessionEnd,
+                    ModuleCode =
+                        booking.TutorAvailability
+                            .CourseModule.Code,
+
+                    Location = booking.Location,
+
+                    AvailableTime =
+                        booking.TutorAvailability.AvailableTime,
+
+                    Duration = booking.Duration,
 
                     Status = booking.Status,
 
-                    Reason = booking.Reason
+                    Summary = booking.Summary
                 })
             .ToListAsync(cancellationToken);
     }

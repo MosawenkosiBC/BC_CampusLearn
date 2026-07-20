@@ -1,5 +1,6 @@
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
+using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -24,38 +25,72 @@ public class DashboardModel : PageModel
     public CurrentUser CurrentUser { get; private set; }
         = null!;
 
-    public int AvailableTutorCount { get; private set; }
+    public DashboardSummaryViewModel Summary { get; private set; }
+        = new();
 
     public IReadOnlyList<BookingListItemViewModel>
         UpcomingBookings
     { get; private set; }
         = new List<BookingListItemViewModel>();
 
-    public async Task OnGetAsync()
+    public async Task OnGetAsync(
+        CancellationToken cancellationToken)
     {
         CurrentUser =
             _currentUserService.GetRequiredUser();
 
-        AvailableTutorCount =
-            await _context.Tutors.CountAsync(
-                tutor =>
-                    tutor.IsApproved &&
-                    tutor.IsActive);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
 
-        UpcomingBookings =
-            await _context.Bookings
+        IQueryable<Booking> studentBookings =
+            _context.Bookings
                 .AsNoTracking()
                 .Where(booking =>
                     booking.StudentObjectId ==
                         CurrentUser.ObjectId &&
                     booking.StudentTenantId ==
-                        CurrentUser.TenantId &&
-                    booking.SessionStart >
-                        DateTimeOffset.UtcNow &&
-                    booking.Status !=
-                        Models.Entities.BookingStatus.Cancelled)
+                        CurrentUser.TenantId);
+
+        Summary =
+            await studentBookings
+                .GroupBy(_ => 1)
+                .Select(bookings =>
+                    new DashboardSummaryViewModel
+                    {
+                        UpcomingSessionCount =
+                            bookings.Count(booking =>
+                                booking.Status ==
+                                    BookingStatus.Confirmed &&
+                                booking.TutorAvailability
+                                    .AvailableTime > now),
+
+                        PendingSessionCount =
+                            bookings.Count(booking =>
+                                booking.Status ==
+                                    BookingStatus.Pending),
+
+                        CompletedSessionCount =
+                            bookings.Count(booking =>
+                                booking.Status ==
+                                    BookingStatus.Completed),
+
+                        CancelledSessionCount =
+                            bookings.Count(booking =>
+                                booking.Status ==
+                                    BookingStatus.Cancelled ||
+                                booking.Status ==
+                                    BookingStatus.Declined)
+                    })
+                .FirstOrDefaultAsync(cancellationToken)
+            ?? new DashboardSummaryViewModel();
+
+        UpcomingBookings =
+            await studentBookings
+                .Where(booking =>
+                    booking.TutorAvailability.AvailableTime > now &&
+                    (booking.Status == BookingStatus.Pending ||
+                     booking.Status == BookingStatus.Confirmed))
                 .OrderBy(booking =>
-                    booking.SessionStart)
+                    booking.TutorAvailability.AvailableTime)
                 .Select(booking =>
                     new BookingListItemViewModel
                     {
@@ -63,19 +98,30 @@ public class DashboardModel : PageModel
                             booking.BookingId,
 
                         TutorName =
-                            booking.Tutor.DisplayName,
+                            booking.TutorAvailability
+                                .Tutor.DisplayName,
 
-                        SessionStart =
-                            booking.SessionStart,
+                        ModuleName =
+                            booking.TutorAvailability
+                                .CourseModule.Name,
 
-                        SessionEnd =
-                            booking.SessionEnd,
+                        ModuleCode =
+                            booking.TutorAvailability
+                                .CourseModule.Code,
+
+                        Location = booking.Location,
+
+                        AvailableTime =
+                            booking.TutorAvailability
+                                .AvailableTime,
+
+                        Duration = booking.Duration,
 
                         Status = booking.Status,
 
-                        Reason = booking.Reason
+                        Summary = booking.Summary
                     })
-                .Take(3)
-                .ToListAsync();
+                .Take(5)
+                .ToListAsync(cancellationToken);
     }
 }

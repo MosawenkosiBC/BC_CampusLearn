@@ -17,14 +17,17 @@
             </h2>
 
             <p>
-                @Model.Preview.StartTime.ToString(
+                <strong>Module:</strong>
+                @Model.Preview.ModuleName
+            </p>
+
+            <p>
+                @Model.Preview.AvailableTime.ToString(
                     "dddd, dd MMMM yyyy")
             </p>
 
             <p>
-                @Model.Preview.StartTime.ToString("HH:mm")
-                -
-                @Model.Preview.EndTime.ToString("HH:mm")
+                @Model.Preview.AvailableTime.ToString("HH:mm")
             </p>
         </div>
     </div>
@@ -37,16 +40,55 @@
              class="text-danger"></div>
 
         <div class="mb-3">
-            <label asp-for="Input.Reason"
+            <label asp-for="Input.Location"
                    class="form-label"></label>
 
-            <textarea asp-for="Input.Reason"
+            <input asp-for="Input.Location"
+                   class="form-control" />
+
+            <span asp-validation-for="Input.Location"
+                  class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Input.Duration"
+                   class="form-label"></label>
+
+            <select asp-for="Input.Duration"
+                    asp-items="Html.GetEnumSelectList<BC_CampusLearn.Models.Entities.SessionDuration>()"
+                    class="form-select"></select>
+
+            <span asp-validation-for="Input.Duration"
+                  class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Input.Summary"
+                   class="form-label"></label>
+
+            <textarea asp-for="Input.Summary"
                       class="form-control"
                       rows="4"></textarea>
 
-            <span asp-validation-for="Input.Reason"
+            <span asp-validation-for="Input.Summary"
                   class="text-danger"></span>
         </div>
+
+        <fieldset class="mb-3">
+            <legend class="form-label">
+                Preparation links (optional, maximum 3)
+            </legend>
+
+            @for (int index = 0; index < 3; index++)
+            {
+                <input type="url"
+                       name="Input.PreparationLinks[@index]"
+                       value="@Model.Input.PreparationLinks.ElementAtOrDefault(index)"
+                       class="form-control mb-2"
+                       maxlength="2048"
+                       placeholder="https://" />
+            }
+        </fieldset>
 
         <button type="submit"
                 class="btn btn-primary">
@@ -54,7 +96,7 @@
         </button>
 
         <a asp-page="/Tutors/Details"
-           asp-route-id="@Model.Preview.TutorAvailabilityId"
+           asp-route-id="@Model.Preview.TutorId"
            class="btn btn-link">
             Cancel
         </a>

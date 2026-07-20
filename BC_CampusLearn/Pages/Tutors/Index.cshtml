@@ -5,6 +5,15 @@
     ViewData["Title"] = "Browse tutors";
 }
 
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/components/navigation-drawer.css"
+          asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
 <section class="container py-4">
     <h1>Available tutors</h1>
 
@@ -69,3 +78,8 @@
         }
     </div>
 </section>
+
+@section Scripts {
+    <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+}

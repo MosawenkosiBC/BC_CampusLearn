@@ -30,8 +30,7 @@ public class BookingService : IBookingService
                 slot.TutorAvailabilityId ==
                     tutorAvailabilityId &&
                 slot.IsActive &&
-                !slot.IsBooked &&
-                slot.StartTime >
+                slot.AvailableTime >
                     DateTimeOffset.UtcNow)
             .Select(slot =>
                 new BookingPreviewViewModel
@@ -39,11 +38,15 @@ public class BookingService : IBookingService
                     TutorAvailabilityId =
                         slot.TutorAvailabilityId,
 
+                    TutorId = slot.TutorId,
+
                     TutorName =
                         slot.Tutor.DisplayName,
 
-                    StartTime = slot.StartTime,
-                    EndTime = slot.EndTime
+                    ModuleName =
+                        slot.CourseModule.Name,
+
+                    AvailableTime = slot.AvailableTime
                 })
             .FirstOrDefaultAsync(cancellationToken);
     }
@@ -72,19 +75,41 @@ public class BookingService : IBookingService
         }
 
         if (!slot.IsActive ||
-            slot.IsBooked ||
-            slot.StartTime <= DateTimeOffset.UtcNow)
+            slot.AvailableTime <= DateTimeOffset.UtcNow)
         {
             return BookingCreationResult.Failure(
                 "This availability slot is no longer available.");
         }
 
-        slot.IsBooked = true;
+        if (!Enum.IsDefined(input.Duration))
+        {
+            return BookingCreationResult.Failure(
+                "Select a valid session duration.");
+        }
+
+        List<string> preparationLinks = input.PreparationLinks
+            .Where(link => !string.IsNullOrWhiteSpace(link))
+            .Select(link => link!.Trim())
+            .ToList();
+
+        if (preparationLinks.Count > 3 ||
+            preparationLinks.Any(link =>
+                link.Length > 2048 ||
+                !Uri.TryCreate(
+                    link,
+                    UriKind.Absolute,
+                    out Uri? uri) ||
+                (uri.Scheme != Uri.UriSchemeHttp &&
+                 uri.Scheme != Uri.UriSchemeHttps)))
+        {
+            return BookingCreationResult.Failure(
+                "Add no more than three valid HTTP or HTTPS links.");
+        }
+
+        slot.IsActive = false;
 
         var booking = new Booking
         {
-            TutorId = slot.TutorId,
-
             TutorAvailabilityId =
                 slot.TutorAvailabilityId,
 
@@ -93,15 +118,26 @@ public class BookingService : IBookingService
             StudentName = student.DisplayName,
             StudentEmail = student.Email,
 
-            SessionStart = slot.StartTime,
-            SessionEnd = slot.EndTime,
+            Location = input.Location.Trim(),
 
-            Reason = input.Reason,
+            Summary = input.Summary?.Trim(),
 
             Status = BookingStatus.Pending,
 
-            CreatedAt = DateTimeOffset.UtcNow
+            Duration = input.Duration,
+
+            DateBooked = DateTimeOffset.UtcNow
         };
+
+        for (int index = 0; index < preparationLinks.Count; index++)
+        {
+            booking.PreparationLinks.Add(
+                new BookingPreparationLink
+                {
+                    Position = (byte)(index + 1),
+                    Url = preparationLinks[index]
+                });
+        }
 
         _context.Bookings.Add(booking);
 

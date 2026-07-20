@@ -7,11 +7,9 @@ public class TutorAvailability
 
     public int TutorId { get; set; }
 
-    public DateTimeOffset StartTime { get; set; }
+    public int CourseModuleId { get; set; }
 
-    public DateTimeOffset EndTime { get; set; }
-
-    public bool IsBooked { get; set; }
+    public DateTimeOffset AvailableTime { get; set; }
 
     public bool IsActive { get; set; } = true;
 
@@ -19,6 +17,8 @@ public class TutorAvailability
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     public Tutor Tutor { get; set; } = null!;
+
+    public CourseModule CourseModule { get; set; } = null!;
 
     public Booking? Booking { get; set; }
 }

@@ -24,6 +24,12 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Booking> Bookings => Set<Booking>();
 
+    public DbSet<BookingPreparationLink> BookingPreparationLinks =>
+        Set<BookingPreparationLink>();
+
+    public DbSet<BookingDocument> BookingDocuments =>
+        Set<BookingDocument>();
+
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)
     {

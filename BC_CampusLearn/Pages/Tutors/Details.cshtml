@@ -53,10 +53,12 @@
                     align-items-center">
 
                     <span>
-                        @slot.StartTime.ToString(
+                        <strong>
+                            @slot.ModuleCode - @slot.ModuleName
+                        </strong>
+                        <br />
+                        @slot.AvailableTime.ToString(
                             "ddd, dd MMM yyyy HH:mm")
-                        -
-                        @slot.EndTime.ToString("HH:mm")
                     </span>
 
                     <a asp-page="/Bookings/Create"

@@ -12,4 +12,7 @@ public class CourseModule
 
     public ICollection<TutorCourseModule> TutorCourseModules { get; set; }
         = new List<TutorCourseModule>();
+
+    public ICollection<TutorAvailability> AvailabilitySlots { get; set; }
+        = new List<TutorAvailability>();
 }

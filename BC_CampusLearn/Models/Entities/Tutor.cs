@@ -34,6 +34,4 @@ public class Tutor
     public ICollection<TutorAvailability> AvailabilitySlots { get; set; }
         = new List<TutorAvailability>();
 
-    public ICollection<Booking> Bookings { get; set; }
-        = new List<Booking>();
 }

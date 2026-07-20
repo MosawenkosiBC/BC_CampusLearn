@@ -8,11 +8,20 @@ public class BookingListItemViewModel
 
     public string TutorName { get; set; } = string.Empty;
 
-    public DateTimeOffset SessionStart { get; set; }
+    public string ModuleName { get; set; } = string.Empty;
 
-    public DateTimeOffset SessionEnd { get; set; }
+    public string ModuleCode { get; set; } = string.Empty;
+
+    public string Location { get; set; } = string.Empty;
+
+    public DateTimeOffset AvailableTime { get; set; }
+
+    public SessionDuration Duration { get; set; }
+
+    public DateTimeOffset SessionEnd =>
+        AvailableTime.AddHours((int)Duration);
 
     public BookingStatus Status { get; set; }
 
-    public string? Reason { get; set; }
+    public string? Summary { get; set; }
 }

@@ -4,9 +4,11 @@ public class BookingPreviewViewModel
 {
     public int TutorAvailabilityId { get; set; }
 
+    public int TutorId { get; set; }
+
     public string TutorName { get; set; } = string.Empty;
 
-    public DateTimeOffset StartTime { get; set; }
+    public string ModuleName { get; set; } = string.Empty;
 
-    public DateTimeOffset EndTime { get; set; }
+    public DateTimeOffset AvailableTime { get; set; }
 }

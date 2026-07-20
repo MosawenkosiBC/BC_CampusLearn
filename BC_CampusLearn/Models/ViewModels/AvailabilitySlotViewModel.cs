@@ -4,7 +4,9 @@ public class AvailabilitySlotViewModel
 {
     public int TutorAvailabilityId { get; set; }
 
-    public DateTimeOffset StartTime { get; set; }
+    public string ModuleCode { get; set; } = string.Empty;
 
-    public DateTimeOffset EndTime { get; set; }
+    public string ModuleName { get; set; } = string.Empty;
+
+    public DateTimeOffset AvailableTime { get; set; }
 }

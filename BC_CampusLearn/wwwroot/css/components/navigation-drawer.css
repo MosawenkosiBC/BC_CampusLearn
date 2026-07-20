@@ -1,0 +1,223 @@
+.navigation-drawer-trigger {
+    align-items: center;
+    background: linear-gradient(145deg, #c4005c, #970046);
+    border: 0;
+    border-radius: 0 999px 999px 0;
+    color: #fff;
+    display: inline-flex;
+    height: 4rem;
+    justify-content: flex-end;
+    left: 0;
+    padding: 0 0.3rem 0 0;
+    position: fixed;
+    top: 8.5rem;
+    transition:
+        filter 180ms ease,
+        transform 180ms ease,
+        width 180ms ease;
+    width: 2.25rem;
+    z-index: 1040;
+}
+
+.navigation-drawer-trigger:hover,
+.navigation-drawer-trigger:focus-visible {
+    filter: brightness(1.08);
+    transform: translateX(0.08rem);
+    width: 2.4rem;
+}
+
+.navigation-drawer-trigger svg {
+    height: 1.35rem;
+    width: 1.35rem;
+}
+
+.navigation-drawer-trigger:focus-visible,
+.navigation-drawer-close:focus-visible,
+.navigation-drawer-link:focus-visible {
+    outline: 3px solid rgba(74, 193, 193, 0.55);
+    outline-offset: 3px;
+}
+
+.navigation-drawer-backdrop {
+    backdrop-filter: blur(3px);
+    background-color: rgba(17, 17, 20, 0.72);
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    position: fixed;
+    transition: opacity 280ms ease;
+    z-index: 1050;
+}
+
+.navigation-drawer-panel {
+    background:
+        radial-gradient(circle at 0 0, rgba(74, 193, 193, 0.08), transparent 14rem),
+        linear-gradient(180deg, #fff 0%, #fdfcfd 100%);
+    border-right: 1px solid rgba(173, 1, 81, 0.08);
+    box-shadow: 0.65rem 0 2rem rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    left: 0;
+    max-width: 88vw;
+    overflow-y: auto;
+    padding: 1.35rem 1.25rem 1.5rem;
+    position: fixed;
+    top: 0;
+    transform: translateX(-105%);
+    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+    width: 20.5rem;
+    z-index: 1060;
+}
+
+.navigation-drawer-component.is-open .navigation-drawer-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.navigation-drawer-component.is-open .navigation-drawer-panel {
+    transform: translateX(0);
+}
+
+.navigation-drawer-component.is-open .navigation-drawer-trigger {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.navigation-drawer-header {
+    align-items: center;
+    border-bottom: 1px solid rgba(17, 17, 17, 0.07);
+    display: flex;
+    justify-content: space-between;
+    padding: 0.15rem 0.2rem 1.15rem;
+}
+
+.navigation-drawer-brand {
+    align-items: center;
+    display: flex;
+    gap: 0.7rem;
+    min-width: 0;
+}
+
+.navigation-drawer-brand img {
+    height: 2.6rem;
+    object-fit: contain;
+    width: 2.6rem;
+}
+
+.navigation-drawer-header h2 {
+    color: #111;
+    font-size: 1.05rem;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    margin: 0;
+}
+
+.navigation-drawer-brand p {
+    color: #858585;
+    font-size: 0.7rem;
+    letter-spacing: 0.045em;
+    margin: 0.12rem 0 0;
+    text-transform: uppercase;
+}
+
+.navigation-drawer-close {
+    align-items: center;
+    background-color: rgba(17, 17, 17, 0.04);
+    border: 0;
+    border-radius: 50%;
+    color: #222;
+    display: inline-flex;
+    flex: 0 0 2.35rem;
+    height: 2.35rem;
+    justify-content: center;
+    padding: 0;
+    transition:
+        background-color 160ms ease,
+        transform 160ms ease;
+    width: 2.35rem;
+}
+
+.navigation-drawer-close:hover {
+    background-color: rgba(173, 1, 81, 0.09);
+    color: #ad0151;
+    transform: rotate(4deg);
+}
+
+.navigation-drawer-links {
+    align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-top: 1.35rem;
+}
+
+.navigation-drawer-link {
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: 0.75rem;
+    color: #29272a;
+    display: flex;
+    font-size: 0.93rem;
+    font-weight: 500;
+    min-height: 3.25rem;
+    padding: 0.75rem 1rem;
+    position: relative;
+    text-decoration: none;
+    transition:
+        background-color 160ms ease,
+        border-color 160ms ease,
+        color 160ms ease,
+        transform 160ms ease;
+}
+
+a.navigation-drawer-link:hover,
+a.navigation-drawer-link:focus-visible {
+    background-color: rgba(17, 17, 17, 0.035);
+    color: #111;
+    transform: translateX(0.12rem);
+}
+
+a.navigation-drawer-link.is-active {
+    background: transparent;
+    border-color: transparent;
+    color: #8f0042;
+}
+
+a.navigation-drawer-link.is-active::before {
+    background-color: #ad0151;
+    border-radius: 999px;
+    content: "";
+    height: 1.45rem;
+    left: -0.15rem;
+    position: absolute;
+    width: 0.2rem;
+}
+
+body.navigation-drawer-open {
+    overflow: hidden;
+}
+
+@media (max-width: 575.98px) {
+    .navigation-drawer-trigger {
+        height: 3.5rem;
+        top: 7.5rem;
+        width: 2rem;
+    }
+
+    .navigation-drawer-panel {
+        padding: 1.15rem 1rem 1.25rem;
+        width: 18rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .navigation-drawer-trigger,
+    .navigation-drawer-backdrop,
+    .navigation-drawer-panel,
+    .navigation-drawer-close,
+    .navigation-drawer-link {
+        transition: none;
+    }
+}

@@ -4,8 +4,6 @@ public class Booking
 {
     public int BookingId { get; set; }
 
-    public int TutorId { get; set; }
-
     public int TutorAvailabilityId { get; set; }
 
     // Identity of the student from Entra claims.
@@ -18,17 +16,21 @@ public class Booking
 
     public string? StudentEmail { get; set; }
 
-    public DateTimeOffset SessionStart { get; set; }
+    public string Location { get; set; } = string.Empty;
 
-    public DateTimeOffset SessionEnd { get; set; }
-
-    public string? Reason { get; set; }
+    public string? Summary { get; set; }
 
     public BookingStatus Status { get; set; }
 
-    public DateTimeOffset CreatedAt { get; set; }
+    public SessionDuration Duration { get; set; }
 
-    public Tutor Tutor { get; set; } = null!;
+    public DateTimeOffset DateBooked { get; set; }
 
     public TutorAvailability TutorAvailability { get; set; } = null!;
+
+    public ICollection<BookingPreparationLink> PreparationLinks
+    { get; set; } = new List<BookingPreparationLink>();
+
+    public ICollection<BookingDocument> Documents { get; set; }
+        = new List<BookingDocument>();
 }

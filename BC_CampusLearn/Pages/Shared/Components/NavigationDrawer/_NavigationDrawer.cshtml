@@ -1,0 +1,96 @@
+@{
+    string currentPage =
+        ViewContext.RouteData.Values["Page"]?.ToString()
+        ?? string.Empty;
+
+    bool isHome = currentPage == "/Index";
+    bool isTutors = currentPage.StartsWith(
+        "/Tutors",
+        StringComparison.OrdinalIgnoreCase);
+}
+
+<div class="navigation-drawer-component" data-navigation-drawer>
+    <button type="button"
+            class="navigation-drawer-trigger"
+            data-drawer-open
+            aria-controls="campus-navigation-drawer"
+            aria-expanded="false"
+            aria-label="Open quick navigation">
+        <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24">
+            <path d="M5 12h14M13 6l6 6l-6 6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5" />
+        </svg>
+    </button>
+
+    <div class="navigation-drawer-backdrop"
+         data-drawer-backdrop
+         aria-hidden="true"></div>
+
+    <aside id="campus-navigation-drawer"
+           class="navigation-drawer-panel"
+           data-drawer-panel
+           role="dialog"
+           aria-modal="true"
+           aria-labelledby="navigation-drawer-title"
+           aria-hidden="true"
+           inert
+           tabindex="-1">
+        <div class="navigation-drawer-header">
+            <div class="navigation-drawer-brand">
+                <img src="/Media/common/CampusLearnLogo.png"
+                     alt=""
+                     aria-hidden="true" />
+                <div>
+                    <h2 id="navigation-drawer-title">Campus Learn</h2>
+                    <p>Quick navigation</p>
+                </div>
+            </div>
+
+            <button type="button"
+                    class="navigation-drawer-close"
+                    data-drawer-close
+                    aria-label="Close quick navigation">
+                <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24">
+                    <path d="M5 5l14 14M19 5L5 19"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-linecap="round"
+                          stroke-width="1.5" />
+                </svg>
+            </button>
+        </div>
+
+        <nav class="navigation-drawer-links" aria-label="Quick navigation">
+            <a asp-page="/Index"
+               class="navigation-drawer-link @(isHome ? "is-active" : null)"
+               aria-current="@(isHome ? "page" : null)">
+                <span>Home</span>
+            </a>
+
+            <a asp-page="/Tutors/Index"
+               class="navigation-drawer-link @(isTutors ? "is-active" : null)"
+               aria-current="@(isTutors ? "page" : null)">
+                <span>Find a Tutor</span>
+            </a>
+
+            <a href="/Communication/Forum"
+               class="navigation-drawer-link">
+                <span>Public Forum</span>
+            </a>
+
+            <a href="/LearningResources"
+               class="navigation-drawer-link">
+                <span>Learning Resources</span>
+            </a>
+
+            <a href="/Tutors/Application"
+               class="navigation-drawer-link">
+                <span>Tutor Application</span>
+            </a>
+        </nav>
+    </aside>
+</div>

@@ -73,6 +73,7 @@ public class TutorService : ITutorService
                 .ThenInclude(item =>
                     item.CourseModule)
             .Include(item => item.AvailabilitySlots)
+                .ThenInclude(slot => slot.CourseModule)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (tutor is null)
@@ -98,18 +99,23 @@ public class TutorService : ITutorService
                 tutor.AvailabilitySlots
                     .Where(slot =>
                         slot.IsActive &&
-                        !slot.IsBooked &&
-                        slot.StartTime >
+                        slot.AvailableTime >
                         DateTimeOffset.UtcNow)
-                    .OrderBy(slot => slot.StartTime)
+                    .OrderBy(slot => slot.AvailableTime)
                     .Select(slot =>
                         new AvailabilitySlotViewModel
                         {
                             TutorAvailabilityId =
                                 slot.TutorAvailabilityId,
 
-                            StartTime = slot.StartTime,
-                            EndTime = slot.EndTime
+                            ModuleCode =
+                                slot.CourseModule.Code,
+
+                            ModuleName =
+                                slot.CourseModule.Name,
+
+                            AvailableTime =
+                                slot.AvailableTime
                         })
                     .ToList()
         };
