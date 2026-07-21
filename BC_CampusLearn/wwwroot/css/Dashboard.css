@@ -410,8 +410,76 @@
 }
 
 @media (max-width: 575.98px) {
+    .dashboard-summary {
+        background-color: #fff;
+        border: 1px solid rgba(17, 17, 17, 0.055);
+        border-radius: 0.25rem;
+        box-shadow: var(--campus-card-shadow);
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding: 1rem 0.2rem;
+    }
+
+    .dashboard-summary > [class*="col-"] {
+        margin-top: 0;
+        padding: 0;
+        position: relative;
+        width: auto;
+    }
+
+    .dashboard-summary > [class*="col-"] + [class*="col-"]::before {
+        background-color: rgba(17, 17, 17, 0.08);
+        content: "";
+        height: 62%;
+        left: 0;
+        position: absolute;
+        top: 19%;
+        width: 1px;
+    }
+
     .dashboard-summary .dashboard-summary-card {
-        min-height: 9.5rem;
+        background-color: transparent;
+        box-shadow: none;
+        min-height: 7.35rem;
+        padding: 0.25rem 0.1rem;
+        transform: none;
+    }
+
+    .dashboard-summary .dashboard-summary-icon {
+        flex-basis: 2.7rem;
+        height: 2.7rem;
+        margin-bottom: 0.5rem;
+        width: 2.7rem;
+    }
+
+    .dashboard-summary .dashboard-summary-icon svg {
+        height: 1.7rem !important;
+        max-height: 1.7rem;
+        max-width: 1.7rem;
+        width: 1.7rem !important;
+    }
+
+    .dashboard-summary .dashboard-summary-card:hover,
+    .dashboard-summary .dashboard-summary-card:hover .dashboard-summary-icon {
+        transform: none;
+    }
+
+    .dashboard-summary-title-suffix {
+        display: none;
+    }
+
+    .dashboard-summary .dashboard-summary-card h2 {
+        font-size: clamp(0.64rem, 2.7vw, 0.74rem);
+        letter-spacing: -0.01em;
+        margin-bottom: 0.25rem;
+        white-space: nowrap;
+    }
+
+    .dashboard-summary .dashboard-summary-card p {
+        font-size: 1.7rem;
+        letter-spacing: -0.025em;
     }
 
     .dashboard-support-card {
