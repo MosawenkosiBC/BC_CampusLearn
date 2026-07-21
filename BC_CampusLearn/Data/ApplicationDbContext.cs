@@ -30,6 +30,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<BookingDocument> BookingDocuments =>
         Set<BookingDocument>();
 
+    public DbSet<ProgrammeOfStudy> ProgrammesOfStudy { get; set; }
+
+    public DbSet<ProgrammeModule> ProgrammeModules { get; set; }
+
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)
     {
