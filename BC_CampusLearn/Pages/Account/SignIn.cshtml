@@ -5,38 +5,50 @@
     ViewData["Title"] = "Log in";
 }
 
-<section class="container py-5">
-    <div class="mx-auto" style="max-width: 480px;">
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
-                <h1 class="h3 mb-3">Log in to CampusLearn</h1>
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/SignIn.css"
+          asp-append-version="true" />
+}
 
-                <p class="text-muted">
-                    Use your Belgium Campus Microsoft account to
-                    access tutors and book sessions.
-                </p>
+<section class="login-page" aria-labelledby="login-title">
+    <div class="login-card">
+        <img src="~/Media/common/CampusLearnLogo.png"
+             class="login-logo"
+             alt="Campus Learn" />
 
-                @if (Model.IsDevelopmentAuthentication)
-                {
-                    <div class="alert alert-warning">
-                        Development authentication is active.
-                        No real Microsoft account will be used.
-                    </div>
-                }
+        <h1 id="login-title">Welcome to Campus Learn</h1>
+        <p class="login-subtitle">Log in using your student account</p>
 
-                <div asp-validation-summary="ModelOnly"
-                     class="text-danger"></div>
-
-                <form method="post">
-                    <input type="hidden"
-                           asp-for="ReturnUrl" />
-
-                    <button type="submit"
-                            class="btn btn-primary w-100">
-                        Log in with Microsoft
-                    </button>
-                </form>
+        @if (Model.IsDevelopmentAuthentication)
+        {
+            <div class="login-development-notice" role="status">
+                Development authentication is active.
+                No real Microsoft account will be used.
             </div>
-        </div>
+        }
+
+        <div asp-validation-summary="ModelOnly"
+             class="login-validation"></div>
+
+        <form method="post" class="login-form">
+            <input type="hidden" asp-for="ReturnUrl" />
+
+            <button type="submit"
+                    class="login-microsoft-button"
+                    aria-label="Log in with Microsoft"
+                    title="Log in with Microsoft">
+                <svg aria-hidden="true"
+                     width="30"
+                     height="30"
+                     viewBox="0 0 24 24">
+                    <path fill="#f25022" d="M2 2h9v9H2z" />
+                    <path fill="#7fba00" d="M13 2h9v9h-9z" />
+                    <path fill="#00a4ef" d="M2 13h9v9H2z" />
+                    <path fill="#ffb900" d="M13 13h9v9h-9z" />
+                </svg>
+                <span class="visually-hidden">Log in with Microsoft</span>
+            </button>
+        </form>
     </div>
 </section>
