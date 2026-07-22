@@ -13,8 +13,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Tutor> Tutors => Set<Tutor>();
 
-    public DbSet<CourseModule> CourseModules =>
-        Set<CourseModule>();
+    public DbSet<ProgrammeModule> ProgrammeModules =>
+        Set<ProgrammeModule>();
 
     public DbSet<TutorCourseModule> TutorCourseModules =>
         Set<TutorCourseModule>();
@@ -32,7 +32,6 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<ProgrammeOfStudy> ProgrammesOfStudy { get; set; }
 
-    public DbSet<ProgrammeModule> ProgrammeModules { get; set; }
 
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)

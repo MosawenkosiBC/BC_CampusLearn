@@ -16,7 +16,7 @@ public class TutorService : ITutorService
 
     public async Task<IReadOnlyList<TutorCardViewModel>>
         GetTutorsAsync(
-            int? courseModuleId,
+            int? programmeModuleId,
             CancellationToken cancellationToken = default)
     {
         IQueryable<Tutor> query =
@@ -26,17 +26,17 @@ public class TutorService : ITutorService
                     tutor.IsApproved &&
                     tutor.IsActive);
 
-        if (courseModuleId.HasValue)
+        if (programmeModuleId.HasValue)
         {
             query = query.Where(tutor =>
                 tutor.TutorCourseModules.Any(item =>
-                    item.CourseModuleId ==
-                    courseModuleId.Value));
+                    item.ProgrammeModuleId ==
+                    programmeModuleId.Value));
         }
 
         List<Tutor> tutors = await query
             .Include(tutor => tutor.TutorCourseModules)
-                .ThenInclude(item => item.CourseModule)
+                .ThenInclude(item => item.ProgrammeModule)
             .OrderBy(tutor => tutor.DisplayName)
             .ToListAsync(cancellationToken);
 
@@ -51,7 +51,7 @@ public class TutorService : ITutorService
 
                 Modules = tutor.TutorCourseModules
                     .Select(item =>
-                        item.CourseModule.Name)
+                        item.ProgrammeModule.ModuleName)
                     .OrderBy(name => name)
                     .ToList()
             })
@@ -71,9 +71,9 @@ public class TutorService : ITutorService
                 item.IsActive)
             .Include(item => item.TutorCourseModules)
                 .ThenInclude(item =>
-                    item.CourseModule)
+                    item.ProgrammeModule)
             .Include(item => item.AvailabilitySlots)
-                .ThenInclude(slot => slot.CourseModule)
+                .ThenInclude(slot => slot.ProgrammeModule)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (tutor is null)
@@ -91,7 +91,7 @@ public class TutorService : ITutorService
 
             Modules = tutor.TutorCourseModules
                 .Select(item =>
-                    item.CourseModule.Name)
+                    item.ProgrammeModule.ModuleName)
                 .OrderBy(name => name)
                 .ToList(),
 
@@ -109,10 +109,10 @@ public class TutorService : ITutorService
                                 slot.TutorAvailabilityId,
 
                             ModuleCode =
-                                slot.CourseModule.Code,
+                                slot.ProgrammeModule.ModuleCode,
 
                             ModuleName =
-                                slot.CourseModule.Name,
+                                slot.ProgrammeModule.ModuleName,
 
                             AvailableTime =
                                 slot.AvailableTime
@@ -121,14 +121,13 @@ public class TutorService : ITutorService
         };
     }
 
-    public async Task<IReadOnlyList<CourseModule>>
+    public async Task<IReadOnlyList<ProgrammeModule>>
         GetModulesAsync(
             CancellationToken cancellationToken = default)
     {
-        return await _context.CourseModules
+        return await _context.ProgrammeModules
             .AsNoTracking()
-            .Where(module => module.IsActive)
-            .OrderBy(module => module.Name)
+            .OrderBy(module => module.ModuleName)
             .ToListAsync(cancellationToken);
     }
 }

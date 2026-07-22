@@ -13,15 +13,15 @@ public class TutorCourseModuleConfiguration
         builder.HasKey(item => new
         {
             item.TutorId,
-            item.CourseModuleId
+            item.ProgrammeModuleId
         });
 
         builder.HasOne(item => item.Tutor)
             .WithMany(tutor => tutor.TutorCourseModules)
             .HasForeignKey(item => item.TutorId);
 
-        builder.HasOne(item => item.CourseModule)
+        builder.HasOne(item => item.ProgrammeModule)
             .WithMany(module => module.TutorCourseModules)
-            .HasForeignKey(item => item.CourseModuleId);
+            .HasForeignKey(item => item.ProgrammeModuleId);
     }
 }

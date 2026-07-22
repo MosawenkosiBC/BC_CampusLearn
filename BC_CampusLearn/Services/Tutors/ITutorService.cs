@@ -7,7 +7,7 @@ public interface ITutorService
 {
     Task<IReadOnlyList<TutorCardViewModel>>
         GetTutorsAsync(
-            int? courseModuleId,
+            int? programmeModuleId,
             CancellationToken cancellationToken = default);
 
     Task<TutorDetailsViewModel?>
@@ -15,7 +15,7 @@ public interface ITutorService
             int tutorId,
             CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<CourseModule>>
+    Task<IReadOnlyList<ProgrammeModule>>
         GetModulesAsync(
             CancellationToken cancellationToken = default);
 }

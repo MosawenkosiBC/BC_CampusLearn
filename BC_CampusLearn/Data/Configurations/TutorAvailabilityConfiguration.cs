@@ -23,15 +23,15 @@ public class TutorAvailabilityConfiguration
             .HasForeignKey(slot => slot.TutorId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(slot => slot.CourseModule)
-            .WithMany(module => module.AvailabilitySlots)
-            .HasForeignKey(slot => slot.CourseModuleId)
+        builder.HasOne(slot => slot.ProgrammeModule)
+            .WithMany(module => module.TutorAvailabilities)
+            .HasForeignKey(slot => slot.ProgrammeModuleId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(slot => new
         {
             slot.TutorId,
-            slot.CourseModuleId,
+            slot.ProgrammeModuleId,
             slot.AvailableTime
         })
             .IsUnique();

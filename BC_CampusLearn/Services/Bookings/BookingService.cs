@@ -44,7 +44,7 @@ public class BookingService : IBookingService
                         slot.Tutor.DisplayName,
 
                     ModuleName =
-                        slot.CourseModule.Name,
+                        slot.ProgrammeModule.ModuleName,
 
                     AvailableTime = slot.AvailableTime
                 })

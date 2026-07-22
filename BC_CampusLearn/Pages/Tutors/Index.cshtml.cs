@@ -18,7 +18,7 @@ public class IndexModel : PageModel
     }
 
     [BindProperty(SupportsGet = true)]
-    public int? CourseModuleId { get; set; }
+    public int? ProgrammeModuleId { get; set; }
 
     public IReadOnlyList<TutorCardViewModel> Tutors
     { get; private set; }
@@ -40,16 +40,16 @@ public class IndexModel : PageModel
                 new SelectListItem
                 {
                     Value =
-                        module.CourseModuleId.ToString(),
+                        module.ProgrammeModuleId.ToString(),
 
                     Text =
-                        $"{module.Code} - {module.Name}"
+                        $"{module.ModuleCode} - {module.ModuleName}"
                 })
             .ToList();
 
         Tutors =
             await _tutorService.GetTutorsAsync(
-                CourseModuleId,
+                ProgrammeModuleId,
                 cancellationToken);
     }
 }

@@ -13,23 +13,23 @@ public static class DevelopmentDataSeeder
             return;
         }
 
-        var programming = new CourseModule
-        {
-            Code = "PROG",
-            Name = "Programming"
-        };
+        ProgrammeModule programming =
+            await GetProgrammeModuleAsync(
+                context,
+                programmeId: 1,
+                moduleCode: "PRG181");
 
-        var database = new CourseModule
-        {
-            Code = "DB",
-            Name = "Database Development"
-        };
+        ProgrammeModule database =
+            await GetProgrammeModuleAsync(
+                context,
+                programmeId: 1,
+                moduleCode: "DBD181");
 
-        var webDevelopment = new CourseModule
-        {
-            Code = "WEB",
-            Name = "Web Development"
-        };
+        ProgrammeModule webDevelopment =
+            await GetProgrammeModuleAsync(
+                context,
+                programmeId: 1,
+                moduleCode: "WPR181");
 
         var tutorOne = new Tutor
         {
@@ -59,21 +59,21 @@ public static class DevelopmentDataSeeder
             new TutorCourseModule
             {
                 Tutor = tutorOne,
-                CourseModule = programming
+                ProgrammeModule = programming
             });
 
         tutorOne.TutorCourseModules.Add(
             new TutorCourseModule
             {
                 Tutor = tutorOne,
-                CourseModule = webDevelopment
+                ProgrammeModule = webDevelopment
             });
 
         tutorTwo.TutorCourseModules.Add(
             new TutorCourseModule
             {
                 Tutor = tutorTwo,
-                CourseModule = database
+                ProgrammeModule = database
             });
 
         TimeSpan southAfricaOffset =
@@ -119,9 +119,19 @@ public static class DevelopmentDataSeeder
         await context.SaveChangesAsync();
     }
 
+    private static Task<ProgrammeModule> GetProgrammeModuleAsync(
+        ApplicationDbContext context,
+        int programmeId,
+        string moduleCode)
+    {
+        return context.ProgrammeModules.SingleAsync(module =>
+            module.ProgrammeId == programmeId &&
+            module.ModuleCode == moduleCode);
+    }
+
     private static TutorAvailability CreateSlot(
         Tutor tutor,
-        CourseModule courseModule,
+        ProgrammeModule programmeModule,
         DateTime date,
         int startHour,
         TimeSpan offset)
@@ -135,7 +145,7 @@ public static class DevelopmentDataSeeder
         return new TutorAvailability
         {
             Tutor = tutor,
-            CourseModule = courseModule,
+            ProgrammeModule = programmeModule,
             AvailableTime = start,
             IsActive = true
         };

@@ -52,11 +52,11 @@ public class IndexModel : PageModel
 
                     ModuleName =
                         booking.TutorAvailability
-                            .CourseModule.Name,
+                            .ProgrammeModule.ModuleName,
 
                     ModuleCode =
                         booking.TutorAvailability
-                            .CourseModule.Code,
+                            .ProgrammeModule.ModuleCode,
 
                     Location = booking.Location,
 

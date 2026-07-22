@@ -1,16 +1,22 @@
-﻿namespace BC_CampusLearn.Models.Entities
+namespace BC_CampusLearn.Models.Entities;
+
+public class ProgrammeModule
 {
-    public class ProgrammeModule
-    {
-        public int ProgrammeId { get; set; }
+    public int ProgrammeModuleId { get; set; }
 
-        public string ModuleName { get; set; } = string.Empty;
+    public int ProgrammeId { get; set; }
 
-        public string ModuleCode { get; set; } = string.Empty;
+    public string ModuleName { get; set; } = string.Empty;
 
-        public int YearOfStudy { get; set; }
+    public string ModuleCode { get; set; } = string.Empty;
 
-        // Navigation property.
-        public ProgrammeOfStudy Programme { get; set; } = null!;
-    }
+    public int YearOfStudy { get; set; }
+
+    public ProgrammeOfStudy Programme { get; set; } = null!;
+
+    public ICollection<TutorCourseModule> TutorCourseModules { get; set; }
+        = new List<TutorCourseModule>();
+
+    public ICollection<TutorAvailability> TutorAvailabilities { get; set; }
+        = new List<TutorAvailability>();
 }

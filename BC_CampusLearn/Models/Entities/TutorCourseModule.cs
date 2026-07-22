@@ -6,7 +6,7 @@ public class TutorCourseModule
 
     public Tutor Tutor { get; set; } = null!;
 
-    public int CourseModuleId { get; set; }  
+    public int ProgrammeModuleId { get; set; }
 
-    public CourseModule CourseModule { get; set; } = null!;
+    public ProgrammeModule ProgrammeModule { get; set; } = null!;
 }

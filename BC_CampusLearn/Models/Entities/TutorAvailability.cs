@@ -7,7 +7,7 @@ public class TutorAvailability
 
     public int TutorId { get; set; }
 
-    public int CourseModuleId { get; set; }
+    public int ProgrammeModuleId { get; set; }
 
     public DateTimeOffset AvailableTime { get; set; }
 
@@ -18,7 +18,7 @@ public class TutorAvailability
 
     public Tutor Tutor { get; set; } = null!;
 
-    public CourseModule CourseModule { get; set; } = null!;
+    public ProgrammeModule ProgrammeModule { get; set; } = null!;
 
     public Booking? Booking { get; set; }
 }
