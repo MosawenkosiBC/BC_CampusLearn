@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260723091600_AddUserAndTutorDocumentStructure")]
+    partial class AddUserAndTutorDocumentStructure
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,10 +38,10 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("SYSUTCDATETIME()");
 
-                    b.Property<Guid>("EntraObjectId")
+                    b.Property<Guid?>("EntraObjectId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("EntraTenantId")
+                    b.Property<Guid?>("EntraTenantId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("IsPublicActivityEnabled")
@@ -50,7 +53,6 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("PersonnelNumber")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -62,12 +64,6 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("nvarchar(500)");
 
                     b.HasKey("BcUserId");
-
-                    b.HasIndex("PersonnelNumber")
-                        .IsUnique();
-
-                    b.HasIndex("EntraTenantId", "EntraObjectId")
-                        .IsUnique();
 
                     b.ToTable("BcUsers", (string)null);
                 });
@@ -286,37 +282,54 @@ namespace BC_CampusLearn.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TutorId"));
 
-                    b.Property<int>("BcUserId")
+                    b.Property<int?>("BcUserId")
                         .HasColumnType("int");
 
                     b.Property<string>("Biography")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("DemonstrationVideoUrl")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<string>("EntraObjectId")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("EntraTenantId")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
 
                     b.Property<string>("GitHubUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
 
                     b.Property<string>("LinkedInUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<decimal>("OverallAverage")
+                    b.Property<decimal?>("OverallAverage")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
 
@@ -324,51 +337,45 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int>("ProgrammeId")
+                    b.Property<int?>("ProgrammeId")
                         .HasColumnType("int");
 
                     b.Property<string>("ReasonForTutoring")
-                        .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
                     b.Property<DateTime?>("ReviewedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Status")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
+                    b.Property<int?>("Status")
+                        .HasColumnType("int");
 
-                    b.Property<DateTime>("SubmittedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("TeachingStyle")
-                        .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("YearOfStudy")
+                    b.Property<int?>("YearOfStudy")
                         .HasColumnType("int");
 
                     b.HasKey("TutorId");
 
                     b.HasIndex("BcUserId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[BcUserId] IS NOT NULL");
 
                     b.HasIndex("ProgrammeId");
 
-                    b.ToTable("Tutors", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_Tutors_OverallAverage", "[OverallAverage] BETWEEN 0 AND 100");
+                    b.HasIndex("EntraTenantId", "EntraObjectId")
+                        .IsUnique()
+                        .HasFilter("[EntraTenantId] IS NOT NULL AND [EntraObjectId] IS NOT NULL");
 
-                            t.HasCheckConstraint("CK_Tutors_YearOfStudy", "[YearOfStudy] BETWEEN 1 AND 4");
-                        });
+                    b.ToTable("Tutors");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorAvailability", b =>
@@ -515,14 +522,12 @@ namespace BC_CampusLearn.Migrations
                     b.HasOne("BC_CampusLearn.Models.Entities.BcUser", "BcUser")
                         .WithOne("Tutor")
                         .HasForeignKey("BC_CampusLearn.Models.Entities.Tutor", "BcUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("BC_CampusLearn.Models.Entities.ProgrammeOfStudy", "Programme")
                         .WithMany("Tutors")
                         .HasForeignKey("ProgrammeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("BcUser");
 
@@ -538,7 +543,7 @@ namespace BC_CampusLearn.Migrations
                         .IsRequired();
 
                     b.HasOne("BC_CampusLearn.Models.Entities.Tutor", "Tutor")
-                        .WithMany("TutorAvailabilities")
+                        .WithMany("AvailabilitySlots")
                         .HasForeignKey("TutorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -606,7 +611,7 @@ namespace BC_CampusLearn.Migrations
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.Tutor", b =>
                 {
-                    b.Navigation("TutorAvailabilities");
+                    b.Navigation("AvailabilitySlots");
 
                     b.Navigation("TutorCourseModules");
 

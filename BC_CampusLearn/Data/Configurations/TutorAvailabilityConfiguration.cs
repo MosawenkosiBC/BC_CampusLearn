@@ -19,7 +19,7 @@ public class TutorAvailabilityConfiguration
             .IsRowVersion();
 
         builder.HasOne(slot => slot.Tutor)
-            .WithMany(tutor => tutor.AvailabilitySlots)
+            .WithMany(tutor => tutor.TutorAvailabilities)
             .HasForeignKey(slot => slot.TutorId)
             .OnDelete(DeleteBehavior.Cascade);
 

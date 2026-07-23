@@ -41,7 +41,7 @@ public class BookingService : IBookingService
                     TutorId = slot.TutorId,
 
                     TutorName =
-                        slot.Tutor.DisplayName,
+                        slot.Tutor.BcUser.PersonnelNumber,
 
                     ModuleName =
                         slot.ProgrammeModule.ModuleName,
@@ -62,6 +62,7 @@ public class BookingService : IBookingService
         TutorAvailability? slot =
             await _context.TutorAvailabilities
                 .Include(item => item.Tutor)
+                    .ThenInclude(tutor => tutor.BcUser)
                 .FirstOrDefaultAsync(
                     item =>
                         item.TutorAvailabilityId ==

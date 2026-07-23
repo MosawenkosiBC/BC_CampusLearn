@@ -8,4 +8,6 @@ public class ProgrammeOfStudy
 
     public ICollection<ProgrammeModule> ProgrammeModules { get; set; }
         = new List<ProgrammeModule>();
+
+    public ICollection<Tutor> Tutors { get; set; } = new List<Tutor>();
 }

@@ -33,26 +33,40 @@ public static class DevelopmentDataSeeder
 
         var tutorOne = new Tutor
         {
-            DisplayName = "Thabo Test Tutor",
-            Email = "thabo.test@belgiumcampus.ac.za",
+            BcUser = CreateUser("DEV-TUTOR-001", "11111111-1111-1111-1111-111111111101"),
+            ProgrammeId = 1,
             Biography =
                 "Software development tutor specialising in C# and ASP.NET.",
             ProfileImagePath =
                 "/Media/tutorsProfiles/Tutor 1.webp",
-            IsApproved = true,
-            IsActive = true
+            OverallAverage = 82.5m,
+            YearOfStudy = 3,
+            ReasonForTutoring = "I enjoy helping students master software development.",
+            TeachingStyle = "Practical examples followed by guided exercises.",
+            DemonstrationVideoUrl = "https://example.invalid/tutors/dev-tutor-001",
+            Status = TutorStatus.Approved,
+            IsActive = true,
+            SubmittedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow
         };
 
         var tutorTwo = new Tutor
         {
-            DisplayName = "Naledi Test Tutor",
-            Email = "naledi.test@belgiumcampus.ac.za",
+            BcUser = CreateUser("DEV-TUTOR-002", "11111111-1111-1111-1111-111111111102"),
+            ProgrammeId = 1,
             Biography =
                 "Database tutor specialising in SQL Server and data modelling.",
             ProfileImagePath =
                 "/Media/tutorsProfiles/Tutor 3.webp",
-            IsApproved = true,
-            IsActive = true
+            OverallAverage = 86m,
+            YearOfStudy = 3,
+            ReasonForTutoring = "I want to make database design approachable.",
+            TeachingStyle = "Visual modelling and incremental SQL exercises.",
+            DemonstrationVideoUrl = "https://example.invalid/tutors/dev-tutor-002",
+            Status = TutorStatus.Approved,
+            IsActive = true,
+            SubmittedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow
         };
 
         tutorOne.TutorCourseModules.Add(
@@ -82,7 +96,7 @@ public static class DevelopmentDataSeeder
         DateTime tomorrow =
             DateTime.Today.AddDays(1);
 
-        tutorOne.AvailabilitySlots.Add(
+        tutorOne.TutorAvailabilities.Add(
             CreateSlot(
                 tutorOne,
                 programming,
@@ -90,7 +104,7 @@ public static class DevelopmentDataSeeder
                 10,
                 southAfricaOffset));
 
-        tutorOne.AvailabilitySlots.Add(
+        tutorOne.TutorAvailabilities.Add(
             CreateSlot(
                 tutorOne,
                 webDevelopment,
@@ -98,7 +112,7 @@ public static class DevelopmentDataSeeder
                 14,
                 southAfricaOffset));
 
-        tutorTwo.AvailabilitySlots.Add(
+        tutorTwo.TutorAvailabilities.Add(
             CreateSlot(
                 tutorTwo,
                 database,
@@ -106,7 +120,7 @@ public static class DevelopmentDataSeeder
                 11,
                 southAfricaOffset));
 
-        tutorTwo.AvailabilitySlots.Add(
+        tutorTwo.TutorAvailabilities.Add(
             CreateSlot(
                 tutorTwo,
                 database,
@@ -117,6 +131,17 @@ public static class DevelopmentDataSeeder
         context.Tutors.AddRange(tutorOne, tutorTwo);
 
         await context.SaveChangesAsync();
+    }
+
+    private static BcUser CreateUser(string personnelNumber, string objectId)
+    {
+        return new BcUser
+        {
+            PersonnelNumber = personnelNumber,
+            EntraObjectId = Guid.Parse(objectId),
+            EntraTenantId = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            CreatedAt = DateTime.UtcNow
+        };
     }
 
     private static Task<ProgrammeModule> GetProgrammeModuleAsync(

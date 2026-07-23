@@ -6,6 +6,7 @@ using BC_CampusLearn.Services.Bookings;
 using BC_CampusLearn.Services.Tutors;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 
@@ -59,6 +60,7 @@ else
 builder.Services.AddAuthorization();
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IClaimsTransformation, BcUserClaimsTransformation>();
 
 builder.Services.AddScoped<
     ICurrentUserService,

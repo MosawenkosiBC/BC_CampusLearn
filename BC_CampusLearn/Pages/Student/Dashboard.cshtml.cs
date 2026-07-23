@@ -99,7 +99,7 @@ public class DashboardModel : PageModel
 
                         TutorName =
                             booking.TutorAvailability
-                                .Tutor.DisplayName,
+                                .Tutor.BcUser.PersonnelNumber,
 
                         ModuleName =
                             booking.TutorAvailability

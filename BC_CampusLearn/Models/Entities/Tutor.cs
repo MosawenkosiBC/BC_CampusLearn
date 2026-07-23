@@ -3,21 +3,22 @@ namespace BC_CampusLearn.Models.Entities;
 public class Tutor
 {
     public int TutorId { get; set; }
+    public int BcUserId { get; set; }
+    public int ProgrammeId { get; set; }
+    public decimal OverallAverage { get; set; }
+    public int YearOfStudy { get; set; }
+    public string ReasonForTutoring { get; set; } = null!;
+    public string TeachingStyle { get; set; } = null!;
+    public string DemonstrationVideoUrl { get; set; } = null!;
+    public TutorStatus Status { get; set; }
+    public DateTime SubmittedAt { get; set; }
+    public DateTime? ReviewedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
-    // These remain nullable until tutors are linked to Entra accounts.
-    public string? EntraObjectId { get; set; }
-
-    public string? EntraTenantId { get; set; }
-
-    public string DisplayName { get; set; } = string.Empty;
-
-    public string Email { get; set; } = string.Empty;
-
-    public string Biography { get; set; } = string.Empty;
+    public string? Biography { get; set; }
 
     public string? ProfileImagePath { get; set; }
-
-    public bool IsApproved { get; set; }
 
     public bool IsActive { get; set; }
 
@@ -26,12 +27,16 @@ public class Tutor
 
     public string? GitHubUrl { get; set; }     //can be null
 
+    public BcUser BcUser { get; set; } = null!;
+    public ProgrammeOfStudy Programme { get; set; } = null!;
+    public ICollection<TutorDocument> TutorDocuments { get; set; } = new List<TutorDocument>();
+
 
     // Creates relationships with TutorCourseModule and TutorAvailability entities.
     public ICollection<TutorCourseModule> TutorCourseModules { get; set; }
         = new List<TutorCourseModule>();
 
-    public ICollection<TutorAvailability> AvailabilitySlots { get; set; }
+    public ICollection<TutorAvailability> TutorAvailabilities { get; set; }
         = new List<TutorAvailability>();
 
 }

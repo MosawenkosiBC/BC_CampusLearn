@@ -94,7 +94,10 @@ public class SignInModel : PageModel
 
             new Claim(
                 ClaimTypes.Email,
-                _developmentUser.Email)
+                _developmentUser.Email),
+            new Claim(
+                EntraClaimTypes.PersonnelNumber,
+                _developmentUser.PersonnelNumber)
         };
 
         var identity = new ClaimsIdentity(

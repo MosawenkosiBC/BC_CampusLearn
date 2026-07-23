@@ -40,6 +40,11 @@ public class ClaimsCurrentUserService : ICurrentUserService
             ?? principal.FindFirstValue(
                 EntraClaimTypes.TenantIdUri);
 
+        string? bcUserIdValue =
+            principal.FindFirstValue(EntraClaimTypes.BcUserId);
+        string? personnelNumber =
+            principal.FindFirstValue(EntraClaimTypes.PersonnelNumber);
+
         if (string.IsNullOrWhiteSpace(objectId))
         {
             throw new InvalidOperationException(
@@ -50,6 +55,13 @@ public class ClaimsCurrentUserService : ICurrentUserService
         {
             throw new InvalidOperationException(
                 "The authenticated user has no Entra tenant ID.");
+        }
+
+        if (!int.TryParse(bcUserIdValue, out int bcUserId) ||
+            string.IsNullOrWhiteSpace(personnelNumber))
+        {
+            throw new InvalidOperationException(
+                "The authenticated principal has not been linked to a BC user.");
         }
 
         string displayName =
@@ -67,6 +79,8 @@ public class ClaimsCurrentUserService : ICurrentUserService
 
 
         return new CurrentUser(
+            bcUserId,
+            personnelNumber,
             objectId,
             tenantId,
             displayName,

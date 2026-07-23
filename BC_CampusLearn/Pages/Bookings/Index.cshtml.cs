@@ -48,7 +48,7 @@ public class IndexModel : PageModel
 
                     TutorName =
                         booking.TutorAvailability
-                            .Tutor.DisplayName,
+                            .Tutor.BcUser.PersonnelNumber,
 
                     ModuleName =
                         booking.TutorAvailability

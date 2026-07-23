@@ -23,7 +23,7 @@ public class TutorService : ITutorService
             _context.Tutors
                 .AsNoTracking()
                 .Where(tutor =>
-                    tutor.IsApproved &&
+                    tutor.Status == TutorStatus.Approved &&
                     tutor.IsActive);
 
         if (programmeModuleId.HasValue)
@@ -37,15 +37,16 @@ public class TutorService : ITutorService
         List<Tutor> tutors = await query
             .Include(tutor => tutor.TutorCourseModules)
                 .ThenInclude(item => item.ProgrammeModule)
-            .OrderBy(tutor => tutor.DisplayName)
+            .Include(tutor => tutor.BcUser)
+            .OrderBy(tutor => tutor.BcUser.PersonnelNumber)
             .ToListAsync(cancellationToken);
 
         return tutors
             .Select(tutor => new TutorCardViewModel
             {
                 TutorId = tutor.TutorId,
-                DisplayName = tutor.DisplayName,
-                Biography = tutor.Biography,
+                DisplayName = tutor.BcUser.PersonnelNumber,
+                Biography = tutor.Biography ?? string.Empty,
                 ProfileImagePath =
                     tutor.ProfileImagePath,
 
@@ -67,12 +68,13 @@ public class TutorService : ITutorService
             .AsNoTracking()
             .Where(item =>
                 item.TutorId == tutorId &&
-                item.IsApproved &&
+                item.Status == TutorStatus.Approved &&
                 item.IsActive)
             .Include(item => item.TutorCourseModules)
                 .ThenInclude(item =>
                     item.ProgrammeModule)
-            .Include(item => item.AvailabilitySlots)
+            .Include(item => item.BcUser)
+            .Include(item => item.TutorAvailabilities)
                 .ThenInclude(slot => slot.ProgrammeModule)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -84,9 +86,9 @@ public class TutorService : ITutorService
         return new TutorDetailsViewModel
         {
             TutorId = tutor.TutorId,
-            DisplayName = tutor.DisplayName,
-            Email = tutor.Email,
-            Biography = tutor.Biography,
+            DisplayName = tutor.BcUser.PersonnelNumber,
+            Email = string.Empty,
+            Biography = tutor.Biography ?? string.Empty,
             ProfileImagePath = tutor.ProfileImagePath,
 
             Modules = tutor.TutorCourseModules
@@ -96,7 +98,7 @@ public class TutorService : ITutorService
                 .ToList(),
 
             AvailabilitySlots =
-                tutor.AvailabilitySlots
+                tutor.TutorAvailabilities
                     .Where(slot =>
                         slot.IsActive &&
                         slot.AvailableTime >
