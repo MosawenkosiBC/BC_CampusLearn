@@ -3,9 +3,25 @@ html {
 }
 
 :root {
+  --campus-font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
   --campus-card-shadow:
     0 0.3rem 0.9rem rgba(0, 0, 0, 0.04),
     0 -0.05rem 0.5rem rgba(0, 0, 0, 0.018);
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--campus-font-family);
 }
 
 .card {

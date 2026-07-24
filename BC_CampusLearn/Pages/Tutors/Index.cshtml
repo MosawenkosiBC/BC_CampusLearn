@@ -2,84 +2,207 @@
 @model BC_CampusLearn.Pages.Tutors.IndexModel
 
 @{
-    ViewData["Title"] = "Browse tutors";
+    ViewData["Title"] = "All Tutors";
+    bool hasActiveFilters =
+        !string.IsNullOrWhiteSpace(Model.SearchName) ||
+        !string.IsNullOrWhiteSpace(Model.SearchModule) ||
+        Model.ProgrammeId.HasValue ||
+        Model.ProgrammeModuleId.HasValue ||
+        Model.Years.Count > 0;
 }
 
 @section Styles {
     <link rel="stylesheet"
           href="~/css/components/navigation-drawer.css"
           asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/tutors.css"
+          asp-append-version="true" />
 }
 
 @await Html.PartialAsync(
     "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
 
-<section class="container py-4">
-    <h1>Available tutors</h1>
+<section class="tutors-page" aria-labelledby="tutors-page-title">
+    <header class="tutors-intro">
+        <h1 id="tutors-page-title">Meet Your Tutors</h1>
+    </header>
 
-    <form method="get"
-          class="row g-2 align-items-end mb-4">
-
-        <div class="col-md-6">
-            <label asp-for="ProgrammeModuleId"
-                   class="form-label">
-                Filter by module
-            </label>
-
-            <select asp-for="ProgrammeModuleId"
-                    asp-items="Model.ModuleOptions"
-                    class="form-select">
-
-                <option value="">All modules</option>
-            </select>
-        </div>
-
-        <div class="col-auto">
-            <button type="submit"
-                    class="btn btn-primary">
-                Filter
-            </button>
-        </div>
-    </form>
-
-    <div class="row g-4">
-        @foreach (var tutor in Model.Tutors)
-        {
-            <div class="col-md-6 col-lg-4">
-                <article class="card h-100 shadow-sm">
-                    @if (!string.IsNullOrWhiteSpace(
-                        tutor.ProfileImagePath))
-                    {
-                        <img src="@tutor.ProfileImagePath"
-                             class="card-img-top"
-                             alt="@tutor.DisplayName" />
-                    }
-
-                    <div class="card-body">
-                        <h2 class="h5">
-                            @tutor.DisplayName
-                        </h2>
-
-                        <p>@tutor.Biography</p>
-
-                        <p>
-                            <strong>Modules:</strong>
-                            @string.Join(", ", tutor.Modules)
-                        </p>
-
-                        <a asp-page="/Tutors/Details"
-                           asp-route-id="@tutor.TutorId"
-                           class="btn btn-primary">
-                            View availability
-                        </a>
-                    </div>
-                </article>
+    <div class="tutors-workspace">
+        <aside id="tutor-filter-panel"
+               class="tutor-filters"
+               aria-labelledby="tutor-filter-title"
+               data-filter-panel>
+            <div class="filter-heading">
+                <h2 id="tutor-filter-title">Filters</h2>
+                <a asp-page="/Tutors/Index">Clear all</a>
+                <button type="button"
+                        class="filter-modal-close"
+                        data-filter-close
+                        aria-label="Close filters">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 6l12 12M18 6 6 18" />
+                    </svg>
+                </button>
             </div>
-        }
+
+            <form method="get">
+                <div class="filter-group">
+                    <label asp-for="SearchName">Search by name</label>
+                    <div class="filter-search">
+                        <input asp-for="SearchName"
+                               type="search"
+                               autocomplete="off" />
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label asp-for="SearchModule">Search by module</label>
+                    <div class="filter-search">
+                        <input asp-for="SearchModule"
+                               type="search"
+                               autocomplete="off" />
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="filter-group course-filter">
+                    <label asp-for="ProgrammeId">Filter by course</label>
+                    <select asp-for="ProgrammeId"
+                            asp-items="Model.ProgrammeOptions">
+                        <option value="">All courses</option>
+                    </select>
+                </div>
+
+                <fieldset class="filter-group year-filter">
+                    <legend>Year of study</legend>
+                    @for (int year = 2; year <= 4; year++)
+                    {
+                        <label class="year-option">
+                            <input type="checkbox"
+                                   name="Years"
+                                   value="@year"
+                                   checked="@(Model.Years.Contains(year) ? "checked" : null)" />
+                            <span>@(year switch
+                            {
+                                1 => "First year",
+                                2 => "Second year",
+                                3 => "Third year",
+                                _ => "Fourth year"
+                            })</span>
+                        </label>
+                    }
+                </fieldset>
+
+                <button type="submit" class="apply-filters">
+                    Apply filters
+                </button>
+            </form>
+        </aside>
+        <button type="button"
+                class="tutor-filter-backdrop"
+                data-filter-close
+                aria-label="Close filters"></button>
+
+        <div class="tutor-results">
+            <div class="results-toolbar">
+                <div class="results-count">
+                    Showing <strong>@Model.Tutors.Count</strong> tutors
+                </div>
+                <button type="button"
+                        class="mobile-filter-trigger @(hasActiveFilters ? "has-active-filters" : null)"
+                        data-filter-open
+                        aria-controls="tutor-filter-panel"
+                        aria-expanded="false">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        @if (hasActiveFilters)
+                        {
+                            <path fill="currentColor"
+                                  d="M4.38 3.22A1 1 0 0 1 5 3h14a1 1 0 0 1 .79 1.62L15 10.75v9.13c.04.3-.06.62-.29.83a.996.996 0 0 1-1.41 0l-4.01-4.01a.99.99 0 0 1-.29-.83v-5.12L4.21 4.62a1 1 0 0 1 .17-1.4Z" />
+                        }
+                        else
+                        {
+                            <path fill="currentColor"
+                                  d="M4.38 3.22A1 1 0 0 1 5 3h14a1 1 0 0 1 .79 1.62L15 10.75v9.13c.04.3-.06.62-.29.83a.996.996 0 0 1-1.41 0l-4.01-4.01a.99.99 0 0 1-.29-.83v-5.12L4.21 4.62a1 1 0 0 1 .17-1.4Z" />
+                        }
+                    </svg>
+                    <span>Filter</span>
+                </button>
+                <div class="campus-select" aria-label="Selected campus">
+                    Pretoria campus
+                </div>
+            </div>
+
+            @if (Model.Tutors.Count == 0)
+            {
+                <div class="empty-tutors">
+                    <span aria-hidden="true">⌕</span>
+                    <h2>No tutors match those filters</h2>
+                    <p>Try clearing a filter or searching for another module.</p>
+                    <a asp-page="/Tutors/Index">Clear all filters</a>
+                </div>
+            }
+            else
+            {
+                <div class="tutor-grid">
+                    @foreach (var tutor in Model.Tutors)
+                    {
+                        string yearLabel = tutor.YearOfStudy switch
+                        {
+                            1 => "1st year",
+                            2 => "2nd year",
+                            3 => "3rd year",
+                            4 => "4th year",
+                            _ => "Tutor"
+                        };
+
+                        <article class="tutor-card">
+                            <a asp-page="/Tutors/Details"
+                               asp-route-id="@tutor.TutorId"
+                               class="tutor-card-link"
+                               aria-label="View @tutor.DisplayName's profile">
+                                <div class="tutor-image-wrap">
+                                    <img src="@tutor.ProfileImagePath"
+                                         alt="@tutor.DisplayName"
+                                         loading="lazy" />
+                                </div>
+
+                                <div class="tutor-card-body">
+                                    <h2>@tutor.DisplayName</h2>
+                                    <div class="tutor-academic-meta">
+                                        <p class="tutor-programme">@tutor.ProgrammeName</p>
+                                        <p class="tutor-year">@yearLabel</p>
+                                    </div>
+
+                                    <div class="module-tags" aria-label="Modules taught">
+                                        @foreach (string code in tutor.ModuleCodes.Take(3))
+                                        {
+                                            <span>@code</span>
+                                        }
+                                        @if (tutor.ModuleCodes.Count > 3)
+                                        {
+                                            <span>+@(tutor.ModuleCodes.Count - 3)</span>
+                                        }
+                                    </div>
+                                </div>
+                            </a>
+                        </article>
+                    }
+                </div>
+            }
+        </div>
     </div>
 </section>
 
 @section Scripts {
     <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+    <script src="~/js/tutors.js"
             asp-append-version="true"></script>
 }

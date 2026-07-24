@@ -18,4 +18,8 @@ public interface ITutorService
     Task<IReadOnlyList<ProgrammeModule>>
         GetModulesAsync(
             CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ProgrammeOfStudy>>
+        GetProgrammesAsync(
+            CancellationToken cancellationToken = default);
 }

@@ -4,6 +4,7 @@
         ?? string.Empty;
 
     bool isHome = currentPage == "/Index";
+    bool isDashboard = currentPage == "/Student/Dashboard";
     bool isTutors = currentPage.StartsWith(
         "/Tutors",
         StringComparison.OrdinalIgnoreCase);
@@ -71,15 +72,16 @@
                 <span>Home</span>
             </a>
 
+            <a asp-page="/Student/Dashboard"
+               class="navigation-drawer-link navigation-drawer-link--mobile @(isDashboard ? "is-active" : null)"
+               aria-current="@(isDashboard ? "page" : null)">
+                <span>Dashboard</span>
+            </a>
+
             <a asp-page="/Tutors/Index"
                class="navigation-drawer-link @(isTutors ? "is-active" : null)"
                aria-current="@(isTutors ? "page" : null)">
                 <span>Find a Tutor</span>
-            </a>
-
-            <a href="/Communication/Forum"
-               class="navigation-drawer-link">
-                <span>Public Forum</span>
             </a>
 
             <a href="/LearningResources"

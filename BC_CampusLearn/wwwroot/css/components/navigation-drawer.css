@@ -1,6 +1,6 @@
 .navigation-drawer-trigger {
     align-items: center;
-    background: linear-gradient(145deg, #c4005c, #970046);
+    background-color: #ad0151;
     border: 0;
     border-radius: 0 999px 999px 0;
     color: #fff;
@@ -199,6 +199,10 @@ body.navigation-drawer-open {
     overflow: hidden;
 }
 
+.navigation-drawer-link--mobile {
+    display: none;
+}
+
 @media (max-width: 575.98px) {
     .navigation-drawer-trigger {
         height: 3.5rem;
@@ -209,6 +213,10 @@ body.navigation-drawer-open {
     .navigation-drawer-panel {
         padding: 1.15rem 1rem 1.25rem;
         width: 18rem;
+    }
+
+    .navigation-drawer-link--mobile {
+        display: flex;
     }
 }
 

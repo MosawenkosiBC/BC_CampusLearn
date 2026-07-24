@@ -7,6 +7,26 @@ namespace BC_CampusLearn.Services.Tutors;
 
 public class TutorService : ITutorService
 {
+    private static readonly string[] StaticTutorNames =
+    {
+        "Michelle Duma",
+        "Mishakaylin Diniso",
+        "Naledi Mogadingoane",
+        "Karabo Mosethe",
+        "Mosa Msiza",
+        "Thembi Sefini",
+        "Karabelo Mokhubu",
+        "Keleabetswe Molefe"
+    };
+
+    private static readonly string[] FallbackProfileImages =
+    {
+        "/Media/tutorsProfiles/Tutor 1.webp",
+        "/Media/tutorsProfiles/Tutor 3.webp",
+        "/Media/tutorsProfiles/Tutor 5.webp",
+        "/Media/tutorsProfiles/image.png"
+    };
+
     private readonly ApplicationDbContext _context;
 
     public TutorService(ApplicationDbContext context)
@@ -37,23 +57,41 @@ public class TutorService : ITutorService
         List<Tutor> tutors = await query
             .Include(tutor => tutor.TutorCourseModules)
                 .ThenInclude(item => item.ProgrammeModule)
-            .Include(tutor => tutor.BcUser)
-            .OrderBy(tutor => tutor.BcUser.PersonnelNumber)
+            .Include(tutor => tutor.Programme)
+            .Include(tutor => tutor.TutorAvailabilities)
+            .OrderBy(tutor => tutor.TutorId)
             .ToListAsync(cancellationToken);
 
         return tutors
-            .Select(tutor => new TutorCardViewModel
+            .Select((tutor, index) => new TutorCardViewModel
             {
                 TutorId = tutor.TutorId,
-                DisplayName = tutor.BcUser.PersonnelNumber,
+                DisplayName = GetStaticTutorName(tutor.TutorId),
                 Biography = tutor.Biography ?? string.Empty,
-                ProfileImagePath =
-                    tutor.ProfileImagePath,
+                ProfileImagePath = string.IsNullOrWhiteSpace(tutor.ProfileImagePath)
+                    ? FallbackProfileImages[index % FallbackProfileImages.Length]
+                    : tutor.ProfileImagePath,
+                ProgrammeId = tutor.ProgrammeId,
+                ProgrammeName = tutor.Programme?.Name ?? "Belgium Campus programme",
+                YearOfStudy = tutor.YearOfStudy,
+                UpcomingAvailabilityCount = tutor.TutorAvailabilities.Count(slot =>
+                    slot.IsActive && slot.AvailableTime > DateTimeOffset.UtcNow),
+                NextAvailableAt = tutor.TutorAvailabilities
+                    .Where(slot =>
+                        slot.IsActive && slot.AvailableTime > DateTimeOffset.UtcNow)
+                    .Select(slot => (DateTimeOffset?)slot.AvailableTime)
+                    .OrderBy(value => value)
+                    .FirstOrDefault(),
 
                 Modules = tutor.TutorCourseModules
                     .Select(item =>
                         item.ProgrammeModule.ModuleName)
                     .OrderBy(name => name)
+                    .ToList(),
+
+                ModuleCodes = tutor.TutorCourseModules
+                    .Select(item => item.ProgrammeModule.ModuleCode)
+                    .OrderBy(code => code)
                     .ToList()
             })
             .ToList();
@@ -73,7 +111,6 @@ public class TutorService : ITutorService
             .Include(item => item.TutorCourseModules)
                 .ThenInclude(item =>
                     item.ProgrammeModule)
-            .Include(item => item.BcUser)
             .Include(item => item.TutorAvailabilities)
                 .ThenInclude(slot => slot.ProgrammeModule)
             .FirstOrDefaultAsync(cancellationToken);
@@ -86,7 +123,7 @@ public class TutorService : ITutorService
         return new TutorDetailsViewModel
         {
             TutorId = tutor.TutorId,
-            DisplayName = tutor.BcUser.PersonnelNumber,
+            DisplayName = GetStaticTutorName(tutor.TutorId),
             Email = string.Empty,
             Biography = tutor.Biography ?? string.Empty,
             ProfileImagePath = tutor.ProfileImagePath,
@@ -131,5 +168,21 @@ public class TutorService : ITutorService
             .AsNoTracking()
             .OrderBy(module => module.ModuleName)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ProgrammeOfStudy>>
+        GetProgrammesAsync(
+            CancellationToken cancellationToken = default)
+    {
+        return await _context.ProgrammesOfStudy
+            .AsNoTracking()
+            .OrderBy(programme => programme.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    private static string GetStaticTutorName(int tutorId)
+    {
+        int nameIndex = Math.Max(tutorId - 1, 0);
+        return StaticTutorNames[nameIndex % StaticTutorNames.Length];
     }
 }
