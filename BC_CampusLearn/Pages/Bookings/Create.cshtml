@@ -17,11 +17,6 @@
             </h2>
 
             <p>
-                <strong>Module:</strong>
-                @Model.Preview.ModuleName
-            </p>
-
-            <p>
                 @Model.Preview.AvailableTime.ToString(
                     "dddd, dd MMMM yyyy")
             </p>
@@ -40,6 +35,25 @@
              class="text-danger"></div>
 
         <div class="mb-3">
+            <label asp-for="Input.ProgrammeModuleId"
+                   class="form-label"></label>
+
+            <select asp-for="Input.ProgrammeModuleId"
+                    class="form-select">
+                <option value="">Select a module</option>
+                @foreach (var module in Model.Preview.Modules)
+                {
+                    <option value="@module.ProgrammeModuleId">
+                        @module.ModuleCode - @module.ModuleName
+                    </option>
+                }
+            </select>
+
+            <span asp-validation-for="Input.ProgrammeModuleId"
+                  class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
             <label asp-for="Input.Location"
                    class="form-label"></label>
 
@@ -50,17 +64,7 @@
                   class="text-danger"></span>
         </div>
 
-        <div class="mb-3">
-            <label asp-for="Input.Duration"
-                   class="form-label"></label>
-
-            <select asp-for="Input.Duration"
-                    asp-items="Html.GetEnumSelectList<BC_CampusLearn.Models.Entities.SessionDuration>()"
-                    class="form-select"></select>
-
-            <span asp-validation-for="Input.Duration"
-                  class="text-danger"></span>
-        </div>
+        <p><strong>Duration:</strong> 1 hour</p>
 
         <div class="mb-3">
             <label asp-for="Input.Summary"

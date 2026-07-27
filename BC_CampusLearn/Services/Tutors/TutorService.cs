@@ -112,7 +112,7 @@ public class TutorService : ITutorService
                 .ThenInclude(item =>
                     item.ProgrammeModule)
             .Include(item => item.TutorAvailabilities)
-                .ThenInclude(slot => slot.ProgrammeModule)
+                .ThenInclude(slot => slot.Booking)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (tutor is null)
@@ -127,17 +127,24 @@ public class TutorService : ITutorService
             Email = string.Empty,
             Biography = tutor.Biography ?? string.Empty,
             ProfileImagePath = tutor.ProfileImagePath,
+            LinkedInUrl = GetSafeExternalUrl(tutor.LinkedInUrl),
+            GitHubUrl = GetSafeExternalUrl(tutor.GitHubUrl),
 
             Modules = tutor.TutorCourseModules
-                .Select(item =>
-                    item.ProgrammeModule.ModuleName)
-                .OrderBy(name => name)
+                .Select(item => new BookingModuleOptionViewModel
+                {
+                    ProgrammeModuleId = item.ProgrammeModuleId,
+                    ModuleCode = item.ProgrammeModule.ModuleCode,
+                    ModuleName = item.ProgrammeModule.ModuleName
+                })
+                .OrderBy(module => module.ModuleCode)
                 .ToList(),
 
             AvailabilitySlots =
                 tutor.TutorAvailabilities
                     .Where(slot =>
-                        slot.IsActive &&
+                        (slot.IsActive ||
+                         slot.Booking != null) &&
                         slot.AvailableTime >
                         DateTimeOffset.UtcNow)
                     .OrderBy(slot => slot.AvailableTime)
@@ -147,14 +154,11 @@ public class TutorService : ITutorService
                             TutorAvailabilityId =
                                 slot.TutorAvailabilityId,
 
-                            ModuleCode =
-                                slot.ProgrammeModule.ModuleCode,
-
-                            ModuleName =
-                                slot.ProgrammeModule.ModuleName,
-
                             AvailableTime =
-                                slot.AvailableTime
+                                slot.AvailableTime,
+
+                            IsBooked =
+                                slot.Booking != null
                         })
                     .ToList()
         };
@@ -185,4 +189,21 @@ public class TutorService : ITutorService
         int nameIndex = Math.Max(tutorId - 1, 0);
         return StaticTutorNames[nameIndex % StaticTutorNames.Length];
     }
+
+    private static string? GetSafeExternalUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url) ||
+            !Uri.TryCreate(
+                url.Trim(),
+                UriKind.Absolute,
+                out Uri? uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp &&
+             uri.Scheme != Uri.UriSchemeHttps))
+        {
+            return null;
+        }
+
+        return uri.AbsoluteUri;
+    }
+
 }

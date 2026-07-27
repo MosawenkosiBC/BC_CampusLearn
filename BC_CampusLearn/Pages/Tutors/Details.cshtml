@@ -2,72 +2,410 @@
 @model BC_CampusLearn.Pages.Tutors.DetailsModel
 
 @{
-    ViewData["Title"] = Model.Tutor.DisplayName;
+    ViewData["Title"] =
+        $"Schedule A Session With {Model.Tutor.DisplayName}";
 }
 
-<section class="container py-4">
-    <a asp-page="/Tutors/Index">
-        ← Back to tutors
-    </a>
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/components/navigation-drawer.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/tutor-details.css"
+          asp-append-version="true" />
+}
 
-    <div class="row mt-4">
-        <div class="col-md-4">
-            @if (!string.IsNullOrWhiteSpace(
-                Model.Tutor.ProfileImagePath))
-            {
-                <img src="@Model.Tutor.ProfileImagePath"
-                     alt="@Model.Tutor.DisplayName"
-                     class="img-fluid rounded" />
-            }
-        </div>
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
 
-        <div class="col-md-8">
-            <h1>@Model.Tutor.DisplayName</h1>
+<section class="tutor-details-page">
+    <header class="tutor-details-intro">
+        <h1>
+           Connect With @Model.Tutor.DisplayName
+        </h1>
+    </header>
 
-            <p>@Model.Tutor.Biography</p>
+    <div class="tutor-session-card"
+         data-tutor-session>
+        <section class="tutor-profile-panel"
+                 aria-labelledby="tutor-profile-heading">
+            <h2 id="tutor-profile-heading"
+                class="visually-hidden">
+                About @Model.Tutor.DisplayName
+            </h2>
 
-            <p>
-                <strong>Modules:</strong>
-                @string.Join(", ", Model.Tutor.Modules)
-            </p>
-        </div>
-    </div>
+            <header class="tutor-profile-intro">
+                <h1>
+                    @Model.Tutor.DisplayName
+                </h1>
+            </header>
 
-    <hr />
-
-    <h2 class="h4">Available sessions</h2>
-
-    @if (Model.Tutor.AvailabilitySlots.Count == 0)
-    {
-        <p>This tutor currently has no available sessions.</p>
-    }
-    else
-    {
-        <div class="list-group">
-            @foreach (
-                var slot in Model.Tutor.AvailabilitySlots)
-            {
-                <div class="list-group-item
-                    d-flex
-                    justify-content-between
-                    align-items-center">
-
-                    <span>
-                        <strong>
-                            @slot.ModuleCode - @slot.ModuleName
-                        </strong>
-                        <br />
-                        @slot.AvailableTime.ToString(
-                            "ddd, dd MMM yyyy HH:mm")
+            <div class="tutor-profile-image">
+                @if (!string.IsNullOrWhiteSpace(
+                    Model.Tutor.ProfileImagePath))
+                {
+                    <img src="@Model.Tutor.ProfileImagePath"
+                         alt="@Model.Tutor.DisplayName" />
+                }
+                else
+                {
+                    <span aria-hidden="true">
+                        @Model.Tutor.DisplayName[0]
                     </span>
+                }
+            </div>
 
-                    <a asp-page="/Bookings/Create"
-                       asp-route-slotId="@slot.TutorAvailabilityId"
-                       class="btn btn-primary">
-                        Book session
-                    </a>
+            <div class="profile-tabs"
+                 role="tablist"
+                 aria-label="Tutor information">
+                <div class="profile-accordion-item">
+                    <button type="button"
+                            class="profile-tab is-active"
+                            role="tab"
+                            aria-selected="true"
+                            aria-expanded="true"
+                            aria-controls="profile-panel-about"
+                            data-profile-tab="about">
+                        About
+                    </button>
+                    <div id="profile-panel-about"
+                         class="profile-tab-content is-active"
+                         role="tabpanel"
+                         data-profile-panel="about">
+                        <p>@Model.Tutor.Biography</p>
+                    </div>
                 </div>
-            }
-        </div>
-    }
+
+                <div class="profile-accordion-item">
+                    <button type="button"
+                            class="profile-tab"
+                            role="tab"
+                            aria-selected="false"
+                            aria-expanded="false"
+                            aria-controls="profile-panel-resources"
+                            data-profile-tab="resources">
+                        Learning Resources
+                    </button>
+                    <div id="profile-panel-resources"
+                         class="profile-tab-content"
+                         role="tabpanel"
+                         data-profile-panel="resources"
+                         hidden>
+                        <p>
+                            Learning resources will be shared after your
+                            session is booked.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="profile-accordion-item">
+                    <button type="button"
+                            class="profile-tab"
+                            role="tab"
+                            aria-selected="false"
+                            aria-expanded="false"
+                            aria-controls="profile-panel-profile"
+                            data-profile-tab="profile">
+                        Let's Connect
+                    </button>
+                    <div id="profile-panel-profile"
+                         class="profile-tab-content"
+                         role="tabpanel"
+                         data-profile-panel="profile"
+                         hidden>
+                        @if (!string.IsNullOrWhiteSpace(
+                                 Model.Tutor.LinkedInUrl) ||
+                             !string.IsNullOrWhiteSpace(
+                                 Model.Tutor.GitHubUrl))
+                        {
+                            <div class="tutor-social-links">
+                                @if (!string.IsNullOrWhiteSpace(
+                                         Model.Tutor.LinkedInUrl))
+                                {
+                                    <a href="@Model.Tutor.LinkedInUrl"
+                                       target="_blank"
+                                       rel="noopener noreferrer">
+                                        <svg viewBox="0 0 24 24"
+                                             aria-hidden="true">
+                                            <path fill="currentColor"
+                                                  d="M6.5 8.25H3.25V21H6.5V8.25ZM4.88 3A1.88 1.88 0 1 0 4.88 6.75 1.88 1.88 0 0 0 4.88 3ZM21 13.7c0-3.84-2.05-5.63-4.79-5.63-2.2 0-3.19 1.21-3.74 2.07V8.25H9.22V21h3.25v-6.31c0-1.66.31-3.27 2.37-3.27 2.03 0 2.06 1.9 2.06 3.38V21H21v-7.3Z" />
+                                        </svg>
+                                        <span>
+                                            <strong>LinkedIn</strong>
+                                            View professional profile
+                                        </span>
+                                    </a>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(
+                                         Model.Tutor.GitHubUrl))
+                                {
+                                    <a href="@Model.Tutor.GitHubUrl"
+                                       target="_blank"
+                                       rel="noopener noreferrer">
+                                        <svg viewBox="0 0 24 24"
+                                             aria-hidden="true">
+                                            <path fill="currentColor"
+                                                  d="M12 2C6.48 2 2 6.59 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49v-1.92c-2.78.62-3.37-1.21-3.37-1.21-.45-1.19-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .08 1.53 1.06 1.53 1.06.9 1.57 2.35 1.12 2.92.86.09-.66.35-1.12.64-1.37-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.04 1.03-2.76-.1-.26-.45-1.31.1-2.72 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.98a9.3 9.3 0 0 1 2.5.35c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.46.1 2.72.64.72 1.03 1.64 1.03 2.76 0 3.94-2.34 4.8-4.57 5.06.36.32.68.94.68 1.9v2.77c0 .27.18.59.69.49A10.23 10.23 0 0 0 22 12.25C22 6.59 17.52 2 12 2Z" />
+                                        </svg>
+                                        <span>
+                                            <strong>GitHub</strong>
+                                            View projects and code
+                                        </span>
+                                    </a>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p>
+                                @Model.Tutor.DisplayName has not added
+                                profile links yet.
+                            </p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="session-picker-panel"
+                 aria-labelledby="session-picker-heading">
+            <header class="session-picker-header">
+                <h2 id="session-picker-heading">
+                    Choose A Session
+                </h2>
+                <p>
+                    Select an available date and time that works
+                    best for you.
+                </p>
+            </header>
+
+            <div class="session-picker-card">
+                <aside class="module-selector"
+                       aria-labelledby="module-selector-heading">
+
+                    <select class="module-select-mobile"
+                            data-module-select
+                            aria-labelledby="module-selector-heading">
+                        <option value="">Select a module</option>
+                        @foreach (var module in Model.Tutor.Modules)
+                        {
+                            <option value="@module.ProgrammeModuleId"
+                                    data-module-code="@module.ModuleCode"
+                                    data-module-name="@module.ModuleName">
+                                @module.ModuleCode: @module.ModuleName
+                            </option>
+                        }
+                    </select>
+
+                    <button type="button"
+                            class="module-search-trigger"
+                            data-module-search-trigger
+                            aria-expanded="false"
+                            aria-controls="module-search-panel">
+                        <span data-module-search-trigger-label>
+                            Choose a module
+                        </span>
+                        <svg viewBox="0 0 16 16"
+                             aria-hidden="true">
+                            <path d="m4 6 4 4 4-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="1.6" />
+                        </svg>
+                    </button>
+
+                    <div id="module-search-panel"
+                         class="module-search-panel"
+                         data-module-search-panel
+                         hidden>
+                        <label class="visually-hidden"
+                               for="module-search-input">
+                            Search modules
+                        </label>
+                        <div class="module-search-field">
+                            <svg viewBox="0 0 24 24"
+                                 aria-hidden="true">
+                                <circle cx="11"
+                                        cy="11"
+                                        r="7"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.8" />
+                                <path d="m16.25 16.25 4 4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      stroke-linecap="round"
+                                      stroke-width="1.8" />
+                            </svg>
+                            <input id="module-search-input"
+                                   type="search"
+                                   data-module-search-input
+                                   placeholder="Search by code or module name"
+                                   autocomplete="off" />
+                        </div>
+
+                        <div class="module-search-results"
+                             data-module-search-results
+                             role="listbox"
+                             aria-label="Available modules">
+                            @foreach (var module in Model.Tutor.Modules)
+                            {
+                                <button type="button"
+                                        class="module-search-option"
+                                        data-search-module-id="@module.ProgrammeModuleId"
+                                        data-module-code="@module.ModuleCode"
+                                        data-module-name="@module.ModuleName"
+                                        role="option"
+                                        aria-selected="false">
+                                    <strong>@module.ModuleCode</strong>
+                                    <span>@module.ModuleName</span>
+                                </button>
+                            }
+                        </div>
+
+                        <p class="module-search-empty"
+                           data-module-search-empty
+                           hidden>
+                            No matching modules found.
+                        </p>
+                    </div>
+
+                    <h3 id="module-selector-heading"
+                        class="module-heading-desktop">
+                        Select a module
+                    </h3>
+
+                    <div class="module-filter-desktop">
+                        <svg viewBox="0 0 24 24"
+                             aria-hidden="true">
+                            <circle cx="11"
+                                    cy="11"
+                                    r="7"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.8" />
+                            <path d="m16.25 16.25 4 4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-linecap="round"
+                                  stroke-width="1.8" />
+                        </svg>
+                        <label class="visually-hidden"
+                               for="desktop-module-search">
+                            Search modules
+                        </label>
+                        <input id="desktop-module-search"
+                               type="search"
+                               data-desktop-module-search
+                               placeholder="Search modules"
+                               autocomplete="off" />
+                    </div>
+
+                    <p class="module-filter-empty"
+                       data-desktop-module-empty
+                       hidden>
+                        No matching modules found.
+                    </p>
+
+                    <div class="module-options">
+                        @foreach (var module in Model.Tutor.Modules)
+                        {
+                            <button type="button"
+                                    class="module-option"
+                                    data-module-id="@module.ProgrammeModuleId"
+                                    data-module-code="@module.ModuleCode"
+                                    data-module-name="@module.ModuleName">
+                                <span>
+                                    <span class="module-option-code">
+                                        @module.ModuleCode
+                                    </span><span class="module-option-name">: @module.ModuleName</span>
+                                </span>
+                            </button>
+                        }
+                    </div>
+                </aside>
+
+                <div class="date-time-selector">
+                        <div class="calendar-controls">
+                            <button type="button"
+                                    data-calendar-previous
+                                    aria-label="Previous available month">
+                                ‹
+                            </button>
+                            <div class="calendar-period"
+                                 aria-live="polite">
+                                <span data-calendar-month></span>
+                                <span data-calendar-year></span>
+                            </div>
+                            <button type="button"
+                                    data-calendar-next
+                                    aria-label="Next available month">
+                                ›
+                            </button>
+                        </div>
+
+                        <div class="calendar-weekdays"
+                             aria-hidden="true">
+                            <span>Mon</span>
+                            <span>Tue</span>
+                            <span>Wed</span>
+                            <span>Thu</span>
+                            <span>Fri</span>
+                            <span>Sat</span>
+                            <span>Sun</span>
+                        </div>
+
+                        <div class="calendar-grid"
+                             data-calendar-grid
+                             aria-label="Available session dates">
+                        </div>
+
+                        <div class="slot-picker">
+                            <h3>Choose Your Preferred Slot</h3>
+                            <div class="slot-options"
+                                 data-slot-options>
+                            </div>
+                        </div>
+
+                        <div class="selection-summary"
+                             aria-live="polite">
+                            <h3>Confirm Your Selection</h3>
+                            <p data-selection-module>
+                                No module selected
+                            </p>
+                            <p data-selection-time>
+                                No date or time selected
+                            </p>
+                        </div>
+
+                        <a class="save-session"
+                           data-save-session
+                           aria-disabled="true">
+                            Save and Continue
+                        </a>
+
+                        <div hidden data-availability-data>
+                            @foreach (
+                                var slot in Model.Tutor.AvailabilitySlots)
+                            {
+                            <span data-slot-id="@slot.TutorAvailabilityId"
+                                  data-slot-time="@slot.AvailableTime.ToString("O")"
+                                  data-slot-booked="@slot.IsBooked.ToString().ToLowerInvariant()">
+                            </span>
+                            }
+                        </div>
+                </div>
+            </div>
+        </section>
+    </div>
 </section>
+
+@section Scripts {
+    <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+    <script src="~/js/tutor-details.js"
+            asp-append-version="true"></script>
+}

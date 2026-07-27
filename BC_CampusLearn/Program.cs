@@ -3,6 +3,7 @@ using BC_CampusLearn.Authentication.Development;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Data.Seed;
 using BC_CampusLearn.Services.Bookings;
+using BC_CampusLearn.Services.Availability;
 using BC_CampusLearn.Services.Tutors;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -73,6 +74,9 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IBookingService,
     BookingService>();
+
+builder.Services.AddHostedService<
+    ExpiredAvailabilityCleanupService>();
 
 builder.Services.AddRazorPages(options =>
 {

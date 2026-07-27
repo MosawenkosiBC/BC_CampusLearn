@@ -6,6 +6,10 @@ public class Booking
 
     public int TutorAvailabilityId { get; set; }
 
+    public int TutorId { get; set; }
+
+    public int ProgrammeModuleId { get; set; }
+
     // Identity of the student from Entra claims.
     public string StudentObjectId { get; set; } = string.Empty;
 
@@ -27,6 +31,10 @@ public class Booking
     public DateTimeOffset DateBooked { get; set; }
 
     public TutorAvailability TutorAvailability { get; set; } = null!;
+
+    public ProgrammeModule ProgrammeModule { get; set; } = null!;
+
+    public TutorCourseModule TutorCourseModule { get; set; } = null!;
 
     public ICollection<BookingPreparationLink> PreparationLinks
     { get; set; } = new List<BookingPreparationLink>();

@@ -43,8 +43,20 @@ public class BookingService : IBookingService
                     TutorName =
                         slot.Tutor.BcUser.PersonnelNumber,
 
-                    ModuleName =
-                        slot.ProgrammeModule.ModuleName,
+                    Modules = slot.Tutor.TutorCourseModules
+                        .OrderBy(assignment =>
+                            assignment.ProgrammeModule.ModuleCode)
+                        .Select(assignment =>
+                            new BookingModuleOptionViewModel
+                            {
+                                ProgrammeModuleId =
+                                    assignment.ProgrammeModuleId,
+                                ModuleCode =
+                                    assignment.ProgrammeModule.ModuleCode,
+                                ModuleName =
+                                    assignment.ProgrammeModule.ModuleName
+                            })
+                        .ToList(),
 
                     AvailableTime = slot.AvailableTime
                 })
@@ -63,6 +75,8 @@ public class BookingService : IBookingService
             await _context.TutorAvailabilities
                 .Include(item => item.Tutor)
                     .ThenInclude(tutor => tutor.BcUser)
+                .Include(item => item.Tutor)
+                    .ThenInclude(tutor => tutor.TutorCourseModules)
                 .FirstOrDefaultAsync(
                     item =>
                         item.TutorAvailabilityId ==
@@ -82,10 +96,15 @@ public class BookingService : IBookingService
                 "This availability slot is no longer available.");
         }
 
-        if (!Enum.IsDefined(input.Duration))
+        bool tutorCanTeachModule =
+            slot.Tutor.TutorCourseModules.Any(assignment =>
+                assignment.ProgrammeModuleId ==
+                    input.ProgrammeModuleId);
+
+        if (!tutorCanTeachModule)
         {
             return BookingCreationResult.Failure(
-                "Select a valid session duration.");
+                "Select a module assigned to this tutor.");
         }
 
         List<string> preparationLinks = input.PreparationLinks
@@ -114,6 +133,10 @@ public class BookingService : IBookingService
             TutorAvailabilityId =
                 slot.TutorAvailabilityId,
 
+            TutorId = slot.TutorId,
+
+            ProgrammeModuleId = input.ProgrammeModuleId,
+
             StudentObjectId = student.ObjectId,
             StudentTenantId = student.TenantId,
             StudentName = student.DisplayName,
@@ -125,7 +148,7 @@ public class BookingService : IBookingService
 
             Status = BookingStatus.Pending,
 
-            Duration = input.Duration,
+            Duration = SessionDuration.OneHour,
 
             DateBooked = DateTimeOffset.UtcNow
         };

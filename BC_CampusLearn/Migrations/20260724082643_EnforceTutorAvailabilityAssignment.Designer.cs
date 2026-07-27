@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260724082643_EnforceTutorAvailabilityAssignment")]
+    partial class EnforceTutorAvailabilityAssignment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -91,9 +94,6 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<int>("ProgrammeModuleId")
-                        .HasColumnType("int");
-
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -123,25 +123,12 @@ namespace BC_CampusLearn.Migrations
                     b.Property<int>("TutorAvailabilityId")
                         .HasColumnType("int");
 
-                    b.Property<int>("TutorId")
-                        .HasColumnType("int");
-
                     b.HasKey("BookingId");
-
-                    b.HasIndex("ProgrammeModuleId");
 
                     b.HasIndex("TutorAvailabilityId")
                         .IsUnique();
 
-                    b.HasIndex("TutorAvailabilityId", "TutorId")
-                        .IsUnique();
-
-                    b.HasIndex("TutorId", "ProgrammeModuleId");
-
-                    b.ToTable("Bookings", t =>
-                        {
-                            t.HasCheckConstraint("CK_Bookings_Duration_OneHour", "[Duration] = 1");
-                        });
+                    b.ToTable("Bookings");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.BookingDocument", b =>
@@ -401,6 +388,9 @@ namespace BC_CampusLearn.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<int>("ProgrammeModuleId")
+                        .HasColumnType("int");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -412,7 +402,9 @@ namespace BC_CampusLearn.Migrations
 
                     b.HasKey("TutorAvailabilityId");
 
-                    b.HasIndex("TutorId", "AvailableTime")
+                    b.HasIndex("ProgrammeModuleId");
+
+                    b.HasIndex("TutorId", "ProgrammeModuleId", "AvailableTime")
                         .IsUnique();
 
                     b.ToTable("TutorAvailabilities");
@@ -479,30 +471,13 @@ namespace BC_CampusLearn.Migrations
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.Booking", b =>
                 {
-                    b.HasOne("BC_CampusLearn.Models.Entities.ProgrammeModule", "ProgrammeModule")
-                        .WithMany("Bookings")
-                        .HasForeignKey("ProgrammeModuleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("BC_CampusLearn.Models.Entities.TutorAvailability", "TutorAvailability")
                         .WithOne("Booking")
-                        .HasForeignKey("BC_CampusLearn.Models.Entities.Booking", "TutorAvailabilityId", "TutorId")
-                        .HasPrincipalKey("BC_CampusLearn.Models.Entities.TutorAvailability", "TutorAvailabilityId", "TutorId")
+                        .HasForeignKey("BC_CampusLearn.Models.Entities.Booking", "TutorAvailabilityId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("BC_CampusLearn.Models.Entities.TutorCourseModule", "TutorCourseModule")
-                        .WithMany("Bookings")
-                        .HasForeignKey("TutorId", "ProgrammeModuleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ProgrammeModule");
 
                     b.Navigation("TutorAvailability");
-
-                    b.Navigation("TutorCourseModule");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.BookingDocument", b =>
@@ -559,13 +534,29 @@ namespace BC_CampusLearn.Migrations
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorAvailability", b =>
                 {
+                    b.HasOne("BC_CampusLearn.Models.Entities.ProgrammeModule", "ProgrammeModule")
+                        .WithMany("TutorAvailabilities")
+                        .HasForeignKey("ProgrammeModuleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("BC_CampusLearn.Models.Entities.Tutor", "Tutor")
                         .WithMany("TutorAvailabilities")
                         .HasForeignKey("TutorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("BC_CampusLearn.Models.Entities.TutorCourseModule", "TutorCourseModule")
+                        .WithMany("TutorAvailabilities")
+                        .HasForeignKey("TutorId", "ProgrammeModuleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ProgrammeModule");
+
                     b.Navigation("Tutor");
+
+                    b.Navigation("TutorCourseModule");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorCourseModule", b =>
@@ -612,7 +603,7 @@ namespace BC_CampusLearn.Migrations
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.ProgrammeModule", b =>
                 {
-                    b.Navigation("Bookings");
+                    b.Navigation("TutorAvailabilities");
 
                     b.Navigation("TutorCourseModules");
                 });
@@ -640,7 +631,7 @@ namespace BC_CampusLearn.Migrations
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorCourseModule", b =>
                 {
-                    b.Navigation("Bookings");
+                    b.Navigation("TutorAvailabilities");
                 });
 #pragma warning restore 612, 618
         }

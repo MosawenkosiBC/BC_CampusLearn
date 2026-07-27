@@ -99,7 +99,6 @@ public static class DevelopmentDataSeeder
         tutorOne.TutorAvailabilities.Add(
             CreateSlot(
                 tutorOne,
-                programming,
                 tomorrow,
                 10,
                 southAfricaOffset));
@@ -107,7 +106,6 @@ public static class DevelopmentDataSeeder
         tutorOne.TutorAvailabilities.Add(
             CreateSlot(
                 tutorOne,
-                webDevelopment,
                 tomorrow,
                 14,
                 southAfricaOffset));
@@ -115,7 +113,6 @@ public static class DevelopmentDataSeeder
         tutorTwo.TutorAvailabilities.Add(
             CreateSlot(
                 tutorTwo,
-                database,
                 tomorrow.AddDays(1),
                 11,
                 southAfricaOffset));
@@ -123,7 +120,6 @@ public static class DevelopmentDataSeeder
         tutorTwo.TutorAvailabilities.Add(
             CreateSlot(
                 tutorTwo,
-                database,
                 tomorrow.AddDays(2),
                 13,
                 southAfricaOffset));
@@ -156,7 +152,6 @@ public static class DevelopmentDataSeeder
 
     private static TutorAvailability CreateSlot(
         Tutor tutor,
-        ProgrammeModule programmeModule,
         DateTime date,
         int startHour,
         TimeSpan offset)
@@ -170,7 +165,6 @@ public static class DevelopmentDataSeeder
         return new TutorAvailability
         {
             Tutor = tutor,
-            ProgrammeModule = programmeModule,
             AvailableTime = start,
             IsActive = true
         };

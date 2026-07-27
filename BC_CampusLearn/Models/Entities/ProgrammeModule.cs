@@ -17,6 +17,6 @@ public class ProgrammeModule
     public ICollection<TutorCourseModule> TutorCourseModules { get; set; }
         = new List<TutorCourseModule>();
 
-    public ICollection<TutorAvailability> TutorAvailabilities { get; set; }
-        = new List<TutorAvailability>();
+    public ICollection<Booking> Bookings { get; set; }
+        = new List<Booking>();
 }

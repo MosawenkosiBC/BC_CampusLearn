@@ -36,13 +36,40 @@ public class BookingConfiguration
         builder.Property(booking => booking.DateBooked)
             .HasColumnType("datetimeoffset");
 
+        builder.ToTable(table =>
+            table.HasCheckConstraint(
+                "CK_Bookings_Duration_OneHour",
+                "[Duration] = 1"));
+
         builder.HasIndex(booking => booking.TutorAvailabilityId)
             .IsUnique();
 
         builder.HasOne(booking => booking.TutorAvailability)
             .WithOne(slot => slot.Booking)
-            .HasForeignKey<Booking>(
-                booking => booking.TutorAvailabilityId)
+            .HasForeignKey<Booking>(booking => new
+            {
+                booking.TutorAvailabilityId,
+                booking.TutorId
+            })
+            .HasPrincipalKey<TutorAvailability>(slot => new
+            {
+                slot.TutorAvailabilityId,
+                slot.TutorId
+            })
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(booking => booking.ProgrammeModule)
+            .WithMany(module => module.Bookings)
+            .HasForeignKey(booking => booking.ProgrammeModuleId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(booking => booking.TutorCourseModule)
+            .WithMany(assignment => assignment.Bookings)
+            .HasForeignKey(booking => new
+            {
+                booking.TutorId,
+                booking.ProgrammeModuleId
+            })
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

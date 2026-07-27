@@ -26,6 +26,7 @@ public class CreateModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(
         int slotId,
+        int? programmeModuleId,
         CancellationToken cancellationToken)
     {
         BookingPreviewViewModel? preview =
@@ -41,6 +42,15 @@ public class CreateModel : PageModel
         Preview = preview;
 
         Input.TutorAvailabilityId = slotId;
+
+        if (programmeModuleId.HasValue &&
+            preview.Modules.Any(module =>
+                module.ProgrammeModuleId ==
+                    programmeModuleId.Value))
+        {
+            Input.ProgrammeModuleId =
+                programmeModuleId.Value;
+        }
 
         return Page();
     }

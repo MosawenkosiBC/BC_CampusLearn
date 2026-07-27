@@ -102,12 +102,10 @@ public class DashboardModel : PageModel
                                 .Tutor.BcUser.PersonnelNumber,
 
                         ModuleName =
-                            booking.TutorAvailability
-                                .ProgrammeModule.ModuleName,
+                            booking.ProgrammeModule.ModuleName,
 
                         ModuleCode =
-                            booking.TutorAvailability
-                                .ProgrammeModule.ModuleCode,
+                            booking.ProgrammeModule.ModuleCode,
 
                         Location = booking.Location,
 

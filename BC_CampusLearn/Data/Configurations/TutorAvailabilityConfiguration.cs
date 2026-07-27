@@ -12,6 +12,12 @@ public class TutorAvailabilityConfiguration
     {
         builder.HasKey(slot => slot.TutorAvailabilityId);
 
+        builder.HasAlternateKey(slot => new
+        {
+            slot.TutorAvailabilityId,
+            slot.TutorId
+        });
+
         builder.Property(slot => slot.AvailableTime)
             .HasColumnType("datetimeoffset");
 
@@ -23,15 +29,9 @@ public class TutorAvailabilityConfiguration
             .HasForeignKey(slot => slot.TutorId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(slot => slot.ProgrammeModule)
-            .WithMany(module => module.TutorAvailabilities)
-            .HasForeignKey(slot => slot.ProgrammeModuleId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         builder.HasIndex(slot => new
         {
             slot.TutorId,
-            slot.ProgrammeModuleId,
             slot.AvailableTime
         })
             .IsUnique();

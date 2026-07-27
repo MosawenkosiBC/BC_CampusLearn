@@ -9,4 +9,7 @@ public class TutorCourseModule
     public int ProgrammeModuleId { get; set; }
 
     public ProgrammeModule ProgrammeModule { get; set; } = null!;
+
+    public ICollection<Booking> Bookings { get; set; }
+        = new List<Booking>();
 }

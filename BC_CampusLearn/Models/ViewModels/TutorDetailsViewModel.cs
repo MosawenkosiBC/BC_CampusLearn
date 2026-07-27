@@ -12,8 +12,12 @@ public class TutorDetailsViewModel
 
     public string? ProfileImagePath { get; set; }
 
-    public List<string> Modules { get; set; } =
-        new List<string>();
+    public string? LinkedInUrl { get; set; }
+
+    public string? GitHubUrl { get; set; }
+
+    public List<BookingModuleOptionViewModel> Modules { get; set; } =
+        new List<BookingModuleOptionViewModel>();
 
     public List<AvailabilitySlotViewModel> AvailabilitySlots
     { get; set; } =
