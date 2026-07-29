@@ -7,18 +7,6 @@ namespace BC_CampusLearn.Services.Tutors;
 
 public class TutorService : ITutorService
 {
-    private static readonly string[] StaticTutorNames =
-    {
-        "Michelle Duma",
-        "Mishakaylin Diniso",
-        "Naledi Mogadingoane",
-        "Karabo Mosethe",
-        "Mosa Msiza",
-        "Thembi Sefini",
-        "Karabelo Mokhubu",
-        "Keleabetswe Molefe"
-    };
-
     private static readonly string[] FallbackProfileImages =
     {
         "/Media/tutorsProfiles/Tutor 1.webp",
@@ -66,7 +54,7 @@ public class TutorService : ITutorService
             .Select((tutor, index) => new TutorCardViewModel
             {
                 TutorId = tutor.TutorId,
-                DisplayName = GetStaticTutorName(tutor.TutorId),
+                DisplayName = TutorDisplayNames.GetName(tutor.TutorId),
                 Biography = tutor.Biography ?? string.Empty,
                 ProfileImagePath = string.IsNullOrWhiteSpace(tutor.ProfileImagePath)
                     ? FallbackProfileImages[index % FallbackProfileImages.Length]
@@ -123,7 +111,7 @@ public class TutorService : ITutorService
         return new TutorDetailsViewModel
         {
             TutorId = tutor.TutorId,
-            DisplayName = GetStaticTutorName(tutor.TutorId),
+            DisplayName = TutorDisplayNames.GetName(tutor.TutorId),
             Email = string.Empty,
             Biography = tutor.Biography ?? string.Empty,
             ProfileImagePath = tutor.ProfileImagePath,
@@ -182,12 +170,6 @@ public class TutorService : ITutorService
             .AsNoTracking()
             .OrderBy(programme => programme.Name)
             .ToListAsync(cancellationToken);
-    }
-
-    private static string GetStaticTutorName(int tutorId)
-    {
-        int nameIndex = Math.Max(tutorId - 1, 0);
-        return StaticTutorNames[nameIndex % StaticTutorNames.Length];
     }
 
     private static string? GetSafeExternalUrl(string? url)

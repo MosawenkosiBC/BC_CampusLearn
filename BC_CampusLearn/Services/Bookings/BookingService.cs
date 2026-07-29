@@ -2,21 +2,40 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
+using BC_CampusLearn.Services.Tutors;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Services.Bookings;
 
 public class BookingService : IBookingService
 {
+    private const long MaximumDocumentSize = 10 * 1024 * 1024;
+
+    private static readonly HashSet<string> AllowedDocumentExtensions =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".pdf",
+            ".doc",
+            ".docx",
+            ".png",
+            ".jpg",
+            ".jpeg"
+        };
+
     private readonly ApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IWebHostEnvironment _environment;
 
     public BookingService(
         ApplicationDbContext context,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        IWebHostEnvironment environment)
     {
         _context = context;
         _currentUserService = currentUserService;
+        _environment = environment;
     }
 
     public async Task<BookingPreviewViewModel?>
@@ -24,7 +43,8 @@ public class BookingService : IBookingService
             int tutorAvailabilityId,
             CancellationToken cancellationToken = default)
     {
-        return await _context.TutorAvailabilities
+        BookingPreviewViewModel? preview =
+            await _context.TutorAvailabilities
             .AsNoTracking()
             .Where(slot =>
                 slot.TutorAvailabilityId ==
@@ -39,9 +59,6 @@ public class BookingService : IBookingService
                         slot.TutorAvailabilityId,
 
                     TutorId = slot.TutorId,
-
-                    TutorName =
-                        slot.Tutor.BcUser.PersonnelNumber,
 
                     Modules = slot.Tutor.TutorCourseModules
                         .OrderBy(assignment =>
@@ -61,6 +78,14 @@ public class BookingService : IBookingService
                     AvailableTime = slot.AvailableTime
                 })
             .FirstOrDefaultAsync(cancellationToken);
+
+        if (preview is not null)
+        {
+            preview.TutorName =
+                TutorDisplayNames.GetName(preview.TutorId);
+        }
+
+        return preview;
     }
 
     public async Task<BookingCreationResult>
@@ -126,6 +151,19 @@ public class BookingService : IBookingService
                 "Add no more than three valid HTTP or HTTPS links.");
         }
 
+        List<IFormFile> documents = input.Documents
+            .Where(document => document is not null)
+            .ToList();
+
+        string? documentValidationError =
+            ValidateDocuments(documents);
+
+        if (documentValidationError is not null)
+        {
+            return BookingCreationResult.Failure(
+                documentValidationError);
+        }
+
         slot.IsActive = false;
 
         var booking = new Booking
@@ -163,6 +201,96 @@ public class BookingService : IBookingService
                 });
         }
 
+        string? documentDirectory = null;
+
+        if (documents.Count > 0)
+        {
+            string directoryName =
+                Guid.NewGuid().ToString("N");
+            string relativeDirectory = Path.Combine(
+                "App_Data",
+                "booking-documents",
+                directoryName);
+
+            documentDirectory = Path.Combine(
+                _environment.ContentRootPath,
+                relativeDirectory);
+
+            try
+            {
+                Directory.CreateDirectory(documentDirectory);
+
+                for (int index = 0;
+                    index < documents.Count;
+                    index++)
+                {
+                    IFormFile document = documents[index];
+                    string originalFileName =
+                        Path.GetFileName(document.FileName);
+                    string extension =
+                        Path.GetExtension(originalFileName)
+                            .ToLowerInvariant();
+                    string storedFileName =
+                        $"{Guid.NewGuid():N}{extension}";
+                    string storedFilePath = Path.Combine(
+                        documentDirectory,
+                        storedFileName);
+
+                    await using var stream = new FileStream(
+                        storedFilePath,
+                        FileMode.CreateNew,
+                        FileAccess.Write,
+                        FileShare.None,
+                        bufferSize: 81920,
+                        useAsync: true);
+
+                    await document.CopyToAsync(
+                        stream,
+                        cancellationToken);
+
+                    booking.Documents.Add(
+                        new BookingDocument
+                        {
+                            Position = (byte)(index + 1),
+                            OriginalFileName = originalFileName,
+                            StoragePath = Path.Combine(
+                                    relativeDirectory,
+                                    storedFileName)
+                                .Replace('\\', '/'),
+                            ContentType =
+                                GetSafeContentType(document.ContentType),
+                            SizeBytes = document.Length,
+                            UploadedAt = DateTimeOffset.UtcNow
+                        });
+                }
+            }
+            catch (OperationCanceledException)
+                when (cancellationToken.IsCancellationRequested)
+            {
+                DeleteDocumentDirectory(documentDirectory);
+                throw;
+            }
+            catch (IOException)
+            {
+                DeleteDocumentDirectory(documentDirectory);
+
+                return BookingCreationResult.Failure(
+                    "The documents could not be stored. Please try again.");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                DeleteDocumentDirectory(documentDirectory);
+
+                return BookingCreationResult.Failure(
+                    "The documents could not be stored. Please try again.");
+            }
+            catch
+            {
+                DeleteDocumentDirectory(documentDirectory);
+                throw;
+            }
+        }
+
         _context.Bookings.Add(booking);
 
         try
@@ -175,15 +303,90 @@ public class BookingService : IBookingService
         }
         catch (DbUpdateConcurrencyException)
         {
+            DeleteDocumentDirectory(documentDirectory);
+
             return BookingCreationResult.Failure(
                 "Another student booked this slot first. " +
                 "Please select another time.");
         }
         catch (DbUpdateException)
         {
+            DeleteDocumentDirectory(documentDirectory);
+
             return BookingCreationResult.Failure(
                 "The booking could not be saved. " +
                 "The slot may already have been booked.");
+        }
+        catch
+        {
+            DeleteDocumentDirectory(documentDirectory);
+            throw;
+        }
+    }
+
+    private static string? ValidateDocuments(
+        IReadOnlyCollection<IFormFile> documents)
+    {
+        if (documents.Count > 2)
+        {
+            return "Add no more than two documents.";
+        }
+
+        foreach (IFormFile document in documents)
+        {
+            string originalFileName =
+                Path.GetFileName(document.FileName);
+            string extension =
+                Path.GetExtension(originalFileName);
+
+            if (string.IsNullOrWhiteSpace(originalFileName) ||
+                originalFileName.Length > 255 ||
+                !AllowedDocumentExtensions.Contains(extension))
+            {
+                return "Documents must be PDF, Word, PNG, or JPG files.";
+            }
+
+            if (document.Length <= 0 ||
+                document.Length > MaximumDocumentSize)
+            {
+                return "Each document must be larger than 0 bytes " +
+                    "and no more than 10 MB.";
+            }
+        }
+
+        return null;
+    }
+
+    private static string GetSafeContentType(string? contentType)
+    {
+        return string.IsNullOrWhiteSpace(contentType) ||
+            contentType.Length > 100
+            ? "application/octet-stream"
+            : contentType;
+    }
+
+    private static void DeleteDocumentDirectory(
+        string? documentDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(documentDirectory) ||
+            !Directory.Exists(documentDirectory))
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.Delete(
+                documentDirectory,
+                recursive: true);
+        }
+        catch (IOException)
+        {
+            // Best-effort cleanup after a failed booking.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Best-effort cleanup after a failed booking.
         }
     }
 }

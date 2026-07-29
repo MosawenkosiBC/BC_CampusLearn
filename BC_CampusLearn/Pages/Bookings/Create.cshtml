@@ -3,106 +3,476 @@
 
 @{
     ViewData["Title"] = "Book session";
+
+    var selectedModule = Model.Preview.Modules.FirstOrDefault(
+        module =>
+            module.ProgrammeModuleId ==
+            Model.Input.ProgrammeModuleId);
+
+    string selectedModuleName = selectedModule is null
+        ? string.Empty
+        : $"{selectedModule.ModuleCode} - {selectedModule.ModuleName}";
+
+    var existingLinks = Model.Input.PreparationLinks
+        .Where(link => !string.IsNullOrWhiteSpace(link))
+        .Take(3)
+        .Select(link => link!.Trim())
+        .ToList();
+
+    bool startOnSecondStage =
+        ViewContext.HttpContext.Request.Method == "POST" &&
+        ViewData.ModelState.GetFieldValidationState(
+            "Input.Location") !=
+        Microsoft.AspNetCore.Mvc.ModelBinding
+            .ModelValidationState.Invalid;
 }
 
-<section class="container py-4"
-         style="max-width: 720px;">
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/bookings-create.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/components/navigation-drawer.css"
+          asp-append-version="true" />
+}
 
-    <h1>Confirm your booking</h1>
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
 
-    <div class="card mb-4">
-        <div class="card-body">
-            <h2 class="h5">
-                @Model.Preview.TutorName
-            </h2>
+<section class="container py-4 booking-create-page">
 
-            <p>
-                @Model.Preview.AvailableTime.ToString(
-                    "dddd, dd MMMM yyyy")
-            </p>
+    <h1 class="booking-create-title">Confirm Your Booking</h1>
 
-            <p>
-                @Model.Preview.AvailableTime.ToString("HH:mm")
-            </p>
+    <section class="booking-terms"
+             aria-labelledby="booking-terms-title">
+        <div class="booking-terms-content">
+            <h2 id="booking-terms-title">Terms &amp; Conditions</h2>
+
+            <ul>
+                <li>
+                    All appointments with tutors must be scheduled a day ahead.
+                    We cannot organise a tutor for you at short notice.
+                </li>
+                <li>All sessions are limited to 1 hour.</li>
+                <li>You must come prepared for the sessions.</li>
+            </ul>
+
+            <div id="booking-terms-more"
+                 class="booking-terms-more"
+                 data-booking-terms-more>
+                <ul>
+                <li>
+                    You will be given some exercises to do in your sessions.
+                </li>
+                <li>All online sessions via MS Teams are recorded.</li>
+                <li>
+                    All face-to-face sessions are held at the study room.
+                </li>
+                <li>Respect the time and effort of your tutor.</li>
+                <li>
+                    You will be required to complete a tutor evaluation form.
+                </li>
+                </ul>
+
+                <p>
+                    For any inquiries, email:
+                    <a href="mailto:tutors@belgiumcampus.ac.za">
+                        tutors@belgiumcampus.ac.za
+                    </a>
+                </p>
+            </div>
+
+            <button type="button"
+                    class="booking-terms-toggle"
+                    data-booking-terms-toggle
+                    aria-controls="booking-terms-more"
+                    aria-expanded="false"
+                    hidden>
+                Read more
+            </button>
         </div>
+    </section>
+
+    <div class="booking-form-content">
+        <header class="booking-form-heading">
+            <h2 id="booking-form-title">Booking Form</h2>
+            <p>Complete the details below to book your tutoring session.</p>
+        </header>
+
+        <form method="post"
+              enctype="multipart/form-data"
+              class="booking-form-card"
+              data-booking-form
+              novalidate
+              aria-labelledby="booking-form-title">
+            <input type="hidden"
+                   asp-for="Input.TutorAvailabilityId" />
+            <input type="hidden"
+                   asp-for="Input.ProgrammeModuleId" />
+
+            <div asp-validation-summary="ModelOnly"
+                 class="booking-validation-summary text-danger"></div>
+
+            <nav class="booking-mobile-progress @(startOnSecondStage ? "is-stage-two" : null)"
+                 aria-label="Booking form progress">
+                <button type="button"
+                        class="booking-mobile-step @(!startOnSecondStage ? "is-active" : "is-complete")"
+                        data-booking-stage-target="1"
+                        aria-current="@(!startOnSecondStage ? "step" : null)">
+                    <span data-booking-step-number="1">
+                        1
+                    </span>
+                    <span>
+                        <strong>Details</strong>
+                    </span>
+                </button>
+
+                <button type="button"
+                        class="booking-mobile-step @(startOnSecondStage ? "is-active" : null)"
+                        data-booking-stage-target="2"
+                        aria-current="@(startOnSecondStage ? "step" : null)">
+                    <span data-booking-step-number="2">2</span>
+                    <span>
+                        <strong>Prepare</strong>
+                    </span>
+                </button>
+
+                <button type="button"
+                        class="booking-mobile-step"
+                        data-booking-stage-target="3">
+                    <span data-booking-step-number="3">3</span>
+                    <span>
+                        <strong>Confirm</strong>
+                    </span>
+                </button>
+            </nav>
+
+            <section class="booking-form-stage @(!startOnSecondStage ? "is-active" : null)"
+                     data-booking-stage="1">
+                <div class="booking-field-grid">
+                <div class="booking-field">
+                    <label for="booking-tutor-name">Tutor Name</label>
+                    <input id="booking-tutor-name"
+                           type="text"
+                           value="@Model.Preview.TutorName"
+                           disabled />
+                </div>
+
+                <div class="booking-field">
+                    <label for="booking-tutor-email">
+                        Tutor Email Address
+                    </label>
+                    <input id="booking-tutor-email"
+                           type="email"
+                           placeholder="Not available yet"
+                           disabled />
+                </div>
+
+                <div class="booking-field">
+                    <label for="booking-module">Module</label>
+                    <input id="booking-module"
+                           type="text"
+                           value="@selectedModuleName"
+                           disabled />
+                    <span asp-validation-for="Input.ProgrammeModuleId"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="booking-field">
+                    <label for="booking-date-time">Date and Time</label>
+                    <input id="booking-date-time"
+                           type="text"
+                           value="@Model.Preview.AvailableTime.ToLocalTime().ToString("dd MMMM yyyy, HH:mm")"
+                           disabled />
+                </div>
+
+                <div class="booking-field">
+                    <label asp-for="Input.Location">
+                        Location
+                        <span class="required-indicator"
+                              aria-hidden="true">*</span>
+                    </label>
+                    <input asp-for="Input.Location"
+                           aria-required="true"
+                           placeholder="Enter the session location" />
+                    <span asp-validation-for="Input.Location"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="booking-field">
+                    <label for="booking-duration">Duration</label>
+                    <input id="booking-duration"
+                           type="text"
+                           value="1 hour"
+                           disabled />
+                </div>
+                </div>
+
+                <div class="booking-mobile-stage-actions">
+                    <button type="button"
+                            class="booking-mobile-next"
+                            data-booking-next-to="2">
+                        Continue
+                    </button>
+                </div>
+            </section>
+
+            <section class="booking-form-stage @(startOnSecondStage ? "is-active" : null)"
+                     data-booking-stage="2">
+                <div class="booking-field-grid booking-attachment-fields">
+                <div class="booking-field booking-links-field"
+                     data-booking-links>
+                    <div class="booking-field-label">
+                        <label for="booking-link">Links</label>
+                        <span>Up to 3</span>
+                    </div>
+                    <p id="booking-links-help"
+                       class="booking-field-help">
+                        Share useful pages or resources that will help your
+                        tutor prepare.
+                    </p>
+
+                    <div class="booking-link-entry">
+                        <div class="booking-link-input-wrap">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 width="1em"
+                                 height="1em"
+                                 viewBox="0 0 24 24"
+                                 aria-hidden="true">
+                                <path d="M0 0h24v24H0z"
+                                      fill="none" />
+                                <path fill="none"
+                                      stroke="currentColor"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      d="M5.576 13.481a3.5 3.5 0 0 0 4.95 4.95m2.473-7.423a3.5 3.5 0 0 1 0 4.95l-2.475 2.475m-2.475-7.425l-2.475 2.475m12.857-2.957a3.5 3.5 0 1 0-4.95-4.95M11.01 13a3.5 3.5 0 0 1 0-4.95l2.474-2.475M15.958 13l2.475-2.475" />
+                            </svg>
+                            <input id="booking-link"
+                                   type="url"
+                                   maxlength="2048"
+                                   aria-describedby="booking-links-help"
+                                   data-booking-link-input />
+                        </div>
+                        <button type="button"
+                                class="booking-link-add"
+                                data-booking-link-add
+                                aria-label="Add link"
+                                title="Add link">
+                            <span aria-hidden="true">+</span>
+                        </button>
+                    </div>
+
+                    @for (int index = 0; index < 3; index++)
+                    {
+                        <input type="hidden"
+                               name="Input.PreparationLinks[@index]"
+                               value="@existingLinks.ElementAtOrDefault(index)"
+                               data-booking-link-value />
+                    }
+
+                    <ul class="booking-link-list"
+                        data-booking-link-list
+                        aria-label="Added preparation links">
+                        @for (int index = 0;
+                            index < existingLinks.Count;
+                            index++)
+                        {
+                            <li class="booking-link-item"
+                                data-booking-link-item
+                                data-link-index="@index">
+                                <span>@existingLinks[index]</span>
+                                <button type="button"
+                                        data-booking-link-remove
+                                        aria-label="Remove @existingLinks[index]">
+                                    Remove
+                                </button>
+                            </li>
+                        }
+                    </ul>
+
+                    <p class="booking-link-limit"
+                       data-booking-link-limit
+                       aria-live="polite"></p>
+                </div>
+
+                <div class="booking-field booking-documents-field"
+                     data-booking-documents>
+                    <div class="booking-field-label">
+                        <label for="booking-document">Document</label>
+                        <span>Up to 2</span>
+                    </div>
+                    <p id="booking-documents-help"
+                       class="booking-field-help">
+                        Attach notes, study material, or examples that show
+                        what you need help with.
+                    </p>
+
+                    <div class="booking-document-entry">
+                        <div class="booking-document-picker">
+                            <input id="booking-document"
+                                   type="file"
+                                   name="Input.Documents"
+                                   accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                                   aria-describedby="booking-documents-help"
+                                   data-booking-document-input />
+                            <label for="booking-document"
+                                   class="booking-document-select">
+                                <svg aria-hidden="true"
+                                     width="1em"
+                                     height="1em"
+                                     viewBox="0 0 20 20">
+                                    <path d="M0 0h20v20H0z"
+                                          fill="none" />
+                                    <path fill="currentColor"
+                                          d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.414a1.5 1.5 0 0 0-.44-1.06l-3.914-3.915A1.5 1.5 0 0 0 10.586 2zM5 4a1 1 0 0 1 1-1h4v3.5A1.5 1.5 0 0 0 11.5 8H15v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1zm9.793 3H11.5a.5.5 0 0 1-.5-.5V3.207z" />
+                                </svg>
+                                <span data-booking-document-name>
+                                    Choose a document
+                                </span>
+                            </label>
+                        </div>
+                        <button type="button"
+                                class="booking-document-add"
+                                data-booking-document-add
+                                aria-label="Add document"
+                                title="Add document">
+                            <span aria-hidden="true">+</span>
+                        </button>
+                    </div>
+
+                    <div data-booking-document-inputs></div>
+
+                    <ul class="booking-document-list"
+                        data-booking-document-list
+                        aria-label="Added booking documents"></ul>
+
+                    <p class="booking-document-feedback"
+                       data-booking-document-feedback
+                       aria-live="polite"></p>
+                </div>
+                </div>
+
+                <div class="booking-field booking-field--wide">
+                <label asp-for="Input.Summary">
+                    Session summary
+                    <span class="required-indicator"
+                              aria-hidden="true">*</span>
+                </label>
+                <p id="booking-summary-help"
+                   class="booking-field-help">
+                    Explain what you need help with so your tutor can prepare
+                    for the session.
+                </p>
+                <textarea asp-for="Input.Summary"
+                          rows="4"
+                          data-booking-summary
+                          data-min-length="75"
+                          data-max-length="1000"
+                          aria-required="true"
+                          aria-describedby="booking-summary-help booking-summary-counter"></textarea>
+                <span id="booking-summary-counter"
+                      class="booking-summary-counter"
+                      data-booking-summary-counter
+                      aria-live="polite">
+                    1,000 characters remaining
+                </span>
+                <span asp-validation-for="Input.Summary"
+                      class="text-danger"></span>
+                </div>
+
+                <div class="booking-form-footer">
+                <div class="booking-terms-agreement">
+                    <input asp-for="Input.AcceptedTerms" />
+                    <label asp-for="Input.AcceptedTerms">
+                        I agree to the Terms &amp; Conditions
+                        <span class="required-indicator"
+                              aria-hidden="true">*</span>
+                    </label>
+                    <span asp-validation-for="Input.AcceptedTerms"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="booking-form-actions">
+                    <button type="button"
+                            class="booking-mobile-back"
+                            data-booking-back-to="1">
+                        Back
+                    </button>
+                    <button type="button"
+                            class="booking-mobile-next"
+                            data-booking-next-to="3">
+                        Continue
+                    </button>
+                    <button type="submit"
+                            class="booking-desktop-submit">
+                        Book Session
+                    </button>
+                </div>
+                </div>
+            </section>
+
+            <section class="booking-form-stage booking-confirm-stage"
+                     data-booking-stage="3">
+                <header class="booking-confirm-heading">
+                    <h3>Booking Summary</h3>
+                    <p>
+                        Review your session details before confirming your
+                        booking.
+                    </p>
+                </header>
+
+                <dl class="booking-confirm-summary">
+                    <div>
+                        <dt>Tutor</dt>
+                        <dd>@Model.Preview.TutorName</dd>
+                    </div>
+                    <div>
+                        <dt>Module</dt>
+                        <dd>@selectedModuleName</dd>
+                    </div>
+                    <div>
+                        <dt>Date and Time</dt>
+                        <dd>@Model.Preview.AvailableTime.ToLocalTime().ToString("dd MMMM yyyy, HH:mm")</dd>
+                    </div>
+                    <div>
+                        <dt>Duration</dt>
+                        <dd>1 hour</dd>
+                    </div>
+                    <div>
+                        <dt>Location</dt>
+                        <dd data-booking-confirm-location></dd>
+                    </div>
+                    <div class="booking-confirm-summary-wide">
+                        <dt>Links</dt>
+                        <dd data-booking-confirm-links></dd>
+                    </div>
+                    <div class="booking-confirm-summary-wide">
+                        <dt>Documents</dt>
+                        <dd data-booking-confirm-documents></dd>
+                    </div>
+                    <div class="booking-confirm-summary-wide">
+                        <dt>Session Summary</dt>
+                        <dd data-booking-confirm-summary></dd>
+                    </div>
+                </dl>
+
+                <div class="booking-mobile-stage-actions">
+                    <button type="button"
+                            class="booking-mobile-back"
+                            data-booking-back-to="2">
+                        Back
+                    </button>
+                    <button type="submit">Book Session</button>
+                </div>
+            </section>
+        </form>
     </div>
-
-    <form method="post">
-        <input type="hidden"
-               asp-for="Input.TutorAvailabilityId" />
-
-        <div asp-validation-summary="ModelOnly"
-             class="text-danger"></div>
-
-        <div class="mb-3">
-            <label asp-for="Input.ProgrammeModuleId"
-                   class="form-label"></label>
-
-            <select asp-for="Input.ProgrammeModuleId"
-                    class="form-select">
-                <option value="">Select a module</option>
-                @foreach (var module in Model.Preview.Modules)
-                {
-                    <option value="@module.ProgrammeModuleId">
-                        @module.ModuleCode - @module.ModuleName
-                    </option>
-                }
-            </select>
-
-            <span asp-validation-for="Input.ProgrammeModuleId"
-                  class="text-danger"></span>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="Input.Location"
-                   class="form-label"></label>
-
-            <input asp-for="Input.Location"
-                   class="form-control" />
-
-            <span asp-validation-for="Input.Location"
-                  class="text-danger"></span>
-        </div>
-
-        <p><strong>Duration:</strong> 1 hour</p>
-
-        <div class="mb-3">
-            <label asp-for="Input.Summary"
-                   class="form-label"></label>
-
-            <textarea asp-for="Input.Summary"
-                      class="form-control"
-                      rows="4"></textarea>
-
-            <span asp-validation-for="Input.Summary"
-                  class="text-danger"></span>
-        </div>
-
-        <fieldset class="mb-3">
-            <legend class="form-label">
-                Preparation links (optional, maximum 3)
-            </legend>
-
-            @for (int index = 0; index < 3; index++)
-            {
-                <input type="url"
-                       name="Input.PreparationLinks[@index]"
-                       value="@Model.Input.PreparationLinks.ElementAtOrDefault(index)"
-                       class="form-control mb-2"
-                       maxlength="2048"
-                       placeholder="https://" />
-            }
-        </fieldset>
-
-        <button type="submit"
-                class="btn btn-primary">
-            Confirm booking
-        </button>
-
-        <a asp-page="/Tutors/Details"
-           asp-route-id="@Model.Preview.TutorId"
-           class="btn btn-link">
-            Cancel
-        </a>
-    </form>
 </section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+    <script src="~/js/bookings-create.js"
+            asp-append-version="true"></script>
+}
