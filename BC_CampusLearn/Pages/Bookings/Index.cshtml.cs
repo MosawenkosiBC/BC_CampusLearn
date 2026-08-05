@@ -32,6 +32,19 @@ public class IndexModel : PageModel
         CurrentUser student =
             _currentUserService.GetRequiredUser();
 
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+
+        await _context.Bookings
+            .Where(booking =>
+                booking.Status ==
+                    Models.Entities.BookingStatus.Pending &&
+                booking.ScheduledStartTime <= now)
+            .ExecuteUpdateAsync(
+                updates => updates.SetProperty(
+                    booking => booking.Status,
+                    Models.Entities.BookingStatus.Declined),
+                cancellationToken);
+
         Bookings = await _context.Bookings
             .AsNoTracking()
             .Where(booking =>
@@ -40,14 +53,14 @@ public class IndexModel : PageModel
                 booking.StudentTenantId ==
                     student.TenantId)
             .OrderByDescending(booking =>
-                booking.TutorAvailability.AvailableTime)
+                booking.ScheduledStartTime)
             .Select(booking =>
                 new BookingListItemViewModel
                 {
                     BookingId = booking.BookingId,
 
                     TutorName =
-                        booking.TutorAvailability
+                        booking.TutorCourseModule
                             .Tutor.BcUser.PersonnelNumber,
 
                     ModuleName =
@@ -59,7 +72,7 @@ public class IndexModel : PageModel
                     Location = booking.Location,
 
                     AvailableTime =
-                        booking.TutorAvailability.AvailableTime,
+                        booking.ScheduledStartTime,
 
                     Duration = booking.Duration,
 

@@ -5,9 +5,14 @@
 
     bool isHome = currentPage == "/Index";
     bool isDashboard = currentPage == "/Student/Dashboard";
-    bool isTutors = currentPage.StartsWith(
-        "/Tutors",
+    bool isTutorApplication = currentPage.Equals(
+        "/Tutors/TutorApplication",
         StringComparison.OrdinalIgnoreCase);
+    bool isTutors =
+        currentPage.StartsWith(
+            "/Tutors",
+            StringComparison.OrdinalIgnoreCase) &&
+        !isTutorApplication;
 }
 
 <div class="navigation-drawer-component" data-navigation-drawer>
@@ -89,9 +94,10 @@
                 <span>Learning Resources</span>
             </a>
 
-            <a href="/Tutors/Application"
-               class="navigation-drawer-link">
-                <span>Tutor Application</span>
+            <a asp-page="/Tutors/TutorApplication"
+               class="navigation-drawer-link @(isTutorApplication ? "is-active" : null)"
+               aria-current="@(isTutorApplication ? "page" : null)">
+                <span>Become a Tutor</span>
             </a>
         </nav>
     </aside>

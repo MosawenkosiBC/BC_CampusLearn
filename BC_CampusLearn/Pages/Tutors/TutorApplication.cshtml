@@ -1,0 +1,805 @@
+@page
+@model BC_CampusLearn.Pages.Tutors.TutorApplicationModel
+@using BC_CampusLearn.Models.Entities
+
+@{
+    ViewData["Title"] = "Tutor Application";
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/components/navigation-drawer.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/tutor-application.css"
+          asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<main class="container tutor-application-page">
+    <section class="tutor-orientation"
+             data-application-intro
+             aria-labelledby="peer-tutoring-title">
+        <header class="tutor-orientation-hero">
+            <div class="orientation-hero-copy">
+                <h1 id="peer-tutoring-title">Peer-tutoring Applications</h1>
+                <p class="orientation-summary">
+                    Use your academic strengths to help another student grow,
+                    while building valuable experience of your own.
+                </p>
+            </div>
+
+            <div class="orientation-hero-art" aria-hidden="true">
+                <img src="~/Media/tutorApplication/style.png"
+                     class="orientation-tech orientation-tech-magenta" alt="" />
+                <img src="~/Media/tutorApplication/style.png"
+                     class="orientation-tech orientation-tech-blue" alt="" />
+                <img src="~/Media/tutorApplication/students.png"
+                     class="orientation-students" alt="" />
+            </div>
+        </header>
+
+        <div class="orientation-introduction">
+            <h2>What is peer tutoring?</h2>
+            <p>
+                Peer tutoring connects well-performing students with peers
+                who need support in particular subjects. It is an opportunity
+                to share your knowledge, strengthen your own understanding,
+                and contribute to the Belgium Campus student community.
+            </p>
+            <p>
+                Please read the information and conditions below carefully
+                before starting your application.
+            </p>
+        </div>
+
+        <section class="orientation-section"
+                 aria-labelledby="how-tutoring-works">
+            <button type="button"
+                    class="orientation-section-heading"
+                    data-orientation-accordion-trigger
+                    aria-expanded="false"
+                    aria-controls="how-tutoring-works-panel">
+                <span>01</span>
+                <div>
+                    <h2 id="how-tutoring-works">How tutoring works</h2>
+                </div>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="m5 7.5l5 5l5-5" />
+                </svg>
+            </button>
+
+            <div id="how-tutoring-works-panel"
+                 class="orientation-accordion-panel">
+            <ol class="orientation-process">
+                <li>
+                    <strong>Apply and get approved</strong>
+                    <p>
+                        Eligible students complete the application and are
+                        reviewed by Student Support.
+                    </p>
+                </li>
+                <li>
+                    <strong>Join the tutor database</strong>
+                    <p>
+                        Once accepted, your name, contact details, and
+                        specialist subjects are added to the tutor database.
+                    </p>
+                </li>
+                <li>
+                    <strong>Connect with students</strong>
+                    <p>
+                        Students who need help may be referred to you so that
+                        you can arrange suitable tutoring sessions together.
+                    </p>
+                </li>
+                <li>
+                    <strong>Tutor and report</strong>
+                    <p>
+                        Sessions may happen online or face-to-face. Tutors
+                        report their sessions to Student Support, usually
+                        weekly.
+                    </p>
+                </li>
+            </ol>
+
+            <div class="orientation-notes">
+                <p>
+                    <strong>Flexible scheduling:</strong>
+                    Sessions can happen at a time convenient for both the
+                    tutor and student. Online tutoring is encouraged.
+                </p>
+                <p>
+                    <strong>Face-to-face sessions:</strong>
+                    These must take place at the Pretoria library.
+                </p>
+                <p>
+                    <strong>Expected commitment:</strong>
+                    Tutors should complete an average of 8–15 tutoring hours
+                    per month to remain on the tutor list.
+                </p>
+            </div>
+            </div>
+        </section>
+
+        <section class="orientation-section"
+                 aria-labelledby="application-conditions">
+            <button type="button"
+                    class="orientation-section-heading"
+                    data-orientation-accordion-trigger
+                    aria-expanded="false"
+                    aria-controls="application-conditions-panel">
+                <span>02</span>
+                <div>
+                    <h2 id="application-conditions">
+                        Conditions and expectations
+                    </h2>
+                </div>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="m5 7.5l5 5l5-5" />
+                </svg>
+            </button>
+
+            <div id="application-conditions-panel"
+                 class="orientation-accordion-panel">
+            <div class="orientation-requirements">
+                <ul>
+                    <li>
+                        An overall average of 65% or above across all
+                        subjects, or 75% and above in a specialist subject.
+                    </li>
+                    <li><strong>No failed subjects.</strong></li>
+                    <li>
+                        A history of good attendance, on-time assignments,
+                        and class participation.
+                    </li>
+                    <li>
+                        A good recommendation from at least one lecturer or
+                        students you have previously helped.
+                    </li>
+                    <li>Good time-management skills.</li>
+                    <li>Good verbal and written communication skills.</li>
+                </ul>
+                <ul>
+                    <li>A positive attitude and willingness to help others.</li>
+                    <li>Patience when supporting another student.</li>
+                    <li>
+                        Commitment to the days and times you volunteer and to
+                        achieving the learner’s educational outcomes.
+                    </li>
+                    <li>Access to reliable internet and a computer.</li>
+                    <li>A flexible schedule.</li>
+                </ul>
+            </div>
+            </div>
+        </section>
+
+        <section class="orientation-section"
+                 aria-labelledby="tutor-benefits">
+            <button type="button"
+                    class="orientation-section-heading"
+                    data-orientation-accordion-trigger
+                    aria-expanded="false"
+                    aria-controls="tutor-benefits-panel">
+                <span>03</span>
+                <div>
+                    <h2 id="tutor-benefits">The benefits</h2>
+                </div>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="m5 7.5l5 5l5-5" />
+                </svg>
+            </button>
+
+            <div id="tutor-benefits-panel"
+                 class="orientation-accordion-panel">
+            <div class="orientation-benefits">
+                <article>
+                    <span class="benefit-icon benefit-icon--teal" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false"><path d="M0 0h24v24H0z" fill="none" /><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"><path d="M10.5 10.5L9 .5h7.5" /><path d="m13 12.5l-1-10h8l-1.5 10m-.5 10h-8l-2.5 1m3-11H19l1 1.5l-1 1.5l1 2l-1 2l.5 1.5l-1.5 1.5m-17.5-5l4-1.5l4-6.5l1.682-1.121" /><path d="m16 6l-1.5 1.5L16 9l1.499-1.5l-1.5-1.5z" /></g></svg>
+                    </span>
+                    <h3>Paid per hour</h3>
+                    <p>
+                        Students employed in the programme are compensated for every tutoring hour.
+                    </p>
+                </article>
+                <article>
+                    <span class="benefit-icon benefit-icon--magenta" aria-hidden="true">
+                        <svg viewBox="0 0 20 20" focusable="false"><path fill="currentColor" d="M6.5 12.5a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1zm0 2.5a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1zM11.185 1H4.5A1.5 1.5 0 0 0 3 2.5v15A1.5 1.5 0 0 0 4.5 19h11a1.5 1.5 0 0 0 1.5-1.5V7.202a1.5 1.5 0 0 0-.395-1.014l-4.314-4.702A1.5 1.5 0 0 0 11.185 1M4 2.5a.5.5 0 0 1 .5-.5h6.685a.5.5 0 0 1 .369.162l4.314 4.702a.5.5 0 0 1 .132.338V17.5a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5zM8.134 6.133a1.067 1.067 0 1 0 0-2.133a1.067 1.067 0 0 0 0 2.133M10.266 8.444c0-1.134-.955-1.955-2.133-1.955S6 7.309 6 8.444v.534a.356.356 0 0 0 .356.355h3.555a.356.356 0 0 0 .355-.355z" /><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M11.5 2.1v4.7h4.7" /></svg>
+                    </span>
+                    <h3>Career value</h3>
+                    <p>
+                        Tutoring experience can strengthen your CV and help
+                        you stand out to future employers.
+                    </p>
+                </article>
+                <article>
+                    <span>✓</span>
+                    <span class="benefit-icon benefit-icon--teal" aria-hidden="true">
+                        <svg viewBox="0 0 256 256" focusable="false"><path fill="currentColor" d="m254.3 107.91-25.52-51.06a16 16 0 0 0-21.47-7.15l-24.87 12.43-52.39-13.86a8.14 8.14 0 0 0-4.1 0L73.56 62.13 48.69 49.7a16 16 0 0 0-21.47 7.15L1.7 107.9a16 16 0 0 0 7.15 21.47l27 13.51 55.49 39.63a8.1 8.1 0 0 0 2.71 1.25l64 16a8 8 0 0 0 7.6-2.1l55.07-55.08 26.42-13.21a16 16 0 0 0 7.15-21.46Zm-54.89 33.37L165 113.72a8 8 0 0 0-10.68.61C136.51 132.27 116.66 130 104 122l43.24-42h31.81l27.21 54.41ZM41.53 64 62 74.22l-25.57 51.05L16 115.06Zm116 119.13-58.11-14.52-49.2-35.14 28-56L128 64.28l9.8 2.59-45 43.68-.08.09a16 16 0 0 0 2.72 24.81c20.56 13.13 45.37 11 64.91-5L188 152.66Zm62-57.87-25.52-51L214.47 64 240 115.06Zm-87.75 92.67a8 8 0 0 1-7.75 6.06 8 8 0 0 1-1.95-.24l-41.67-10.42a7.9 7.9 0 0 1-2.71-1.25l-26.35-18.82a8 8 0 0 1 9.3-13l25.11 17.94L126 208.24a8 8 0 0 1 5.82 9.7Z" /></svg>
+                    </span>
+                    <h3>Recommendation</h3>
+                    <p>
+                        You can receive a year-end recommendation letter as
+                        evidence of your service.
+                    </p>
+                </article>
+                <article>
+                    <span class="benefit-icon benefit-icon--magenta" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M17.252 12.49c-.284 2.365-1.833 3.31-2.502 3.996-.67.688-.55.825-.505 1.834a.916.916 0 0 1-.916.971h-2.658a.92.92 0 0 1-.917-.971c0-.99.092-1.22-.504-1.834-.76-.76-2.548-1.833-2.548-4.784a5.307 5.307 0 1 1 10.55.788" /><path d="M10.46 19.236v1.512c0 .413.23.752.513.752h2.053c.285 0 .514-.34.514-.752v-1.512m-2.32-10.54a2.227 2.227 0 0 0-2.226 2.227m10.338.981h1.834m-3.68-6.012 1.301-1.301M18.486 17l1.301 1.3M12 2.377V3.86m-6.76.73 1.292 1.302M4.24 18.3 5.532 17m-.864-5.096H2.835" /></g></svg>
+                    </span>
+                    <h3>Soft-skill development</h3>
+                    <p>
+                        Build communication, time management, critical
+                        thinking, and teamwork skills.
+                    </p>
+                </article>
+            </div>
+            </div>
+        </section>
+
+        <footer class="orientation-agreement">
+            <div>
+                <h2>Ready to apply?</h2>
+                <p>
+                    By continuing, you confirm that you have read and
+                    understood the programme conditions and expectations.
+                </p>
+            </div>
+            <button type="button"
+                    class="orientation-agree-button"
+                    data-application-agree>
+                I Agree, Start Application
+            </button>
+        </footer>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ExistingApplicationMessage))
+    {
+        <dialog class="tutor-application-status-modal"
+                data-existing-application
+                aria-labelledby="application-status-title"
+                aria-describedby="application-status-message">
+            <button type="button"
+                    class="application-status-close"
+                    data-existing-application-close
+                    aria-label="Close application status">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+            </button>
+
+            <h2 id="application-status-title">
+                Tutor Application Status
+            </h2>
+            <p id="application-status-message">
+                @Model.ExistingApplicationMessage
+            </p>
+
+            <button type="button"
+                    class="application-status-confirm"
+                    data-existing-application-close>
+                Close
+            </button>
+        </dialog>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.SubmissionMessage))
+    {
+        <dialog class="tutor-application-status-modal"
+                data-application-success
+                aria-labelledby="application-success-title"
+                aria-describedby="application-success-message">
+            <button type="button"
+                    class="application-status-close"
+                    data-application-success-close
+                    aria-label="Close submission confirmation">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+            </button>
+
+            <h2 id="application-success-title">
+                Application Submitted
+            </h2>
+            <p id="application-success-message">
+                @Model.SubmissionMessage
+            </p>
+
+            <button type="button"
+                    class="application-status-confirm"
+                    data-application-success-close>
+                Close
+            </button>
+        </dialog>
+    }
+
+    <section class="application-loader"
+             data-application-loader
+             role="status"
+             aria-label="Preparing your application"
+             hidden>
+        <div class="loader-ellipsis" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </section>
+
+    <div class="tutor-application-flow"
+         data-application-flow
+         data-initial-step="@Model.InitialStep"
+         tabindex="-1"
+         hidden>
+    <header class="tutor-application-heading">
+        <h1>Apply To Become a Tutor</h1>
+    </header>
+
+    <div class="tutor-application-workspace">
+        <aside class="tutor-application-stages"
+               aria-label="Tutor application stages">
+            <ol>
+                <li class="is-active"
+                    data-application-stage="1"
+                    aria-current="step">
+                    <span class="stage-number">1</span>
+                    <span class="stage-copy">
+                        <strong>Details</strong>
+                        <small>Student information</small>
+                    </span>
+                </li>
+                <li data-application-stage="2">
+                    <span class="stage-number">2</span>
+                    <span class="stage-copy">
+                        <strong>Tutoring Profile</strong>
+                        <small>Your expertise</small>
+                    </span>
+                </li>
+                <li data-application-stage="3">
+                    <span class="stage-number">3</span>
+                    <span class="stage-copy">
+                        <strong>Modules &amp; Documents</strong>
+                        <small>Final preferences</small>
+                    </span>
+                </li>
+            </ol>
+        </aside>
+
+        <section class="tutor-application-card"
+                 aria-label="Tutor application form">
+            <div data-application-step="1">
+            <header class="tutor-application-card-heading">
+                <h2 id="application-stage-title" tabindex="-1">1. Details</h2>
+                <p>
+                    Let’s start with your academic and student information.
+                </p>
+            </header>
+
+            <form class="tutor-application-form" novalidate>
+                <div class="tutor-application-grid">
+                    <div class="tutor-application-field">
+                        <label for="first-name">First Name</label>
+                        <input id="first-name"
+                               type="text"
+                               value="@Model.FirstName"
+                               readonly />
+                    </div>
+
+                    <div class="tutor-application-field">
+                        <label for="last-name">Last Name</label>
+                        <input id="last-name"
+                               type="text"
+                               value="@Model.LastName"
+                               readonly />
+                    </div>
+
+                    <div class="tutor-application-field">
+                        <label for="student-number">Student Number</label>
+                        <input id="student-number"
+                               type="text"
+                               value="@Model.StudentNumber"
+                               readonly />
+                    </div>
+
+                    <div class="tutor-application-field">
+                        <label for="email-address">Email Address</label>
+                        <input id="email-address"
+                               type="email"
+                               value="@Model.EmailAddress"
+                               readonly />
+                    </div>
+
+                    <div class="tutor-application-field">
+                        <label asp-for="Input.PhoneNumber" data-required></label>
+                        <input asp-for="Input.PhoneNumber"
+                               type="tel"
+                               maxlength="10"
+                               pattern="[0-9]{10}"
+                               required
+                               inputmode="numeric"
+                               autocomplete="tel" />
+                        <span asp-validation-for="Input.PhoneNumber"></span>
+                    </div>
+
+                    <div class="tutor-application-field">
+                        <label asp-for="Input.OverallAverage" data-required></label>
+                        <input asp-for="Input.OverallAverage"
+                               type="number"
+                               min="65"
+                               max="100"
+                               step="0.01"
+                               required
+                               inputmode="decimal"
+                               placeholder="0" />
+                        <span asp-validation-for="Input.OverallAverage"></span>
+                    </div>
+
+                    <div class="tutor-application-field">
+                        <label asp-for="Input.YearOfStudy" data-required></label>
+                        <select asp-for="Input.YearOfStudy" required>
+                            <option value="">Select year of study</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                        </select>
+                        <span asp-validation-for="Input.YearOfStudy"></span>
+                    </div>
+
+                    <div class="tutor-application-field">
+                        <label asp-for="Input.ProgrammeId" data-required></label>
+                        <select asp-for="Input.ProgrammeId"
+                                required
+                                asp-items="Model.ProgrammeOptions">
+                            <option value="">Select programme</option>
+                        </select>
+                        <span asp-validation-for="Input.ProgrammeId"></span>
+                    </div>
+                </div>
+
+                <div class="tutor-application-actions">
+                    <button type="button"
+                            class="tutor-application-next"
+                            data-application-next="2">
+                        <span>Next</span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m9 18l6-6l-6-6" />
+                        </svg>
+                    </button>
+                </div>
+            </form>
+            </div>
+
+            <div data-application-step="2" hidden>
+                <header class="tutor-application-card-heading">
+                    <h2 id="application-profile-title" tabindex="-1">
+                        2. Tutoring Profile
+                    </h2>
+                    <p>
+                        Help us understand your motivation, experience, and
+                        approach to supporting students.
+                    </p>
+                </header>
+
+                <form class="tutor-application-form" novalidate>
+                    <div class="tutor-application-grid">
+                        <div class="tutor-application-field tutor-application-field--full">
+                            <label asp-for="ProfileInput.ReasonForTutoring" data-required></label>
+                            <textarea asp-for="ProfileInput.ReasonForTutoring"
+                                      rows="5"
+                                      maxlength="1000"
+                                      data-character-input
+                                      data-max-length="1000"
+                                      required
+                                      aria-describedby="reason-for-tutoring-counter"
+                                      placeholder="Explain why tutoring matters to you and what you hope students gain from your support."></textarea>
+                            <span id="reason-for-tutoring-counter"
+                                  class="tutor-character-counter"
+                                  data-character-counter
+                                  aria-live="polite">
+                                1,000 characters remaining
+                            </span>
+                            <span asp-validation-for="ProfileInput.ReasonForTutoring"></span>
+                        </div>
+
+                        <div class="tutor-application-field tutor-application-field--full">
+                            <label asp-for="ProfileInput.TeachingStyle" data-required></label>
+                            <textarea asp-for="ProfileInput.TeachingStyle"
+                                      rows="5"
+                                      maxlength="1000"
+                                      data-character-input
+                                      data-max-length="1000"
+                                      required
+                                      aria-describedby="teaching-style-counter"
+                                      placeholder="Describe how you break down concepts, check understanding, and adapt your explanations."></textarea>
+                            <span id="teaching-style-counter"
+                                  class="tutor-character-counter"
+                                  data-character-counter
+                                  aria-live="polite">
+                                1,000 characters remaining
+                            </span>
+                            <span asp-validation-for="ProfileInput.TeachingStyle"></span>
+                        </div>
+
+                        <div class="tutor-application-field tutor-application-field--full">
+                            <label asp-for="ProfileInput.PreviousTutoringExperience" data-required></label>
+                            <textarea asp-for="ProfileInput.PreviousTutoringExperience"
+                                      rows="5"
+                                      maxlength="1000"
+                                      data-character-input
+                                      data-max-length="1000"
+                                      required
+                                      aria-describedby="tutoring-experience-counter"
+                                      placeholder="Describe any formal or informal tutoring, mentoring, or peer-support experience you have."></textarea>
+                            <span id="tutoring-experience-counter"
+                                  class="tutor-character-counter"
+                                  data-character-counter
+                                  aria-live="polite">
+                                1,000 characters remaining
+                            </span>
+                            <span asp-validation-for="ProfileInput.PreviousTutoringExperience"></span>
+                        </div>
+
+                        <div class="tutor-application-field">
+                            <label asp-for="ProfileInput.DemonstrationVideoUrl" data-required></label>
+                            <div class="tutor-link-input-wrap">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     viewBox="0 0 24 24"
+                                     aria-hidden="true">
+                                    <path d="M0 0h24v24H0z" fill="none" />
+                                    <path fill="none"
+                                          stroke="currentColor"
+                                          stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          d="M5.576 13.481a3.5 3.5 0 0 0 4.95 4.95m2.473-7.423a3.5 3.5 0 0 1 0 4.95l-2.475 2.475m-2.475-7.425l-2.475 2.475m12.857-2.957a3.5 3.5 0 1 0-4.95-4.95M11.01 13a3.5 3.5 0 0 1 0-4.95l2.474-2.475M15.958 13l2.475-2.475" />
+                                </svg>
+                                <input asp-for="ProfileInput.DemonstrationVideoUrl"
+                                       type="url"
+                                       maxlength="500"
+                                       required />
+                            </div>
+                            <small>
+                                Add your Microsoft Teams or Canva
+                                demonstration link.
+                            </small>
+                            <span asp-validation-for="ProfileInput.DemonstrationVideoUrl"></span>
+                        </div>
+
+                        <div class="tutor-application-field">
+                            <label asp-for="ProfileInput.CampusOfStudy" data-required></label>
+                            <select asp-for="ProfileInput.CampusOfStudy" required>
+                                <option value="">Select campus</option>
+                                <option value="Pretoria Campus">Pretoria Campus</option>
+                                <option value="Kempton Park Campus">Kempton Park Campus</option>
+                                <option value="Stellenbosch Campus">Stellenbosch Campus</option>
+                            </select>
+                            <span asp-validation-for="ProfileInput.CampusOfStudy"></span>
+                        </div>
+
+                    </div>
+
+                    <div class="tutor-application-actions tutor-application-actions--between">
+                        <button type="button"
+                                class="tutor-application-back"
+                                data-application-back="1">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m15 18l-6-6l6-6" />
+                            </svg>
+                            <span>Back</span>
+                        </button>
+
+                        <button type="button"
+                                class="tutor-application-next"
+                                data-application-next="3">
+                            <span>Next</span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m9 18l6-6l-6-6" />
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div data-application-step="3" hidden>
+                <header class="tutor-application-card-heading">
+                    <h2 id="application-documents-title" tabindex="-1">
+                        3. Modules &amp; Documents
+                    </h2>
+                    <p>
+                        Confirm your tutoring preference and complete the
+                        final application requirements.
+                    </p>
+                </header>
+
+                <form id="tutor-application-submit-form"
+                      class="tutor-application-form"
+                      method="post"
+                      enctype="multipart/form-data"
+                      novalidate>
+                    <div asp-validation-summary="All"
+                         class="tutor-application-validation-summary"></div>
+                    <div class="tutor-application-grid">
+                        <div class="tutor-application-field">
+                            <label asp-for="FinalInput.PreferredTutoringMode" data-required></label>
+                            <select asp-for="FinalInput.PreferredTutoringMode"
+                                    asp-items="Html.GetEnumSelectList<PreferredTutoringMode>()"
+                                    required>
+                                <option value="">Select tutoring mode</option>
+                            </select>
+                            <span asp-validation-for="FinalInput.PreferredTutoringMode"></span>
+                        </div>
+
+                        <div class="tutor-application-field tutor-document-field">
+                            <div class="tutor-document-heading">
+                                <label>Documents</label>
+                                <span>2 documents</span>
+                            </div>
+                            <div class="tutor-document-options">
+                                <div class="tutor-document-picker">
+                                    <input asp-for="FinalInput.Transcript"
+                                           type="file"
+                                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                                           required
+                                           data-tutor-document-input />
+                                    <label asp-for="FinalInput.Transcript"
+                                           class="tutor-document-select"
+                                           data-required>
+                                        <svg aria-hidden="true" viewBox="0 0 20 20">
+                                            <path d="M0 0h20v20H0z" fill="none" />
+                                            <path fill="currentColor"
+                                                  d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.414a1.5 1.5 0 0 0-.44-1.06l-3.914-3.915A1.5 1.5 0 0 0 10.586 2zM5 4a1 1 0 0 1 1-1h4v3.5A1.5 1.5 0 0 0 11.5 8H15v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1zm9.793 3H11.5a.5.5 0 0 1-.5-.5V3.207z" />
+                                        </svg>
+                                        <span data-tutor-document-name>Transcript</span>
+                                    </label>
+                                </div>
+
+                                <div class="tutor-document-picker">
+                                    <input asp-for="FinalInput.AdditionalCertificate"
+                                           type="file"
+                                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                                           data-tutor-document-input />
+                                    <label asp-for="FinalInput.AdditionalCertificate"
+                                           class="tutor-document-select">
+                                        <svg aria-hidden="true" viewBox="0 0 20 20">
+                                            <path d="M0 0h20v20H0z" fill="none" />
+                                            <path fill="currentColor"
+                                                  d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.414a1.5 1.5 0 0 0-.44-1.06l-3.914-3.915A1.5 1.5 0 0 0 10.586 2zM5 4a1 1 0 0 1 1-1h4v3.5A1.5 1.5 0 0 0 11.5 8H15v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1zm9.793 3H11.5a.5.5 0 0 1-.5-.5V3.207z" />
+                                        </svg>
+                                        <span data-tutor-document-name>Additional Certificate</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <span asp-validation-for="FinalInput.Transcript"></span>
+                            <span asp-validation-for="FinalInput.AdditionalCertificate"></span>
+                        </div>
+
+                        <div class="tutor-application-field tutor-application-field--full">
+                            <div class="tutor-module-heading">
+                                <label asp-for="FinalInput.ProgrammeModuleIds" data-required></label>
+                                <span data-module-counter>0 of 5 selected</span>
+                            </div>
+                            <p class="tutor-module-help">
+                                Select between 2 and 5 modules. Only modules
+                                up to your current year of study are shown.
+                                Modules may be selected across programmes.
+                            </p>
+                            <div class="tutor-module-selector"
+                                 data-module-selector
+                                 data-modules-endpoint="@Url.Page(
+                                     "/Tutors/TutorApplication",
+                                     "Modules")"
+                                 data-minimum="2"
+                                 data-maximum="5">
+                                <button type="button"
+                                        class="tutor-module-trigger"
+                                        data-module-trigger
+                                        aria-expanded="false"
+                                        aria-controls="tutor-module-panel">
+                                    <span data-module-trigger-label>
+                                        Choose modules
+                                    </span>
+                                    <svg viewBox="0 0 16 16"
+                                         aria-hidden="true">
+                                        <path d="m4 6l4 4l4-4"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              stroke-linecap="round"
+                                              stroke-linejoin="round"
+                                              stroke-width="1.6" />
+                                    </svg>
+                                </button>
+
+                                <div id="tutor-module-panel"
+                                     class="tutor-module-panel"
+                                     data-module-panel
+                                     hidden>
+                                    <div class="tutor-module-search-field">
+                                        <svg viewBox="0 0 24 24"
+                                             aria-hidden="true">
+                                            <circle cx="11" cy="11" r="7"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="1.8" />
+                                            <path d="m16.25 16.25l4 4"
+                                                  fill="none"
+                                                  stroke="currentColor"
+                                                  stroke-linecap="round"
+                                                  stroke-width="1.8" />
+                                        </svg>
+                                        <label class="visually-hidden"
+                                               for="tutor-module-search">
+                                            Search modules
+                                        </label>
+                                        <input id="tutor-module-search"
+                                               type="search"
+                                               data-module-search
+                                               placeholder="Search by code or module name"
+                                               autocomplete="off" />
+                                    </div>
+
+                                    <div class="tutor-module-list"
+                                         data-module-list
+                                         role="listbox"
+                                         aria-label="Eligible modules"
+                                         aria-multiselectable="true"></div>
+
+                                    <p class="tutor-module-status"
+                                       data-module-status>
+                                        Your eligible modules will appear here.
+                                    </p>
+                                </div>
+
+                                <div class="tutor-selected-modules"
+                                     data-selected-module-list></div>
+                                <div data-selected-module-inputs>
+                                    @foreach (int moduleId in
+                                        Model.FinalInput.ProgrammeModuleIds)
+                                    {
+                                        <input type="hidden"
+                                               name="FinalInput.ProgrammeModuleIds"
+                                               value="@moduleId" />
+                                    }
+                                </div>
+                            </div>
+                            <p class="tutor-module-feedback"
+                               data-module-feedback
+                               aria-live="polite"></p>
+                            <span asp-validation-for="FinalInput.ProgrammeModuleIds"></span>
+                        </div>
+                    </div>
+
+                    <div class="tutor-application-actions tutor-application-actions--between">
+                        <button type="button"
+                                class="tutor-application-back"
+                                data-application-back="2">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m15 18l-6-6l6-6" />
+                            </svg>
+                            <span>Back</span>
+                        </button>
+                        <button type="submit"
+                                class="tutor-application-next"
+                                data-application-submit>
+                            <span data-application-submit-label>
+                                Submit Application
+                            </span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m9 18l6-6l-6-6" />
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+    </div>
+</main>
+
+@section Scripts {
+    <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+    <script src="~/js/tutor-application.js"
+            asp-append-version="true"></script>
+}

@@ -165,8 +165,7 @@ public static class DevelopmentDataSeeder
         return new TutorAvailability
         {
             Tutor = tutor,
-            AvailableTime = start,
-            IsActive = true
+            AvailableTime = start
         };
     }
 }

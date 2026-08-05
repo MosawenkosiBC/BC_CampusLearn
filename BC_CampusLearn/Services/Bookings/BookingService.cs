@@ -49,7 +49,6 @@ public class BookingService : IBookingService
             .Where(slot =>
                 slot.TutorAvailabilityId ==
                     tutorAvailabilityId &&
-                slot.IsActive &&
                 slot.AvailableTime >
                     DateTimeOffset.UtcNow)
             .Select(slot =>
@@ -114,8 +113,7 @@ public class BookingService : IBookingService
                 "The selected availability slot does not exist.");
         }
 
-        if (!slot.IsActive ||
-            slot.AvailableTime <= DateTimeOffset.UtcNow)
+        if (slot.AvailableTime <= DateTimeOffset.UtcNow)
         {
             return BookingCreationResult.Failure(
                 "This availability slot is no longer available.");
@@ -164,13 +162,8 @@ public class BookingService : IBookingService
                 documentValidationError);
         }
 
-        slot.IsActive = false;
-
         var booking = new Booking
         {
-            TutorAvailabilityId =
-                slot.TutorAvailabilityId,
-
             TutorId = slot.TutorId,
 
             ProgrammeModuleId = input.ProgrammeModuleId,
@@ -187,6 +180,8 @@ public class BookingService : IBookingService
             Status = BookingStatus.Pending,
 
             Duration = SessionDuration.OneHour,
+
+            ScheduledStartTime = slot.AvailableTime,
 
             DateBooked = DateTimeOffset.UtcNow
         };
@@ -292,6 +287,7 @@ public class BookingService : IBookingService
         }
 
         _context.Bookings.Add(booking);
+        _context.TutorAvailabilities.Remove(slot);
 
         try
         {

@@ -20,6 +20,9 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
         builder.Property(tutor => tutor.YearOfStudy).IsRequired();
         builder.Property(tutor => tutor.ReasonForTutoring).HasMaxLength(1000).IsRequired();
         builder.Property(tutor => tutor.TeachingStyle).HasMaxLength(1000).IsRequired();
+        builder.Property(tutor => tutor.PreviousTutoringExperience).HasMaxLength(1000).IsRequired();
+        builder.Property(tutor => tutor.PreferredTutoringMode).HasConversion<int>().IsRequired();
+        builder.Property(tutor => tutor.CampusOfStudy).HasMaxLength(100).IsRequired();
         builder.Property(tutor => tutor.DemonstrationVideoUrl).HasMaxLength(500).IsRequired();
         builder.Property(tutor => tutor.Status).HasConversion<int>().HasDefaultValue(TutorStatus.Pending);
         builder.Property(tutor => tutor.IsActive).HasDefaultValue(false);
@@ -41,6 +44,9 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
 
         builder.Property(tutor => tutor.ProfileImagePath)
             .HasMaxLength(500);
+
+        builder.Property(tutor => tutor.PhoneNumber)
+            .HasMaxLength(32);
 
         //adding the links for the tutor profile
         builder.Property(tutor => tutor.LinkedInUrl)

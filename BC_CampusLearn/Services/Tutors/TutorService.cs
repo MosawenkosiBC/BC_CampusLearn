@@ -63,10 +63,9 @@ public class TutorService : ITutorService
                 ProgrammeName = tutor.Programme?.Name ?? "Belgium Campus programme",
                 YearOfStudy = tutor.YearOfStudy,
                 UpcomingAvailabilityCount = tutor.TutorAvailabilities.Count(slot =>
-                    slot.IsActive && slot.AvailableTime > DateTimeOffset.UtcNow),
+                    slot.AvailableTime > DateTimeOffset.UtcNow),
                 NextAvailableAt = tutor.TutorAvailabilities
-                    .Where(slot =>
-                        slot.IsActive && slot.AvailableTime > DateTimeOffset.UtcNow)
+                    .Where(slot => slot.AvailableTime > DateTimeOffset.UtcNow)
                     .Select(slot => (DateTimeOffset?)slot.AvailableTime)
                     .OrderBy(value => value)
                     .FirstOrDefault(),
@@ -100,7 +99,6 @@ public class TutorService : ITutorService
                 .ThenInclude(item =>
                     item.ProgrammeModule)
             .Include(item => item.TutorAvailabilities)
-                .ThenInclude(slot => slot.Booking)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (tutor is null)
@@ -131,8 +129,6 @@ public class TutorService : ITutorService
             AvailabilitySlots =
                 tutor.TutorAvailabilities
                     .Where(slot =>
-                        (slot.IsActive ||
-                         slot.Booking != null) &&
                         slot.AvailableTime >
                         DateTimeOffset.UtcNow)
                     .OrderBy(slot => slot.AvailableTime)
@@ -145,8 +141,7 @@ public class TutorService : ITutorService
                             AvailableTime =
                                 slot.AvailableTime,
 
-                            IsBooked =
-                                slot.Booking != null
+                            IsBooked = false
                         })
                     .ToList()
         };

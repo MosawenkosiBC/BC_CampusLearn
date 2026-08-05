@@ -41,6 +41,16 @@ public class DashboardModel : PageModel
 
         DateTimeOffset now = DateTimeOffset.UtcNow;
 
+        await _context.Bookings
+            .Where(booking =>
+                booking.Status == BookingStatus.Pending &&
+                booking.ScheduledStartTime <= now)
+            .ExecuteUpdateAsync(
+                updates => updates.SetProperty(
+                    booking => booking.Status,
+                    BookingStatus.Declined),
+                cancellationToken);
+
         IQueryable<Booking> studentBookings =
             _context.Bookings
                 .AsNoTracking()
@@ -60,8 +70,7 @@ public class DashboardModel : PageModel
                             bookings.Count(booking =>
                                 booking.Status ==
                                     BookingStatus.Confirmed &&
-                                booking.TutorAvailability
-                                    .AvailableTime > now),
+                                booking.ScheduledStartTime > now),
 
                         PendingSessionCount =
                             bookings.Count(booking =>
@@ -86,11 +95,11 @@ public class DashboardModel : PageModel
         UpcomingBookings =
             await studentBookings
                 .Where(booking =>
-                    booking.TutorAvailability.AvailableTime > now &&
+                    booking.ScheduledStartTime > now &&
                     (booking.Status == BookingStatus.Pending ||
                      booking.Status == BookingStatus.Confirmed))
                 .OrderBy(booking =>
-                    booking.TutorAvailability.AvailableTime)
+                    booking.ScheduledStartTime)
                 .Select(booking =>
                     new BookingListItemViewModel
                     {
@@ -98,7 +107,7 @@ public class DashboardModel : PageModel
                             booking.BookingId,
 
                         TutorName =
-                            booking.TutorAvailability
+                            booking.TutorCourseModule
                                 .Tutor.BcUser.PersonnelNumber,
 
                         ModuleName =
@@ -110,8 +119,7 @@ public class DashboardModel : PageModel
                         Location = booking.Location,
 
                         AvailableTime =
-                            booking.TutorAvailability
-                                .AvailableTime,
+                            booking.ScheduledStartTime,
 
                         Duration = booking.Duration,
 

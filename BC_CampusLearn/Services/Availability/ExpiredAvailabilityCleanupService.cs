@@ -44,13 +44,31 @@ public class ExpiredAvailabilityCleanupService : BackgroundService
                 scope.ServiceProvider
                     .GetRequiredService<ApplicationDbContext>();
 
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+
+            int declinedCount = await context.Bookings
+                .Where(booking =>
+                    booking.Status ==
+                        Models.Entities.BookingStatus.Pending &&
+                    booking.ScheduledStartTime <= now)
+                .ExecuteUpdateAsync(
+                    updates => updates.SetProperty(
+                        booking => booking.Status,
+                        Models.Entities.BookingStatus.Declined),
+                    cancellationToken);
+
             int removedCount =
                 await context.TutorAvailabilities
-                    .Where(slot =>
-                        slot.AvailableTime <=
-                            DateTimeOffset.UtcNow &&
-                        slot.Booking == null)
+                    .Where(slot => slot.AvailableTime <= now)
                     .ExecuteDeleteAsync(cancellationToken);
+
+            if (declinedCount > 0)
+            {
+                _logger.LogInformation(
+                    "Declined {ExpiredPendingBookingCount} " +
+                    "expired pending bookings.",
+                    declinedCount);
+            }
 
             if (removedCount > 0)
             {

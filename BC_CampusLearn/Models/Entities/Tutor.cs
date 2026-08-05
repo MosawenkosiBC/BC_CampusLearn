@@ -9,6 +9,9 @@ public class Tutor
     public int YearOfStudy { get; set; }
     public string ReasonForTutoring { get; set; } = null!;
     public string TeachingStyle { get; set; } = null!;
+    public string PreviousTutoringExperience { get; set; } = null!;
+    public PreferredTutoringMode PreferredTutoringMode { get; set; }
+    public string CampusOfStudy { get; set; } = null!;
     public string DemonstrationVideoUrl { get; set; } = null!;
     public TutorStatus Status { get; set; }
     public DateTime SubmittedAt { get; set; }
@@ -19,6 +22,8 @@ public class Tutor
     public string? Biography { get; set; }
 
     public string? ProfileImagePath { get; set; }
+
+    public string? PhoneNumber { get; set; }
 
     public bool IsActive { get; set; }
 

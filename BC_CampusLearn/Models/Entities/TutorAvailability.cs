@@ -9,12 +9,9 @@ public class TutorAvailability
 
     public DateTimeOffset AvailableTime { get; set; }
 
-    public bool IsActive { get; set; } = true;
-
     // Used to detect two students trying to book the same slot.
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     public Tutor Tutor { get; set; } = null!;
 
-    public Booking? Booking { get; set; }
 }

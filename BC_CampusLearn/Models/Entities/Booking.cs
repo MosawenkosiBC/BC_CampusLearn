@@ -4,8 +4,6 @@ public class Booking
 {
     public int BookingId { get; set; }
 
-    public int TutorAvailabilityId { get; set; }
-
     public int TutorId { get; set; }
 
     public int ProgrammeModuleId { get; set; }
@@ -28,9 +26,9 @@ public class Booking
 
     public SessionDuration Duration { get; set; }
 
-    public DateTimeOffset DateBooked { get; set; }
+    public DateTimeOffset ScheduledStartTime { get; set; }
 
-    public TutorAvailability TutorAvailability { get; set; } = null!;
+    public DateTimeOffset DateBooked { get; set; }
 
     public ProgrammeModule ProgrammeModule { get; set; } = null!;
 

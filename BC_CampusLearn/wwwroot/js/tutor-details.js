@@ -210,7 +210,6 @@
         if (moduleSearchInput) {
             moduleSearchInput.value = "";
             filterModules();
-            moduleSearchInput.focus();
         }
     }
 

@@ -12,12 +12,6 @@ public class TutorAvailabilityConfiguration
     {
         builder.HasKey(slot => slot.TutorAvailabilityId);
 
-        builder.HasAlternateKey(slot => new
-        {
-            slot.TutorAvailabilityId,
-            slot.TutorId
-        });
-
         builder.Property(slot => slot.AvailableTime)
             .HasColumnType("datetimeoffset");
 
