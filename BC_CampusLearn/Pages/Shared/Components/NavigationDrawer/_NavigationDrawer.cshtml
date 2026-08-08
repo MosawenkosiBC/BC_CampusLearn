@@ -1,3 +1,5 @@
+@using BC_CampusLearn.Authentication
+
 @{
     string currentPage =
         ViewContext.RouteData.Values["Page"]?.ToString()
@@ -5,6 +7,9 @@
 
     bool isHome = currentPage == "/Index";
     bool isDashboard = currentPage == "/Student/Dashboard";
+    bool isTutorDashboard = currentPage.Equals(
+        "/Tutors/TutorDashboard",
+        StringComparison.OrdinalIgnoreCase);
     bool isTutorApplication = currentPage.Equals(
         "/Tutors/TutorApplication",
         StringComparison.OrdinalIgnoreCase);
@@ -12,7 +17,11 @@
         currentPage.StartsWith(
             "/Tutors",
             StringComparison.OrdinalIgnoreCase) &&
-        !isTutorApplication;
+        !isTutorApplication &&
+        !isTutorDashboard;
+    bool isTutor = User.HasClaim(
+        EntraClaimTypes.IsTutor,
+        bool.TrueString);
 }
 
 <div class="navigation-drawer-component" data-navigation-drawer>
@@ -82,6 +91,15 @@
                aria-current="@(isDashboard ? "page" : null)">
                 <span>Dashboard</span>
             </a>
+
+            @if (isTutor)
+            {
+                <a asp-page="/Tutors/TutorDashboard"
+                   class="navigation-drawer-link @(isTutorDashboard ? "is-active" : null)"
+                   aria-current="@(isTutorDashboard ? "page" : null)">
+                    <span>Tutor Dashboard</span>
+                </a>
+            }
 
             <a asp-page="/Tutors/Index"
                class="navigation-drawer-link @(isTutors ? "is-active" : null)"

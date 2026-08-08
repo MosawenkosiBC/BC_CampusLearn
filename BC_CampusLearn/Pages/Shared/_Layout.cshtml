@@ -1,3 +1,5 @@
+@using BC_CampusLearn.Authentication
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -491,6 +493,9 @@
                                 ? $"{nameParts[0][0]}{nameParts[^1][0]}"
                                 : displayName[..1];
                             initials = initials.ToUpperInvariant();
+                            bool isTutor = User.HasClaim(
+                                EntraClaimTypes.IsTutor,
+                                bool.TrueString);
 
                             <span class="navbar-action-divider" aria-hidden="true"></span>
 
@@ -548,6 +553,15 @@
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm"
                                     aria-labelledby="userMenuDropdown">
+                                    @if (isTutor)
+                                    {
+                                        <li>
+                                            <a asp-page="/Tutors/TutorDashboard"
+                                               class="dropdown-item d-flex align-items-center gap-2">
+                                                Tutor Dashboard
+                                            </a>
+                                        </li>
+                                    }
                                     <li>
                                         <button type="button"
                                                 class="dropdown-item d-flex align-items-center gap-2">

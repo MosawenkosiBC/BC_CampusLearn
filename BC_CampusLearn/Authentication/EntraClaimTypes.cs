@@ -11,6 +11,7 @@ public static class EntraClaimTypes
     public const string PreferredUsername = "preferred_username";
     public const string BcUserId = "bc_user_id";
     public const string PersonnelNumber = "personnel_number";
+    public const string IsTutor = "is_tutor";
 
     public const string ObjectIdUri =
         "http://schemas.microsoft.com/identity/claims/objectidentifier";

@@ -26,9 +26,31 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
 
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {
-        if (principal.Identity?.IsAuthenticated != true ||
-            principal.HasClaim(claim => claim.Type == EntraClaimTypes.BcUserId))
+        if (principal.Identity?.IsAuthenticated != true)
         {
+            return principal;
+        }
+
+        string? bcUserIdValue =
+            principal.FindFirstValue(EntraClaimTypes.BcUserId);
+
+        if (int.TryParse(bcUserIdValue, out int existingBcUserId))
+        {
+            if (!principal.HasClaim(
+                    claim => claim.Type == EntraClaimTypes.IsTutor))
+            {
+                bool existingUserIsTutor = await _context.Tutors
+                    .AsNoTracking()
+                    .AnyAsync(tutor =>
+                        tutor.BcUserId == existingBcUserId);
+
+                var tutorIdentity = new ClaimsIdentity();
+                tutorIdentity.AddClaim(new Claim(
+                    EntraClaimTypes.IsTutor,
+                    existingUserIsTutor.ToString()));
+                principal.AddIdentity(tutorIdentity);
+            }
+
             return principal;
         }
 
@@ -95,8 +117,15 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
 
         await _context.SaveChangesAsync();
 
+        bool isTutor = await _context.Tutors
+            .AsNoTracking()
+            .AnyAsync(tutor => tutor.BcUserId == user.BcUserId);
+
         var identity = new ClaimsIdentity();
         identity.AddClaim(new Claim(EntraClaimTypes.BcUserId, user.BcUserId.ToString()));
+        identity.AddClaim(new Claim(
+            EntraClaimTypes.IsTutor,
+            isTutor.ToString()));
         if (!principal.HasClaim(claim => claim.Type == EntraClaimTypes.PersonnelNumber))
         {
             identity.AddClaim(new Claim(EntraClaimTypes.PersonnelNumber, user.PersonnelNumber));

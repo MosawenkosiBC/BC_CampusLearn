@@ -1,0 +1,1295 @@
+.tutor-stat-card {
+    background-color: #fff;
+    border-radius: 0.25rem;
+    box-shadow: var(--campus-card-shadow);
+    display: flex;
+    gap: 0.8rem;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 8rem;
+    padding: 1.25rem;
+}
+
+.tutor-stat-main {
+    align-items: center;
+    display: flex;
+    gap: 0.8rem;
+}
+
+.tutor-stat-icon {
+    align-items: center;
+    display: inline-flex;
+    flex: 0 0 3rem;
+    height: 3rem;
+    justify-content: center;
+    width: 3rem;
+}
+
+.tutor-stat-icon iconify-icon,
+.tutor-stat-icon svg {
+    display: inline-block;
+    font-size: 3rem;
+    height: 1em;
+    width: 1em;
+}
+
+.tutor-stat-icon--magenta {
+    color: #ad0151;
+}
+
+.tutor-stat-icon--teal {
+    color: #21b8bd;
+}
+
+.tutor-stat-card h2 {
+    color: #050505;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.25;
+    margin: 0 0 0.25rem;
+}
+
+.tutor-stat-card p {
+    color: #050505;
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1;
+    margin: 0;
+}
+
+.tutor-stat-action {
+    align-items: center;
+    display: inline-flex;
+    font-size: 0.7rem;
+    font-weight: 500;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+
+.tutor-stat-action iconify-icon {
+    font-size: 0.85rem;
+}
+
+.tutor-stat-action--teal {
+    color: #159da2;
+}
+
+.tutor-stat-action--magenta {
+    color: #ad0151;
+}
+
+.tutor-sessions {
+    background-color: #fff;
+    border-radius: 0.25rem;
+    box-shadow: var(--campus-card-shadow);
+    overflow: hidden;
+}
+
+.tutor-section-heading {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.tutor-section-heading .tutor-availability-section-title {
+    margin: 0;
+}
+
+.tutor-next-session-column,
+.tutor-sessions-column {
+    flex-direction: column;
+}
+
+.tutor-sessions-column {
+    display: flex;
+}
+
+.tutor-next-session-column > .tutor-sessions-column {
+    margin-top: 2rem;
+}
+
+.tutor-sessions-view-all {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: #ad0151;
+    display: inline-flex;
+    font-size: 0.72rem;
+    font-weight: 500;
+    gap: 0.25rem;
+    padding: 0.25rem 0;
+}
+
+.tutor-sessions-view-all:hover {
+    color: #81003c;
+}
+
+.tutor-sessions-table-wrap {
+    min-height: 18.75rem;
+    overflow: hidden;
+    padding: 0;
+}
+
+.tutor-sessions-table {
+    border: 0;
+    border-collapse: separate;
+    border-radius: 0;
+    border-spacing: 0;
+    overflow: hidden;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.tutor-sessions-table th:nth-child(1) {
+    width: 19%;
+}
+
+.tutor-sessions-table th:nth-child(2) {
+    width: 13%;
+}
+
+.tutor-sessions-table th:nth-child(3) {
+    width: 24%;
+}
+
+.tutor-sessions-table th:nth-child(4) {
+    width: 15%;
+}
+
+.tutor-sessions-table th:nth-child(5) {
+    width: 20%;
+}
+
+.tutor-sessions-table th:nth-child(6) {
+    width: 9%;
+}
+
+.tutor-sessions-table th,
+.tutor-sessions-table td {
+    border-bottom: 1px solid #edf0f2;
+    overflow-wrap: anywhere;
+    padding: 0.65rem 0.5rem;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.tutor-sessions-table th:first-child,
+.tutor-sessions-table td:first-child {
+    padding-left: 1.25rem;
+}
+
+.tutor-sessions-table th:last-child,
+.tutor-sessions-table td:last-child {
+    padding-right: 1.25rem;
+}
+
+.tutor-sessions-table th {
+    color: #252525;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.tutor-sessions-table td {
+    color: #535b66;
+    font-size: 0.72rem;
+}
+
+.tutor-sessions-table tbody tr {
+    height: 3.25rem;
+}
+
+.tutor-sessions-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.tutor-sessions-table th:last-child,
+.tutor-sessions-table td:last-child {
+    text-align: center;
+}
+
+.tutor-session-date,
+.tutor-session-time {
+    display: block;
+}
+
+.tutor-session-time {
+    color: #747c87;
+    margin-top: 0.1rem;
+}
+
+.tutor-session-status {
+    border-radius: 999px;
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 500;
+    line-height: 1;
+    padding: 0.32rem 0.62rem;
+    white-space: nowrap;
+}
+
+.tutor-session-status--pending {
+    background-color: rgba(74, 193, 193, 0.17);
+    color: #287f7f;
+}
+
+.tutor-session-status--confirmed {
+    background-color: rgba(173, 1, 81, 0.12);
+    color: #ad0151;
+}
+
+.tutor-session-status--completed {
+    background-color: #d9f1dc;
+    color: #246b2d;
+}
+
+.tutor-session-status--cancelled,
+.tutor-session-status--declined {
+    background-color: #f5d9dc;
+    color: #b51228;
+}
+
+.tutor-session-action {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+    color: #343a43;
+    display: inline-flex;
+    height: 1.75rem;
+    justify-content: center;
+    padding: 0;
+    width: 1.75rem;
+}
+
+.tutor-session-action:hover {
+    background-color: #f0f2f4;
+}
+
+.tutor-sessions-empty {
+    color: #6b7480 !important;
+    height: 16.25rem;
+    text-align: center !important;
+}
+
+@media (max-width: 767.98px) {
+    .tutor-sessions-table-wrap {
+        min-height: 0;
+        overflow: visible;
+    }
+
+    .tutor-sessions-table,
+    .tutor-sessions-table tbody,
+    .tutor-sessions-table tr,
+    .tutor-sessions-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .tutor-sessions-table {
+        border: 0;
+    }
+
+    .tutor-sessions-table thead {
+        display: none;
+    }
+
+    .tutor-sessions-table tr {
+        border: 1px solid #e1e5e9;
+        border-radius: 0.4rem;
+        margin-bottom: 0.75rem;
+        padding: 0.4rem 0;
+    }
+
+    .tutor-sessions-table tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .tutor-sessions-table td {
+        align-items: center;
+        border-bottom: 0;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        padding: 0.4rem 0.75rem;
+        text-align: right;
+    }
+
+    .tutor-sessions-table td::before {
+        color: #252525;
+        content: attr(data-label);
+        flex: 0 0 6.5rem;
+        font-weight: 600;
+        text-align: left;
+    }
+
+    .tutor-sessions-table td.tutor-sessions-empty {
+        display: flex;
+        height: 10rem;
+        justify-content: center;
+        text-align: center !important;
+    }
+
+    .tutor-sessions-table td.tutor-sessions-empty::before {
+        content: none;
+    }
+}
+
+.tutor-next-session {
+    background-color: #fff;
+    border-radius: 0.25rem;
+    box-shadow: var(--campus-card-shadow);
+    overflow: hidden;
+}
+
+.tutor-next-session-topline {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.tutor-dashboard-schedule > div {
+    display: flex;
+}
+
+.tutor-dashboard-schedule > .tutor-availability-column {
+    flex-direction: column;
+}
+
+.tutor-dashboard-schedule section {
+    width: 100%;
+}
+
+.tutor-availability-section-title {
+    color: #111;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.75rem;
+}
+
+[data-availability-view].is-entering {
+    animation: tutor-availability-view-enter 280ms ease-out both;
+}
+
+@keyframes tutor-availability-view-enter {
+    from {
+        opacity: 0;
+        transform: translateY(0.4rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tutor-next-session-header {
+    align-items: center;
+    border-bottom: 1px solid #eceff3;
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+}
+
+.tutor-next-session-header h2 {
+    color: #111;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.tutor-session-countdown {
+    color: #4f5866;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.tutor-next-session-content {
+    padding: 1.5rem;
+}
+
+.tutor-next-session-student {
+    margin-bottom: 1.5rem;
+}
+
+.tutor-next-session-student h3 {
+    color: #111;
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0 0 0.35rem;
+}
+
+.tutor-next-session-student p {
+    color: #ad0151;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+.tutor-next-session-details {
+    border-top: 1px solid #eceff3;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0;
+    padding-top: 1.25rem;
+}
+
+.tutor-next-session-details > div {
+    min-width: 0;
+    padding: 0 1.25rem;
+}
+
+.tutor-next-session-details > div:first-child {
+    padding-left: 0;
+}
+
+.tutor-next-session-details > div + div {
+    border-left: 1px solid #dfe3e8;
+}
+
+.tutor-next-session-details dt {
+    color: #3f4752;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+
+.tutor-next-session-details dd {
+    color: #687181;
+    font-size: 0.82rem;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.tutor-next-session-actions {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 1.25rem;
+}
+
+.tutor-next-session-actions button {
+    align-items: center;
+    border-radius: 0.3rem;
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 500;
+    justify-content: center;
+    min-height: 2.35rem;
+    padding: 0.4rem 0.75rem;
+}
+
+.tutor-next-session-actions .tutor-view-session {
+    background-color: #fff;
+    border: 1px solid #ad0151;
+    color: #ad0151;
+}
+
+.tutor-next-session-actions .tutor-join-session {
+    background-color: #ad0151;
+    border: 1px solid #ad0151;
+    color: #fff;
+    gap: 0.4rem;
+}
+
+.tutor-next-session-actions .tutor-join-session iconify-icon {
+    font-size: 1rem;
+}
+
+.tutor-next-session-actions .tutor-view-session:hover,
+.tutor-next-session-actions .tutor-view-session:focus-visible {
+    background-color: #f9eaf1;
+    outline: none;
+}
+
+.tutor-next-session-actions .tutor-join-session:hover,
+.tutor-next-session-actions .tutor-join-session:focus-visible {
+    background-color: #900044;
+    border-color: #900044;
+    outline: none;
+}
+
+.tutor-next-session-empty {
+    align-items: center;
+    color: #687181;
+    display: flex;
+    flex-direction: column;
+    min-height: 14rem;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+}
+
+.tutor-next-session-empty iconify-icon {
+    color: #ad0151;
+    display: inline-block;
+    font-size: 3.5rem;
+    height: 1em;
+    margin-bottom: 0.75rem;
+    width: 1em;
+}
+
+.tutor-next-session-empty h3 {
+    color: #222;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.35rem;
+}
+
+.tutor-next-session-empty p {
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.tutor-weekly-availability {
+    animation: tutor-weekly-enter 420ms ease-out both;
+    background-color: #fff;
+    border-radius: 0.25rem;
+    box-shadow: var(--campus-card-shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.tutor-availability-column .tutor-weekly-availability {
+    flex: 0 0 auto;
+}
+
+.tutor-learning-resources-section {
+    margin-top: 2rem;
+}
+
+.tutor-learning-resources {
+    background-color: #fff;
+    border-radius: 0.25rem;
+    box-shadow: var(--campus-card-shadow);
+    padding: 1.4rem;
+}
+
+.tutor-learning-resources-intro {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+}
+
+.tutor-learning-resources-icon {
+    align-items: center;
+    background-color: rgba(74, 193, 193, 0.17);
+    border-radius: 0.65rem;
+    color: #159da2;
+    display: inline-flex;
+    flex: 0 0 3.25rem;
+    height: 3.25rem;
+    justify-content: center;
+    width: 3.25rem;
+}
+
+.tutor-learning-resources-icon iconify-icon {
+    font-size: 1.8rem;
+}
+
+.tutor-learning-resources h3 {
+    color: #171717;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 0.3rem;
+}
+
+.tutor-learning-resources p {
+    color: #66707d;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    margin: 0;
+}
+
+.tutor-resource-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+}
+
+.tutor-resource-types span {
+    align-items: center;
+    background-color: #f4f6f8;
+    border-radius: 999px;
+    color: #4e5865;
+    display: inline-flex;
+    font-size: 0.7rem;
+    gap: 0.35rem;
+    padding: 0.4rem 0.65rem;
+}
+
+.tutor-resource-types iconify-icon {
+    color: #159da2;
+    font-size: 0.9rem;
+}
+
+.tutor-learning-resources-actions {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 1.25rem;
+}
+
+.tutor-learning-resources-actions button {
+    align-items: center;
+    border-radius: 0.35rem;
+    display: inline-flex;
+    font-size: 0.74rem;
+    font-weight: 500;
+    justify-content: center;
+    min-height: 2.35rem;
+    padding: 0.45rem 0.75rem;
+}
+
+.tutor-resource-add {
+    background-color: #ad0151;
+    border: 1px solid #ad0151;
+    color: #fff;
+}
+
+.tutor-resource-add:hover {
+    background-color: #900044;
+    border-color: #900044;
+}
+
+.tutor-resource-manage {
+    background-color: #fff;
+    border: 1px solid #ad0151;
+    color: #ad0151;
+    gap: 0.35rem;
+}
+
+.tutor-resource-manage:hover {
+    background-color: #f9eaf1;
+}
+
+.tutor-weekly-header {
+    align-items: center;
+    border-bottom: 1px solid #eceff3;
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+}
+
+.tutor-availability-ranges {
+    color: #4f5866;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.tutor-availability-view-toggle {
+    align-items: center;
+    background-color: transparent;
+    border: 0;
+    border-radius: 0.35rem;
+    color: #252525;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 500;
+    gap: 0.4rem;
+    justify-content: space-between;
+    min-width: 6.75rem;
+    padding: 0.45rem 0.55rem 0.45rem 0.7rem;
+    transition: background-color 160ms ease;
+}
+
+.tutor-availability-view-toggle svg {
+    color: #606874;
+    height: 1rem;
+    transition: transform 180ms ease;
+    width: 1rem;
+}
+
+.tutor-availability-view-toggle:hover,
+.tutor-availability-view-toggle:focus {
+    background-color: #f2f4f7;
+    box-shadow: none;
+    outline: none;
+}
+
+.tutor-availability-view-toggle[aria-expanded="true"] {
+    background-color: #f2f4f7;
+}
+
+.tutor-availability-view-toggle[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+}
+
+.tutor-availability-view-menu {
+    border: 1px solid #d8dde3;
+    border-radius: 0.4rem;
+    box-shadow: 0 0.35rem 0.9rem rgba(28, 35, 43, 0.13);
+    min-width: 9.5rem;
+    padding: 0.35rem;
+}
+
+.tutor-availability-view-menu .dropdown-item {
+    border-radius: 0.28rem;
+    color: #303640;
+    font-size: 0.82rem;
+    padding: 0.5rem 0.65rem;
+}
+
+.tutor-availability-view-menu .dropdown-item:hover,
+.tutor-availability-view-menu .dropdown-item:focus {
+    background-color: #f2f4f7;
+    color: #20252d;
+}
+
+.tutor-availability-view-menu .dropdown-item.is-active {
+    background-color: #eef8f8;
+    color: #168f95;
+    font-weight: 600;
+}
+
+.tutor-weekly-scroll {
+    max-height: 15rem;
+    overflow: auto;
+    padding: 0 1.25rem;
+    scrollbar-gutter: stable;
+}
+
+.tutor-weekly-grid {
+    display: grid;
+    grid-template-columns: 3.25rem repeat(7, minmax(2.75rem, 1fr));
+    min-width: 30rem;
+}
+
+.tutor-daily-grid {
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    min-width: 0;
+}
+
+.tutor-weekly-corner,
+.tutor-weekly-day {
+    background-color: #fff;
+    border-bottom: 1px solid #dfe3e8;
+    min-height: 2.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+}
+
+.tutor-weekly-day {
+    align-items: center;
+    color: #343b46;
+    display: flex;
+    flex-direction: column;
+    font-size: 0.7rem;
+    justify-content: center;
+}
+
+.tutor-weekly-day span {
+    color: #8a929f;
+    font-size: 0.65rem;
+}
+
+.tutor-weekly-time {
+    align-items: center;
+    border-right: 1px solid #dfe3e8;
+    color: #687181;
+    display: flex;
+    font-size: 0.68rem;
+    min-height: 1.7rem;
+}
+
+.tutor-weekly-cell {
+    align-items: center;
+    border-bottom: 1px solid #f1f3f5;
+    display: flex;
+    justify-content: center;
+    min-height: 1.7rem;
+}
+
+.tutor-weekly-time.is-unlabelled-hour,
+.tutor-weekly-cell.is-unlabelled-hour {
+    border-bottom-color: #f7f8f9;
+}
+
+.tutor-slot-tab {
+    animation: tutor-slot-reveal 300ms ease-out both;
+    animation-delay: calc(140ms + var(--slot-delay, 0ms));
+    border: 0;
+    border-radius: 999px;
+    display: block;
+    height: 0.85rem;
+    padding: 0;
+    width: 72%;
+}
+
+.tutor-slot-tab:not(button) {
+    transition:
+        filter 150ms ease,
+        transform 150ms ease;
+}
+
+.tutor-slot-tab:not(button):hover {
+    filter: saturate(1.08);
+    transform: scale(1.06);
+}
+
+.tutor-slot-tab:is(button).is-booked {
+    cursor: pointer;
+    transition:
+        box-shadow 150ms ease,
+        transform 150ms ease;
+}
+
+.tutor-slot-tab:is(button).is-booked:hover,
+.tutor-slot-tab:is(button).is-booked:focus-visible {
+    box-shadow: 0 0 0 3px rgba(173, 1, 81, 0.14);
+    outline: none;
+    transform: scale(1.08);
+}
+
+.tutor-slot-tab.is-booked,
+.tutor-weekly-legend i.is-booked {
+    background-color: #f4dce8;
+}
+
+.tutor-slot-tab.is-available,
+.tutor-weekly-legend i.is-available {
+    background-color: #bce8e9;
+}
+
+.tutor-slot-tab.is-active,
+.tutor-weekly-legend i.is-active {
+    background-color: #ccebcf;
+}
+
+.tutor-weekly-legend {
+    animation: tutor-weekly-legend-enter 320ms ease-out 260ms both;
+    align-items: center;
+    border-top: 1px solid #eceff3;
+    color: #687181;
+    display: flex;
+    font-size: 0.68rem;
+    gap: 1.25rem;
+    justify-content: center;
+    margin-top: auto;
+    padding: 1rem 1.25rem 1.1rem;
+}
+
+@keyframes tutor-weekly-enter {
+    from {
+        opacity: 0;
+        transform: translateY(0.75rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes tutor-slot-reveal {
+    from {
+        opacity: 0;
+        transform: scaleX(0.35);
+    }
+
+    to {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+}
+
+@keyframes tutor-weekly-legend-enter {
+    from {
+        opacity: 0;
+        transform: translateY(0.35rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tutor-weekly-legend span {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.4rem;
+}
+
+.tutor-weekly-legend i {
+    border-radius: 50%;
+    display: inline-block;
+    height: 0.75rem;
+    width: 0.75rem;
+}
+
+.tutor-weekly-empty {
+    align-items: center;
+    color: #687181;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 14rem;
+    padding: 2rem;
+    text-align: center;
+}
+
+.tutor-weekly-empty iconify-icon {
+    color: #21b8bd;
+    display: inline-block;
+    font-size: 3.5rem;
+    height: 1em;
+    margin-bottom: 0.75rem;
+    width: 1em;
+}
+
+.tutor-weekly-empty p {
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.tutor-monthly-scroll {
+    height: 15rem;
+    overflow: hidden;
+    padding: 0 0.5rem;
+}
+
+.tutor-monthly-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-rows: 2rem repeat(6, minmax(0, 1fr));
+    height: 100%;
+    min-width: 0;
+}
+
+.tutor-monthly-weekday {
+    background-color: #fff;
+    border-bottom: 1px solid #dfe3e8;
+    color: #343b46;
+    font-size: 0.62rem;
+    font-weight: 600;
+    padding: 0.55rem 0.15rem;
+    text-align: center;
+}
+
+.tutor-monthly-day {
+    background-color: #fff;
+    border-bottom: 1px solid #eceff3;
+    border-right: 1px solid #eceff3;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0.2rem;
+    transition:
+        background-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms ease;
+}
+
+.tutor-monthly-day.has-slots {
+    background-color: #fdfefe;
+}
+
+.tutor-monthly-day.has-slots:hover {
+    background-color: #fff;
+    box-shadow:
+        inset 0 0 0 1px rgba(173, 1, 81, 0.08),
+        0 3px 8px rgba(31, 39, 51, 0.08);
+    position: relative;
+    transform: translateY(-1px);
+    z-index: 1;
+}
+
+.tutor-monthly-day:nth-child(7n + 7) {
+    border-right: 0;
+}
+
+.tutor-monthly-day.is-outside-month {
+    background-color: #fafbfc;
+    color: #a3a9b2;
+    opacity: 0.58;
+}
+
+.tutor-monthly-date {
+    align-items: center;
+    display: inline-flex;
+    font-size: 0.6rem;
+    font-weight: 600;
+    height: 1.15rem;
+    justify-content: center;
+    width: 1.15rem;
+}
+
+.tutor-monthly-day.is-today .tutor-monthly-date {
+    background-color: #ad0151;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(173, 1, 81, 0.22);
+    color: #fff;
+}
+
+.tutor-monthly-slots {
+    display: grid;
+    gap: 0.12rem;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    margin-top: auto;
+    padding: 0.12rem 0.05rem 0.18rem;
+}
+
+.tutor-monthly-indicator {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    display: block;
+    height: 0.45rem;
+    min-width: 0;
+    width: 100%;
+}
+
+.tutor-monthly-indicator.is-booked {
+    background-color: #f2cfe0;
+    border-color: #eabbd2;
+    box-shadow: 0 1px 2px rgba(173, 1, 81, 0.12);
+}
+
+.tutor-monthly-indicator.is-available {
+    background-color: #aee4e6;
+    border-color: #90d7da;
+    box-shadow: 0 1px 2px rgba(33, 174, 179, 0.12);
+}
+
+.tutor-monthly-indicator.is-active {
+    background-color: #bde5c1;
+    border-color: #a4d8aa;
+    box-shadow: 0 1px 2px rgba(36, 107, 45, 0.12);
+}
+
+.tutor-booking-popover {
+    background-color: #fff;
+    border: 1px solid #e4e7eb;
+    border-radius: 0.25rem;
+    box-shadow: var(--campus-card-shadow);
+    color: #252525;
+    max-height: calc(100vh - 1.5rem);
+    overflow-y: auto;
+    padding: 1.25rem;
+    position: fixed;
+    width: min(20rem, calc(100vw - 1.5rem));
+    z-index: 1090;
+}
+
+.tutor-booking-popover[hidden] {
+    display: none;
+}
+
+.tutor-booking-popover-close {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: #687181;
+    display: inline-flex;
+    font-size: 1.3rem;
+    justify-content: center;
+    padding: 0.2rem;
+    position: absolute;
+    right: 0.65rem;
+    top: 0.65rem;
+}
+
+.tutor-booking-popover-close:hover,
+.tutor-booking-popover-close:focus-visible {
+    color: #ad0151;
+}
+
+.tutor-booking-popover-heading {
+    border-left: 3px solid #ad0151;
+    padding: 0.2rem 1.8rem 1rem 0.85rem;
+}
+
+.tutor-booking-popover-heading h2 {
+    color: #111;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0.25rem 0 0;
+}
+
+.tutor-booking-popover-heading div > span {
+    color: #ad0151;
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.tutor-booking-popover-details {
+    border-bottom: 1px solid #eceff3;
+    border-top: 1px solid #eceff3;
+    margin: 0;
+    padding: 0.45rem 0;
+}
+
+.tutor-booking-popover-details > div {
+    padding: 0.55rem 0;
+}
+
+.tutor-booking-popover-details dt {
+    align-items: center;
+    color: #4f5866;
+    display: flex;
+    font-size: 0.72rem;
+    font-weight: 500;
+    gap: 0.4rem;
+    margin-bottom: 0.2rem;
+}
+
+.tutor-booking-popover-details dt iconify-icon {
+    color: #111;
+    font-size: 1rem;
+}
+
+.tutor-booking-popover-details dd {
+    color: #252525;
+    font-size: 0.78rem;
+    margin: 0;
+    overflow-wrap: anywhere;
+    padding-left: 1.4rem;
+}
+
+.tutor-booking-popover-actions {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding-top: 1rem;
+}
+
+.tutor-booking-popover-actions button {
+    align-items: center;
+    border: 0;
+    border-radius: 0.75rem;
+    display: inline-flex;
+    font-size: 0.72rem;
+    font-weight: 600;
+    justify-content: center;
+    min-height: 2.2rem;
+    padding: 0.3rem 0.45rem;
+}
+
+.tutor-booking-popover-actions .is-accept {
+    background-color: #ccebcf;
+    color: #246b2d;
+}
+
+.tutor-booking-popover-actions .is-cancel {
+    background-color: #e7e7e7;
+    color: #2d2d2d;
+}
+
+.tutor-booking-popover-actions .is-decline {
+    background-color: #f5d9dc;
+    color: #d40018;
+}
+
+.tutor-booking-popover-actions button:hover,
+.tutor-booking-popover-actions button:focus-visible {
+    outline: none;
+}
+
+.tutor-booking-popover-actions .is-accept:hover,
+.tutor-booking-popover-actions .is-accept:focus-visible {
+    background-color: #b8dfbc;
+}
+
+.tutor-booking-popover-actions .is-cancel:hover,
+.tutor-booking-popover-actions .is-cancel:focus-visible {
+    background-color: #d8d8d8;
+}
+
+.tutor-booking-popover-actions .is-decline:hover,
+.tutor-booking-popover-actions .is-decline:focus-visible {
+    background-color: #edc7cc;
+}
+
+@media (max-width: 575.98px) {
+    .tutor-dashboard-summary {
+        --bs-gutter-x: 0.75rem;
+        --bs-gutter-y: 0.75rem;
+    }
+
+    .tutor-stat-card {
+        align-items: flex-start;
+        gap: 0.5rem;
+        min-height: 9.25rem;
+        padding: 0.9rem;
+    }
+
+    .tutor-stat-main {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .tutor-stat-icon {
+        flex-basis: 2.5rem;
+        height: 2.5rem;
+        width: 2.5rem;
+    }
+
+    .tutor-stat-icon iconify-icon,
+    .tutor-stat-icon svg {
+        font-size: 2.5rem;
+    }
+
+    .tutor-stat-card h2 {
+        font-size: 0.78rem;
+    }
+
+    .tutor-stat-card p {
+        font-size: 1.7rem;
+    }
+
+    .tutor-stat-action {
+        font-size: 0.62rem;
+    }
+
+    .tutor-next-session-content {
+        padding: 1.25rem;
+    }
+
+    .tutor-next-session-details {
+        gap: 1rem;
+        grid-template-columns: 1fr;
+    }
+
+    .tutor-next-session-details > div {
+        padding: 0;
+    }
+
+    .tutor-next-session-details > div + div {
+        border-left: 0;
+    }
+
+    .tutor-next-session-actions {
+        gap: 0.75rem;
+    }
+
+    .tutor-weekly-header {
+        gap: 0.75rem;
+    }
+
+    .tutor-availability-view-toggle {
+        min-width: 6rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tutor-weekly-availability,
+    .tutor-slot-tab,
+    .tutor-weekly-legend,
+    [data-availability-view].is-entering {
+        animation: none;
+    }
+
+    .tutor-slot-tab {
+        transition: none;
+    }
+}

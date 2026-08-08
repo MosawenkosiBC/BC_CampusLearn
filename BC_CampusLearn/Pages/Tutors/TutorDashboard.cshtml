@@ -1,0 +1,760 @@
+@page
+@model BC_CampusLearn.Pages.Tutors.TutorDashboardModel
+
+@{
+    ViewData["Title"] = "Tutor Dashboard";
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/components/navigation-drawer.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/tutor-dashboard.css"
+          asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<section class="container py-4">
+    <h1 class="text-center">Tutor Dashboard</h1>
+
+    <div class="row g-4 my-4 tutor-dashboard-summary">
+        <div class="col-6 col-xl-3">
+            <article class="tutor-stat-card">
+                <div class="tutor-stat-main">
+                    <div class="tutor-stat-icon tutor-stat-icon--teal">
+                        <iconify-icon
+                            icon="solar:clock-circle-linear"
+                            aria-hidden="true"></iconify-icon>
+                    </div>
+                    <div>
+                        <h2>Pending sessions</h2>
+                        <p>@Model.PendingSessionCount</p>
+                    </div>
+                </div>
+                <span class="tutor-stat-action tutor-stat-action--teal">
+                    Manage sessions
+                    <iconify-icon
+                        icon="solar:alt-arrow-right-linear"
+                        aria-hidden="true"></iconify-icon>
+                </span>
+            </article>
+        </div>
+
+        <div class="col-6 col-xl-3">
+            <article class="tutor-stat-card">
+                <div class="tutor-stat-main">
+                    <div class="tutor-stat-icon tutor-stat-icon--magenta">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             width="1em"
+                             height="1em"
+                             viewBox="0 0 24 24"
+                             aria-hidden="true">
+                            <path d="M0 0h24v24H0z"
+                                  fill="none" />
+                            <path fill="currentColor"
+                                  d="M19 4h-2V3a1 1 0 0 0-2 0v1H9V3a1 1 0 0 0-2 0v1H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3m1 15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-7h16Zm0-9H4V7a1 1 0 0 1 1-1h2v1a1 1 0 0 0 2 0V6h6v1a1 1 0 0 0 2 0V6h2a1 1 0 0 1 1 1Z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2>Upcoming sessions</h2>
+                        <p>@Model.UpcomingSessionCount</p>
+                    </div>
+                </div>
+                <span class="tutor-stat-action tutor-stat-action--magenta">
+                    View All Sessions
+                    <iconify-icon
+                        icon="solar:alt-arrow-right-linear"
+                        aria-hidden="true"></iconify-icon>
+                </span>
+            </article>
+        </div>
+
+        <div class="col-6 col-xl-3">
+            <article class="tutor-stat-card">
+                <div class="tutor-stat-main">
+                    <div class="tutor-stat-icon tutor-stat-icon--teal">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             width="1em"
+                             height="1em"
+                             viewBox="0 0 20 20"
+                             aria-hidden="true">
+                            <path d="M0 0h20v20H0z"
+                                  fill="none" />
+                            <g fill="currentColor"
+                               fill-rule="evenodd"
+                               clip-rule="evenodd">
+                                <path d="M5 9a2 2 0 1 0 0-4a2 2 0 0 0 0 4m0 1a3 3 0 1 0 0-6a3 3 0 0 0 0 6" />
+                                <path d="M3.854 8.896a.5.5 0 0 1 0 .708l-.338.337A3.47 3.47 0 0 0 2.5 12.394v1.856a.5.5 0 1 1-1 0v-1.856a4.47 4.47 0 0 1 1.309-3.16l.337-.338a.5.5 0 0 1 .708 0m11.792-.3a.5.5 0 0 0 0 .708l.338.337A3.47 3.47 0 0 1 17 12.094v2.156a.5.5 0 0 0 1 0v-2.156a4.47 4.47 0 0 0-1.309-3.16l-.337-.338a.5.5 0 0 0-.708 0" />
+                                <path d="M14 9a2 2 0 1 1 0-4a2 2 0 0 1 0 4m0 1a3 3 0 1 1 0-6a3 3 0 0 1 0 6m-4.5 3.25a2.5 2.5 0 0 0-2.5 2.5v1.3a.5.5 0 0 1-1 0v-1.3a3.5 3.5 0 0 1 7 0v1.3a.5.5 0 1 1-1 0v-1.3a2.5 2.5 0 0 0-2.5-2.5" />
+                                <path d="M9.5 11.75a2 2 0 1 0 0-4a2 2 0 0 0 0 4m0 1a3 3 0 1 0 0-6a3 3 0 0 0 0 6" />
+                            </g>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2>Open slots</h2>
+                        <p>@Model.OpenSlotCount</p>
+                    </div>
+                </div>
+                <span class="tutor-stat-action tutor-stat-action--teal">
+                    Manage Availability
+                    <iconify-icon
+                        icon="solar:alt-arrow-right-linear"
+                        aria-hidden="true"></iconify-icon>
+                </span>
+            </article>
+        </div>
+
+        <div class="col-6 col-xl-3">
+            <article class="tutor-stat-card">
+                <div class="tutor-stat-main">
+                    <div class="tutor-stat-icon tutor-stat-icon--magenta">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             width="1em"
+                             height="1em"
+                             viewBox="0 0 24 24"
+                             aria-hidden="true">
+                            <path d="M0 0h24v24H0z"
+                                  fill="none" />
+                            <path fill="currentColor"
+                                  d="M6 13H2c-.6 0-1 .4-1 1v8c0 .6.4 1 1 1h4c.6 0 1-.4 1-1v-8c0-.6-.4-1-1-1m16-4h-4c-.6 0-1 .4-1 1v12c0 .6.4 1 1 1h4c.6 0 1-.4 1-1V10c0-.6-.4-1-1-1m-8-8h-4c-.6 0-1 .4-1 1v20c0 .6.4 1 1 1h4c.6 0 1-.4 1-1V2c0-.6-.4-1-1-1" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2>Total sessions</h2>
+                        <p>@Model.TotalSessionCount</p>
+                    </div>
+                </div>
+                <span class="tutor-stat-action tutor-stat-action--magenta">
+                    View All
+                    <iconify-icon
+                        icon="solar:alt-arrow-right-linear"
+                        aria-hidden="true"></iconify-icon>
+                </span>
+            </article>
+        </div>
+    </div>
+
+    <div class="row g-4 tutor-dashboard-schedule">
+        <div class="col-12 col-xl-6 tutor-next-session-column">
+            <div class="tutor-section-heading">
+                <h2 id="next-session-title"
+                    class="tutor-availability-section-title">
+                    Next session
+                </h2>
+            </div>
+
+            <section class="tutor-next-session"
+                     aria-labelledby="next-session-title">
+                @if (Model.NextSession is null)
+                {
+                    <div class="tutor-next-session-empty">
+                        <iconify-icon
+                            icon="solar:calendar-minimalistic-linear"
+                            aria-hidden="true"></iconify-icon>
+                        <h3>No upcoming sessions</h3>
+                        <p>
+                            Your next confirmed session will appear here.
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    DateTimeOffset sessionStart =
+                        Model.NextSession.ScheduledStartTime.ToLocalTime();
+                    DateTimeOffset sessionEnd =
+                        Model.NextSession.SessionEnd.ToLocalTime();
+                    string sessionDate =
+                        sessionStart.Date == DateTimeOffset.Now.Date
+                            ? "Today"
+                            : sessionStart.ToString("dd MMM yyyy");
+
+                    <div class="tutor-next-session-content">
+                        <div class="tutor-next-session-topline">
+                            <div class="tutor-next-session-student">
+                                <h3>@Model.NextSession.StudentName</h3>
+                                <p>
+                                    @Model.NextSession.ModuleCode:
+                                    @Model.NextSession.ModuleName
+                                </p>
+                            </div>
+
+                            <span class="tutor-session-countdown"
+                                  data-session-countdown
+                                  data-session-start="@Model.NextSession.ScheduledStartTime.ToString("O")">
+                                @Model.NextSession.CountdownLabel
+                            </span>
+                        </div>
+
+                        <dl class="tutor-next-session-details">
+                            <div>
+                                <dt>Date</dt>
+                                <dd>@sessionDate</dd>
+                            </div>
+                            <div>
+                                <dt>Time</dt>
+                                <dd>
+                                    @sessionStart.ToString("HH:mm")
+                                    &ndash;
+                                    @sessionEnd.ToString("HH:mm")
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Location</dt>
+                                <dd>@Model.NextSession.Location</dd>
+                            </div>
+                        </dl>
+
+                        <div class="tutor-next-session-actions">
+                            <button type="button"
+                                    class="tutor-view-session">
+                                View session
+                            </button>
+                            <button type="button"
+                                    class="tutor-join-session">
+                                <iconify-icon
+                                    icon="mdi:microsoft-teams"
+                                    aria-hidden="true"></iconify-icon>
+                                Join Meeting
+                            </button>
+                        </div>
+                    </div>
+                }
+            </section>
+
+            <div class="tutor-sessions-column">
+                <div class="tutor-section-heading">
+                    <h2 id="tutor-sessions-title"
+                        class="tutor-availability-section-title">
+                        Sessions
+                    </h2>
+                    <button type="button"
+                            class="tutor-sessions-view-all">
+                        View All Sessions
+                        <iconify-icon
+                            icon="solar:alt-arrow-right-linear"
+                            aria-hidden="true"></iconify-icon>
+                    </button>
+                </div>
+
+                <section class="tutor-sessions"
+                         aria-labelledby="tutor-sessions-title">
+                    <div class="tutor-sessions-table-wrap">
+                        <table class="tutor-sessions-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Student</th>
+                                    <th scope="col">Module</th>
+                                    <th scope="col">Date &amp; Time</th>
+                                    <th scope="col">Location</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Sessions.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="6"
+                                            class="tutor-sessions-empty">
+                                            No sessions to display
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var session in Model.Sessions)
+                                    {
+                                        var localStart =
+                                            session.ScheduledStartTime
+                                                .ToLocalTime();
+                                        var localEnd =
+                                            session.SessionEnd
+                                                .ToLocalTime();
+                                        string statusClass =
+                                            session.Status.ToString()
+                                                .ToLowerInvariant();
+
+                                        <tr>
+                                            <td data-label="Student">
+                                                @session.StudentName
+                                            </td>
+                                            <td data-label="Module">
+                                                @session.ModuleCode
+                                            </td>
+                                            <td data-label="Date &amp; Time">
+                                                <span class="tutor-session-date">
+                                                    @localStart.ToString("dd MMM yyyy")
+                                                </span>
+                                                <span class="tutor-session-time">
+                                                    @localStart.ToString("HH:mm")&ndash;@localEnd.ToString("HH:mm")
+                                                </span>
+                                            </td>
+                                            <td data-label="Location">
+                                                @session.Location
+                                            </td>
+                                            <td data-label="Status">
+                                                <span class="tutor-session-status tutor-session-status--@statusClass">
+                                                    @session.Status
+                                                </span>
+                                            </td>
+                                            <td data-label="Action">
+                                                <button type="button"
+                                                        class="tutor-session-action"
+                                                        aria-label="Actions for @session.StudentName">
+                                                    <iconify-icon
+                                                        icon="ph:dots-three-vertical-bold"
+                                                        aria-hidden="true"></iconify-icon>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-6 tutor-availability-column">
+            <h2 class="tutor-availability-section-title"
+                data-availability-title>
+                Weekly Availability
+            </h2>
+
+            <section class="tutor-weekly-availability"
+                     aria-labelledby="availability-view-label">
+                <header class="tutor-weekly-header">
+                    <div class="tutor-availability-ranges"
+                         aria-live="polite">
+                        <span data-availability-range="weekly">
+                            @Model.WeekStart.ToString("dd MMM")
+                            &ndash;
+                            @Model.WeekStart.AddDays(6).ToString("dd MMM")
+                        </span>
+                        <span data-availability-range="monthly"
+                              hidden>
+                            @Model.MonthStart.ToString("MMMM yyyy")
+                        </span>
+                        <span data-availability-range="daily"
+                              hidden>
+                            @Model.Today.ToString("dd MMMM yyyy")
+                        </span>
+                    </div>
+
+                    <div class="dropdown tutor-availability-view-picker">
+                        <button id="availability-view-dropdown"
+                                class="tutor-availability-view-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            <span data-availability-view-label>
+                                Weekly
+                            </span>
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 width="1em"
+                                 height="1em"
+                                 viewBox="0 0 24 24"
+                                 aria-hidden="true"
+                                 focusable="false">
+                                <path fill="currentColor"
+                                      d="m7 10l5 5l5-5z" />
+                            </svg>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end tutor-availability-view-menu"
+                            aria-labelledby="availability-view-dropdown">
+                            <li>
+                                <button class="dropdown-item is-active"
+                                        type="button"
+                                        data-availability-view-option="weekly">
+                                    Weekly
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item"
+                                        type="button"
+                                        data-availability-view-option="monthly">
+                                    Monthly
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item"
+                                        type="button"
+                                        data-availability-view-option="daily">
+                                    Daily
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </header>
+
+                @{
+                    var weekDays = Enumerable
+                        .Range(0, 7)
+                        .Select(index =>
+                            Model.WeekStart.AddDays(index))
+                        .ToList();
+                    var hourlyTimes = Enumerable
+                        .Range(0, 24)
+                        .Select(hour =>
+                            TimeSpan.FromHours(hour))
+                        .ToList();
+                    var monthDays = Enumerable
+                        .Range(0, 42)
+                        .Select(index =>
+                            Model.MonthGridStart.AddDays(index))
+                        .ToList();
+                }
+
+                <div data-availability-view="weekly">
+                    <div class="tutor-weekly-scroll"
+                         data-availability-scroll
+                         data-current-hour-scroll>
+                        <div class="tutor-weekly-grid">
+                            <span class="tutor-weekly-corner"
+                                  aria-hidden="true"></span>
+
+                            @foreach (var day in weekDays)
+                            {
+                                <div class="tutor-weekly-day">
+                                    <strong>@day.ToString("ddd")</strong>
+                                    <span>@day.ToString("dd")</span>
+                                </div>
+                            }
+
+                            @foreach (TimeSpan time in hourlyTimes)
+                            {
+                                int hour = (int)time.TotalHours;
+                                bool showTimeLabel = hour % 2 == 0;
+                                string timeLabel =
+                                    DateTime.Today
+                                        .Add(time)
+                                        .ToString("HH:mm");
+
+                                <time class="tutor-weekly-time @(showTimeLabel ? "is-labelled-hour" : "is-unlabelled-hour")"
+                                      datetime="@($"{hour:D2}:00")"
+                                      aria-label="@timeLabel"
+                                      data-availability-hour="@hour">
+                                    @if (showTimeLabel)
+                                    {
+                                        @timeLabel
+                                    }
+                                </time>
+
+                                @foreach (var day in weekDays)
+                                {
+                                    var slot = Model.AvailabilitySlots
+                                        .FirstOrDefault(item =>
+                                        {
+                                            DateTimeOffset localSlot =
+                                                item.StartTime.ToLocalTime();
+                                            return localSlot.Date == day.Date &&
+                                                localSlot.Hour == hour;
+                                        });
+
+                                    <div class="tutor-weekly-cell @(showTimeLabel ? "is-labelled-hour" : "is-unlabelled-hour")">
+                                        @if (slot is not null)
+                                        {
+                                            @await Html.PartialAsync(
+                                                "~/Pages/Tutors/_AvailabilitySlotTab.cshtml",
+                                                slot)
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div data-availability-view="daily"
+                     hidden>
+                    <div class="tutor-weekly-scroll tutor-daily-scroll"
+                         data-availability-scroll
+                         data-current-hour-scroll>
+                        <div class="tutor-weekly-grid tutor-daily-grid">
+                            <span class="tutor-weekly-corner"
+                                  aria-hidden="true"></span>
+                            <div class="tutor-weekly-day">
+                                <strong>@Model.Today.ToString("dddd")</strong>
+                                <span>@Model.Today.ToString("dd MMM")</span>
+                            </div>
+
+                            @foreach (TimeSpan time in hourlyTimes)
+                            {
+                                int hour = (int)time.TotalHours;
+                                bool showTimeLabel = hour % 2 == 0;
+                                string timeLabel =
+                                    DateTime.Today
+                                        .Add(time)
+                                        .ToString("HH:mm");
+                                var slot = Model.AvailabilitySlots
+                                    .FirstOrDefault(item =>
+                                    {
+                                        DateTimeOffset localSlot =
+                                            item.StartTime.ToLocalTime();
+                                        return localSlot.Date ==
+                                                Model.Today.Date &&
+                                            localSlot.Hour == hour;
+                                    });
+
+                                <time class="tutor-weekly-time @(showTimeLabel ? "is-labelled-hour" : "is-unlabelled-hour")"
+                                      datetime="@($"{hour:D2}:00")"
+                                      aria-label="@timeLabel"
+                                      data-availability-hour="@hour">
+                                    @if (showTimeLabel)
+                                    {
+                                        @timeLabel
+                                    }
+                                </time>
+
+                                <div class="tutor-weekly-cell @(showTimeLabel ? "is-labelled-hour" : "is-unlabelled-hour")">
+                                    @if (slot is not null)
+                                    {
+                                        @await Html.PartialAsync(
+                                            "~/Pages/Tutors/_AvailabilitySlotTab.cshtml",
+                                            slot)
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div data-availability-view="monthly"
+                     hidden>
+                    <div class="tutor-monthly-scroll"
+                         data-availability-scroll>
+                        <div class="tutor-monthly-grid">
+                            @foreach (string weekday in
+                                new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" })
+                            {
+                                <div class="tutor-monthly-weekday">
+                                    @weekday
+                                </div>
+                            }
+
+                            @foreach (var day in monthDays)
+                            {
+                                var daySlots = Model.AvailabilitySlots
+                                    .Where(item =>
+                                        item.StartTime
+                                            .ToLocalTime()
+                                            .Date == day.Date)
+                                    .OrderBy(item =>
+                                        item.StartTime)
+                                    .ToList();
+                                bool isOutsideMonth =
+                                    day.Month != Model.MonthStart.Month;
+                                bool isToday =
+                                    day.Date == Model.Today.Date;
+
+                                <div class="tutor-monthly-day @(isOutsideMonth ? "is-outside-month" : null) @(isToday ? "is-today" : null) @(daySlots.Count > 0 ? "has-slots" : null)">
+                                    <span class="tutor-monthly-date">
+                                        @day.Day
+                                    </span>
+
+                                    <div class="tutor-monthly-slots">
+                                        @foreach (var slot in daySlots.Take(6))
+                                        {
+                                            string monthlyStatusClass =
+                                                slot.Status switch
+                                                {
+                                                    BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Booked =>
+                                                        "is-booked",
+                                                    BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Active =>
+                                                        "is-active",
+                                                    _ => "is-available"
+                                                };
+                                            string monthlyStatusLabel =
+                                                slot.Status ==
+                                                    BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Active
+                                                    ? "Accepted/Active"
+                                                    : slot.Status.ToString();
+
+                                            <span class="tutor-monthly-indicator @monthlyStatusClass"
+                                                  title="@monthlyStatusLabel">
+                                                <span class="visually-hidden">
+                                                    @monthlyStatusLabel
+                                                </span>
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tutor-weekly-legend">
+                    <span>
+                        <i class="is-booked"></i>
+                        Booked
+                    </span>
+                    <span>
+                        <i class="is-available"></i>
+                        Available
+                    </span>
+                    <span>
+                        <i class="is-active"></i>
+                        Accepted/Active
+                    </span>
+                </div>
+            </section>
+
+            <div class="tutor-learning-resources-section">
+                <h2 class="tutor-availability-section-title">
+                    Learning resources
+                </h2>
+
+                <section class="tutor-learning-resources"
+                         aria-labelledby="learning-resources-title">
+                    <div class="tutor-learning-resources-intro">
+                        <div class="tutor-learning-resources-icon">
+                            <iconify-icon
+                                icon="solar:folder-with-files-linear"
+                                aria-hidden="true"></iconify-icon>
+                        </div>
+                        <div>
+                            <h3 id="learning-resources-title">
+                                Manage learning resources
+                            </h3>
+                            <p>
+                                Organise and share useful material
+                                with your students.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="tutor-resource-types"
+                         aria-label="Supported resource types">
+                        <span>
+                            <iconify-icon
+                                icon="solar:notes-linear"
+                                aria-hidden="true"></iconify-icon>
+                            Notes
+                        </span>
+                        <span>
+                            <iconify-icon
+                                icon="solar:book-2-linear"
+                                aria-hidden="true"></iconify-icon>
+                            Study guides
+                        </span>
+                        <span>
+                            <iconify-icon
+                                icon="solar:document-text-linear"
+                                aria-hidden="true"></iconify-icon>
+                            Practice material
+                        </span>
+                    </div>
+
+                    <div class="tutor-learning-resources-actions">
+                        <button type="button"
+                                class="tutor-resource-add">
+                            Add resource
+                        </button>
+                        <button type="button"
+                                class="tutor-resource-manage">
+                            Manage resources
+                            <iconify-icon
+                                icon="solar:alt-arrow-right-linear"
+                                aria-hidden="true"></iconify-icon>
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <div id="booking-status-popover"
+         class="tutor-booking-popover"
+         role="dialog"
+         aria-modal="false"
+         aria-labelledby="booking-popover-student"
+         data-booking-popover
+         hidden>
+        <button type="button"
+                class="tutor-booking-popover-close"
+                aria-label="Close booking details"
+                data-booking-popover-close>
+            <iconify-icon
+                icon="solar:close-circle-linear"
+                aria-hidden="true"></iconify-icon>
+        </button>
+
+        <header class="tutor-booking-popover-heading">
+            <div>
+                <span>Pending booking</span>
+                <h2 id="booking-popover-student"
+                    data-booking-student></h2>
+            </div>
+        </header>
+
+        <dl class="tutor-booking-popover-details">
+            <div>
+                <dt>
+                    <iconify-icon
+                        icon="solar:notebook-linear"
+                        aria-hidden="true"></iconify-icon>
+                    Module
+                </dt>
+                <dd data-booking-module></dd>
+            </div>
+            <div>
+                <dt>
+                    <iconify-icon
+                        icon="solar:clock-circle-linear"
+                        aria-hidden="true"></iconify-icon>
+                    Date and time
+                </dt>
+                <dd data-booking-time></dd>
+            </div>
+            <div>
+                <dt>
+                    <iconify-icon
+                        icon="solar:map-point-linear"
+                        aria-hidden="true"></iconify-icon>
+                    Location
+                </dt>
+                <dd data-booking-location></dd>
+            </div>
+        </dl>
+
+        <form method="post"
+              asp-page-handler="UpdateBookingStatus"
+              class="tutor-booking-popover-actions">
+            <input type="hidden"
+                   name="bookingId"
+                   data-booking-id-input />
+
+            <button type="submit"
+                    name="status"
+                    value="Confirmed"
+                    class="is-accept">
+                Accept
+            </button>
+            <button type="submit"
+                    name="status"
+                    value="Cancelled"
+                    class="is-cancel">
+                Cancel
+            </button>
+            <button type="submit"
+                    name="status"
+                    value="Declined"
+                    class="is-decline">
+                Decline
+            </button>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+    <script src="~/js/tutor-dashboard.js"
+            asp-append-version="true"></script>
+}

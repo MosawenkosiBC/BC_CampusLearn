@@ -1,0 +1,53 @@
+@model BC_CampusLearn.Models.ViewModels.TutorWeeklySlotViewModel
+
+@{
+    string slotStatusClass =
+        Model.Status switch
+        {
+            BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Booked =>
+                "is-booked",
+            BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Active =>
+                "is-active",
+            _ => "is-available"
+        };
+    string slotStatusLabel =
+        Model.Status ==
+            BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Active
+            ? "Accepted/Active"
+            : Model.Status.ToString();
+}
+
+@if (Model.Status ==
+    BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Booked &&
+    Model.BookingId.HasValue)
+{
+    DateTimeOffset bookedTime =
+        Model.StartTime.ToLocalTime();
+
+    <button type="button"
+            class="tutor-slot-tab @slotStatusClass"
+            title="Manage pending booking"
+            aria-label="Manage @Model.StudentName's pending booking"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls="booking-status-popover"
+            data-booking-popover-trigger
+            data-booking-id="@Model.BookingId"
+            data-booking-student="@Model.StudentName"
+            data-booking-module="@($"{Model.ModuleCode}: {Model.ModuleName}")"
+            data-booking-time="@bookedTime.ToString("ddd, dd MMM · HH:mm")"
+            data-booking-location="@Model.Location">
+        <span class="visually-hidden">
+            @slotStatusLabel
+        </span>
+    </button>
+}
+else
+{
+    <span class="tutor-slot-tab @slotStatusClass"
+          title="@slotStatusLabel">
+        <span class="visually-hidden">
+            @slotStatusLabel
+        </span>
+    </span>
+}
