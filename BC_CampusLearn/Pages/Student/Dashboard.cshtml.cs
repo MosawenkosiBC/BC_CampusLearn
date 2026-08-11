@@ -2,6 +2,7 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
+using BC_CampusLearn.Services.Tutors;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -28,8 +29,11 @@ public class DashboardModel : PageModel
     public DashboardSummaryViewModel Summary { get; private set; }
         = new();
 
+    public BookingListItemViewModel? NextSession
+    { get; private set; }
+
     public IReadOnlyList<BookingListItemViewModel>
-        UpcomingBookings
+        Sessions
     { get; private set; }
         = new List<BookingListItemViewModel>();
 
@@ -92,12 +96,11 @@ public class DashboardModel : PageModel
                 .FirstOrDefaultAsync(cancellationToken)
             ?? new DashboardSummaryViewModel();
 
-        UpcomingBookings =
+        NextSession =
             await studentBookings
                 .Where(booking =>
                     booking.ScheduledStartTime > now &&
-                    (booking.Status == BookingStatus.Pending ||
-                     booking.Status == BookingStatus.Confirmed))
+                    booking.Status == BookingStatus.Confirmed)
                 .OrderBy(booking =>
                     booking.ScheduledStartTime)
                 .Select(booking =>
@@ -106,9 +109,43 @@ public class DashboardModel : PageModel
                         BookingId =
                             booking.BookingId,
 
-                        TutorName =
-                            booking.TutorCourseModule
-                                .Tutor.BcUser.PersonnelNumber,
+                        TutorId = booking.TutorId,
+
+                        ModuleName =
+                            booking.ProgrammeModule.ModuleName,
+
+                        ModuleCode =
+                            booking.ProgrammeModule.ModuleCode,
+
+                        Location = booking.Location,
+
+                        AvailableTime =
+                            booking.ScheduledStartTime,
+
+                        Duration = booking.Duration,
+
+                        Status = booking.Status,
+
+                        Summary = booking.Summary
+                    })
+                .FirstOrDefaultAsync(cancellationToken);
+
+        if (NextSession is not null)
+        {
+            NextSession.TutorName =
+                TutorDisplayNames.GetName(NextSession.TutorId);
+        }
+
+        Sessions =
+            await studentBookings
+                .OrderByDescending(booking =>
+                    booking.ScheduledStartTime)
+                .Select(booking =>
+                    new BookingListItemViewModel
+                    {
+                        BookingId = booking.BookingId,
+
+                        TutorId = booking.TutorId,
 
                         ModuleName =
                             booking.ProgrammeModule.ModuleName,
@@ -129,5 +166,11 @@ public class DashboardModel : PageModel
                     })
                 .Take(5)
                 .ToListAsync(cancellationToken);
+
+        foreach (BookingListItemViewModel session in Sessions)
+        {
+            session.TutorName =
+                TutorDisplayNames.GetName(session.TutorId);
+        }
     }
 }

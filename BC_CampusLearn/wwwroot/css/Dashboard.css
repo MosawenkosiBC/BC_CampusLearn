@@ -1,4 +1,5 @@
 .dashboard-page {
+    font-size: 16px;
     isolation: isolate;
     position: relative;
 }
@@ -23,104 +24,230 @@
     z-index: -1;
 }
 
-.dashboard-summary .dashboard-summary-card {
-    align-items: center;
-    background-color: #fff;
-    border: 0;
-    border-radius: 0.25rem;
-    box-shadow: var(--campus-card-shadow);
-    display: flex;
-    flex-direction: column;
+.dashboard-summary .tutor-stat-card {
     height: 100%;
-    justify-content: center;
-    min-height: 10.25rem;
-    padding: 0.9rem 1rem;
-    text-align: center;
-    transition:
-        transform 180ms ease,
-        box-shadow 180ms ease;
 }
 
-.dashboard-summary .dashboard-summary-card:hover {
-    box-shadow: var(--campus-card-shadow);
-    transform: translateY(-0.25rem) scale(1.02);
+.dashboard-summary .tutor-stat-main {
+    display: grid;
+    grid-template-areas:
+        "icon heading"
+        "value value";
+    grid-template-columns: 3rem minmax(0, 1fr);
+    row-gap: 0.35rem;
+    width: 100%;
 }
 
-.dashboard-summary .dashboard-summary-icon {
-    align-items: center;
-    border-radius: 50%;
-    display: inline-flex;
-    flex: 0 0 2.9rem;
-    height: 2.9rem;
-    justify-content: center;
-    margin-bottom: 0.45rem;
-    transition: transform 180ms ease;
-    width: 2.9rem;
+.dashboard-summary .tutor-stat-main > div:last-child {
+    display: contents;
 }
 
-.dashboard-summary .dashboard-summary-card:hover .dashboard-summary-icon {
-    transform: scale(1.1);
+.dashboard-summary .tutor-stat-icon {
+    grid-area: icon;
 }
 
-.dashboard-summary .dashboard-summary-icon svg {
-    display: block;
-    flex: 0 0 1.5rem;
-    height: 1.5rem !important;
-    max-height: 1.5rem;
-    max-width: 1.5rem;
-    width: 1.5rem !important;
-}
-
-.dashboard-summary .dashboard-summary-icon--magenta {
-    background-color: rgba(173, 1, 81, 0.12);
-    color: #ad0151;
-}
-
-.dashboard-summary .dashboard-summary-icon--teal {
-    background-color: rgba(74, 193, 193, 0.17);
-    color: #4ac1c1;
-}
-
-.dashboard-summary .dashboard-summary-card h2 {
-    color: #050505;
-    font-size: 0.875rem;
-    font-weight: 500;
-    line-height: 1.25;
-    margin: 0 0 0.35rem;
-}
-
-.dashboard-summary .dashboard-summary-card p {
-    color: #050505;
-    font-size: 3.75rem;
-    font-weight: 600;
-    letter-spacing: -0.04em;
-    line-height: 0.9;
+.dashboard-summary .tutor-stat-card h2 {
+    font-size: max(12px, 0.9rem);
+    grid-area: heading;
     margin: 0;
+    white-space: nowrap;
 }
 
-.dashboard-bookings {
+.dashboard-summary .tutor-stat-card p {
+    grid-area: value;
+    text-align: center;
+}
+
+.dashboard-sessions-grid {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     margin-top: 2rem;
 }
 
-.dashboard-bookings-heading {
+.dashboard-session-column {
+    min-width: 0;
+}
+
+.dashboard-section-heading {
     align-items: center;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     margin-bottom: 0.8rem;
 }
 
-.dashboard-bookings-heading a,
+.dashboard-section-title {
+    color: #111;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 0 0 0.8rem;
+}
+
+.dashboard-section-heading .dashboard-section-title {
+    margin-bottom: 0;
+}
+
+.dashboard-section-heading a,
 .dashboard-bookings-action {
     color: #ad0151;
-    font-size: 0.85rem;
+    font-size: 14px;
     font-weight: 500;
     text-decoration: none;
 }
 
-.dashboard-bookings-heading a:hover,
+.dashboard-section-heading a:hover,
 .dashboard-bookings-action:hover {
     color: #81003c;
     text-decoration: underline;
+}
+
+.dashboard-next-session-card {
+    background-color: #fff;
+    border-radius: 0.25rem;
+    box-shadow: var(--campus-card-shadow);
+    min-height: 20.5rem;
+    padding: 1.5rem;
+}
+
+.dashboard-next-session-content {
+    display: flex;
+    flex-direction: column;
+    min-height: 17.5rem;
+}
+
+.dashboard-next-session-topline {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.dashboard-next-session-topline h3 {
+    color: #111;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.dashboard-next-session-topline p {
+    color: #ad0151;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0.3rem 0 0;
+}
+
+.dashboard-session-countdown {
+    color: #333;
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.dashboard-next-session-details {
+    border-bottom: 1px solid #e8e8e8;
+    border-top: 1px solid #e8e8e8;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: auto 0 1.25rem;
+    padding: 1rem 0;
+}
+
+.dashboard-next-session-details > div {
+    min-width: 0;
+    padding: 0 1rem;
+}
+
+.dashboard-next-session-details > div:first-child {
+    padding-left: 0;
+}
+
+.dashboard-next-session-details > div + div {
+    border-left: 1px solid #dedede;
+}
+
+.dashboard-next-session-details dt {
+    color: #1b1b1b;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.dashboard-next-session-details dd {
+    color: #6b6b6b;
+    font-size: 14px;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.dashboard-next-session-actions {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-view-session,
+.dashboard-join-session {
+    align-items: center;
+    border-radius: 0.35rem;
+    display: inline-flex;
+    font-size: 14px;
+    font-weight: 600;
+    justify-content: center;
+    min-height: 2.65rem;
+    padding: 0.55rem 0.75rem;
+    text-decoration: none;
+}
+
+.dashboard-view-session {
+    background-color: #fff;
+    border: 1px solid #ad0151;
+    color: #ad0151;
+}
+
+.dashboard-view-session:hover {
+    background-color: rgba(173, 1, 81, 0.05);
+    color: #81003c;
+}
+
+.dashboard-join-session {
+    background-color: #ad0151;
+    border: 1px solid #ad0151;
+    color: #fff;
+}
+
+.dashboard-join-session:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.dashboard-next-session-empty {
+    align-items: center;
+    color: #637083;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 17.5rem;
+    padding: 2rem;
+    text-align: center;
+}
+
+.dashboard-next-session-empty svg {
+    height: 2.15rem;
+    margin-bottom: 0.65rem;
+    width: 2.15rem;
+}
+
+.dashboard-next-session-empty h3 {
+    color: #252525;
+    font-size: 16px;
+    margin: 0 0 0.35rem;
+}
+
+.dashboard-next-session-empty p {
+    font-size: 14px;
+    margin: 0;
 }
 
 .dashboard-bookings-card {
@@ -155,7 +282,7 @@
 
 .dashboard-bookings-empty p {
     color: #252525;
-    font-size: 0.85rem;
+    font-size: 14px;
     margin: 0;
 }
 
@@ -175,7 +302,7 @@
 .dashboard-bookings-table th {
     border-bottom: 1px solid #edf0f2;
     color: #111;
-    font-size: 0.95rem;
+    font-size: 14px;
     font-weight: 500;
     white-space: nowrap;
 }
@@ -183,7 +310,7 @@
 .dashboard-bookings-table td {
     border-bottom: 1px solid #f1f2f4;
     color: #363636;
-    font-size: 0.84rem;
+    font-size: 14px;
 }
 
 .dashboard-bookings-table tbody tr:last-child td {
@@ -193,7 +320,7 @@
 .booking-status {
     border-radius: 999px;
     display: inline-block;
-    font-size: 0.75rem;
+    font-size: 12px;
     font-weight: 500;
     padding: 0.3rem 0.65rem;
 }
@@ -206,6 +333,30 @@
 .booking-status--confirmed {
     background-color: rgba(173, 1, 81, 0.12);
     color: #ad0151;
+}
+
+.booking-status--completed {
+    background-color: rgba(39, 133, 75, 0.13);
+    color: #237344;
+}
+
+.booking-status--cancelled,
+.booking-status--declined {
+    background-color: rgba(99, 112, 131, 0.13);
+    color: #566171;
+}
+
+.dashboard-page .tutor-sessions-table th,
+.dashboard-page .tutor-sessions-table td {
+    font-size: 14px;
+}
+
+.dashboard-page .tutor-session-status {
+    font-size: 12px;
+}
+
+.dashboard-page .tutor-sessions-empty {
+    font-size: 14px;
 }
 
 .dashboard-support-grid {
@@ -250,7 +401,7 @@
 
 .dashboard-tutor-content p {
     color: #272727;
-    font-size: 0.9rem;
+    font-size: 16px;
     line-height: 1.3;
     margin: 0.75rem 0 2rem;
     max-width: 22rem;
@@ -323,7 +474,7 @@
 
 .dashboard-subscriptions-fields label {
     color: #252525;
-    font-size: 0.88rem;
+    font-size: 14px;
 }
 
 .dashboard-subscriptions-fields select {
@@ -332,6 +483,7 @@
     border: 1px solid #aeb2b6;
     border-radius: 0;
     color: #252525;
+    font-size: 16px;
     height: 2.2rem;
     margin-bottom: 0.35rem;
     opacity: 1;
@@ -376,34 +528,34 @@
 
 .dashboard-resources-empty h3 {
     color: #171717;
-    font-size: 1rem;
+    font-size: 16px;
     font-weight: 500;
     margin: 0 0 0.35rem;
 }
 
 .dashboard-resources-empty p {
     color: #666;
-    font-size: 0.85rem;
+    font-size: 16px;
     line-height: 1.45;
     margin: 0;
     max-width: 31rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .dashboard-summary .dashboard-summary-card,
-    .dashboard-summary .dashboard-summary-icon,
     .dashboard-find-tutor {
         transition: none;
     }
 
-    .dashboard-summary .dashboard-summary-card:hover,
-    .dashboard-summary .dashboard-summary-card:hover .dashboard-summary-icon,
     .dashboard-find-tutor:hover {
         transform: none;
     }
 }
 
 @media (max-width: 991.98px) {
+    .dashboard-sessions-grid {
+        grid-template-columns: 1fr;
+    }
+
     .dashboard-support-grid {
         grid-template-columns: 1fr;
     }
@@ -411,75 +563,22 @@
 
 @media (max-width: 575.98px) {
     .dashboard-summary {
-        background-color: #fff;
-        border: 1px solid rgba(17, 17, 17, 0.055);
-        border-radius: 0.25rem;
-        box-shadow: var(--campus-card-shadow);
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        padding: 1rem 0.2rem;
+        --bs-gutter-x: 0.75rem;
+        --bs-gutter-y: 0.75rem;
     }
 
-    .dashboard-summary > [class*="col-"] {
-        margin-top: 0;
-        padding: 0;
-        position: relative;
-        width: auto;
+    .dashboard-summary .tutor-stat-card {
+        padding: 0.9rem 0.65rem;
     }
 
-    .dashboard-summary > [class*="col-"] + [class*="col-"]::before {
-        background-color: rgba(17, 17, 17, 0.08);
-        content: "";
-        height: 62%;
-        left: 0;
-        position: absolute;
-        top: 19%;
-        width: 1px;
+    .dashboard-summary .tutor-stat-main {
+        column-gap: 0.35rem;
+        grid-template-columns: 2.5rem minmax(0, 1fr);
     }
 
-    .dashboard-summary .dashboard-summary-card {
-        background-color: transparent;
-        box-shadow: none;
-        min-height: 7.35rem;
-        padding: 0.25rem 0.1rem;
-        transform: none;
-    }
-
-    .dashboard-summary .dashboard-summary-icon {
-        flex-basis: 2.7rem;
-        height: 2.7rem;
-        margin-bottom: 0.5rem;
-        width: 2.7rem;
-    }
-
-    .dashboard-summary .dashboard-summary-icon svg {
-        height: 1.7rem !important;
-        max-height: 1.7rem;
-        max-width: 1.7rem;
-        width: 1.7rem !important;
-    }
-
-    .dashboard-summary .dashboard-summary-card:hover,
-    .dashboard-summary .dashboard-summary-card:hover .dashboard-summary-icon {
-        transform: none;
-    }
-
-    .dashboard-summary-title-suffix {
-        display: none;
-    }
-
-    .dashboard-summary .dashboard-summary-card h2 {
-        font-size: clamp(0.64rem, 2.7vw, 0.74rem);
-        letter-spacing: -0.01em;
-        margin-bottom: 0.25rem;
-        white-space: nowrap;
-    }
-
-    .dashboard-summary .dashboard-summary-card p {
-        font-size: 1.7rem;
-        letter-spacing: -0.025em;
+    .dashboard-summary .tutor-stat-card h2 {
+        font-size: 12px;
+        letter-spacing: -0.02em;
     }
 
     .dashboard-support-card {
@@ -501,6 +600,22 @@
 
     .dashboard-subscriptions-fields {
         margin-left: 0;
+    }
+
+    .dashboard-next-session-card {
+        padding: 1.25rem;
+    }
+
+    .dashboard-next-session-topline {
+        align-items: flex-start;
+    }
+
+    .dashboard-next-session-details > div {
+        padding: 0 0.65rem;
+    }
+
+    .dashboard-next-session-actions {
+        gap: 0.75rem;
     }
 
 }
