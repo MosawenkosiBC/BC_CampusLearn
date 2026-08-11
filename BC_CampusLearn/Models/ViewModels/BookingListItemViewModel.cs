@@ -6,6 +6,8 @@ public class BookingListItemViewModel
 {
     public int BookingId { get; set; }
 
+    public int TutorId { get; set; }
+
     public string TutorName { get; set; } = string.Empty;
 
     public string ModuleName { get; set; } = string.Empty;
