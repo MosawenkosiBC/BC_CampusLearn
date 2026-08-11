@@ -1,0 +1,832 @@
+@page
+@model BC_CampusLearn.Pages.Tutors.ManageAvailabilityModel
+
+@{
+    ViewData["Title"] = "Manage Availability";
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/components/navigation-drawer.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/manage-availability.css"
+          asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<section class="container py-4 manage-availability-page"
+         aria-labelledby="manage-availability-title">
+    <h1 id="manage-availability-title"
+        class="text-center">Manage Availability</h1>
+
+    <div class="manage-availability-card">
+        <form method="post"
+              asp-page-handler="Create"
+              hidden
+              class="manage-availability-create-panel">
+            <div class="manage-availability-section-heading">
+                <div>
+                    <h2>Add Availability</h2>
+                    <p>
+                        Choose a date and time to create a one-hour slot.
+                    </p>
+                </div>
+            </div>
+
+            <div class="manage-availability-date-time">
+                <div class="availability-calendar"
+                     data-min-date="@Model.MinimumDate">
+                    <div class="availability-calendar-header">
+                        <button type="button"
+                                data-calendar-previous
+                                aria-label="Show previous month">
+                            <iconify-icon
+                                icon="solar:alt-arrow-left-linear"
+                                aria-hidden="true"></iconify-icon>
+                        </button>
+
+                        <h3 data-calendar-month></h3>
+
+                        <button type="button"
+                                data-calendar-next
+                                aria-label="Show next month">
+                            <iconify-icon
+                                icon="solar:alt-arrow-right-linear"
+                                aria-hidden="true"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <div class="availability-calendar-weekdays"
+                         aria-hidden="true">
+                        <span>Su</span>
+                        <span>Mo</span>
+                        <span>Tu</span>
+                        <span>We</span>
+                        <span>Th</span>
+                        <span>Fr</span>
+                        <span>Sa</span>
+                    </div>
+
+                    <div class="availability-calendar-grid"
+                         data-calendar-grid
+                         role="grid"
+                         aria-label="Choose an availability date"></div>
+
+                    <input type="hidden"
+                           id="SessionDate"
+                           name="SessionDate"
+                           value="@Model.SessionDate?.ToString("yyyy-MM-dd")"
+                           data-calendar-value />
+                    <span asp-validation-for="SessionDate"
+                          class="manage-availability-field-error"></span>
+                </div>
+
+                <div class="manage-availability-time-field">
+                    <label for="availability-time">
+                        Pick a time slot
+                    </label>
+                    <div class="manage-availability-time-input">
+                        <iconify-icon
+                            icon="solar:clock-circle-linear"
+                            aria-hidden="true"></iconify-icon>
+                        <input asp-for="SessionTime"
+                               id="availability-time"
+                               type="time" />
+                    </div>
+                    <span asp-validation-for="SessionTime"
+                          class="manage-availability-field-error"></span>
+
+                    <div class="manage-availability-slot-note">
+                        <iconify-icon
+                            icon="solar:info-circle-linear"
+                            aria-hidden="true"></iconify-icon>
+                        <span>
+                            This slot will be available for all modules you
+                            tutor.
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div asp-validation-summary="ModelOnly"
+                 class="manage-availability-validation"></div>
+
+            <button type="submit"
+                    class="manage-availability-create">
+                <iconify-icon
+                    icon="solar:add-circle-linear"
+                    aria-hidden="true"></iconify-icon>
+                Create availability
+            </button>
+        </form>
+
+        <form method="post"
+              asp-page-handler="CreateRecurring"
+              class="manage-recurring-editor"
+              data-recurring-editor>
+            <div class="manage-availability-section-heading">
+                <div>
+                    <h2>Create Availability</h2>
+                    <p>
+                        Plan your weekly availability and keep your tutoring
+                        schedule organized.
+                    </p>
+                </div>
+                <button type="button"
+                        class="booking-calendar-settings-button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#specific-availability-modal">
+                    <iconify-icon
+                        icon="solar:calendar-add-linear"
+                        aria-hidden="true"></iconify-icon>
+                    Add specific date
+                </button>
+            </div>
+
+            <strong class="recurring-editor-date-range">
+                @Model.ScheduleRangeLabel
+            </strong>
+
+            <div class="recurring-editor-days"
+                 role="group"
+                 aria-label="Select schedule dates">
+                @foreach (var day in Model.RecurringScheduleDays)
+                {
+                    <button type="button"
+                            data-recurring-date
+                            data-date="@day.Date.ToString("yyyy-MM-dd")"
+                            data-date-label="@day.Date.ToString("d MMMM")"
+                            aria-pressed="false">
+                        <strong>@day.DayLabel</strong>
+                        <span>@day.Date.ToString("dd MMM")</span>
+                    </button>
+                }
+            </div>
+
+            <p class="recurring-editor-selection"
+               data-recurring-selection>
+                Select the dates for your recurring schedule.
+            </p>
+
+            <div data-recurring-selected-inputs>
+                @foreach (var selectedDate in Model.SelectedDates)
+                {
+                    <input type="hidden"
+                           name="SelectedDates"
+                           value="@selectedDate.ToString("yyyy-MM-dd")" />
+                }
+            </div>
+
+            <div class="recurring-editor-add-row">
+                <div class="recurring-editor-time-input">
+                    <iconify-icon
+                        icon="solar:clock-circle-linear"
+                        aria-hidden="true"></iconify-icon>
+                    <label class="visually-hidden"
+                           for="recurring-slot-time">Time slot</label>
+                    <input id="recurring-slot-time"
+                           type="time"
+                           data-recurring-slot-time />
+                </div>
+
+                <button type="button"
+                        class="recurring-editor-add"
+                        data-recurring-slot-add>
+                    Add time slot
+                </button>
+            </div>
+
+            <p class="recurring-editor-error"
+               data-recurring-editor-error
+               role="alert"
+               hidden></p>
+
+            <div data-recurring-time-inputs>
+                @foreach (var scheduleTime in Model.ScheduleTimes)
+                {
+                    <input type="hidden"
+                           name="ScheduleTimes"
+                           value="@scheduleTime.ToString("HH:mm")" />
+                }
+            </div>
+
+            <div asp-validation-summary="ModelOnly"
+                 class="recurring-editor-validation"></div>
+
+            <div class="recurring-editor-slots"
+                 data-recurring-slot-list></div>
+
+            <div class="recurring-editor-empty"
+                 data-recurring-slot-empty>
+                No time slots added yet.
+            </div>
+
+            <button type="submit"
+                    class="recurring-editor-create"
+                    data-recurring-create>
+                Create availability
+            </button>
+        </form>
+
+        <section class="manage-availability-summary"
+                 aria-labelledby="availability-summary-title">
+            <div class="manage-availability-section-heading">
+                <div>
+                    <h2 id="availability-summary-title">
+                        Availability Overview
+                    </h2>
+                    <p>
+                        Your upcoming open availability across three periods.
+                    </p>
+                </div>
+            </div>
+
+            <div class="availability-summary-chart">
+                <canvas data-availability-summary-chart
+                        data-today="@Model.TodayAvailability"
+                        data-seven-days="@Model.SevenDayAvailability"
+                        data-thirty-one-days="@Model.ThirtyOneDayAvailability"
+                        role="img"
+                        aria-label="Open availability today, over seven days, and over thirty-one days">
+                </canvas>
+            </div>
+        </section>
+
+        <section class="manage-recurring-schedule"
+                 hidden
+                 aria-labelledby="recurring-schedule-title"
+                 data-recurring-schedule>
+            <div class="manage-availability-section-heading">
+                <div>
+                    <h2 id="recurring-schedule-title">
+                        Recurring Schedule
+                    </h2>
+                    <p>
+                        Plan your tutoring week by adding the times when you
+                        are regularly available, helping you maintain a clear
+                        and consistent schedule.
+                    </p>
+                </div>
+            </div>
+
+            <div class="recurring-schedule-add-row">
+                <div class="recurring-schedule-time-field">
+                    <label for="recurring-start-time">Start time</label>
+                    <input id="recurring-start-time"
+                           type="time"
+                           data-recurring-start />
+                </div>
+
+                <div class="recurring-schedule-time-field">
+                    <label for="recurring-end-time">End time</label>
+                    <input id="recurring-end-time"
+                           type="time"
+                           data-recurring-end />
+                </div>
+
+                <button type="button"
+                        class="recurring-schedule-add"
+                        data-recurring-add>
+                    <iconify-icon
+                        icon="solar:add-circle-linear"
+                        aria-hidden="true"></iconify-icon>
+                    Add time range
+                </button>
+            </div>
+
+            <p class="recurring-schedule-error"
+               data-recurring-error
+               role="alert"
+               hidden></p>
+
+            <div class="recurring-schedule-week-selector">
+                <span>Selected week</span>
+                <div>
+                    <button type="button"
+                            data-recurring-previous-week
+                            aria-label="Show previous week">
+                        <iconify-icon
+                            icon="solar:alt-arrow-left-linear"
+                            aria-hidden="true"></iconify-icon>
+                    </button>
+                    <strong data-recurring-week-label></strong>
+                    <button type="button"
+                            data-recurring-next-week
+                            aria-label="Show next week">
+                        <iconify-icon
+                            icon="solar:alt-arrow-right-linear"
+                            aria-hidden="true"></iconify-icon>
+                    </button>
+                </div>
+            </div>
+
+            <div class="recurring-schedule-ranges"
+                 data-recurring-ranges></div>
+
+            <div class="recurring-schedule-empty"
+                 data-recurring-empty>
+                <iconify-icon
+                    icon="solar:clock-circle-linear"
+                    aria-hidden="true"></iconify-icon>
+                <p>No time ranges added for this week yet.</p>
+            </div>
+        </section>
+
+        <section class="manage-availability-insights"
+                 hidden
+                 aria-labelledby="availability-insights-title">
+            <div class="manage-availability-section-heading">
+                <div>
+                    <h2 id="availability-insights-title">
+                        Availability Insights
+                    </h2>
+                    <p>Your upcoming one-hour availability at a glance.</p>
+                </div>
+            </div>
+
+            <div class="manage-availability-insight-list">
+                <article class="manage-availability-insight-card">
+                    <span class="manage-availability-insight-icon"
+                          aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             width="1em"
+                             height="1em"
+                             viewBox="0 0 20 20">
+                            <path d="M0 0h20v20H0z" fill="none" />
+                            <g fill="currentColor"
+                               fill-rule="evenodd"
+                               clip-rule="evenodd">
+                                <path d="M5 9a2 2 0 1 0 0-4a2 2 0 0 0 0 4m0 1a3 3 0 1 0 0-6a3 3 0 0 0 0 6" />
+                                <path d="M3.854 8.896a.5.5 0 0 1 0 .708l-.338.337A3.47 3.47 0 0 0 2.5 12.394v1.856a.5.5 0 1 1-1 0v-1.856a4.47 4.47 0 0 1 1.309-3.16l.337-.338a.5.5 0 0 1 .708 0m11.792-.3a.5.5 0 0 0 0 .708l.338.337A3.47 3.47 0 0 1 17 12.094v2.156a.5.5 0 0 0 1 0v-2.156a4.47 4.47 0 0 0-1.309-3.16l-.337-.338a.5.5 0 0 0-.708 0" />
+                                <path d="M14 9a2 2 0 1 1 0-4a2 2 0 0 1 0 4m0 1a3 3 0 1 1 0-6a3 3 0 0 1 0 6m-4.5 3.25a2.5 2.5 0 0 0-2.5 2.5v1.3a.5.5 0 0 1-1 0v-1.3a3.5 3.5 0 0 1 7 0v1.3a.5.5 0 1 1-1 0v-1.3a2.5 2.5 0 0 0-2.5-2.5" />
+                                <path d="M9.5 11.75a2 2 0 1 0 0-4a2 2 0 0 0 0 4m0 1a3 3 0 1 0 0-6a3 3 0 0 0 0 6" />
+                            </g>
+                        </svg>
+                    </span>
+                    <div>
+                        <strong>@Model.TotalSlots</strong>
+                        <span>Total slots</span>
+                    </div>
+                </article>
+
+                <article class="manage-availability-insight-card">
+                    <span class="manage-availability-insight-icon is-teal"
+                          aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             width="1em"
+                             height="1em"
+                             viewBox="0 0 16 16">
+                            <path d="M0 0h16v16H0z" fill="none" />
+                            <g fill="currentColor">
+                                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v1h14V3a1 1 0 0 0-1-1zm13 3H1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z" />
+                                <path d="M11 7.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-2 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z" />
+                            </g>
+                        </svg>
+                    </span>
+                    <div>
+                        <strong>@Model.WeeklyHours</strong>
+                        <span>Weekly hours</span>
+                    </div>
+                </article>
+
+                <article class="manage-availability-insight-card">
+                    <span class="manage-availability-insight-icon is-gold"
+                          aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             width="1em"
+                             height="1em"
+                             viewBox="0 0 24 24">
+                            <path d="M0 0h24v24H0z" fill="none" />
+                            <path fill="currentColor" d="M5.616 21q-.691 0-1.153-.462T4 19.385V6.615q0-.69.463-1.152T5.616 5h1.769V2.77h1.077V5h7.154V2.77h1V5h1.769q.69 0 1.153.463T20 6.616v12.769q0 .69-.462 1.153T18.384 21zm0-1h12.769q.23 0 .423-.192t.192-.424v-8.768H5v8.769q0 .23.192.423t.423.192M5 9.615h14v-3q0-.23-.192-.423T18.384 6H5.616q-.231 0-.424.192T5 6.616zm0 0V6zm7 4.539q-.31 0-.54-.23t-.23-.54t.23-.539t.54-.23t.54.23t.23.54t-.23.539t-.54.23m-4.54-.23q-.23-.23-.23-.54q0-.309.23-.539t.54-.23t.54.23t.23.54t-.23.539t-.54.23t-.54-.23m8.54.23q-.31 0-.54-.23t-.23-.54t.23-.539t.54-.23t.54.23t.23.54t-.23.539t-.54.23M12 18q-.31 0-.54-.23t-.23-.54t.23-.539t.54-.23t.54.23t.23.54t-.23.54T12 18m-4.54-.23q-.23-.23-.23-.54q0-.309.23-.539t.54-.23t.54.23t.23.54t-.23.54Q8.31 18 8 18t-.54-.23M16 18q-.31 0-.54-.23t-.23-.54t.23-.539t.54-.23t.54.23t.23.54t-.23.54T16 18" />
+                        </svg>
+                    </span>
+                    <div>
+                        <strong>@Model.MonthlyHours</strong>
+                        <span>Monthly hours</span>
+                    </div>
+                </article>
+            </div>
+
+            <p class="manage-availability-insights-note">
+                <iconify-icon
+                    icon="solar:info-circle-linear"
+                    aria-hidden="true"></iconify-icon>
+                Based on availability slots, not completed sessions.
+            </p>
+        </section>
+
+        <section class="manage-availability-chart-panel"
+                 hidden
+                 aria-labelledby="availability-chart-title">
+            <div class="manage-availability-section-heading">
+                <div>
+                    <h2 id="availability-chart-title">
+                        Availability overview
+                    </h2>
+                    <p>Compare your current availability totals.</p>
+                </div>
+            </div>
+
+            <div class="manage-availability-bar-chart"
+                 role="img"
+                 aria-label="Total slots, weekly hours, and monthly hours comparison">
+                <div class="manage-availability-bar-column is-magenta">
+                    <strong>@Model.TotalSlots</strong>
+                    <div class="manage-availability-bar-track">
+                        <i style="--bar-height: @Model.TotalSlotsBarHeight%"></i>
+                    </div>
+                    <span>Total slots</span>
+                </div>
+
+                <div class="manage-availability-bar-column is-teal">
+                    <strong>@Model.WeeklyHours</strong>
+                    <div class="manage-availability-bar-track">
+                        <i style="--bar-height: @Model.WeeklyHoursBarHeight%"></i>
+                    </div>
+                    <span>Weekly hours</span>
+                </div>
+
+                <div class="manage-availability-bar-column is-gold">
+                    <strong>@Model.MonthlyHours</strong>
+                    <div class="manage-availability-bar-track">
+                        <i style="--bar-height: @Model.MonthlyHoursBarHeight%"></i>
+                    </div>
+                    <span>Monthly hours</span>
+                </div>
+            </div>
+
+        </section>
+    </div>
+</section>
+
+<div class="modal fade specific-availability-modal"
+     id="specific-availability-modal"
+     data-specific-availability-modal
+     data-open-on-load="@Model.CustomAvailabilityModalOpen.ToString().ToLowerInvariant()"
+     tabindex="-1"
+     aria-labelledby="specific-availability-title"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post"
+                  asp-page-handler="CreateForDate"
+                  data-specific-availability-form>
+                <div class="modal-header">
+                    <div>
+                        <h2 id="specific-availability-title">
+                            Add availability
+                        </h2>
+                        <p>Choose a date and add one or more time slots.</p>
+                    </div>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="availability-calendar specific-availability-calendar"
+                         data-availability-calendar
+                         data-current-month-only="true"
+                         data-min-date="@Model.MinimumDate">
+                        <div class="availability-calendar-header">
+                            <button type="button"
+                                    data-calendar-previous
+                                    hidden
+                                    aria-label="Previous month"></button>
+                            <h3 data-calendar-month></h3>
+                            <button type="button"
+                                    data-calendar-next
+                                    hidden
+                                    aria-label="Next month"></button>
+                        </div>
+
+                        <div class="availability-calendar-weekdays"
+                             aria-hidden="true">
+                            <span>Su</span>
+                            <span>Mo</span>
+                            <span>Tu</span>
+                            <span>We</span>
+                            <span>Th</span>
+                            <span>Fr</span>
+                            <span>Sa</span>
+                        </div>
+
+                        <div class="availability-calendar-grid"
+                             data-calendar-grid
+                             role="grid"
+                             aria-label="Choose an availability date"></div>
+
+                        <input type="hidden"
+                               id="specific-session-date"
+                               name="SessionDate"
+                               value="@Model.SessionDate?.ToString("yyyy-MM-dd")"
+                               data-calendar-value />
+                        <span asp-validation-for="SessionDate"
+                              class="manage-availability-field-error"></span>
+                    </div>
+
+                    <div class="specific-availability-time-section">
+                        <label for="specific-slot-time">Time slots</label>
+                        <div class="specific-availability-time-row">
+                            <div class="recurring-editor-time-input">
+                                <iconify-icon
+                                    icon="solar:clock-circle-linear"
+                                    aria-hidden="true"></iconify-icon>
+                                <input id="specific-slot-time"
+                                       type="time"
+                                       data-specific-slot-time />
+                            </div>
+                            <button type="button"
+                                    class="recurring-editor-add"
+                                    data-specific-slot-add>
+                                Add time slot
+                            </button>
+                        </div>
+
+                        <p class="recurring-editor-error"
+                           data-specific-slot-error
+                           role="alert"
+                           hidden></p>
+                        <span asp-validation-for="SpecificScheduleTimes"
+                              class="manage-availability-field-error"></span>
+
+                        <div data-specific-time-inputs>
+                            @foreach (var scheduleTime in Model.SpecificScheduleTimes)
+                            {
+                                <input type="hidden"
+                                       name="SpecificScheduleTimes"
+                                       value="@scheduleTime.ToString("HH:mm")" />
+                            }
+                        </div>
+
+                        <div class="specific-availability-slots"
+                             data-specific-slot-list></div>
+                        <p class="specific-availability-empty"
+                           data-specific-slot-empty>
+                            No time slots added yet.
+                        </p>
+                    </div>
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="recurring-editor-validation"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="specific-availability-cancel"
+                            data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="specific-availability-save">
+                        Add availability
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<section class="container pb-4 availability-list-section"
+         aria-labelledby="availability-list-title">
+    <div class="availability-list-card">
+        <div class="availability-list-heading">
+            <div>
+                <h2 id="availability-list-title">Availability</h2>
+                <p class="availability-list-total">
+                    @Model.TotalAvailabilityCount total slots
+                </p>
+            </div>
+        </div>
+
+        @if (Model.AvailabilityDeleted)
+        {
+            <div class="availability-delete-success" role="status">
+                <iconify-icon
+                    icon="solar:check-circle-linear"
+                    aria-hidden="true"></iconify-icon>
+                <span>@Model.DeleteSuccessMessage</span>
+            </div>
+        }
+
+        @if (Model.AvailabilityRows.Count > 0)
+        {
+            <div class="availability-table-wrap">
+                <table class="availability-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Date</th>
+                            <th scope="col">Day</th>
+                            <th scope="col">Time</th>
+                            <th scope="col">Status</th>
+                            <th scope="col" class="availability-table-action-heading">
+                                Action
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var availability in Model.AvailabilityRows)
+                        {
+                            DateTimeOffset endTime =
+                                availability.LocalTime.AddHours(1);
+                            string availabilityLabel =
+                                $"{availability.LocalTime:dddd, dd MMMM yyyy} from " +
+                                $"{availability.LocalTime:HH:mm} to {endTime:HH:mm}";
+
+                            <tr>
+                                <td>@availability.LocalTime.ToString("dd MMM yyyy")</td>
+                                <td>@availability.LocalTime.ToString("dddd")</td>
+                                <td>
+                                    @availability.LocalTime.ToString("HH:mm")
+                                    <span aria-hidden="true">–</span>
+                                    @endTime.ToString("HH:mm")
+                                </td>
+                                <td>
+                                    <span class="availability-status">Available</span>
+                                </td>
+                                <td class="availability-table-action">
+                                    <button type="button"
+                                            class="availability-delete-button"
+                                            data-availability-delete-trigger
+                                            data-availability-id="@availability.AvailabilityId"
+                                            data-availability-label="@availabilityLabel"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#delete-availability-modal"
+                                            aria-label="Delete @availabilityLabel">
+                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                             width="1em"
+                                             height="1em"
+                                             viewBox="0 0 24 24"
+                                             aria-hidden="true">
+                                            <path d="M0 0h24v24H0z" fill="none" />
+                                            <path fill="none"
+                                                  stroke="currentColor"
+                                                  stroke-linecap="round"
+                                                  stroke-linejoin="round"
+                                                  stroke-width="1.5"
+                                                  d="M1 5h22m-8.75-4h-4.5a1.5 1.5 0 0 0-1.5 1.5V5h7.5V2.5a1.5 1.5 0 0 0-1.5-1.5m-4.5 16.75v-7.5m4.5 7.5v-7.5m4.61 11.37A1.49 1.49 0 0 1 17.37 23H6.63a1.49 1.49 0 0 1-1.49-1.38L3.75 5h16.5z" />
+                                        </svg>
+                                        <span>Delete</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalAvailabilityPages > 1)
+            {
+                int firstPage = Math.Max(1, Model.AvailabilityPage - 2);
+                int lastPage = Math.Min(
+                    Model.TotalAvailabilityPages,
+                    firstPage + 4);
+                firstPage = Math.Max(1, lastPage - 4);
+
+                <nav class="availability-pagination"
+                     aria-label="Availability table pages">
+                    @if (Model.AvailabilityPage > 1)
+                    {
+                        <a asp-route-availabilityPage="@(Model.AvailabilityPage - 1)"
+                           aria-label="Previous page">
+                            <iconify-icon
+                                icon="solar:alt-arrow-left-linear"
+                                aria-hidden="true"></iconify-icon>
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="is-disabled" aria-hidden="true">
+                            <iconify-icon
+                                icon="solar:alt-arrow-left-linear"></iconify-icon>
+                        </span>
+                    }
+
+                    @for (int pageNumber = firstPage;
+                          pageNumber <= lastPage;
+                          pageNumber++)
+                    {
+                        <a asp-route-availabilityPage="@pageNumber"
+                           class="@(pageNumber == Model.AvailabilityPage ? "is-current" : null)"
+                           aria-current="@(pageNumber == Model.AvailabilityPage ? "page" : null)">
+                            @pageNumber
+                        </a>
+                    }
+
+                    @if (Model.AvailabilityPage < Model.TotalAvailabilityPages)
+                    {
+                        <a asp-route-availabilityPage="@(Model.AvailabilityPage + 1)"
+                           aria-label="Next page">
+                            <iconify-icon
+                                icon="solar:alt-arrow-right-linear"
+                                aria-hidden="true"></iconify-icon>
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="is-disabled" aria-hidden="true">
+                            <iconify-icon
+                                icon="solar:alt-arrow-right-linear"></iconify-icon>
+                        </span>
+                    }
+                </nav>
+            }
+        }
+        else
+        {
+            <div class="availability-table-empty">
+                <iconify-icon
+                    icon="solar:calendar-minimalistic-linear"
+                    aria-hidden="true"></iconify-icon>
+                <p>No upcoming availability has been created yet.</p>
+            </div>
+        }
+    </div>
+</section>
+
+<div class="modal fade availability-delete-modal"
+     id="delete-availability-modal"
+     tabindex="-1"
+     aria-labelledby="delete-availability-title"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h2 id="delete-availability-title">Delete availability?</h2>
+                <p>
+                    This will remove
+                    <strong data-availability-delete-label></strong>.
+                </p>
+                <div class="availability-delete-modal-actions">
+                    <button type="button"
+                            class="availability-delete-cancel"
+                            data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <form method="post"
+                          asp-page-handler="DeleteAvailability">
+                        <input type="hidden"
+                               name="availabilityId"
+                               data-availability-delete-id />
+                        <button type="submit"
+                                class="availability-delete-confirm">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="recurring-create-progress"
+     data-recurring-progress
+     role="status"
+     aria-live="polite"
+     aria-label="Creating availability"
+     hidden>
+    <div>
+        <span class="recurring-create-spinner" aria-hidden="true"></span>
+        <h2>Creating availability</h2>
+        <p>Please wait while your schedule is being saved.</p>
+    </div>
+</div>
+
+@if (Model.AvailabilityCreated)
+{
+    <div class="modal fade manage-availability-success-modal"
+         id="availability-success-modal"
+         data-availability-success-modal
+         tabindex="-1"
+         aria-labelledby="availability-success-title"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <h2 id="availability-success-title">
+                        Availability created
+                    </h2>
+                    <p>@Model.SuccessMessage</p>
+                    <button type="button"
+                            class="manage-availability-success-close"
+                            data-bs-dismiss="modal">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+    <script src="~/js/manage-availability.js"
+            asp-append-version="true"></script>
+}

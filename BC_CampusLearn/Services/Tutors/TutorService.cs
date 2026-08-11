@@ -49,7 +49,6 @@ public class TutorService : ITutorService
             .Include(tutor => tutor.TutorAvailabilities)
             .OrderBy(tutor => tutor.TutorId)
             .ToListAsync(cancellationToken);
-
         return tutors
             .Select((tutor, index) => new TutorCardViewModel
             {
@@ -115,7 +114,6 @@ public class TutorService : ITutorService
             ProfileImagePath = tutor.ProfileImagePath,
             LinkedInUrl = GetSafeExternalUrl(tutor.LinkedInUrl),
             GitHubUrl = GetSafeExternalUrl(tutor.GitHubUrl),
-
             Modules = tutor.TutorCourseModules
                 .Select(item => new BookingModuleOptionViewModel
                 {

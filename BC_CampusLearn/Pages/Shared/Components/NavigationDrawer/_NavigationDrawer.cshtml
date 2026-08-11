@@ -9,7 +9,10 @@
     bool isDashboard = currentPage == "/Student/Dashboard";
     bool isTutorDashboard = currentPage.Equals(
         "/Tutors/TutorDashboard",
-        StringComparison.OrdinalIgnoreCase);
+        StringComparison.OrdinalIgnoreCase) ||
+        currentPage.Equals(
+            "/Tutors/ManageAvailability",
+            StringComparison.OrdinalIgnoreCase);
     bool isTutorApplication = currentPage.Equals(
         "/Tutors/TutorApplication",
         StringComparison.OrdinalIgnoreCase);
