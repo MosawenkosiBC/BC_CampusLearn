@@ -1385,3 +1385,60 @@
         transition: none;
     }
 }
+
+/* Tutor dashboard readability minimums. */
+.tutor-dashboard-page {
+    font-size: 16px;
+}
+
+.tutor-dashboard-page .tutor-stat-card h2,
+.tutor-dashboard-page .tutor-sessions-table th,
+.tutor-dashboard-page .tutor-sessions-table td,
+.tutor-dashboard-page .tutor-sessions-view-all,
+.tutor-dashboard-page .tutor-next-session-student p,
+.tutor-dashboard-page .tutor-next-session-details dd,
+.tutor-dashboard-page .tutor-next-session-actions button,
+.tutor-dashboard-page .tutor-learning-resources-actions button,
+.tutor-dashboard-page .tutor-availability-ranges,
+.tutor-dashboard-page .tutor-availability-view-toggle,
+.tutor-dashboard-page .tutor-availability-view-menu .dropdown-item,
+.tutor-dashboard-page .tutor-booking-popover-details dt,
+.tutor-dashboard-page .tutor-booking-popover-details dd,
+.tutor-dashboard-page .tutor-booking-popover-actions button {
+    font-size: 14px;
+}
+
+.tutor-dashboard-page .tutor-stat-action,
+.tutor-dashboard-page .tutor-session-countdown,
+.tutor-dashboard-page .tutor-session-status,
+.tutor-dashboard-page .tutor-next-session-details dt,
+.tutor-dashboard-page .tutor-resource-types span,
+.tutor-dashboard-page .tutor-weekly-day,
+.tutor-dashboard-page .tutor-weekly-day span,
+.tutor-dashboard-page .tutor-weekly-time,
+.tutor-dashboard-page .tutor-weekly-legend,
+.tutor-dashboard-page .tutor-monthly-weekday,
+.tutor-dashboard-page .tutor-monthly-date,
+.tutor-dashboard-page .tutor-booking-popover-heading div > span {
+    font-size: 12px;
+}
+
+.tutor-dashboard-page .tutor-availability-section-title,
+.tutor-dashboard-page .tutor-next-session-header h2,
+.tutor-dashboard-page .tutor-next-session-empty h3,
+.tutor-dashboard-page .tutor-learning-resources h3,
+.tutor-dashboard-page .tutor-booking-popover-heading h2 {
+    font-size: 16px;
+}
+
+.tutor-dashboard-page .tutor-next-session-empty p,
+.tutor-dashboard-page .tutor-learning-resources p,
+.tutor-dashboard-page .tutor-weekly-empty p {
+    font-size: 16px;
+}
+
+@media (max-width: 575.98px) {
+    .tutor-dashboard-page .tutor-stat-card h2 {
+        font-size: 12px;
+    }
+}
