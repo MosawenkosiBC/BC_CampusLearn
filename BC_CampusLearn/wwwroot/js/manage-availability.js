@@ -196,7 +196,8 @@
 
                 const slot = document.createElement("article");
                 slot.className = "specific-availability-slot";
-                const label = document.createElement("strong");
+                const label = document.createElement("span");
+                label.className = "recurring-editor-slot-time";
                 label.textContent =
                     `${formatSpecificTime(startMinutes)} – ${formatSpecificTime(endMinutes)}`;
                 const removeButton = document.createElement("button");
@@ -407,8 +408,16 @@
         "[data-recurring-editor]");
 
     if (recurringEditor) {
-        const dateButtons = Array.from(
-            recurringEditor.querySelectorAll("[data-recurring-date]"));
+        const recurringCalendar = recurringEditor.querySelector(
+            "[data-recurring-calendar]");
+        const recurringCalendarGrid = recurringEditor.querySelector(
+            "[data-recurring-calendar-grid]");
+        const recurringCalendarMonth = recurringEditor.querySelector(
+            "[data-recurring-calendar-month]");
+        const recurringCalendarPrevious = recurringEditor.querySelector(
+            "[data-recurring-calendar-previous]");
+        const recurringCalendarNext = recurringEditor.querySelector(
+            "[data-recurring-calendar-next]");
         const selectionText = recurringEditor.querySelector(
             "[data-recurring-selection]");
         const selectedInputs = recurringEditor.querySelector(
@@ -432,6 +441,12 @@
         const selectedDates = new Set(
             Array.from(selectedInputs.querySelectorAll("input"))
                 .map((input) => input.value));
+        const recurringMinimumDate = parseDate(
+            recurringCalendar.dataset.minDate);
+        let recurringDisplayedMonth = new Date(
+            recurringMinimumDate.getFullYear(),
+            recurringMinimumDate.getMonth(),
+            1);
         let scheduleTimes = Array.from(
             timeInputs.querySelectorAll("input"))
             .map((input) => input.value)
@@ -456,38 +471,125 @@
         };
 
         const syncSelectedDates = () => {
-            const selectedButtons = dateButtons.filter((button) =>
-                selectedDates.has(button.dataset.date));
-
-            dateButtons.forEach((button) => {
-                const isSelected = selectedDates.has(button.dataset.date);
-                button.classList.toggle("is-selected", isSelected);
-                button.setAttribute("aria-pressed", isSelected.toString());
-            });
-
             selectedInputs.replaceChildren();
-            selectedButtons.forEach((button) => {
+            const orderedDates = [...selectedDates].sort();
+            orderedDates.forEach((date) => {
                 const input = document.createElement("input");
                 input.type = "hidden";
                 input.name = "SelectedDates";
-                input.value = button.dataset.date;
+                input.value = date;
                 selectedInputs.append(input);
             });
 
-            if (selectedButtons.length === 0) {
-                selectionText.textContent =
-                    "Select the dates for your recurring schedule.";
+            if (orderedDates.length === 0) {
+                selectionText.textContent = "";
+                selectionText.hidden = true;
                 return;
             }
 
-            const labels = selectedButtons.map((button) =>
-                button.dataset.dateLabel);
+            selectionText.hidden = false;
+            const labels = orderedDates.map((date) =>
+                parseDate(date).toLocaleDateString(undefined, {
+                    day: "numeric",
+                    month: "long"
+                }));
             selectionText.replaceChildren();
-            selectionText.append("Recurring schedule for: ");
             const strong = document.createElement("strong");
-            strong.textContent = joinSelectedDates(labels);
+            strong.textContent = labels.length <= 3
+                ? joinSelectedDates(labels)
+                : `${labels.slice(0, 3).join(", ")} and ${labels.length - 3} more`;
             selectionText.append(strong);
         };
+
+        const renderRecurringCalendar = () => {
+            recurringCalendarMonth.textContent =
+                monthFormatter.format(recurringDisplayedMonth);
+            recurringCalendarGrid.replaceChildren();
+
+            const firstGridDate = new Date(
+                recurringDisplayedMonth.getFullYear(),
+                recurringDisplayedMonth.getMonth(),
+                1 - recurringDisplayedMonth.getDay());
+
+            for (let offset = 0; offset < 42; offset += 1) {
+                const date = new Date(firstGridDate);
+                date.setDate(firstGridDate.getDate() + offset);
+                const dateValue = formatValue(date);
+                const dayButton = document.createElement("button");
+                dayButton.type = "button";
+                dayButton.className = "availability-calendar-day";
+                dayButton.textContent = date.getDate().toString();
+                dayButton.setAttribute("role", "gridcell");
+                dayButton.setAttribute(
+                    "aria-label",
+                    dayFormatter.format(date));
+
+                if (date.getMonth() !==
+                    recurringDisplayedMonth.getMonth()) {
+                    dayButton.classList.add("is-outside-month");
+                }
+
+                if (isSameDate(date, today)) {
+                    dayButton.classList.add("is-today");
+                }
+
+                if (selectedDates.has(dateValue)) {
+                    dayButton.classList.add("is-selected");
+                    dayButton.setAttribute("aria-selected", "true");
+                } else {
+                    dayButton.setAttribute("aria-selected", "false");
+                }
+
+                if (date < recurringMinimumDate) {
+                    dayButton.disabled = true;
+                } else {
+                    dayButton.addEventListener("click", () => {
+                        if (selectedDates.has(dateValue)) {
+                            selectedDates.delete(dateValue);
+                        } else {
+                            selectedDates.add(dateValue);
+                        }
+
+                        if (date.getMonth() !==
+                            recurringDisplayedMonth.getMonth()) {
+                            recurringDisplayedMonth = new Date(
+                                date.getFullYear(),
+                                date.getMonth(),
+                                1);
+                        }
+
+                        showEditorError("");
+                        syncSelectedDates();
+                        renderRecurringCalendar();
+                    });
+                }
+
+                recurringCalendarGrid.append(dayButton);
+            }
+
+            const minimumMonth = new Date(
+                recurringMinimumDate.getFullYear(),
+                recurringMinimumDate.getMonth(),
+                1);
+            recurringCalendarPrevious.disabled =
+                recurringDisplayedMonth <= minimumMonth;
+        };
+
+        recurringCalendarPrevious.addEventListener("click", () => {
+            recurringDisplayedMonth = new Date(
+                recurringDisplayedMonth.getFullYear(),
+                recurringDisplayedMonth.getMonth() - 1,
+                1);
+            renderRecurringCalendar();
+        });
+
+        recurringCalendarNext.addEventListener("click", () => {
+            recurringDisplayedMonth = new Date(
+                recurringDisplayedMonth.getFullYear(),
+                recurringDisplayedMonth.getMonth() + 1,
+                1);
+            renderRecurringCalendar();
+        });
 
         const formatSlotTime = (minutes) => {
             const hours = Math.floor(minutes / 60) % 24;
@@ -503,7 +605,7 @@
             scheduleTimes = [...new Set(scheduleTimes)].sort();
             slotList.replaceChildren();
             timeInputs.replaceChildren();
-            emptySlots.hidden = scheduleTimes.length > 0;
+            emptySlots.hidden = true;
 
             scheduleTimes.forEach((time) => {
                 const [hours, minutes] = time.split(":").map(Number);
@@ -518,7 +620,8 @@
 
                 const slot = document.createElement("article");
                 slot.className = "recurring-editor-slot";
-                const label = document.createElement("strong");
+                const label = document.createElement("span");
+                label.className = "recurring-editor-slot-time";
                 label.textContent =
                     `${formatSlotTime(startMinutes)} – ${formatSlotTime(endMinutes)}`;
                 const removeButton = document.createElement("button");
@@ -537,21 +640,6 @@
                 slotList.append(slot);
             });
         };
-
-        dateButtons.forEach((button) => {
-            button.addEventListener("click", () => {
-                const date = button.dataset.date;
-
-                if (selectedDates.has(date)) {
-                    selectedDates.delete(date);
-                } else {
-                    selectedDates.add(date);
-                }
-
-                showEditorError("");
-                syncSelectedDates();
-            });
-        });
 
         addSlotButton.addEventListener("click", () => {
             const time = slotTimeInput.value;
@@ -597,6 +685,7 @@
         });
 
         syncSelectedDates();
+        renderRecurringCalendar();
         renderScheduleTimes();
     }
 
@@ -604,33 +693,69 @@
         "[data-availability-summary-chart]");
 
     if (availabilityChart && window.Chart) {
-        const availabilityValues = [
-            Number(availabilityChart.dataset.today) || 0,
-            Number(availabilityChart.dataset.sevenDays) || 0,
-            Number(availabilityChart.dataset.thirtyOneDays) || 0
+        const parseAvailabilityValues = (values) =>
+            (values ?? "")
+                .split(",")
+                .map((value) => Number(value) || 0);
+        const parseAvailabilityLabels = (labels) =>
+            (labels ?? "").split("|").filter(Boolean);
+        const dayValues = parseAvailabilityValues(
+            availabilityChart.dataset.dayValues);
+        const dayLabels = parseAvailabilityLabels(
+            availabilityChart.dataset.dayLabels)
+            .map((label) => label.split(" ")[0]);
+        const weekValues = parseAvailabilityValues(
+            availabilityChart.dataset.weekValues);
+        const weekLabels = parseAvailabilityLabels(
+            availabilityChart.dataset.weekLabels);
+        const chartViewButtons = Array.from(document.querySelectorAll(
+            "[data-availability-chart-view]"));
+        const dayBarColors = [
+            "#ad0151",
+            "#4ac1c1",
+            "#713b72",
+            "#35658a",
+            "#6f6f6f",
+            "#8e0043",
+            "#2f7477"
         ];
+        const dayBorderColors = [
+            "#8e0043",
+            "#306f71",
+            "#583059",
+            "#284f6d",
+            "#555555",
+            "#720036",
+            "#245b5d"
+        ];
+        const weekBarColors = [
+            "#ad0151",
+            "#3e8f91",
+            "#713b72",
+            "#6f6f6f"
+        ];
+        const weekBorderColors = [
+            "#8e0043",
+            "#306f71",
+            "#583059",
+            "#555555"
+        ];
+        let activeAvailabilityValues = dayValues;
 
-        new window.Chart(availabilityChart, {
+        const availabilitySummaryChart = new window.Chart(availabilityChart, {
             type: "bar",
             data: {
-                labels: ["Today", "7 Days", "31 Days"],
+                labels: dayLabels,
                 datasets: [{
-                    label: "Open availability",
-                    data: availabilityValues,
-                    backgroundColor: [
-                        "#ad0151",
-                        "#21b8bd",
-                        "#f2a93b"
-                    ],
-                    borderColor: [
-                        "#ad0151",
-                        "#159da2",
-                        "#c78000"
-                    ],
-                    borderRadius: 6,
+                    label: "Open slots",
+                    data: dayValues,
+                    backgroundColor: dayBarColors,
+                    borderColor: dayBorderColors,
+                    borderRadius: 7,
                     borderSkipped: false,
-                    borderWidth: 1,
-                    maxBarThickness: 58
+                    borderWidth: 0,
+                    hoverBorderWidth: 0,
+                    maxBarThickness: 42
                 }]
             },
             options: {
@@ -644,7 +769,6 @@
                         display: false
                     },
                     tooltip: {
-                        displayColors: false,
                         callbacks: {
                             label: (context) => {
                                 const value = context.parsed.y;
@@ -664,9 +788,22 @@
                         ticks: {
                             color: "#59616d",
                             font: {
-                                size: 11,
+                                size: 12,
                                 weight: "600"
-                            }
+                            },
+                            padding: 10
+                        },
+                        title: {
+                            color: "#747b86",
+                            display: true,
+                            font: {
+                                size: 12,
+                                weight: "600"
+                            },
+                            padding: {
+                                top: 18
+                            },
+                            text: `Next 7 days • ${availabilityChart.dataset.dayRange ?? ""}`
                         }
                     },
                     y: {
@@ -677,7 +814,7 @@
                         grid: {
                             color: "#edf0f2"
                         },
-                        suggestedMax: Math.max(...availabilityValues, 1),
+                        suggestedMax: Math.max(...activeAvailabilityValues, 1),
                         ticks: {
                             color: "#747b86",
                             maxTicksLimit: 6,
@@ -687,14 +824,54 @@
                             color: "#59616d",
                             display: true,
                             font: {
-                                size: 11,
+                                size: 12,
                                 weight: "600"
                             },
-                            text: "Open availability"
+                            text: "Open slots"
                         }
                     }
                 }
             }
+        });
+
+        const setAvailabilityChartView = (view) => {
+            const showWeeks = view === "weeks";
+            activeAvailabilityValues = showWeeks ? weekValues : dayValues;
+            availabilitySummaryChart.data.labels = showWeeks
+                ? weekLabels
+                : dayLabels;
+            availabilitySummaryChart.data.datasets[0].data =
+                activeAvailabilityValues;
+            availabilitySummaryChart.data.datasets[0].backgroundColor =
+                showWeeks ? weekBarColors : dayBarColors;
+            availabilitySummaryChart.data.datasets[0].borderColor =
+                showWeeks ? weekBorderColors : dayBorderColors;
+            availabilitySummaryChart.options.scales.x.title.text = showWeeks
+                ? `Next 4 weeks • ${availabilityChart.dataset.weekRange ?? ""}`
+                : `Next 7 days • ${availabilityChart.dataset.dayRange ?? ""}`;
+            availabilitySummaryChart.options.scales.y.suggestedMax =
+                Math.max(...activeAvailabilityValues, 1);
+            availabilityChart.setAttribute(
+                "aria-label",
+                showWeeks
+                    ? "Open availability totals for the next four weeks"
+                    : "Open availability for the next seven days");
+
+            chartViewButtons.forEach((button) => {
+                const isActive =
+                    button.dataset.availabilityChartView === view;
+                button.classList.toggle("is-active", isActive);
+                button.setAttribute("aria-pressed", String(isActive));
+            });
+
+            availabilitySummaryChart.update();
+        };
+
+        chartViewButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                setAvailabilityChartView(
+                    button.dataset.availabilityChartView ?? "days");
+            });
         });
     }
 
@@ -718,6 +895,112 @@
             }
         });
     });
+
+    const selectAllAvailability = document.querySelector(
+        "[data-availability-select-all]");
+    const availabilityRowSelections = Array.from(
+        document.querySelectorAll("[data-availability-select-row]"));
+    const bulkAvailabilityActions = document.querySelector(
+        "[data-availability-bulk-actions]");
+    const availabilitySelectionCount = document.querySelector(
+        "[data-availability-selection-count]");
+    const bulkDeleteTrigger = document.querySelector(
+        "[data-availability-bulk-delete-trigger]");
+    const bulkDeleteCount = document.querySelector(
+        "[data-availability-bulk-delete-count]");
+    const bulkDeleteInputs = document.querySelector(
+        "[data-availability-bulk-delete-inputs]");
+
+    const getSelectedAvailabilityRows = () =>
+        availabilityRowSelections.filter((checkbox) => checkbox.checked);
+
+    const updateAvailabilitySelection = () => {
+        const selectedCount = getSelectedAvailabilityRows().length;
+        const allRowsSelected = availabilityRowSelections.length > 0 &&
+            selectedCount === availabilityRowSelections.length;
+
+        if (selectAllAvailability) {
+            selectAllAvailability.checked = allRowsSelected;
+            selectAllAvailability.indeterminate = false;
+        }
+
+        if (bulkAvailabilityActions) {
+            bulkAvailabilityActions.hidden = selectedCount === 0;
+        }
+
+        if (availabilitySelectionCount) {
+            availabilitySelectionCount.textContent =
+                `${selectedCount} selected`;
+        }
+    };
+
+    selectAllAvailability?.addEventListener("change", () => {
+        availabilityRowSelections.forEach((checkbox) => {
+            checkbox.checked = selectAllAvailability.checked;
+        });
+        updateAvailabilitySelection();
+    });
+
+    availabilityRowSelections.forEach((checkbox) => {
+        checkbox.addEventListener("change", updateAvailabilitySelection);
+    });
+
+    bulkDeleteTrigger?.addEventListener("click", () => {
+        const selectedRows = getSelectedAvailabilityRows();
+
+        if (bulkDeleteCount) {
+            bulkDeleteCount.textContent = selectedRows.length === 1
+                ? "1 availability slot"
+                : `${selectedRows.length} availability slots`;
+        }
+
+        if (bulkDeleteInputs) {
+            bulkDeleteInputs.replaceChildren(...selectedRows.map((checkbox) => {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "availabilityIds";
+                input.value = checkbox.value;
+                return input;
+            }));
+        }
+    });
+
+    const editAvailabilityModal = document.querySelector(
+        "[data-availability-edit-modal]");
+    const editAvailabilityId = document.querySelector(
+        "[data-availability-edit-id]");
+    const editAvailabilityDate = document.querySelector(
+        "[data-availability-edit-date]");
+    const editAvailabilityTime = document.querySelector(
+        "[data-availability-edit-time]");
+    const editAvailabilityTriggers = document.querySelectorAll(
+        "[data-availability-edit-trigger]");
+
+    editAvailabilityTriggers.forEach((trigger) => {
+        trigger.addEventListener("click", () => {
+            if (editAvailabilityId) {
+                editAvailabilityId.value =
+                    trigger.dataset.availabilityId ?? "";
+            }
+
+            if (editAvailabilityDate) {
+                editAvailabilityDate.textContent =
+                    trigger.dataset.availabilityDate ?? "";
+            }
+
+            if (editAvailabilityTime) {
+                editAvailabilityTime.value =
+                    trigger.dataset.availabilityTime ?? "";
+            }
+        });
+    });
+
+    if (editAvailabilityModal?.dataset.openOnLoad === "true" &&
+        window.bootstrap?.Modal) {
+        const editModal = new window.bootstrap.Modal(
+            editAvailabilityModal);
+        editModal.show();
+    }
 
     const successModalElement = document.querySelector(
         "[data-availability-success-modal]");

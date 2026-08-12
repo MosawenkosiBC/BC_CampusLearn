@@ -43,9 +43,9 @@
                         <button type="button"
                                 data-calendar-previous
                                 aria-label="Show previous month">
-                            <iconify-icon
-                                icon="solar:alt-arrow-left-linear"
-                                aria-hidden="true"></iconify-icon>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m15 18-6-6 6-6" />
+                            </svg>
                         </button>
 
                         <h3 data-calendar-month></h3>
@@ -53,9 +53,9 @@
                         <button type="button"
                                 data-calendar-next
                                 aria-label="Show next month">
-                            <iconify-icon
-                                icon="solar:alt-arrow-right-linear"
-                                aria-hidden="true"></iconify-icon>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m9 6 6 6-6 6" />
+                            </svg>
                         </button>
                     </div>
 
@@ -130,105 +130,129 @@
             <div class="manage-availability-section-heading">
                 <div>
                     <h2>Create Availability</h2>
-                    <p>
-                        Plan your weekly availability and keep your tutoring
-                        schedule organized.
+                </div>
+            </div>
+
+            <div class="recurring-editor-schedule-builder">
+                <div class="recurring-editor-calendar-column">
+                    <div class="availability-calendar recurring-editor-calendar"
+                         data-recurring-calendar
+                         data-min-date="@Model.MinimumDate">
+                        <div class="availability-calendar-header">
+                            <button type="button"
+                                    data-recurring-calendar-previous
+                                    aria-label="Show previous month">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="m15 18-6-6 6-6" />
+                                </svg>
+                            </button>
+                            <h3 data-recurring-calendar-month></h3>
+                            <button type="button"
+                                    data-recurring-calendar-next
+                                    aria-label="Show next month">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="m9 6 6 6-6 6" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="availability-calendar-weekdays"
+                             aria-hidden="true">
+                            <span>Su</span>
+                            <span>Mo</span>
+                            <span>Tu</span>
+                            <span>We</span>
+                            <span>Th</span>
+                            <span>Fr</span>
+                            <span>Sa</span>
+                        </div>
+                        <div class="availability-calendar-grid"
+                             data-recurring-calendar-grid
+                             role="grid"
+                             aria-multiselectable="true"
+                             aria-label="Select availability dates"></div>
+                    </div>
+
+                    <p class="recurring-editor-calendar-help">
+                        Select one or more dates from the calendar.
                     </p>
-                </div>
-                <button type="button"
-                        class="booking-calendar-settings-button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#specific-availability-modal">
-                    <iconify-icon
-                        icon="solar:calendar-add-linear"
-                        aria-hidden="true"></iconify-icon>
-                    Add specific date
-                </button>
-            </div>
 
-            <strong class="recurring-editor-date-range">
-                @Model.ScheduleRangeLabel
-            </strong>
+                    <p class="recurring-editor-selection"
+                       data-recurring-selection>
+                        Select the dates for your recurring schedule.
+                    </p>
 
-            <div class="recurring-editor-days"
-                 role="group"
-                 aria-label="Select schedule dates">
-                @foreach (var day in Model.RecurringScheduleDays)
-                {
-                    <button type="button"
-                            data-recurring-date
-                            data-date="@day.Date.ToString("yyyy-MM-dd")"
-                            data-date-label="@day.Date.ToString("d MMMM")"
-                            aria-pressed="false">
-                        <strong>@day.DayLabel</strong>
-                        <span>@day.Date.ToString("dd MMM")</span>
-                    </button>
-                }
-            </div>
-
-            <p class="recurring-editor-selection"
-               data-recurring-selection>
-                Select the dates for your recurring schedule.
-            </p>
-
-            <div data-recurring-selected-inputs>
-                @foreach (var selectedDate in Model.SelectedDates)
-                {
-                    <input type="hidden"
-                           name="SelectedDates"
-                           value="@selectedDate.ToString("yyyy-MM-dd")" />
-                }
-            </div>
-
-            <div class="recurring-editor-add-row">
-                <div class="recurring-editor-time-input">
-                    <iconify-icon
-                        icon="solar:clock-circle-linear"
-                        aria-hidden="true"></iconify-icon>
-                    <label class="visually-hidden"
-                           for="recurring-slot-time">Time slot</label>
-                    <input id="recurring-slot-time"
-                           type="time"
-                           data-recurring-slot-time />
+                    <div data-recurring-selected-inputs>
+                        @foreach (var selectedDate in Model.SelectedDates)
+                        {
+                            <input type="hidden"
+                                   name="SelectedDates"
+                                   value="@selectedDate.ToString("yyyy-MM-dd")" />
+                        }
+                    </div>
                 </div>
 
-                <button type="button"
-                        class="recurring-editor-add"
-                        data-recurring-slot-add>
-                    Add time slot
+                <div class="recurring-editor-time-panel">
+                    <h3 class="recurring-editor-time-title">
+                        Choose a time
+                    </h3>
+                    <p class="recurring-editor-time-help">
+                        Add one or more time slots for the selected dates.
+                    </p>
+
+                    <div class="recurring-editor-add-row">
+                        <div class="recurring-editor-time-input">
+                            <iconify-icon
+                                icon="solar:clock-circle-linear"
+                                aria-hidden="true"></iconify-icon>
+                            <label class="visually-hidden"
+                                   for="recurring-slot-time">Time slot</label>
+                            <input id="recurring-slot-time"
+                                   type="time"
+                                   step="60"
+                                   data-recurring-slot-time />
+                        </div>
+
+                        <button type="button"
+                                class="recurring-editor-add"
+                                data-recurring-slot-add
+                                aria-label="Add time slot">
+                            <span aria-hidden="true">+</span>
+                        </button>
+                    </div>
+
+                    <p class="recurring-editor-error"
+                       data-recurring-editor-error
+                       role="alert"
+                       hidden></p>
+
+                    <div data-recurring-time-inputs>
+                        @foreach (var scheduleTime in Model.ScheduleTimes)
+                        {
+                            <input type="hidden"
+                                   name="ScheduleTimes"
+                                   value="@scheduleTime.ToString("HH:mm")" />
+                        }
+                    </div>
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="recurring-editor-validation"></div>
+
+                    <div class="recurring-editor-slots"
+                         data-recurring-slot-list></div>
+
+                    <div class="recurring-editor-empty"
+                         data-recurring-slot-empty
+                         hidden></div>
+                </div>
+            </div>
+
+            <div class="recurring-editor-create-actions">
+                <button type="submit"
+                        class="recurring-editor-create"
+                        data-recurring-create>
+                    Create availability
                 </button>
             </div>
-
-            <p class="recurring-editor-error"
-               data-recurring-editor-error
-               role="alert"
-               hidden></p>
-
-            <div data-recurring-time-inputs>
-                @foreach (var scheduleTime in Model.ScheduleTimes)
-                {
-                    <input type="hidden"
-                           name="ScheduleTimes"
-                           value="@scheduleTime.ToString("HH:mm")" />
-                }
-            </div>
-
-            <div asp-validation-summary="ModelOnly"
-                 class="recurring-editor-validation"></div>
-
-            <div class="recurring-editor-slots"
-                 data-recurring-slot-list></div>
-
-            <div class="recurring-editor-empty"
-                 data-recurring-slot-empty>
-                No time slots added yet.
-            </div>
-
-            <button type="submit"
-                    class="recurring-editor-create"
-                    data-recurring-create>
-                Create availability
-            </button>
         </form>
 
         <section class="manage-availability-summary"
@@ -239,18 +263,37 @@
                         Availability Overview
                     </h2>
                     <p>
-                        Your upcoming open availability across three periods.
+                        Review your open slots for the next seven days or
+                        compare the next four weeks.
                     </p>
+                </div>
+                <div class="availability-summary-view-toggle"
+                     role="group"
+                     aria-label="Availability overview period">
+                    <button type="button"
+                            class="is-active"
+                            data-availability-chart-view="days"
+                            aria-pressed="true">
+                        7 Days
+                    </button>
+                    <button type="button"
+                            data-availability-chart-view="weeks"
+                            aria-pressed="false">
+                        Weekly
+                    </button>
                 </div>
             </div>
 
             <div class="availability-summary-chart">
                 <canvas data-availability-summary-chart
-                        data-today="@Model.TodayAvailability"
-                        data-seven-days="@Model.SevenDayAvailability"
-                        data-thirty-one-days="@Model.ThirtyOneDayAvailability"
+                        data-day-values="@string.Join(",", Model.SevenDayAvailabilityByDay)"
+                        data-day-labels="@string.Join("|", Model.SevenDayAvailabilityLabels)"
+                        data-day-range="@Model.SevenDayAvailabilityRangeLabel"
+                        data-week-values="@string.Join(",", Model.FourWeekAvailabilityTotals)"
+                        data-week-labels="@string.Join("|", Model.FourWeekAvailabilityLabels)"
+                        data-week-range="@Model.FourWeekAvailabilityRangeLabel"
                         role="img"
-                        aria-label="Open availability today, over seven days, and over thirty-one days">
+                        aria-label="Open availability for the next seven days">
                 </canvas>
             </div>
         </section>
@@ -538,6 +581,7 @@
                                     aria-hidden="true"></iconify-icon>
                                 <input id="specific-slot-time"
                                        type="time"
+                                       step="60"
                                        data-specific-slot-time />
                             </div>
                             <button type="button"
@@ -613,22 +657,73 @@
             </div>
         }
 
+        @if (Model.AvailabilityUpdated)
+        {
+            <div class="availability-delete-success" role="status">
+                <iconify-icon
+                    icon="solar:check-circle-linear"
+                    aria-hidden="true"></iconify-icon>
+                <span>@Model.UpdateSuccessMessage</span>
+            </div>
+        }
+
         @if (Model.AvailabilityRows.Count > 0)
         {
             <div class="availability-table-wrap">
                 <table class="availability-table">
+                    <colgroup>
+                        <col class="availability-table-select-column" />
+                        <col class="availability-table-data-column" />
+                        <col class="availability-table-data-column availability-table-day-column" />
+                        <col class="availability-table-data-column" />
+                        <col class="availability-table-data-column" />
+                    </colgroup>
                     <thead>
                         <tr>
+                            <th scope="col" class="availability-table-select">
+                                <input type="checkbox"
+                                       data-availability-select-all
+                                       aria-label="Select all availability rows on this page" />
+                            </th>
                             <th scope="col">Date</th>
-                            <th scope="col">Day</th>
+                            <th scope="col" class="availability-table-day">Day</th>
                             <th scope="col">Time</th>
-                            <th scope="col">Status</th>
                             <th scope="col" class="availability-table-action-heading">
                                 Action
                             </th>
                         </tr>
                     </thead>
                     <tbody>
+                        <tr class="availability-bulk-actions"
+                            data-availability-bulk-actions
+                            hidden>
+                            <td colspan="5">
+                                <div class="availability-bulk-actions-content">
+                                    <span data-availability-selection-count>
+                                        0 selected
+                                    </span>
+                                    <a href="#bulk-delete-availability-modal"
+                                       data-availability-bulk-delete-trigger
+                                       data-bs-toggle="modal"
+                                       data-bs-target="#bulk-delete-availability-modal">
+                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                             width="1em"
+                                             height="1em"
+                                             viewBox="0 0 24 24"
+                                             aria-hidden="true">
+                                            <path d="M0 0h24v24H0z" fill="none" />
+                                            <path fill="none"
+                                                  stroke="currentColor"
+                                                  stroke-linecap="round"
+                                                  stroke-linejoin="round"
+                                                  stroke-width="1.5"
+                                                  d="M1 5h22m-8.75-4h-4.5a1.5 1.5 0 0 0-1.5 1.5V5h7.5V2.5a1.5 1.5 0 0 0-1.5-1.5m-4.5 16.75v-7.5m4.5 7.5v-7.5m4.61 11.37A1.49 1.49 0 0 1 17.37 23H6.63a1.49 1.49 0 0 1-1.49-1.38L3.75 5h16.5z" />
+                                        </svg>
+                                        <span>Delete Selected</span>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
                         @foreach (var availability in Model.AvailabilityRows)
                         {
                             DateTimeOffset endTime =
@@ -638,15 +733,47 @@
                                 $"{availability.LocalTime:HH:mm} to {endTime:HH:mm}";
 
                             <tr>
+                                <td class="availability-table-select">
+                                    <input type="checkbox"
+                                           value="@availability.AvailabilityId"
+                                           data-availability-select-row
+                                           aria-label="Select @availabilityLabel" />
+                                </td>
                                 <td>@availability.LocalTime.ToString("dd MMM yyyy")</td>
-                                <td>@availability.LocalTime.ToString("dddd")</td>
-                                <td>
-                                    @availability.LocalTime.ToString("HH:mm")
-                                    <span aria-hidden="true">–</span>
-                                    @endTime.ToString("HH:mm")
+                                <td class="availability-table-day">
+                                    @availability.LocalTime.ToString("dddd")
                                 </td>
                                 <td>
-                                    <span class="availability-status">Available</span>
+                                    <div class="availability-time-cell">
+                                        <span>
+                                            @availability.LocalTime.ToString("HH:mm")
+                                            <span aria-hidden="true">–</span>
+                                            @endTime.ToString("HH:mm")
+                                        </span>
+                                        <button type="button"
+                                                class="availability-time-edit"
+                                                data-availability-edit-trigger
+                                                data-availability-id="@availability.AvailabilityId"
+                                                data-availability-date="@availability.LocalTime.ToString("dd MMM yyyy")"
+                                                data-availability-time="@availability.LocalTime.ToString("HH:mm")"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#edit-availability-time-modal"
+                                                aria-label="Edit time for @availabilityLabel">
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                 width="1em"
+                                                 height="1em"
+                                                 viewBox="0 0 24 24"
+                                                 aria-hidden="true">
+                                                <path d="M0 0h24v24H0z" fill="none" />
+                                                <path fill="none"
+                                                      stroke="currentColor"
+                                                      stroke-linecap="round"
+                                                      stroke-linejoin="round"
+                                                      stroke-width="1.5"
+                                                      d="M3.782 16.31L3 21l4.69-.782a3.96 3.96 0 0 0 2.151-1.106L20.42 8.532a1.98 1.98 0 0 0 0-2.8L18.269 3.58a1.98 1.98 0 0 0-2.802 0L4.888 14.16a3.96 3.96 0 0 0-1.106 2.15M14 6l4 4" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </td>
                                 <td class="availability-table-action">
                                     <button type="button"
@@ -748,6 +875,65 @@
     </div>
 </section>
 
+<div class="modal fade availability-edit-modal"
+     id="edit-availability-time-modal"
+     data-availability-edit-modal
+     data-open-on-load="@Model.EditAvailabilityModalOpen.ToString().ToLowerInvariant()"
+     tabindex="-1"
+     aria-labelledby="edit-availability-time-title"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="UpdateAvailabilityTime">
+                <div class="modal-header">
+                    <div>
+                        <h2 id="edit-availability-time-title">Edit availability time</h2>
+                        <p>
+                            The date stays the same. Only the time can be changed.
+                        </p>
+                    </div>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="availability-edit-date">
+                        Date:
+                        <strong data-availability-edit-date>
+                            @Model.EditAvailabilityDateLabel
+                        </strong>
+                    </p>
+                    <input type="hidden"
+                           asp-for="EditAvailabilityId"
+                           data-availability-edit-id />
+                    <input type="hidden"
+                           name="AvailabilityPage"
+                           value="@Model.AvailabilityPage" />
+                    <label asp-for="EditAvailabilityTime">Time</label>
+                    <input asp-for="EditAvailabilityTime"
+                           type="time"
+                           step="60"
+                           data-availability-edit-time />
+                    <span asp-validation-for="EditAvailabilityTime"
+                          class="manage-availability-field-error"></span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="availability-delete-cancel"
+                            data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="availability-edit-save">
+                        Save time
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade availability-delete-modal"
      id="delete-availability-modal"
      tabindex="-1"
@@ -775,6 +961,44 @@
                         <button type="submit"
                                 class="availability-delete-confirm">
                             Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade availability-delete-modal"
+     id="bulk-delete-availability-modal"
+     tabindex="-1"
+     aria-labelledby="bulk-delete-availability-title"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h2 id="bulk-delete-availability-title">
+                    Delete selected availability?
+                </h2>
+                <p>
+                    This will remove
+                    <strong data-availability-bulk-delete-count></strong>.
+                </p>
+                <div class="availability-delete-modal-actions">
+                    <button type="button"
+                            class="availability-delete-cancel"
+                            data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <form method="post"
+                          asp-page-handler="DeleteAvailabilities">
+                        <input type="hidden"
+                               name="AvailabilityPage"
+                               value="@Model.AvailabilityPage" />
+                        <div data-availability-bulk-delete-inputs></div>
+                        <button type="submit"
+                                class="availability-delete-confirm">
+                            Delete selected
                         </button>
                     </form>
                 </div>

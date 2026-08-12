@@ -40,6 +40,12 @@ public class ManageAvailabilityModel : PageModel
     [BindProperty]
     public List<TimeOnly> SpecificScheduleTimes { get; set; } = new();
 
+    [BindProperty]
+    public int EditAvailabilityId { get; set; }
+
+    [BindProperty]
+    public TimeOnly? EditAvailabilityTime { get; set; }
+
     [BindProperty(SupportsGet = true)]
     public int AvailabilityPage { get; set; } = 1;
 
@@ -55,7 +61,18 @@ public class ManageAvailabilityModel : PageModel
     [TempData]
     public string? DeleteSuccessMessage { get; set; }
 
+    [TempData]
+    public bool AvailabilityUpdated { get; set; }
+
+    [TempData]
+    public string? UpdateSuccessMessage { get; set; }
+
     public bool CustomAvailabilityModalOpen { get; private set; }
+
+    public bool EditAvailabilityModalOpen { get; private set; }
+
+    public string EditAvailabilityDateLabel { get; private set; } =
+        string.Empty;
 
     public int TotalSlots { get; private set; }
 
@@ -68,6 +85,24 @@ public class ManageAvailabilityModel : PageModel
     public int SevenDayAvailability { get; private set; }
 
     public int ThirtyOneDayAvailability { get; private set; }
+
+    public IReadOnlyList<int> SevenDayAvailabilityByDay { get; private set; } =
+        Array.Empty<int>();
+
+    public IReadOnlyList<string> SevenDayAvailabilityLabels { get; private set; } =
+        Array.Empty<string>();
+
+    public IReadOnlyList<int> FourWeekAvailabilityTotals { get; private set; } =
+        Array.Empty<int>();
+
+    public IReadOnlyList<string> FourWeekAvailabilityLabels { get; private set; } =
+        Array.Empty<string>();
+
+    public string SevenDayAvailabilityRangeLabel { get; private set; } =
+        string.Empty;
+
+    public string FourWeekAvailabilityRangeLabel { get; private set; } =
+        string.Empty;
 
     public int TotalSlotsBarHeight { get; private set; }
 
@@ -235,9 +270,10 @@ public class ManageAvailabilityModel : PageModel
             .Distinct()
             .OrderBy(time => time)
             .ToList();
-        HashSet<DateOnly> allowedDates = RecurringScheduleDays
-            .Select(day => day.Date)
-            .ToHashSet();
+        DateOnly today = DateOnly.FromDateTime(
+            DateTimeOffset.UtcNow
+                .ToOffset(SouthAfricaOffset)
+                .Date);
 
         if (selectedDates.Count == 0)
         {
@@ -245,12 +281,11 @@ public class ManageAvailabilityModel : PageModel
                 string.Empty,
                 "Select at least one schedule date.");
         }
-        else if (selectedDates.Any(date =>
-                     !allowedDates.Contains(date)))
+        else if (selectedDates.Any(date => date < today))
         {
             ModelState.AddModelError(
                 string.Empty,
-                "Select dates from the displayed seven-day period.");
+                "Select today or a future date.");
         }
 
         if (scheduleTimes.Count == 0)
@@ -384,6 +419,182 @@ public class ManageAvailabilityModel : PageModel
             $"Availability for {localTime:dd MMMM yyyy 'at' HH:mm} was deleted.";
 
         return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDeleteAvailabilitiesAsync(
+        List<int> availabilityIds,
+        CancellationToken cancellationToken)
+    {
+        int? tutorId =
+            await GetCurrentTutorIdAsync(cancellationToken);
+
+        if (!tutorId.HasValue)
+        {
+            return Forbid();
+        }
+
+        List<int> selectedIds = availabilityIds
+            .Where(id => id > 0)
+            .Distinct()
+            .ToList();
+
+        if (selectedIds.Count == 0)
+        {
+            return RedirectToPage(new
+            {
+                availabilityPage = AvailabilityPage
+            });
+        }
+
+        List<TutorAvailability> availabilityToDelete =
+            await _context.TutorAvailabilities
+                .Where(slot =>
+                    slot.TutorId == tutorId.Value &&
+                    selectedIds.Contains(slot.TutorAvailabilityId))
+                .ToListAsync(cancellationToken);
+
+        if (availabilityToDelete.Count == 0)
+        {
+            return RedirectToPage(new
+            {
+                availabilityPage = AvailabilityPage
+            });
+        }
+
+        _context.TutorAvailabilities.RemoveRange(availabilityToDelete);
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return RedirectToPage(new
+            {
+                availabilityPage = AvailabilityPage
+            });
+        }
+
+        AvailabilityDeleted = true;
+        DeleteSuccessMessage = availabilityToDelete.Count == 1
+            ? "1 availability slot was deleted."
+            : $"{availabilityToDelete.Count} availability slots were deleted.";
+
+        return RedirectToPage(new
+        {
+            availabilityPage = AvailabilityPage
+        });
+    }
+
+    public async Task<IActionResult> OnPostUpdateAvailabilityTimeAsync(
+        CancellationToken cancellationToken)
+    {
+        int? tutorId =
+            await GetCurrentTutorIdAsync(cancellationToken);
+
+        if (!tutorId.HasValue)
+        {
+            return Forbid();
+        }
+
+        TutorAvailability? availability =
+            await _context.TutorAvailabilities
+                .SingleOrDefaultAsync(slot =>
+                    slot.TutorAvailabilityId == EditAvailabilityId &&
+                    slot.TutorId == tutorId.Value,
+                    cancellationToken);
+
+        if (availability is null)
+        {
+            return NotFound();
+        }
+
+        if (!EditAvailabilityTime.HasValue)
+        {
+            ModelState.AddModelError(
+                nameof(EditAvailabilityTime),
+                "Select a time.");
+        }
+
+        DateTimeOffset currentLocalTime =
+            availability.AvailableTime.ToOffset(SouthAfricaOffset);
+        EditAvailabilityDateLabel =
+            currentLocalTime.ToString("dd MMM yyyy");
+        DateTimeOffset updatedTime = EditAvailabilityTime.HasValue
+            ? new DateTimeOffset(
+                currentLocalTime.Date.Add(EditAvailabilityTime.Value.ToTimeSpan()),
+                SouthAfricaOffset)
+            : availability.AvailableTime;
+
+        if (EditAvailabilityTime.HasValue &&
+            updatedTime <= DateTimeOffset.UtcNow)
+        {
+            ModelState.AddModelError(
+                nameof(EditAvailabilityTime),
+                "Choose a future time.");
+        }
+
+        bool slotExists = EditAvailabilityTime.HasValue &&
+            await _context.TutorAvailabilities
+                .AsNoTracking()
+                .AnyAsync(slot =>
+                    slot.TutorId == tutorId.Value &&
+                    slot.TutorAvailabilityId != EditAvailabilityId &&
+                    slot.AvailableTime == updatedTime,
+                    cancellationToken);
+
+        if (slotExists)
+        {
+            ModelState.AddModelError(
+                nameof(EditAvailabilityTime),
+                "An availability slot already exists at that time.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            BuildRecurringScheduleDays();
+            await LoadAvailabilityInsightsAsync(
+                tutorId.Value,
+                cancellationToken);
+            EditAvailabilityModalOpen = true;
+            return Page();
+        }
+
+        availability.AvailableTime = updatedTime;
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception)
+            when (IsUniqueConstraintViolation(exception))
+        {
+            ModelState.AddModelError(
+                nameof(EditAvailabilityTime),
+                "An availability slot already exists at that time.");
+            BuildRecurringScheduleDays();
+            await LoadAvailabilityInsightsAsync(
+                tutorId.Value,
+                cancellationToken);
+            EditAvailabilityModalOpen = true;
+            return Page();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return RedirectToPage(new
+            {
+                availabilityPage = AvailabilityPage
+            });
+        }
+
+        AvailabilityUpdated = true;
+        UpdateSuccessMessage =
+            $"Availability time updated to {updatedTime:HH:mm}.";
+
+        return RedirectToPage(new
+        {
+            availabilityPage = AvailabilityPage
+        });
     }
 
     public async Task<IActionResult> OnPostCreateForDateAsync(
@@ -552,6 +763,28 @@ public class ManageAvailabilityModel : PageModel
             localNow.Date.AddDays(-daysSinceMonday),
             SouthAfricaOffset);
         DateTimeOffset weekEnd = weekStart.AddDays(7);
+        SevenDayAvailabilityByDay = GetAvailabilityByDay(
+            futureSlots,
+            todayStart);
+        SevenDayAvailabilityLabels = Enumerable.Range(0, 7)
+            .Select(dayOffset => todayStart
+                .AddDays(dayOffset)
+                .ToString("ddd dd MMM"))
+            .ToArray();
+        SevenDayAvailabilityRangeLabel = GetWeekRangeLabel(todayStart);
+        FourWeekAvailabilityTotals = Enumerable.Range(0, 4)
+            .Select(weekOffset => GetAvailabilityByDay(
+                    futureSlots,
+                    todayStart.AddDays(weekOffset * 7))
+                .Sum())
+            .ToArray();
+        FourWeekAvailabilityLabels = Enumerable.Range(0, 4)
+            .Select(weekOffset => GetWeekRangeLabel(
+                todayStart.AddDays(weekOffset * 7)))
+            .ToArray();
+        FourWeekAvailabilityRangeLabel = GetDateRangeLabel(
+            todayStart,
+            todayStart.AddDays(27));
         DateTimeOffset monthStart = new(
             localNow.Year,
             localNow.Month,
@@ -633,6 +866,44 @@ public class ManageAvailabilityModel : PageModel
         return Math.Max(
             10,
             (int)Math.Round(value / (double)maximum * 100));
+    }
+
+    private static IReadOnlyList<int> GetAvailabilityByDay(
+        IReadOnlyList<DateTimeOffset> availability,
+        DateTimeOffset weekStart)
+    {
+        return Enumerable.Range(0, 7)
+            .Select(dayOffset =>
+            {
+                DateTimeOffset dayStart = weekStart.AddDays(dayOffset);
+                DateTimeOffset dayEnd = dayStart.AddDays(1);
+
+                return availability.Count(slot =>
+                {
+                    DateTimeOffset localSlot =
+                        slot.ToOffset(SouthAfricaOffset);
+                    return localSlot >= dayStart && localSlot < dayEnd;
+                });
+            })
+            .ToArray();
+    }
+
+    private static string GetWeekRangeLabel(DateTimeOffset weekStart)
+    {
+        DateTimeOffset weekEnd = weekStart.AddDays(6);
+
+        return weekStart.Month == weekEnd.Month
+            ? $"{weekStart:dd}–{weekEnd:dd MMM}"
+            : $"{weekStart:dd MMM}–{weekEnd:dd MMM}";
+    }
+
+    private static string GetDateRangeLabel(
+        DateTimeOffset start,
+        DateTimeOffset end)
+    {
+        return start.Month == end.Month
+            ? $"{start:dd}–{end:dd MMM}"
+            : $"{start:dd MMM}–{end:dd MMM}";
     }
 
     private static bool IsUniqueConstraintViolation(
