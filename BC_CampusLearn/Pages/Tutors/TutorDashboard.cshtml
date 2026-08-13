@@ -7,6 +7,12 @@
 
 @section Styles {
     <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/fullcalendar@7.0.2/skeleton.css" />
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/fullcalendar@7.0.2/themes/classic/theme.css" />
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/fullcalendar@7.0.2/themes/classic/palettes/purple.css" />
+    <link rel="stylesheet"
           href="~/css/components/navigation-drawer.css"
           asp-append-version="true" />
     <link rel="stylesheet"
@@ -20,7 +26,7 @@
 <section class="container py-4 tutor-dashboard-page">
     <h1 class="text-center">Tutor Dashboard</h1>
 
-    <div class="row g-4 my-4 tutor-dashboard-summary">
+    <div class="row g-4 mt-4 tutor-dashboard-summary">
         <div class="col-6 col-xl-3">
             <article class="tutor-stat-card">
                 <div class="tutor-stat-main">
@@ -237,19 +243,103 @@
                     </div>
                 }
             </section>
+        </div>
 
-            <div class="tutor-sessions-column">
-                <div class="tutor-section-heading">
+        <div class="col-12 col-xl-6 tutor-learning-resources-section">
+            <div class="tutor-section-heading">
+                <h2 id="learning-resources-title"
+                    class="tutor-availability-section-title">
+                    Learning resources
+                </h2>
+            </div>
+
+            <section class="tutor-learning-resources"
+                     aria-labelledby="learning-resources-title">
+                <div class="tutor-learning-resources-intro">
+                    <div class="tutor-learning-resources-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             width="38"
+                             height="38"
+                             viewBox="0 0 24 24"
+                             aria-hidden="true">
+                            <path d="M0 0h24v24H0z"
+                                  fill="none" />
+                            <path fill="currentColor"
+                                  d="M8.25 8A.75.75 0 0 1 9 7.25h7a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 8M9 10.25a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5z" />
+                            <path fill="currentColor"
+                                  fill-rule="evenodd"
+                                  clip-rule="evenodd"
+                                  d="M8.5 3.25A4.75 4.75 0 0 0 3.75 8v10a3.75 3.75 0 0 0 3.75 3.75h11A1.75 1.75 0 0 0 20.25 20V5a1.75 1.75 0 0 0-1.75-1.75zm10.25 11V5a.25.25 0 0 0-.25-.25h-10A3.25 3.25 0 0 0 5.25 8v7a3.73 3.73 0 0 1 2.25-.75zm0 1.5H7.5a2.25 2.25 0 0 0 0 4.5h11a.25.25 0 0 0 .25-.25z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>
+                            Manage learning resources
+                        </h3>
+                        <p>
+                            Organise and share useful material
+                            with students.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tutor-resource-types"
+                     aria-label="Supported resource types">
+                    <span>
+                        <iconify-icon
+                            icon="solar:notes-linear"
+                            aria-hidden="true"></iconify-icon>
+                        Notes
+                    </span>
+                    <span>
+                        <iconify-icon
+                            icon="solar:link-linear"
+                            aria-hidden="true"></iconify-icon>
+                        Helpful links
+                    </span>
+                    <span>
+                        <iconify-icon
+                            icon="solar:document-text-linear"
+                            aria-hidden="true"></iconify-icon>
+                        Practice material
+                    </span>
+                </div>
+
+                <div class="tutor-learning-resources-actions">
+                    <button type="button"
+                            class="tutor-resource-add">
+                        Add resource
+                    </button>
+                    <button type="button"
+                            class="tutor-resource-manage">
+                        Manage resources
+                        <iconify-icon
+                            icon="solar:alt-arrow-right-linear"
+                            aria-hidden="true"></iconify-icon>
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-6 tutor-sessions-column">
+                <div class="tutor-section-heading tutor-sessions-heading">
                     <h2 id="tutor-sessions-title"
                         class="tutor-availability-section-title">
-                        Sessions
+                        All sessions
                     </h2>
                     <button type="button"
                             class="tutor-sessions-view-all">
                         View All Sessions
-                        <iconify-icon
-                            icon="solar:alt-arrow-right-linear"
-                            aria-hidden="true"></iconify-icon>
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             width="1em"
+                             height="1em"
+                             viewBox="0 0 24 24"
+                             aria-hidden="true">
+                            <path d="M0 0h24v24H0z"
+                                  fill="none" />
+                            <path fill="currentColor"
+                                  d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
+                        </svg>
                     </button>
                 </div>
 
@@ -262,7 +352,6 @@
                                     <th scope="col">Student</th>
                                     <th scope="col">Module</th>
                                     <th scope="col">Date &amp; Time</th>
-                                    <th scope="col">Location</th>
                                     <th scope="col">Status</th>
                                     <th scope="col">Action</th>
                                 </tr>
@@ -271,7 +360,7 @@
                                 @if (Model.Sessions.Count == 0)
                                 {
                                     <tr>
-                                        <td colspan="6"
+                                        <td colspan="5"
                                             class="tutor-sessions-empty">
                                             No sessions to display
                                         </td>
@@ -306,9 +395,6 @@
                                                     @localStart.ToString("HH:mm")&ndash;@localEnd.ToString("HH:mm")
                                                 </span>
                                             </td>
-                                            <td data-label="Location">
-                                                @session.Location
-                                            </td>
                                             <td data-label="Status">
                                                 <span class="tutor-session-status tutor-session-status--@statusClass">
                                                     @session.Status
@@ -330,7 +416,6 @@
                         </table>
                     </div>
                 </section>
-            </div>
         </div>
 
         <div class="col-12 col-xl-6 tutor-availability-column">
@@ -344,18 +429,10 @@
                 <header class="tutor-weekly-header">
                     <div class="tutor-availability-ranges"
                          aria-live="polite">
-                        <span data-availability-range="weekly">
+                        <span data-availability-range-current>
                             @Model.WeekStart.ToString("dd MMM")
                             &ndash;
                             @Model.WeekStart.AddDays(6).ToString("dd MMM")
-                        </span>
-                        <span data-availability-range="monthly"
-                              hidden>
-                            @Model.MonthStart.ToString("MMMM yyyy")
-                        </span>
-                        <span data-availability-range="daily"
-                              hidden>
-                            @Model.Today.ToString("dd MMMM yyyy")
                         </span>
                     </div>
 
@@ -406,201 +483,56 @@
                 </header>
 
                 @{
-                    var weekDays = Enumerable
-                        .Range(0, 7)
-                        .Select(index =>
-                            Model.WeekStart.AddDays(index))
-                        .ToList();
-                    var hourlyTimes = Enumerable
-                        .Range(0, 24)
-                        .Select(hour =>
-                            TimeSpan.FromHours(hour))
-                        .ToList();
-                    var monthDays = Enumerable
-                        .Range(0, 42)
-                        .Select(index =>
-                            Model.MonthGridStart.AddDays(index))
-                        .ToList();
+                    var availabilityEvents = Model.AvailabilitySlots
+                        .Select(slot =>
+                        {
+                            DateTimeOffset localStart =
+                                slot.StartTime.ToLocalTime();
+                            string status = slot.Status switch
+                            {
+                                BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Booked =>
+                                    "booked",
+                                BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Active =>
+                                    "active",
+                                _ => "available"
+                            };
+                            string statusLabel = slot.Status ==
+                                BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Active
+                                    ? "Accepted/Active"
+                                    : slot.Status.ToString();
+
+                            return new
+                            {
+                                start = localStart.ToString("O"),
+                                end = localStart.AddHours(1).ToString("O"),
+                                title = statusLabel,
+                                className =
+                                    $"tutor-calendar-event is-{status}",
+                                extendedProps = new
+                                {
+                                    status,
+                                    statusLabel,
+                                    bookingId = slot.BookingId,
+                                    studentName = slot.StudentName,
+                                    module = slot.ModuleCode is null
+                                        ? null
+                                        : $"{slot.ModuleCode}: {slot.ModuleName}",
+                                    bookingTime = localStart.ToString(
+                                        "ddd, dd MMM · HH:mm"),
+                                    location = slot.Location
+                                }
+                            };
+                        });
                 }
 
-                <div data-availability-view="weekly">
-                    <div class="tutor-weekly-scroll"
-                         data-availability-scroll
-                         data-current-hour-scroll>
-                        <div class="tutor-weekly-grid">
-                            <span class="tutor-weekly-corner"
-                                  aria-hidden="true"></span>
-
-                            @foreach (var day in weekDays)
-                            {
-                                <div class="tutor-weekly-day">
-                                    <strong>@day.ToString("ddd")</strong>
-                                    <span>@day.ToString("dd")</span>
-                                </div>
-                            }
-
-                            @foreach (TimeSpan time in hourlyTimes)
-                            {
-                                int hour = (int)time.TotalHours;
-                                bool showTimeLabel = hour % 2 == 0;
-                                string timeLabel =
-                                    DateTime.Today
-                                        .Add(time)
-                                        .ToString("HH:mm");
-
-                                <time class="tutor-weekly-time @(showTimeLabel ? "is-labelled-hour" : "is-unlabelled-hour")"
-                                      datetime="@($"{hour:D2}:00")"
-                                      aria-label="@timeLabel"
-                                      data-availability-hour="@hour">
-                                    @if (showTimeLabel)
-                                    {
-                                        @timeLabel
-                                    }
-                                </time>
-
-                                @foreach (var day in weekDays)
-                                {
-                                    var slot = Model.AvailabilitySlots
-                                        .FirstOrDefault(item =>
-                                        {
-                                            DateTimeOffset localSlot =
-                                                item.StartTime.ToLocalTime();
-                                            return localSlot.Date == day.Date &&
-                                                localSlot.Hour == hour;
-                                        });
-
-                                    <div class="tutor-weekly-cell @(showTimeLabel ? "is-labelled-hour" : "is-unlabelled-hour")">
-                                        @if (slot is not null)
-                                        {
-                                            @await Html.PartialAsync(
-                                                "~/Pages/Tutors/_AvailabilitySlotTab.cshtml",
-                                                slot)
-                                        }
-                                    </div>
-                                }
-                            }
-                        </div>
-                    </div>
-                </div>
-
-                <div data-availability-view="daily"
-                     hidden>
-                    <div class="tutor-weekly-scroll tutor-daily-scroll"
-                         data-availability-scroll
-                         data-current-hour-scroll>
-                        <div class="tutor-weekly-grid tutor-daily-grid">
-                            <span class="tutor-weekly-corner"
-                                  aria-hidden="true"></span>
-                            <div class="tutor-weekly-day">
-                                <strong>@Model.Today.ToString("dddd")</strong>
-                                <span>@Model.Today.ToString("dd MMM")</span>
-                            </div>
-
-                            @foreach (TimeSpan time in hourlyTimes)
-                            {
-                                int hour = (int)time.TotalHours;
-                                bool showTimeLabel = hour % 2 == 0;
-                                string timeLabel =
-                                    DateTime.Today
-                                        .Add(time)
-                                        .ToString("HH:mm");
-                                var slot = Model.AvailabilitySlots
-                                    .FirstOrDefault(item =>
-                                    {
-                                        DateTimeOffset localSlot =
-                                            item.StartTime.ToLocalTime();
-                                        return localSlot.Date ==
-                                                Model.Today.Date &&
-                                            localSlot.Hour == hour;
-                                    });
-
-                                <time class="tutor-weekly-time @(showTimeLabel ? "is-labelled-hour" : "is-unlabelled-hour")"
-                                      datetime="@($"{hour:D2}:00")"
-                                      aria-label="@timeLabel"
-                                      data-availability-hour="@hour">
-                                    @if (showTimeLabel)
-                                    {
-                                        @timeLabel
-                                    }
-                                </time>
-
-                                <div class="tutor-weekly-cell @(showTimeLabel ? "is-labelled-hour" : "is-unlabelled-hour")">
-                                    @if (slot is not null)
-                                    {
-                                        @await Html.PartialAsync(
-                                            "~/Pages/Tutors/_AvailabilitySlotTab.cshtml",
-                                            slot)
-                                    }
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-
-                <div data-availability-view="monthly"
-                     hidden>
-                    <div class="tutor-monthly-scroll"
-                         data-availability-scroll>
-                        <div class="tutor-monthly-grid">
-                            @foreach (string weekday in
-                                new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" })
-                            {
-                                <div class="tutor-monthly-weekday">
-                                    @weekday
-                                </div>
-                            }
-
-                            @foreach (var day in monthDays)
-                            {
-                                var daySlots = Model.AvailabilitySlots
-                                    .Where(item =>
-                                        item.StartTime
-                                            .ToLocalTime()
-                                            .Date == day.Date)
-                                    .OrderBy(item =>
-                                        item.StartTime)
-                                    .ToList();
-                                bool isOutsideMonth =
-                                    day.Month != Model.MonthStart.Month;
-                                bool isToday =
-                                    day.Date == Model.Today.Date;
-
-                                <div class="tutor-monthly-day @(isOutsideMonth ? "is-outside-month" : null) @(isToday ? "is-today" : null) @(daySlots.Count > 0 ? "has-slots" : null)">
-                                    <span class="tutor-monthly-date">
-                                        @day.Day
-                                    </span>
-
-                                    <div class="tutor-monthly-slots">
-                                        @foreach (var slot in daySlots.Take(6))
-                                        {
-                                            string monthlyStatusClass =
-                                                slot.Status switch
-                                                {
-                                                    BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Booked =>
-                                                        "is-booked",
-                                                    BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Active =>
-                                                        "is-active",
-                                                    _ => "is-available"
-                                                };
-                                            string monthlyStatusLabel =
-                                                slot.Status ==
-                                                    BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Active
-                                                    ? "Accepted/Active"
-                                                    : slot.Status.ToString();
-
-                                            <span class="tutor-monthly-indicator @monthlyStatusClass"
-                                                  title="@monthlyStatusLabel">
-                                                <span class="visually-hidden">
-                                                    @monthlyStatusLabel
-                                                </span>
-                                            </span>
-                                        }
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
+                <script id="tutor-availability-events"
+                        type="application/json">
+                    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                        availabilityEvents))
+                </script>
+                <div id="tutor-availability-calendar"
+                     data-initial-date="@Model.Today.ToString("yyyy-MM-dd")"
+                     aria-label="Tutor availability calendar"></div>
 
                 <div class="tutor-weekly-legend">
                     <span>
@@ -618,78 +550,6 @@
                 </div>
             </section>
 
-            <div class="tutor-learning-resources-section">
-                <h2 class="tutor-availability-section-title">
-                    Learning resources
-                </h2>
-
-                <section class="tutor-learning-resources"
-                         aria-labelledby="learning-resources-title">
-                    <div class="tutor-learning-resources-intro">
-                        <div class="tutor-learning-resources-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                 width="38"
-                                 height="38"
-                                 viewBox="0 0 24 24"
-                                 aria-hidden="true">
-                                <path d="M0 0h24v24H0z"
-                                      fill="none" />
-                                <path fill="currentColor"
-                                      d="M8.25 8A.75.75 0 0 1 9 7.25h7a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 8M9 10.25a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5z" />
-                                <path fill="currentColor"
-                                      fill-rule="evenodd"
-                                      clip-rule="evenodd"
-                                      d="M8.5 3.25A4.75 4.75 0 0 0 3.75 8v10a3.75 3.75 0 0 0 3.75 3.75h11A1.75 1.75 0 0 0 20.25 20V5a1.75 1.75 0 0 0-1.75-1.75zm10.25 11V5a.25.25 0 0 0-.25-.25h-10A3.25 3.25 0 0 0 5.25 8v7a3.73 3.73 0 0 1 2.25-.75zm0 1.5H7.5a2.25 2.25 0 0 0 0 4.5h11a.25.25 0 0 0 .25-.25z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 id="learning-resources-title">
-                                Manage learning resources
-                            </h3>
-                            <p>
-                                Organise and share useful material
-                                with students.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="tutor-resource-types"
-                         aria-label="Supported resource types">
-                        <span>
-                            <iconify-icon
-                                icon="solar:notes-linear"
-                                aria-hidden="true"></iconify-icon>
-                            Notes
-                        </span>
-                        <span>
-                            <iconify-icon
-                                icon="solar:link-linear"
-                                aria-hidden="true"></iconify-icon>
-                            Helpful links
-                        </span>
-                        <span>
-                            <iconify-icon
-                                icon="solar:document-text-linear"
-                                aria-hidden="true"></iconify-icon>
-                            Practice material
-                        </span>
-                    </div>
-
-                    <div class="tutor-learning-resources-actions">
-                        <button type="button"
-                                class="tutor-resource-add">
-                            Add resource
-                        </button>
-                        <button type="button"
-                                class="tutor-resource-manage">
-                            Manage resources
-                            <iconify-icon
-                                icon="solar:alt-arrow-right-linear"
-                                aria-hidden="true"></iconify-icon>
-                        </button>
-                    </div>
-                </section>
-            </div>
         </div>
     </div>
 
@@ -778,6 +638,8 @@
 
 @section Scripts {
     <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@7.0.2/all/global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@7.0.2/themes/classic/global.min.js"></script>
     <script src="~/js/components/navigation-drawer.js"
             asp-append-version="true"></script>
     <script src="~/js/tutor-dashboard.js"
