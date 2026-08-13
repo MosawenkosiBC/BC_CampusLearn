@@ -77,11 +77,8 @@
     const setupBookingPopover = () => {
         const popover =
             document.querySelector("[data-booking-popover]");
-        const triggers = Array.from(
-            document.querySelectorAll(
-                "[data-booking-popover-trigger]"));
 
-        if (!popover || triggers.length === 0) {
+        if (!popover) {
             return;
         }
 
@@ -199,28 +196,58 @@
             positionPopover();
         };
 
-        triggers.forEach((trigger) => {
-            trigger.addEventListener(
-                "mouseenter",
-                () => openPopover(trigger));
-            trigger.addEventListener(
-                "mouseleave",
-                scheduleClose);
-            trigger.addEventListener(
-                "focus",
-                () => openPopover(trigger));
-            trigger.addEventListener(
-                "blur",
-                scheduleClose);
-            trigger.addEventListener("click", () => {
-                if (activeTrigger === trigger &&
-                    !popover.hidden) {
-                    cancelScheduledClose();
-                    return;
-                }
+        const getTrigger = (target) =>
+            target instanceof Element
+                ? target.closest(
+                    "[data-booking-popover-trigger]")
+                : null;
 
+        document.addEventListener("mouseover", (event) => {
+            const trigger = getTrigger(event.target);
+
+            if (trigger &&
+                !trigger.contains(event.relatedTarget)) {
                 openPopover(trigger);
-            });
+            }
+        });
+
+        document.addEventListener("mouseout", (event) => {
+            const trigger = getTrigger(event.target);
+
+            if (trigger &&
+                !trigger.contains(event.relatedTarget)) {
+                scheduleClose();
+            }
+        });
+
+        document.addEventListener("focusin", (event) => {
+            const trigger = getTrigger(event.target);
+
+            if (trigger) {
+                openPopover(trigger);
+            }
+        });
+
+        document.addEventListener("focusout", (event) => {
+            if (getTrigger(event.target)) {
+                scheduleClose();
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            const trigger = getTrigger(event.target);
+
+            if (!trigger) {
+                return;
+            }
+
+            if (activeTrigger === trigger &&
+                !popover.hidden) {
+                cancelScheduledClose();
+                return;
+            }
+
+            openPopover(trigger);
         });
 
         popover.addEventListener(
@@ -267,104 +294,240 @@
                 "[data-availability-view-option]"));
         const viewLabel = document.querySelector(
             "[data-availability-view-label]");
-        const views = Array.from(
-            document.querySelectorAll(
-                "[data-availability-view]"));
-        const ranges = Array.from(
-            document.querySelectorAll(
-                "[data-availability-range]"));
+        const rangeLabel = document.querySelector(
+            "[data-availability-range-current]");
         const viewTitle = document.querySelector(
             "[data-availability-title]");
+        const calendarElement = document.querySelector(
+            "#tutor-availability-calendar");
+        const eventDataElement = document.querySelector(
+            "#tutor-availability-events");
         const viewTitles = {
             weekly: "Weekly Availability",
             monthly: "Monthly Availability",
             daily: "Daily Availability"
         };
+        const fullCalendarViews = {
+            weekly: "timeGridSevenDay",
+            monthly: "dayGridMonth",
+            daily: "timeGridDay"
+        };
+        const dailyStartHour = Math.max(
+            0,
+            new Date().getHours() - 2);
+        const dailyStartTime = `${String(dailyStartHour)
+            .padStart(2, "0")}:00:00`;
         let selectedView = "weekly";
 
         if (viewOptions.length === 0 ||
-            views.length === 0) {
+            !calendarElement ||
+            !eventDataElement ||
+            !window.FullCalendar) {
             return;
         }
 
-        document
-            .querySelectorAll(".tutor-slot-tab")
-            .forEach((slot, index) => {
-                slot.style.setProperty(
-                    "--slot-delay",
-                    `${Math.min(index, 12) * 35}ms`);
-            });
+        let events = [];
 
-        const scrollElementIntoContext = (
-            container,
-            element) => {
-            const containerRect =
-                container.getBoundingClientRect();
-            const elementRect =
-                element.getBoundingClientRect();
-            const elementPosition =
-                elementRect.top -
-                containerRect.top +
-                container.scrollTop;
-            const contextOffset =
-                container.clientHeight * 0.3;
+        try {
+            events = JSON.parse(eventDataElement.textContent);
+        } catch {
+            return;
+        }
 
-            container.scrollTop = Math.max(
-                0,
-                elementPosition - contextOffset);
-        };
+        const formatDate = (date, options) =>
+            new Intl.DateTimeFormat("en-GB", options)
+                .format(date);
 
-        const positionSelectedView = (view) => {
-            const schedule = view.querySelector(
-                "[data-current-hour-scroll]");
-
-            if (schedule) {
-                const currentHour = new Date().getHours();
-                const currentHourRow = schedule.querySelector(
-                    `[data-availability-hour="${currentHour}"]`);
-
-                if (currentHourRow) {
-                    scrollElementIntoContext(
-                        schedule,
-                        currentHourRow);
-                }
-
+        const updateRangeLabel = (view) => {
+            if (!rangeLabel) {
                 return;
             }
 
-            const monthScroll = view.querySelector(
-                ".tutor-monthly-scroll");
-            const today = view.querySelector(
-                ".tutor-monthly-day.is-today");
-
-            if (monthScroll && today) {
-                scrollElementIntoContext(monthScroll, today);
+            if (view.type === "dayGridMonth") {
+                rangeLabel.textContent = formatDate(
+                    view.currentStart,
+                    { month: "long", year: "numeric" });
+                return;
             }
+
+            if (view.type === "timeGridDay") {
+                rangeLabel.textContent = formatDate(
+                    view.currentStart,
+                    {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric"
+                    });
+                return;
+            }
+
+            const inclusiveEnd = new Date(view.currentEnd);
+            inclusiveEnd.setDate(inclusiveEnd.getDate() - 1);
+            rangeLabel.textContent = `${formatDate(
+                view.currentStart,
+                { day: "2-digit", month: "short" })} – ${formatDate(
+                inclusiveEnd,
+                { day: "2-digit", month: "short" })}`;
         };
 
-        const activateView = () => {
-            let activeView = null;
+        const buildEventContent = (argument) => {
+            const properties = argument.event.extendedProps;
+            const isBooked = properties.status === "booked" &&
+                properties.bookingId;
+            const slot = document.createElement(
+                isBooked ? "button" : "span");
+            slot.className =
+                `tutor-slot-tab is-${properties.status}`;
+            slot.title = isBooked
+                ? "Manage pending booking"
+                : properties.statusLabel;
 
-            views.forEach((view) => {
-                const isActive =
-                    view.dataset.availabilityView ===
-                        selectedView;
-                view.classList.remove("is-entering");
+            if (isBooked) {
+                slot.type = "button";
+                slot.setAttribute(
+                    "aria-label",
+                    `Manage ${properties.studentName || "student"}'s pending booking`);
+                slot.setAttribute("aria-haspopup", "dialog");
+                slot.setAttribute("aria-expanded", "false");
+                slot.setAttribute(
+                    "aria-controls",
+                    "booking-status-popover");
+                slot.dataset.bookingPopoverTrigger = "";
+                slot.dataset.bookingId = properties.bookingId;
+                slot.dataset.bookingStudent =
+                    properties.studentName || "Student";
+                slot.dataset.bookingModule =
+                    properties.module || "Not provided";
+                slot.dataset.bookingTime =
+                    properties.bookingTime || "Not provided";
+                slot.dataset.bookingLocation =
+                    properties.location || "Not provided";
+            }
 
-                if (isActive) {
-                    view.hidden = false;
-                    void view.offsetWidth;
-                    view.classList.add("is-entering");
-                    activeView = view;
-                } else {
-                    view.hidden = true;
-                }
+            const accessibleLabel = document.createElement("span");
+            accessibleLabel.className = "visually-hidden";
+            accessibleLabel.textContent = properties.statusLabel;
+            slot.append(accessibleLabel);
+
+            return { domNodes: [slot] };
+        };
+
+        const calendar = new FullCalendar.Calendar(
+            calendarElement,
+            {
+                initialView: "timeGridSevenDay",
+                initialDate: calendarElement.dataset.initialDate,
+                headerToolbar: false,
+                firstDay: 1,
+                height: "100%",
+                allDaySlot: false,
+                nowIndicator: true,
+                expandRows: true,
+                editable: false,
+                selectable: false,
+                eventStartEditable: false,
+                eventDurationEditable: false,
+                displayEventTime: false,
+                slotDuration: "01:00:00",
+                scrollTime: `${String(
+                    Math.max(0, new Date().getHours() - 2))
+                    .padStart(2, "0")}:00:00`,
+                dayHeaderFormat: {
+                    weekday: "short",
+                    day: "2-digit"
+                },
+                dayHeaderContent: (argument) => {
+                    const wrapper = document.createElement("span");
+                    const weekday = document.createElement("strong");
+                    weekday.textContent = argument.isToday
+                        ? "Today"
+                        : formatDate(
+                            argument.date,
+                            { weekday: "short" });
+                    wrapper.append(weekday);
+
+                    if (argument.view.type !== "dayGridMonth") {
+                        const day = document.createElement("span");
+                        day.textContent = formatDate(
+                            argument.date,
+                            { day: "2-digit" });
+                        wrapper.append(day);
+                    }
+
+                    return { domNodes: [wrapper] };
+                },
+                viewClass: "tutor-fullcalendar-view",
+                dayHeaderClass: (argument) =>
+                    `tutor-fc-day-header${
+                        argument.isToday ? " is-today" : ""}`,
+                dayHeaderInnerClass:
+                    "tutor-fc-day-header-inner",
+                dayHeaderDividerClass:
+                    "tutor-fc-day-header-divider",
+                slotHeaderDividerClass:
+                    "tutor-fc-slot-header-divider",
+                dayCellClass: "tutor-fc-day-cell",
+                dayCellTopClass: "tutor-fc-day-cell-top",
+                dayCellTopInnerClass:
+                    "tutor-fc-day-cell-top-inner",
+                dayCellInnerClass:
+                    "tutor-fc-day-cell-inner",
+                eventInnerClass: "tutor-fc-event-inner",
+                columnEventClass: "tutor-fc-column-event",
+                listItemEventClass: "tutor-fc-list-event",
+                listItemEventBeforeClass:
+                    "tutor-fc-event-dot-hidden",
+                moreLinkClass: "tutor-fc-more-link",
+                moreLinkInnerClass:
+                    "tutor-fc-more-link-inner",
+                moreLinkContent: (argument) =>
+                    argument.numericText,
+                moreLinkClick: "popover",
+                views: {
+                    timeGrid: {
+                        slotHeaderInterval: "02:00:00",
+                        slotHeaderFormat: {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: false
+                        },
+                        slotHeaderClass:
+                            "tutor-fc-slot-header",
+                        slotHeaderInnerClass:
+                            "tutor-fc-slot-header-inner",
+                        slotLaneClass: "tutor-fc-slot-lane",
+                        dayLaneClass: (argument) =>
+                            `tutor-fc-day-lane${
+                                argument.isToday
+                                    ? " is-today"
+                                    : ""}`
+                    },
+                    timeGridSevenDay: {
+                        type: "timeGrid",
+                        duration: { days: 7 },
+                        dateAlignment: "day"
+                    },
+                    timeGridDay: {
+                        slotMinTime: dailyStartTime,
+                        scrollTime: dailyStartTime
+                    },
+                    dayGridMonth: {
+                        dayMaxEvents: 5
+                    }
+                },
+                events,
+                eventContent: buildEventContent,
+                datesSet: ({ view }) => updateRangeLabel(view)
             });
 
-            ranges.forEach((range) => {
-                range.hidden =
-                    range.dataset.availabilityRange !==
-                        selectedView;
+        calendar.render();
+
+        const activateView = () => {
+            calendar.changeView(
+                fullCalendarViews[selectedView]);
+
+            window.requestAnimationFrame(() => {
+                calendar.updateSize();
             });
 
             if (viewTitle) {
@@ -392,12 +555,6 @@
                     isSelected ? "true" : "false");
             });
 
-            if (activeView) {
-                window.requestAnimationFrame(() => {
-                    window.requestAnimationFrame(() =>
-                        positionSelectedView(activeView));
-                });
-            }
         };
 
         viewOptions.forEach((option) => {
@@ -408,17 +565,10 @@
             });
         });
 
-        activateView();
-
-        if (document.readyState !== "complete") {
-            window.addEventListener(
-                "load",
-                activateView,
-                { once: true });
-        }
+        updateRangeLabel(calendar.view);
     };
 
     setupCountdown();
-    setupBookingPopover();
     setupAvailabilityViews();
+    setupBookingPopover();
 })();
