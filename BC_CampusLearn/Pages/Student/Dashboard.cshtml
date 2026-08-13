@@ -229,40 +229,40 @@
             }
         </div>
 
-        <div class="tutor-sessions">
-            <div class="tutor-sessions-table-wrap">
-                <table class="tutor-sessions-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Tutor Name</th>
-                            <th scope="col">Module</th>
-                            <th scope="col">Date &amp; Time</th>
-                            <th scope="col">Location</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.Sessions.Count == 0)
-                        {
+            <div class="tutor-sessions">
+                <div class="tutor-sessions-table-wrap">
+                    <table class="tutor-sessions-table">
+                        <thead>
                             <tr>
-                                <td colspan="6"
-                                    class="tutor-sessions-empty">
-                                    No sessions to display
-                                </td>
+                                <th scope="col">Tutor</th>
+                                <th scope="col">Module</th>
+                                <th scope="col">Date &amp; Time</th>
+                                <th scope="col">Location</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Action</th>
                             </tr>
-                        }
-                        else
-                        {
-                            @foreach (var booking in Model.Sessions)
+                        </thead>
+                        <tbody>
+                            @if (Model.Sessions.Count == 0)
                             {
-                                DateTimeOffset localStart =
-                                    booking.AvailableTime.ToLocalTime();
-                                DateTimeOffset localEnd =
-                                    booking.SessionEnd.ToLocalTime();
-                                string statusClass =
-                                    booking.Status.ToString()
-                                        .ToLowerInvariant();
+                                <tr>
+                                    <td colspan="6"
+                                        class="tutor-sessions-empty">
+                                        No sessions to display
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var booking in Model.Sessions)
+                                {
+                                    DateTimeOffset localStart =
+                                        booking.AvailableTime.ToLocalTime();
+                                    DateTimeOffset localEnd =
+                                        booking.SessionEnd.ToLocalTime();
+                                    string statusClass =
+                                        booking.Status.ToString()
+                                            .ToLowerInvariant();
 
                                 <tr>
                                     <td data-label="Tutor Name">
