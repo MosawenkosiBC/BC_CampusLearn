@@ -88,7 +88,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h2>Canceled sessions</h2>
+                        <h2>Cancelled sessions</h2>
                         <p>@Model.Summary.CancelledSessionCount</p>
                     </div>
                 </div>
@@ -96,18 +96,18 @@
         </div>
     </div>
 
-    <div class="dashboard-sessions-grid">
+    <div class="dashboard-primary-grid">
         <section class="dashboard-session-column"
                  aria-labelledby="student-next-session-title">
             <h2 id="student-next-session-title"
-                class="dashboard-section-title">
+                class="tutor-availability-section-title">
                 Next session
             </h2>
 
-            <div class="dashboard-next-session-card">
+            <div class="tutor-next-session">
                 @if (Model.NextSession is null)
                 {
-                    <div class="dashboard-next-session-empty">
+                    <div class="tutor-next-session-empty">
                         <svg aria-hidden="true" width="34" height="34" viewBox="0 0 20 20">
                             <path d="M0 0h20v20H0z" fill="none" />
                             <path fill="currentColor" d="M4 4.707L2.146 2.854a.5.5 0 1 1 .708-.708l15 15a.5.5 0 0 1-.708.708l-1.241-1.242A2 2 0 0 1 14 18H6a2 2 0 0 1-2-2zm11 11l-1.032-1.032A.5.5 0 0 1 13.5 15h-5a.5.5 0 0 1 0-1h4.793l-1-1H8.5a.5.5 0 0 1 0-1h2.793l-1-1H8.5a.5.5 0 0 1 0-1h.793L5 5.707V16a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1zM12.121 10l1 1h.379a.5.5 0 0 0 0-1zM15 8v4.879l1 1V7.414a1.5 1.5 0 0 0-.44-1.06l-3.914-3.915A1.5 1.5 0 0 0 10.586 2H6c-.521 0-.996.2-1.352.526l.708.709A1 1 0 0 1 6 3h4v3.5A1.5 1.5 0 0 0 11.5 8zm-9 2.5a.5.5 0 1 0 1 0a.5.5 0 0 0-1 0m.5 1.5a.5.5 0 1 0 0 1a.5.5 0 0 0 0-1M6 14.5a.5.5 0 1 1 1 0a.5.5 0 0 1-1 0M14.793 7H11.5a.5.5 0 0 1-.5-.5V3.207z" />
@@ -127,9 +127,9 @@
                             ? "Today"
                             : sessionStart.ToString("dd MMM yyyy");
 
-                    <div class="dashboard-next-session-content">
-                        <div class="dashboard-next-session-topline">
-                            <div>
+                    <div class="tutor-next-session-content">
+                        <div class="tutor-next-session-topline">
+                            <div class="tutor-next-session-student">
                                 <h3>@Model.NextSession.TutorName</h3>
                                 <p>
                                     @Model.NextSession.ModuleCode:
@@ -137,13 +137,13 @@
                                 </p>
                             </div>
 
-                            <span class="dashboard-session-countdown"
+                            <span class="tutor-session-countdown"
                                   data-student-session-countdown
                                   data-session-start="@Model.NextSession.AvailableTime.ToString("O")">
                             </span>
                         </div>
 
-                        <dl class="dashboard-next-session-details">
+                        <dl class="tutor-next-session-details">
                             <div>
                                 <dt>Date</dt>
                                 <dd>@sessionDate</dd>
@@ -158,15 +158,16 @@
                             </div>
                         </dl>
 
-                        <div class="dashboard-next-session-actions">
+                        <div class="tutor-next-session-actions dashboard-next-session-actions">
                             <a asp-page="/Bookings/Index"
-                               class="dashboard-view-session">
+                               class="tutor-view-session">
                                 View session
                             </a>
                             <button type="button"
-                                    class="dashboard-join-session"
-                                    disabled
-                                    title="A meeting link is not available yet">
+                                    class="tutor-join-session">
+                                <iconify-icon
+                                    icon="mdi:microsoft-teams"
+                                    aria-hidden="true"></iconify-icon>
                                 Join Meeting
                             </button>
                         </div>
@@ -175,153 +176,134 @@
             </div>
         </section>
 
-        <section class="dashboard-session-column"
-                 aria-labelledby="student-all-sessions-title">
-            <div class="dashboard-section-heading">
-                <h2 id="student-all-sessions-title"
-                    class="dashboard-section-title">
-                    All sessions
-                </h2>
-                @if (Model.Sessions.Count > 0)
-                {
-                    <a asp-page="/Bookings/Index">View all sessions</a>
-                }
-            </div>
-
-            <div class="tutor-sessions">
-                <div class="tutor-sessions-table-wrap">
-                    <table class="tutor-sessions-table">
-                        <thead>
-                            <tr>
-                                <th scope="col">Tutor Name</th>
-                                <th scope="col">Module</th>
-                                <th scope="col">Date &amp; Time</th>
-                                <th scope="col">Location</th>
-                                <th scope="col">Status</th>
-                                <th scope="col">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (Model.Sessions.Count == 0)
-                            {
-                                <tr>
-                                    <td colspan="6"
-                                        class="tutor-sessions-empty">
-                                        No sessions to display
-                                    </td>
-                                </tr>
-                            }
-                            else
-                            {
-                                @foreach (var booking in Model.Sessions)
-                                {
-                                    DateTimeOffset localStart =
-                                        booking.AvailableTime.ToLocalTime();
-                                    DateTimeOffset localEnd =
-                                        booking.SessionEnd.ToLocalTime();
-                                    string statusClass =
-                                        booking.Status.ToString()
-                                            .ToLowerInvariant();
-
-                                    <tr>
-                                        <td data-label="Tutor Name">
-                                            @booking.TutorName
-                                        </td>
-                                        <td data-label="Module">
-                                            @booking.ModuleCode
-                                        </td>
-                                        <td data-label="Date &amp; Time">
-                                            <span class="tutor-session-date">
-                                                @localStart.ToString("dd MMM yyyy")
-                                            </span>
-                                            <span class="tutor-session-time">
-                                                @localStart.ToString("HH:mm")&ndash;@localEnd.ToString("HH:mm")
-                                            </span>
-                                        </td>
-                                        <td data-label="Location">
-                                            @booking.Location
-                                        </td>
-                                        <td data-label="Status">
-                                            <span class="tutor-session-status tutor-session-status--@statusClass">
-                                                @booking.Status
-                                            </span>
-                                        </td>
-                                        <td data-label="Action">
-                                            <button type="button"
-                                                    class="tutor-session-action"
-                                                    aria-label="Actions for session with @booking.TutorName">
-                                                <iconify-icon
-                                                    icon="ph:dots-three-vertical-bold"
-                                                    aria-hidden="true"></iconify-icon>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                        </tbody>
-                    </table>
+        <section class="dashboard-session-column">
+            <article class="dashboard-support-card dashboard-tutor-card"
+                     aria-labelledby="student-support-title">
+                <div class="dashboard-tutor-icon">
+                    <svg aria-hidden="true" width="42" height="42" viewBox="0 0 24 24">
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                            <path d="M17.252 12.49c-.284 2.365-1.833 3.31-2.502 3.996c-.67.688-.55.825-.505 1.834a.916.916 0 0 1-.916.971h-2.658a.92.92 0 0 1-.917-.971c0-.99.092-1.22-.504-1.834c-.76-.76-2.548-1.833-2.548-4.784a5.307 5.307 0 1 1 10.55.788" />
+                            <path d="M10.46 19.236v1.512c0 .413.23.752.513.752h2.053c.285 0 .514-.34.514-.752v-1.512m-2.32-10.54a2.227 2.227 0 0 0-2.226 2.227m10.338.981h1.834m-3.68-6.012l1.301-1.301M18.486 17l1.301 1.3M12 2.377V3.86m-6.76.73l1.292 1.302M4.24 18.3L5.532 17m-.864-5.096H2.835" />
+                        </g>
+                    </svg>
                 </div>
-            </div>
+
+                <div class="dashboard-tutor-content">
+                    <h2 id="student-support-title">
+                        Get The Support You Need
+                    </h2>
+                    <p>
+                        Get personalised tutor support or discover helpful
+                        information and shared resources.
+                    </p>
+
+                    <div class="dashboard-tutor-actions">
+                        <a asp-page="/Tutors/Index"
+                           class="dashboard-find-tutor">
+                            Find A Tutor
+                        </a>
+                        <button type="button"
+                                class="dashboard-explore-resources"
+                                data-bs-toggle="modal"
+                                data-bs-target="#moduleSubscriptionsModal"
+                                aria-controls="moduleSubscriptionsModal">
+                            Explore Resources
+                        </button>
+                    </div>
+                </div>
+            </article>
         </section>
     </div>
 
-    <div class="dashboard-support-grid">
-        <article class="dashboard-support-card dashboard-tutor-card">
-            <div class="dashboard-tutor-icon">
-                <svg aria-hidden="true" width="42" height="42" viewBox="0 0 24 24">
-                    <path d="M0 0h24v24H0z" fill="none" />
-                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
-                        <path d="M17.252 12.49c-.284 2.365-1.833 3.31-2.502 3.996c-.67.688-.55.825-.505 1.834a.916.916 0 0 1-.916.971h-2.658a.92.92 0 0 1-.917-.971c0-.99.092-1.22-.504-1.834c-.76-.76-2.548-1.833-2.548-4.784a5.307 5.307 0 1 1 10.55.788" />
-                        <path d="M10.46 19.236v1.512c0 .413.23.752.513.752h2.053c.285 0 .514-.34.514-.752v-1.512m-2.32-10.54a2.227 2.227 0 0 0-2.226 2.227m10.338.981h1.834m-3.68-6.012l1.301-1.301M18.486 17l1.301 1.3M12 2.377V3.86m-6.76.73l1.292 1.302M4.24 18.3L5.532 17m-.864-5.096H2.835" />
-                    </g>
-                </svg>
+    <section class="dashboard-all-sessions"
+             aria-labelledby="student-all-sessions-title">
+        <div class="dashboard-section-heading">
+            <h2 id="student-all-sessions-title"
+                class="dashboard-section-title">
+                All sessions
+            </h2>
+            @if (Model.Sessions.Count > 0)
+            {
+                <a asp-page="/Bookings/Index">View all sessions</a>
+            }
+        </div>
+
+        <div class="tutor-sessions">
+            <div class="tutor-sessions-table-wrap">
+                <table class="tutor-sessions-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Tutor Name</th>
+                            <th scope="col">Module</th>
+                            <th scope="col">Date &amp; Time</th>
+                            <th scope="col">Location</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Sessions.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6"
+                                    class="tutor-sessions-empty">
+                                    No sessions to display
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var booking in Model.Sessions)
+                            {
+                                DateTimeOffset localStart =
+                                    booking.AvailableTime.ToLocalTime();
+                                DateTimeOffset localEnd =
+                                    booking.SessionEnd.ToLocalTime();
+                                string statusClass =
+                                    booking.Status.ToString()
+                                        .ToLowerInvariant();
+
+                                <tr>
+                                    <td data-label="Tutor Name">
+                                        @booking.TutorName
+                                    </td>
+                                    <td data-label="Module">
+                                        @booking.ModuleCode
+                                    </td>
+                                    <td data-label="Date &amp; Time">
+                                        <span class="tutor-session-date">
+                                            @localStart.ToString("dd MMM yyyy")
+                                        </span>
+                                        <span class="tutor-session-time">
+                                            @localStart.ToString("HH:mm")&ndash;@localEnd.ToString("HH:mm")
+                                        </span>
+                                    </td>
+                                    <td data-label="Location">
+                                        @booking.Location
+                                    </td>
+                                    <td data-label="Status">
+                                        <span class="tutor-session-status tutor-session-status--@statusClass">
+                                            @booking.Status
+                                        </span>
+                                    </td>
+                                    <td data-label="Action">
+                                        <button type="button"
+                                                class="tutor-session-action"
+                                                aria-label="Actions for session with @booking.TutorName">
+                                            <iconify-icon
+                                                icon="ph:dots-three-vertical-bold"
+                                                aria-hidden="true"></iconify-icon>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
             </div>
-
-            <div class="dashboard-tutor-content">
-                <h2>Stuck on a module?</h2>
-                <p>
-                    Don&rsquo;t struggle alone. Connect with a tutor who can help you
-                    understand difficult concepts and succeed in your studies.
-                </p>
-
-                <a asp-page="/Tutors/Index" class="dashboard-find-tutor">
-                    <span>Find a Tutor</span>
-                    <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24">
-                        <path d="M5 12h14M13 6l6 6l-6 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4" />
-                    </svg>
-                </a>
-            </div>
-        </article>
-
-        <article class="dashboard-support-card dashboard-subscriptions-card">
-            <div class="dashboard-subscriptions-header">
-                <div class="dashboard-subscriptions-title">
-                    <svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24">
-                        <path d="M0 0h24v24H0z" fill="none" />
-                        <path fill="currentColor" d="M8.25 8A.75.75 0 0 1 9 7.25h7a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 8M9 10.25a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5z" />
-                        <path fill="currentColor" fill-rule="evenodd" d="M8.5 3.25A4.75 4.75 0 0 0 3.75 8v10a3.75 3.75 0 0 0 3.75 3.75h11A1.75 1.75 0 0 0 20.25 20V5a1.75 1.75 0 0 0-1.75-1.75zm10.25 11V5a.25.25 0 0 0-.25-.25h-10A3.25 3.25 0 0 0 5.25 8v7a3.73 3.73 0 0 1 2.25-.75zm0 1.5H7.5a2.25 2.25 0 0 0 0 4.5h11a.25.25 0 0 0 .25-.25z" clip-rule="evenodd" />
-                    </svg>
-                    <h2>Module Subscriptions</h2>
-                </div>
-
-                <span class="dashboard-subscriptions-help"
-                      title="Subscribe to a module to view and engage with learning resources shared by tutors."
-                      aria-label="Module subscriptions information">?</span>
-            </div>
-
-            <div class="dashboard-subscriptions-fields">
-                <label for="subscribe-module">Select a Module to Subscribe:</label>
-                <select id="subscribe-module" disabled>
-                    <option selected></option>
-                </select>
-
-                <label for="unsubscribe-module">Select a Module to Unsubscribe:</label>
-                <select id="unsubscribe-module" disabled>
-                    <option selected></option>
-                </select>
-            </div>
-        </article>
-    </div>
+        </div>
+    </section>
 
     <section class="dashboard-resources" aria-labelledby="subscribed-modules-title">
         <h2 id="subscribed-modules-title">Subscribed Modules</h2>
@@ -341,6 +323,50 @@
         </div>
     </section>
 </section>
+
+<div class="modal fade dashboard-subscriptions-modal"
+     id="moduleSubscriptionsModal"
+     tabindex="-1"
+     aria-labelledby="moduleSubscriptionsModalTitle"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="dashboard-subscriptions-title">
+                    <svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24">
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        <path fill="currentColor" d="M8.25 8A.75.75 0 0 1 9 7.25h7a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 8M9 10.25a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5z" />
+                        <path fill="currentColor" fill-rule="evenodd" d="M8.5 3.25A4.75 4.75 0 0 0 3.75 8v10a3.75 3.75 0 0 0 3.75 3.75h11A1.75 1.75 0 0 0 20.25 20V5a1.75 1.75 0 0 0-1.75-1.75zm10.25 11V5a.25.25 0 0 0-.25-.25h-10A3.25 3.25 0 0 0 5.25 8v7a3.73 3.73 0 0 1 2.25-.75zm0 1.5H7.5a2.25 2.25 0 0 0 0 4.5h11a.25.25 0 0 0 .25-.25z" clip-rule="evenodd" />
+                    </svg>
+                    <h2 class="modal-title" id="moduleSubscriptionsModalTitle">Module Subscriptions</h2>
+                </div>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <p class="dashboard-subscriptions-description">
+                    Subscribe to a module to view and engage with learning resources shared by tutors.
+                </p>
+
+                <div class="dashboard-subscriptions-fields">
+                    <label for="subscribe-module">Select a Module to Subscribe:</label>
+                    <select id="subscribe-module" disabled>
+                        <option selected></option>
+                    </select>
+
+                    <label for="unsubscribe-module">Select a Module to Unsubscribe:</label>
+                    <select id="unsubscribe-module" disabled>
+                        <option selected></option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
