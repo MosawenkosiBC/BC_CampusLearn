@@ -31,24 +31,53 @@
         <div asp-validation-summary="ModelOnly"
              class="login-validation"></div>
 
-        <form method="post" class="login-form">
+        <form method="post"
+              class="login-form @(Model.IsDevelopmentAuthentication ? "login-form--development" : null)">
             <input type="hidden" asp-for="ReturnUrl" />
 
-            <button type="submit"
-                    class="login-microsoft-button"
-                    aria-label="Log in with Microsoft"
-                    title="Log in with Microsoft">
-                <svg aria-hidden="true"
-                     width="30"
-                     height="30"
-                     viewBox="0 0 24 24">
-                    <path fill="#f25022" d="M2 2h9v9H2z" />
-                    <path fill="#7fba00" d="M13 2h9v9h-9z" />
-                    <path fill="#00a4ef" d="M2 13h9v9H2z" />
-                    <path fill="#ffb900" d="M13 13h9v9h-9z" />
-                </svg>
-                <span class="visually-hidden">Log in with Microsoft</span>
-            </button>
+            @if (Model.IsDevelopmentAuthentication)
+            {
+                <button type="submit"
+                        name="DevelopmentAccount"
+                        value="default"
+                        class="login-development-account">
+                    <span class="login-account-avatar" aria-hidden="true">MN</span>
+                    <span>
+                        <strong>@Model.DevelopmentUserDisplayName</strong>
+                        <small>Tutor and student view</small>
+                    </span>
+                </button>
+
+                <button type="submit"
+                        name="DevelopmentAccount"
+                        value="student"
+                        class="login-development-account">
+                    <span class="login-account-avatar login-account-avatar--student"
+                          aria-hidden="true">LN</span>
+                    <span>
+                        <strong>@Model.DevelopmentStudentDisplayName</strong>
+                        <small>Student-only view</small>
+                    </span>
+                </button>
+            }
+            else
+            {
+                <button type="submit"
+                        class="login-microsoft-button"
+                        aria-label="Log in with Microsoft"
+                        title="Log in with Microsoft">
+                    <svg aria-hidden="true"
+                         width="30"
+                         height="30"
+                         viewBox="0 0 24 24">
+                        <path fill="#f25022" d="M2 2h9v9H2z" />
+                        <path fill="#7fba00" d="M13 2h9v9h-9z" />
+                        <path fill="#00a4ef" d="M2 13h9v9H2z" />
+                        <path fill="#ffb900" d="M13 13h9v9h-9z" />
+                    </svg>
+                    <span class="visually-hidden">Log in with Microsoft</span>
+                </button>
+            }
         </form>
     </div>
 </section>

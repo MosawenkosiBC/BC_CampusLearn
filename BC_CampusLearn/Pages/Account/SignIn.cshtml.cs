@@ -17,19 +17,31 @@ public class SignInModel : PageModel
     private readonly IWebHostEnvironment _environment;
     private readonly IConfiguration _configuration;
     private readonly DevelopmentUserOptions _developmentUser;
+    private readonly DevelopmentStudentOptions _developmentStudent;
 
     public SignInModel(
         IWebHostEnvironment environment,
         IConfiguration configuration,
-        IOptions<DevelopmentUserOptions> developmentUserOptions)
+        IOptions<DevelopmentUserOptions> developmentUserOptions,
+        IOptions<DevelopmentStudentOptions> developmentStudentOptions)
     {
         _environment = environment;
         _configuration = configuration;
         _developmentUser = developmentUserOptions.Value;
+        _developmentStudent = developmentStudentOptions.Value;
     }
 
     [BindProperty(SupportsGet = true)]
     public string? ReturnUrl { get; set; }
+
+    [BindProperty]
+    public string? DevelopmentAccount { get; set; }
+
+    public string DevelopmentUserDisplayName =>
+        _developmentUser.DisplayName;
+
+    public string DevelopmentStudentDisplayName =>
+        _developmentStudent.DisplayName;
 
     public bool IsDevelopmentAuthentication =>
         _environment.IsDevelopment() &&
@@ -60,8 +72,17 @@ public class SignInModel : PageModel
                 OpenIdConnectDefaults.AuthenticationScheme);
         }
 
-        if (string.IsNullOrWhiteSpace(_developmentUser.ObjectId) ||
-            string.IsNullOrWhiteSpace(_developmentUser.TenantId))
+        DevelopmentUserOptions selectedUser =
+            string.Equals(
+                DevelopmentAccount,
+                "student",
+                StringComparison.OrdinalIgnoreCase)
+                ? _developmentStudent
+                : _developmentUser;
+
+        if (string.IsNullOrWhiteSpace(selectedUser.ObjectId) ||
+            string.IsNullOrWhiteSpace(selectedUser.TenantId) ||
+            string.IsNullOrWhiteSpace(selectedUser.PersonnelNumber))
         {
             ModelState.AddModelError(
                 string.Empty,
@@ -74,30 +95,30 @@ public class SignInModel : PageModel
         {
             new Claim(
                 EntraClaimTypes.ObjectId,
-                _developmentUser.ObjectId),
+                selectedUser.ObjectId),
 
             new Claim(
                 EntraClaimTypes.TenantId,
-                _developmentUser.TenantId),
+                selectedUser.TenantId),
 
             new Claim(
                 EntraClaimTypes.DisplayName,
-                _developmentUser.DisplayName),
+                selectedUser.DisplayName),
 
             new Claim(
                 EntraClaimTypes.PreferredUsername,
-                _developmentUser.Email),
+                selectedUser.Email),
 
             new Claim(
                 ClaimTypes.Name,
-                _developmentUser.DisplayName),
+                selectedUser.DisplayName),
 
             new Claim(
                 ClaimTypes.Email,
-                _developmentUser.Email),
+                selectedUser.Email),
             new Claim(
                 EntraClaimTypes.PersonnelNumber,
-                _developmentUser.PersonnelNumber)
+                selectedUser.PersonnelNumber)
         };
 
         var identity = new ClaimsIdentity(

@@ -149,8 +149,10 @@ public class TutorDashboardModel : PageModel
             .AsNoTracking()
             .Where(booking =>
                 booking.TutorId == tutorId.Value)
-            .OrderByDescending(booking =>
-                booking.ScheduledStartTime)
+            .OrderBy(booking =>
+                booking.Status == BookingStatus.Pending ? 0 : 1)
+            .ThenByDescending(booking =>
+                booking.DateBooked)
             .Select(booking =>
                 new TutorSessionListItemViewModel
                 {

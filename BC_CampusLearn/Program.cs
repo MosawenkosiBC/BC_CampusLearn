@@ -33,6 +33,10 @@ builder.Services.Configure<DevelopmentUserOptions>(
     builder.Configuration.GetSection(
         DevelopmentUserOptions.SectionName));
 
+builder.Services.Configure<DevelopmentStudentOptions>(
+    builder.Configuration.GetSection(
+        DevelopmentStudentOptions.SectionName));
+
 bool useDevelopmentAuthentication =
     builder.Environment.IsDevelopment() &&
     builder.Configuration.GetValue<bool>(
