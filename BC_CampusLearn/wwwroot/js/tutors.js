@@ -7,7 +7,10 @@
         return;
     }
 
-    const mobileQuery = window.matchMedia("(max-width: 767.98px)");
+    const filterBreakpoint =
+        panel.dataset.filterBreakpoint || "767.98";
+    const mobileQuery = window.matchMedia(
+        `(max-width: ${filterBreakpoint}px)`);
     let lastFocusedElement = null;
 
     const setAccessibilityState = () => {

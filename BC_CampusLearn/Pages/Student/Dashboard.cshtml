@@ -25,7 +25,10 @@
 
     <div class="row g-4 my-4 dashboard-summary">
         <div class="col-6 col-xl-3">
-            <article class="tutor-stat-card">
+            <a asp-page="/Bookings/Index"
+               asp-route-StatusFilter="Confirmed"
+               class="tutor-stat-card dashboard-stat-link"
+               aria-label="View confirmed upcoming sessions">
                 <div class="tutor-stat-main">
                     <div class="tutor-stat-icon tutor-stat-icon--magenta">
                         <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24">
@@ -38,11 +41,14 @@
                         <p>@Model.Summary.UpcomingSessionCount</p>
                     </div>
                 </div>
-            </article>
+            </a>
         </div>
 
         <div class="col-6 col-xl-3">
-            <article class="tutor-stat-card">
+            <a asp-page="/Bookings/Index"
+               asp-route-StatusFilter="Pending"
+               class="tutor-stat-card dashboard-stat-link"
+               aria-label="View pending sessions">
                 <div class="tutor-stat-main">
                     <div class="tutor-stat-icon tutor-stat-icon--teal">
                         <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24">
@@ -55,11 +61,14 @@
                         <p>@Model.Summary.PendingSessionCount</p>
                     </div>
                 </div>
-            </article>
+            </a>
         </div>
 
         <div class="col-6 col-xl-3">
-            <article class="tutor-stat-card">
+            <a asp-page="/Bookings/Index"
+               asp-route-StatusFilter="Completed"
+               class="tutor-stat-card dashboard-stat-link"
+               aria-label="View completed sessions">
                 <div class="tutor-stat-main">
                     <div class="tutor-stat-icon tutor-stat-icon--magenta">
                         <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24">
@@ -72,11 +81,14 @@
                         <p>@Model.Summary.CompletedSessionCount</p>
                     </div>
                 </div>
-            </article>
+            </a>
         </div>
 
         <div class="col-6 col-xl-3">
-            <article class="tutor-stat-card">
+            <a asp-page="/Bookings/Index"
+               asp-route-StatusFilter="Cancelled"
+               class="tutor-stat-card dashboard-stat-link"
+               aria-label="View cancelled sessions">
                 <div class="tutor-stat-main">
                     <div class="tutor-stat-icon tutor-stat-icon--teal">
                         <svg aria-hidden="true" width="24" height="24" viewBox="0 0 20 20">
@@ -92,7 +104,7 @@
                         <p>@Model.Summary.CancelledSessionCount</p>
                     </div>
                 </div>
-            </article>
+            </a>
         </div>
     </div>
 

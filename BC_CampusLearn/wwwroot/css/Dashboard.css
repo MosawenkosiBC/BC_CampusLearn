@@ -28,6 +28,31 @@
     height: 100%;
 }
 
+.dashboard-stat-link {
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+        box-shadow 180ms ease,
+        transform 180ms ease;
+}
+
+.dashboard-stat-link:hover,
+.dashboard-stat-link:focus-visible {
+    color: inherit;
+    box-shadow:
+        0 0.9rem 2rem rgba(22, 24, 29, 0.13),
+        0 0.15rem 0.45rem rgba(22, 24, 29, 0.06);
+    outline: none;
+    transform: translateY(-0.15rem);
+}
+
+.dashboard-stat-link:focus-visible {
+    box-shadow:
+        0 0 0 3px rgba(74, 193, 193, 0.38),
+        0 0.9rem 2rem rgba(22, 24, 29, 0.13);
+}
+
 .dashboard-summary .tutor-stat-main {
     display: grid;
     grid-template-areas:
@@ -500,11 +525,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .dashboard-find-tutor {
+    .dashboard-find-tutor,
+    .dashboard-stat-link {
         transition: none;
     }
 
-    .dashboard-find-tutor:hover {
+    .dashboard-find-tutor:hover,
+    .dashboard-stat-link:hover {
         transform: none;
     }
 }

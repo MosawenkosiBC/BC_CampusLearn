@@ -1,0 +1,364 @@
+.bookings-page {
+    --tutor-accent: #bf0050;
+    --tutor-accent-deep: #97003f;
+    --tutor-border: #e8e8e8;
+    --tutor-premium-shadow:
+        0 0.85rem 2.1rem rgba(22, 24, 29, 0.08),
+        0 0.15rem 0.45rem rgba(22, 24, 29, 0.04);
+    --tutor-surface: #fff;
+    isolation: isolate;
+    min-height: 70vh;
+    padding-bottom: 4rem !important;
+    position: relative;
+}
+
+.bookings-page::before {
+    background-color: #fff;
+    background-image:
+        linear-gradient(
+            rgba(255, 255, 255, 0.88),
+            rgba(255, 255, 255, 0.88)),
+        url("/Media/common/backgroundNew.jpg");
+    background-position: center top;
+    background-repeat: repeat;
+    background-size: auto, 890px 360px;
+    bottom: 0;
+    content: "";
+    left: 50%;
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    width: 100vw;
+    z-index: -1;
+}
+
+.bookings-heading {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.bookings-heading h1 {
+    color: #171717;
+    font-family: var(--campus-font-family);
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    margin: 0;
+}
+
+.bookings-alert {
+    margin-bottom: 1.5rem;
+}
+
+.bookings-workspace {
+    align-items: start;
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: 255px minmax(0, 1fr);
+}
+
+.bookings-filters {
+    background: var(--tutor-surface);
+    border: 0;
+    border-radius: 0.65rem;
+    box-shadow: var(--tutor-premium-shadow);
+    overflow: hidden;
+    padding: 1.45rem;
+    position: sticky;
+    top: 92px;
+}
+
+.bookings-filters .filter-heading {
+    margin-bottom: 1.25rem;
+}
+
+.bookings-filters form {
+    display: block;
+}
+
+.bookings-filters .filter-group {
+    margin: 1.25rem 0;
+    min-width: 0;
+}
+
+.bookings-filters .apply-filters {
+    display: block;
+    min-height: 50px;
+    visibility: visible;
+}
+
+.bookings-date-filter input {
+    padding-right: 0.75rem;
+}
+
+.bookings-results {
+    min-width: 0;
+}
+
+.bookings-results-toolbar {
+    justify-content: flex-start;
+    margin-bottom: 1.25rem;
+}
+
+.bookings-sort-link {
+    align-items: center;
+    color: inherit;
+    display: inline-flex;
+    gap: 0.4rem;
+    text-decoration: none;
+}
+
+.bookings-sort-link:hover,
+.bookings-sort-link:focus-visible,
+.bookings-sort-link.is-active {
+    color: #bf0050;
+    outline: none;
+}
+
+.bookings-sort-arrows {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.12rem;
+}
+
+.bookings-sort-arrows i {
+    border-left: 0.22rem solid transparent;
+    border-right: 0.22rem solid transparent;
+    display: block;
+    height: 0;
+    opacity: 0.35;
+    width: 0;
+}
+
+.bookings-sort-up {
+    border-bottom: 0.3rem solid currentColor;
+}
+
+.bookings-sort-down {
+    border-top: 0.3rem solid currentColor;
+}
+
+.bookings-sort-link.is-active[href*="SortDirection=desc"] .bookings-sort-up,
+.bookings-sort-link.is-active[href*="SortDirection=asc"] .bookings-sort-down {
+    opacity: 1;
+}
+
+.bookings-section {
+    background-color: #fff;
+    border-radius: 0.4rem;
+    box-shadow: var(--campus-card-shadow);
+    overflow: hidden;
+}
+
+.bookings-empty-results {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 24rem;
+    padding: 5rem 1.5rem;
+}
+
+.bookings-empty-results > .bookings-empty-icon {
+    color: #c7c7c7;
+    display: block;
+    flex: 0 0 2.6rem;
+    font-size: 0;
+    height: 2.6rem;
+    line-height: 0;
+    margin-bottom: 1rem;
+    width: 2.6rem;
+}
+
+.bookings-empty-icon svg {
+    fill: none;
+    height: 100%;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-width: 1.7;
+    width: 100%;
+}
+
+.bookings-empty-results h2 {
+    margin: 0 0 0.55rem;
+}
+
+.bookings-page .tutor-sessions-table-wrap {
+    min-height: 24rem;
+    overflow-x: auto;
+}
+
+.bookings-page .tutor-session-action svg {
+    fill: currentColor;
+    height: 1.15rem;
+    width: 1.15rem;
+}
+
+@media (max-width: 1199.98px) {
+    .bookings-workspace {
+        grid-template-columns: 1fr;
+    }
+
+    body.tutor-filter-open footer {
+        visibility: hidden;
+    }
+
+    body.tutor-filter-open {
+        overflow: hidden;
+    }
+
+    .bookings-page .bookings-filters {
+        border-radius: 1rem 1rem 0 0;
+        bottom: 0;
+        left: 0;
+        max-height: 88dvh;
+        opacity: 0;
+        overflow-y: auto;
+        padding: 1.35rem 1.25rem 1.5rem;
+        pointer-events: none;
+        position: fixed;
+        right: 0;
+        top: auto;
+        transform: translateY(105%);
+        transition:
+            opacity 220ms ease,
+            transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+        width: 100%;
+        z-index: 1070;
+    }
+
+    .bookings-page .bookings-filters.is-open {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+    }
+
+    .bookings-page .bookings-filters form {
+        display: grid;
+        gap: 0;
+        grid-template-columns: 1fr;
+    }
+
+    .bookings-page .bookings-filters .filter-group {
+        margin: 1rem 0;
+    }
+
+    .bookings-page .bookings-filters .apply-filters {
+        grid-column: auto;
+        margin-top: 0.25rem;
+    }
+
+    .bookings-page .filter-modal-close {
+        align-items: center;
+        background-color: #f2f3f5;
+        border: 0;
+        border-radius: 50%;
+        color: #25282d;
+        display: inline-flex;
+        height: 2.35rem;
+        justify-content: center;
+        padding: 0;
+        width: 2.35rem;
+    }
+
+    .bookings-page .filter-modal-close svg {
+        fill: none;
+        height: 1.15rem;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-width: 1.8;
+        width: 1.15rem;
+    }
+
+    .bookings-page .filter-modal-close:hover,
+    .bookings-page .filter-modal-close:focus-visible {
+        background-color: rgba(191, 0, 80, 0.09);
+        color: var(--tutor-accent);
+        outline: 0;
+    }
+
+    .bookings-page .tutor-filter-backdrop {
+        background-color: rgba(18, 20, 24, 0.55);
+        border: 0;
+        display: block;
+        inset: 0;
+        opacity: 0;
+        padding: 0;
+        pointer-events: none;
+        position: fixed;
+        transition: opacity 220ms ease;
+        width: 100%;
+        z-index: 1065;
+    }
+
+    .bookings-page .bookings-filters.is-open +
+    .tutor-filter-backdrop {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .bookings-results-toolbar {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    .bookings-results-toolbar .results-count {
+        grid-column: 1;
+    }
+
+    .bookings-results-toolbar .mobile-filter-trigger {
+        align-items: center;
+        background-color: #f2f3f5;
+        border: 0;
+        border-radius: 0.5rem;
+        color: #20242a;
+        display: inline-flex;
+        font-size: 1rem;
+        font-weight: 500;
+        gap: 0.5rem;
+        justify-content: center;
+        min-height: 48px;
+        padding: 0.7rem 1rem;
+        transition:
+            background-color 160ms ease,
+            transform 160ms ease;
+        width: 100%;
+    }
+
+    .bookings-results-toolbar .mobile-filter-trigger svg {
+        color: #111;
+        flex: 0 0 1.35rem;
+        height: 1.35rem;
+        width: 1.35rem;
+    }
+
+    .bookings-results-toolbar .mobile-filter-trigger:hover,
+    .bookings-results-toolbar .mobile-filter-trigger:focus-visible {
+        background-color: #e9eaed;
+        outline: 0;
+    }
+
+    .bookings-results-toolbar .mobile-filter-trigger.has-active-filters {
+        background-color: rgba(191, 0, 80, 0.09);
+    }
+
+    .bookings-results-toolbar
+    .mobile-filter-trigger.has-active-filters svg {
+        color: var(--tutor-accent);
+    }
+}
+
+@media (max-width: 767.98px) {
+    .bookings-heading h1 {
+        font-size: 1.65rem;
+    }
+
+    .bookings-page .tutor-sessions-table tbody tr:nth-child(n + 5) {
+        display: grid;
+    }
+}
+
+@media (max-width: 479.98px) {
+}
