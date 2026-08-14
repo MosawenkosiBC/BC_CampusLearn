@@ -28,7 +28,9 @@
 
     <div class="row g-4 mt-4 tutor-dashboard-summary">
         <div class="col-6 col-xl-3">
-            <article class="tutor-stat-card">
+            <a href="#tutor-sessions"
+               class="tutor-stat-card tutor-dashboard-stat-link"
+               aria-label="Manage pending sessions">
                 <div class="tutor-stat-main">
                     <div class="tutor-stat-icon tutor-stat-icon--teal">
                         <svg xmlns="http://www.w3.org/2000/svg"
@@ -49,16 +51,25 @@
                     </div>
                 </div>
                 <span class="tutor-stat-action tutor-stat-action--teal">
-                    Manage sessions
-                    <iconify-icon
-                        icon="solar:alt-arrow-right-linear"
-                        aria-hidden="true"></iconify-icon>
+                    <span class="tutor-stat-action-label">Manage sessions</span>
+                    <svg class="tutor-stat-arrow"
+                         xmlns="http://www.w3.org/2000/svg"
+                         width="1em"
+                         height="1em"
+                         viewBox="0 0 24 24"
+                         aria-hidden="true">
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        <path fill="currentColor"
+                              d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
+                    </svg>
                 </span>
-            </article>
+            </a>
         </div>
 
         <div class="col-6 col-xl-3">
-            <article class="tutor-stat-card">
+            <a href="#tutor-sessions"
+               class="tutor-stat-card tutor-dashboard-stat-link"
+               aria-label="View upcoming sessions">
                 <div class="tutor-stat-main">
                     <div class="tutor-stat-icon tutor-stat-icon--magenta">
                         <svg xmlns="http://www.w3.org/2000/svg"
@@ -78,16 +89,25 @@
                     </div>
                 </div>
                 <span class="tutor-stat-action tutor-stat-action--magenta">
-                    View All Sessions
-                    <iconify-icon
-                        icon="solar:alt-arrow-right-linear"
-                        aria-hidden="true"></iconify-icon>
+                    <span class="tutor-stat-action-label">View All Sessions</span>
+                    <svg class="tutor-stat-arrow"
+                         xmlns="http://www.w3.org/2000/svg"
+                         width="1em"
+                         height="1em"
+                         viewBox="0 0 24 24"
+                         aria-hidden="true">
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        <path fill="currentColor"
+                              d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
+                    </svg>
                 </span>
-            </article>
+            </a>
         </div>
 
         <div class="col-6 col-xl-3">
-            <article class="tutor-stat-card">
+            <a asp-page="/Tutors/ManageAvailability"
+               class="tutor-stat-card tutor-dashboard-stat-link"
+               aria-label="Manage availability and open slots">
                 <div class="tutor-stat-main">
                     <div class="tutor-stat-icon tutor-stat-icon--teal">
                         <svg xmlns="http://www.w3.org/2000/svg"
@@ -110,18 +130,26 @@
                         <p>@Model.OpenSlotCount</p>
                     </div>
                 </div>
-                <a asp-page="/Tutors/ManageAvailability"
-                   class="tutor-stat-action tutor-stat-action--teal">
-                    Manage Availability
-                    <iconify-icon
-                        icon="solar:alt-arrow-right-linear"
-                        aria-hidden="true"></iconify-icon>
-                </a>
-            </article>
+                <span class="tutor-stat-action tutor-stat-action--teal">
+                    <span class="tutor-stat-action-label">Manage Availability</span>
+                    <svg class="tutor-stat-arrow"
+                         xmlns="http://www.w3.org/2000/svg"
+                         width="1em"
+                         height="1em"
+                         viewBox="0 0 24 24"
+                         aria-hidden="true">
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        <path fill="currentColor"
+                              d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
+                    </svg>
+                </span>
+            </a>
         </div>
 
         <div class="col-6 col-xl-3">
-            <article class="tutor-stat-card">
+            <a href="#tutor-sessions"
+               class="tutor-stat-card tutor-dashboard-stat-link"
+               aria-label="View all tutor sessions">
                 <div class="tutor-stat-main">
                     <div class="tutor-stat-icon tutor-stat-icon--magenta">
                         <svg xmlns="http://www.w3.org/2000/svg"
@@ -141,12 +169,19 @@
                     </div>
                 </div>
                 <span class="tutor-stat-action tutor-stat-action--magenta">
-                    View All
-                    <iconify-icon
-                        icon="solar:alt-arrow-right-linear"
-                        aria-hidden="true"></iconify-icon>
+                    <span class="tutor-stat-action-label">View All</span>
+                    <svg class="tutor-stat-arrow"
+                         xmlns="http://www.w3.org/2000/svg"
+                         width="1em"
+                         height="1em"
+                         viewBox="0 0 24 24"
+                         aria-hidden="true">
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        <path fill="currentColor"
+                              d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
+                    </svg>
                 </span>
-            </article>
+            </a>
         </div>
     </div>
 
@@ -321,7 +356,8 @@
             </section>
         </div>
 
-        <div class="col-12 col-xl-6 tutor-sessions-column">
+        <div id="tutor-sessions"
+             class="col-12 col-xl-6 tutor-sessions-column">
                 <div class="tutor-section-heading tutor-sessions-heading">
                     <h2 id="tutor-sessions-title"
                         class="tutor-availability-section-title">

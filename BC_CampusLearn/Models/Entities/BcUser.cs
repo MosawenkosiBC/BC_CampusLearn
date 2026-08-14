@@ -4,6 +4,8 @@ public class BcUser
 {
     public int BcUserId { get; set; }
     public string PersonnelNumber { get; set; } = null!;
+    public string DisplayName { get; set; } = string.Empty;
+    public string? Email { get; set; }
     public Guid EntraObjectId { get; set; }
     public Guid EntraTenantId { get; set; }
     public bool IsPublicActivityEnabled { get; set; } = true;

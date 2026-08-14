@@ -1,7 +1,6 @@
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Authentication.Development;
 using BC_CampusLearn.Data;
-using BC_CampusLearn.Data.Seed;
 using BC_CampusLearn.Services.Bookings;
 using BC_CampusLearn.Services.Availability;
 using BC_CampusLearn.Services.Tutors;
@@ -112,17 +111,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();
-
-if (app.Environment.IsDevelopment())
-{
-    using IServiceScope scope =
-        app.Services.CreateScope();
-
-    ApplicationDbContext context =
-        scope.ServiceProvider
-            .GetRequiredService<ApplicationDbContext>();
-
-    await DevelopmentDataSeeder.SeedAsync(context);
-}
 
 app.Run();

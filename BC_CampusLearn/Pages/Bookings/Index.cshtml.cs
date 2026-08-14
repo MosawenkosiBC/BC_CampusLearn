@@ -2,7 +2,6 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
-using BC_CampusLearn.Services.Tutors;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -148,6 +147,10 @@ public class IndexModel : PageModel
                 {
                     BookingId = booking.BookingId,
                     TutorId = booking.TutorId,
+                    TutorName = string.IsNullOrWhiteSpace(
+                        booking.TutorCourseModule.Tutor.BcUser.DisplayName)
+                        ? booking.TutorCourseModule.Tutor.BcUser.PersonnelNumber
+                        : booking.TutorCourseModule.Tutor.BcUser.DisplayName,
                     ModuleName = booking.ProgrammeModule.ModuleName,
                     ModuleCode = booking.ProgrammeModule.ModuleCode,
                     Location = booking.Location,
@@ -157,12 +160,6 @@ public class IndexModel : PageModel
                     Summary = booking.Summary
                 })
             .ToListAsync(cancellationToken);
-
-        foreach (BookingListItemViewModel booking in bookings)
-        {
-            booking.TutorName =
-                TutorDisplayNames.GetName(booking.TutorId);
-        }
 
         if (!string.IsNullOrWhiteSpace(TutorFilter))
         {

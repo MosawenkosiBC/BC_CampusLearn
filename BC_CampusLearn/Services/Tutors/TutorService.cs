@@ -7,13 +7,8 @@ namespace BC_CampusLearn.Services.Tutors;
 
 public class TutorService : ITutorService
 {
-    private static readonly string[] FallbackProfileImages =
-    {
-        "/Media/tutorsProfiles/Tutor 1.webp",
-        "/Media/tutorsProfiles/Tutor 3.webp",
-        "/Media/tutorsProfiles/Tutor 5.webp",
-        "/Media/tutorsProfiles/image.png"
-    };
+    private const string FallbackProfileImage =
+        "/Media/tutorsProfiles/image.png";
 
     private readonly ApplicationDbContext _context;
 
@@ -46,17 +41,20 @@ public class TutorService : ITutorService
             .Include(tutor => tutor.TutorCourseModules)
                 .ThenInclude(item => item.ProgrammeModule)
             .Include(tutor => tutor.Programme)
+            .Include(tutor => tutor.BcUser)
             .Include(tutor => tutor.TutorAvailabilities)
             .OrderBy(tutor => tutor.TutorId)
             .ToListAsync(cancellationToken);
         return tutors
-            .Select((tutor, index) => new TutorCardViewModel
+            .Select(tutor => new TutorCardViewModel
             {
                 TutorId = tutor.TutorId,
-                DisplayName = TutorDisplayNames.GetName(tutor.TutorId),
+                DisplayName = string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName)
+                    ? tutor.BcUser.PersonnelNumber
+                    : tutor.BcUser.DisplayName,
                 Biography = tutor.Biography ?? string.Empty,
                 ProfileImagePath = string.IsNullOrWhiteSpace(tutor.ProfileImagePath)
-                    ? FallbackProfileImages[index % FallbackProfileImages.Length]
+                    ? FallbackProfileImage
                     : tutor.ProfileImagePath,
                 ProgrammeId = tutor.ProgrammeId,
                 ProgrammeName = tutor.Programme?.Name ?? "Belgium Campus programme",
@@ -98,6 +96,7 @@ public class TutorService : ITutorService
                 .ThenInclude(item =>
                     item.ProgrammeModule)
             .Include(item => item.TutorAvailabilities)
+            .Include(item => item.BcUser)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (tutor is null)
@@ -108,8 +107,10 @@ public class TutorService : ITutorService
         return new TutorDetailsViewModel
         {
             TutorId = tutor.TutorId,
-            DisplayName = TutorDisplayNames.GetName(tutor.TutorId),
-            Email = string.Empty,
+            DisplayName = string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName)
+                ? tutor.BcUser.PersonnelNumber
+                : tutor.BcUser.DisplayName,
+            Email = tutor.BcUser.Email ?? string.Empty,
             Biography = tutor.Biography ?? string.Empty,
             ProfileImagePath = tutor.ProfileImagePath,
             LinkedInUrl = GetSafeExternalUrl(tutor.LinkedInUrl),

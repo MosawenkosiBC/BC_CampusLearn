@@ -2,7 +2,6 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
-using BC_CampusLearn.Services.Tutors;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -59,6 +58,11 @@ public class BookingService : IBookingService
 
                     TutorId = slot.TutorId,
 
+                    TutorName = string.IsNullOrWhiteSpace(
+                        slot.Tutor.BcUser.DisplayName)
+                        ? slot.Tutor.BcUser.PersonnelNumber
+                        : slot.Tutor.BcUser.DisplayName,
+
                     Modules = slot.Tutor.TutorCourseModules
                         .OrderBy(assignment =>
                             assignment.ProgrammeModule.ModuleCode)
@@ -77,12 +81,6 @@ public class BookingService : IBookingService
                     AvailableTime = slot.AvailableTime
                 })
             .FirstOrDefaultAsync(cancellationToken);
-
-        if (preview is not null)
-        {
-            preview.TutorName =
-                TutorDisplayNames.GetName(preview.TutorId);
-        }
 
         return preview;
     }

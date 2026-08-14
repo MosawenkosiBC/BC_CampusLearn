@@ -270,71 +270,43 @@
         Each tutor is here to help you excel in your <span class="course">BCom, BIT, and Diploma modules</span>
     </p>
     <div class="top-tutors mt-4">
-        @* @foreach (var item in Model.TopTutors)
-        {
-            <a href="/Tutor/TutorProfile?tutorId=@item.TutorId" style="color:black; text-decoration:none">
-                <div class="tutor-card p-3">
-                    <div class="img-frame-tutor mb-3">
-                        <img src="@item.ProfilePicture" class="card-img-top" alt="@item.FullName" onerror="this.src='/Media/tutors/tutor1.jpg'">
-                    </div>
-                    <h4 class="me-3">@item.FullName <i class="bi bi-patch-check-fill" style="color:blue"></i></h4>
-                    <p>@item.Program</p>
-                    <p>@item.YearsOfStudy year</p>
-                </div>
-            </a>
-
-        } *@
     </div>
 
     <div class="top-tutors-slider mt-4">
         <div class="top-tutors-static" id="topTutorsStaticSlider">
-            <div class="static-tutor-card">
-                <div class="static-tutor-image-frame">
-                    <img src="/Media/tutorsProfiles/image.png" alt="Neo Mokoena" />
-                </div>
-                <h4>Neo Mokoena <i class="bi bi-patch-check-fill"></i></h4>
-                <p class="static-tutor-program">BCom Information Systems</p>
-                <p class="static-tutor-meta">2nd year tutor</p>
-            </div>
-
-            <div class="static-tutor-card">
-                <div class="static-tutor-image-frame">
-                    <img src="/Media/tutorsProfiles/Tutor 1.webp" alt="Lerato Khumalo" />
-                </div>
-                <h4>Lerato Khumalo <i class="bi bi-patch-check-fill"></i></h4>
-                <p class="static-tutor-program">BIT Software Engineering</p>
-                <p class="static-tutor-meta">3rd year tutor</p>
-            </div>
-
-            <div class="static-tutor-card">
-                <div class="static-tutor-image-frame">
-                    <img src="/Media/tutorsProfiles/Tutor 3.webp" alt="Thabo Molefe" />
-                </div>
-                <h4>Thabo Molefe <i class="bi bi-patch-check-fill"></i></h4>
-                <p class="static-tutor-program">Diploma IT</p>
-                <p class="static-tutor-meta">2nd year tutor</p>
-            </div>
-
-            <div class="static-tutor-card">
-                <div class="static-tutor-image-frame">
-                    <img src="/Media/tutorsProfiles/Tutor 5.webp" alt="Amahle Radebe" />
-                </div>
-                <h4>Amahle Radebe <i class="bi bi-patch-check-fill"></i></h4>
-                <p class="static-tutor-program">BIT Data Science</p>
-                <p class="static-tutor-meta">3rd year tutor</p>
-            </div>
+            @foreach (var tutor in Model.FeaturedTutors)
+            {
+                <a asp-page="/Tutors/Details"
+                   asp-route-id="@tutor.TutorId"
+                   class="static-tutor-card text-decoration-none text-dark">
+                    <div class="static-tutor-image-frame">
+                        <img src="@tutor.ProfileImagePath"
+                             alt="@tutor.DisplayName" />
+                    </div>
+                    <h4>@tutor.DisplayName <i class="bi bi-patch-check-fill"></i></h4>
+                    <p class="static-tutor-program">@tutor.ProgrammeName</p>
+                    <p class="static-tutor-meta">Year @tutor.YearOfStudy tutor</p>
+                </a>
+            }
         </div>
 
-        <div class="top-tutors-dots" aria-label="Tutor carousel navigation">
-            <button type="button" class="top-tutors-dot active" aria-label="Show tutor 1"></button>
-            <button type="button" class="top-tutors-dot" aria-label="Show tutor 2"></button>
-            <button type="button" class="top-tutors-dot" aria-label="Show tutor 3"></button>
-            <button type="button" class="top-tutors-dot" aria-label="Show tutor 4"></button>
-        </div>
+        @if (Model.FeaturedTutors.Count > 1)
+        {
+            <div class="top-tutors-dots" aria-label="Tutor carousel navigation">
+                @for (int index = 0; index < Model.FeaturedTutors.Count; index++)
+                {
+                    <button type="button"
+                            class="top-tutors-dot @(index == 0 ? "active" : null)"
+                            aria-label="Show tutor @(index + 1)"></button>
+                }
+            </div>
+        }
     </div>
 
     <div class="p-0 mb-4" style="text-align:center">
-        <a class="btn btn-primary" style="background-color:#AD0151; border-color:#AD0151;" href="/Tutor/AllTutors">Meet All Tutors</a>
+        <a class="btn btn-primary"
+           style="background-color:#AD0151; border-color:#AD0151;"
+           asp-page="/Tutors/Index">Meet All Tutors</a>
     </div>
 </div>
 

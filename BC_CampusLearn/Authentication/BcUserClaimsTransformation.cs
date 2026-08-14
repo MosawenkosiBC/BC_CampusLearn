@@ -59,6 +59,10 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
         string? tenantIdValue = principal.FindFirstValue(EntraClaimTypes.TenantId)
             ?? principal.FindFirstValue(EntraClaimTypes.TenantIdUri);
         string? personnelNumber = principal.FindFirstValue(EntraClaimTypes.PersonnelNumber);
+        string? displayName = principal.FindFirstValue(ClaimTypes.Name)
+            ?? principal.FindFirstValue(EntraClaimTypes.DisplayName);
+        string? email = principal.FindFirstValue(ClaimTypes.Email)
+            ?? principal.FindFirstValue(EntraClaimTypes.PreferredUsername);
 
         if (!Guid.TryParse(objectIdValue, out Guid objectId) ||
             !Guid.TryParse(tenantIdValue, out Guid tenantId))
@@ -94,6 +98,12 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
                 EntraObjectId = objectId,
                 EntraTenantId = tenantId,
                 PersonnelNumber = personnelNumber.Trim(),
+                DisplayName = string.IsNullOrWhiteSpace(displayName)
+                    ? personnelNumber.Trim()
+                    : displayName.Trim(),
+                Email = string.IsNullOrWhiteSpace(email)
+                    ? null
+                    : email.Trim(),
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow
             };
@@ -104,6 +114,16 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
             if (!string.IsNullOrWhiteSpace(personnelNumber))
             {
                 user.PersonnelNumber = personnelNumber.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                user.DisplayName = displayName.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                user.Email = email.Trim();
             }
 
             if (string.IsNullOrWhiteSpace(user.PersonnelNumber))

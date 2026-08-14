@@ -52,7 +52,7 @@ public class SignInModel : PageModel
     {
         if (User.Identity?.IsAuthenticated == true)
         {
-            return RedirectToPage("/Student/Dashboard");
+            return RedirectToPage("/Account/PostLogin");
         }
 
         return Page();
@@ -146,7 +146,7 @@ public class SignInModel : PageModel
             return returnUrl;
         }
 
-        return Url.Page("/Student/Dashboard")
-            ?? "/Student/Dashboard";
+        return Url.Page("/Account/PostLogin")
+            ?? "/Account/PostLogin";
     }
 }

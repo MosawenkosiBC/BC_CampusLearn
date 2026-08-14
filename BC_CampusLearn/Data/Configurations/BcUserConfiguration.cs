@@ -11,6 +11,8 @@ public class BcUserConfiguration : IEntityTypeConfiguration<BcUser>
         builder.ToTable("BcUsers");
         builder.HasKey(user => user.BcUserId);
         builder.Property(user => user.PersonnelNumber).HasMaxLength(50).IsRequired();
+        builder.Property(user => user.DisplayName).HasMaxLength(200).IsRequired();
+        builder.Property(user => user.Email).HasMaxLength(320);
         builder.Property(user => user.IsPublicActivityEnabled).HasDefaultValue(true);
         builder.Property(user => user.PublicActivityDisabledReason).HasMaxLength(500);
         builder.Property(user => user.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");

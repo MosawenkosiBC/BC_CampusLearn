@@ -2,7 +2,6 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
-using BC_CampusLearn.Services.Tutors;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -111,6 +110,11 @@ public class DashboardModel : PageModel
 
                         TutorId = booking.TutorId,
 
+                        TutorName = string.IsNullOrWhiteSpace(
+                            booking.TutorCourseModule.Tutor.BcUser.DisplayName)
+                            ? booking.TutorCourseModule.Tutor.BcUser.PersonnelNumber
+                            : booking.TutorCourseModule.Tutor.BcUser.DisplayName,
+
                         ModuleName =
                             booking.ProgrammeModule.ModuleName,
 
@@ -130,12 +134,6 @@ public class DashboardModel : PageModel
                     })
                 .FirstOrDefaultAsync(cancellationToken);
 
-        if (NextSession is not null)
-        {
-            NextSession.TutorName =
-                TutorDisplayNames.GetName(NextSession.TutorId);
-        }
-
         Sessions =
             await studentBookings
                 .OrderByDescending(booking =>
@@ -146,6 +144,11 @@ public class DashboardModel : PageModel
                         BookingId = booking.BookingId,
 
                         TutorId = booking.TutorId,
+
+                        TutorName = string.IsNullOrWhiteSpace(
+                            booking.TutorCourseModule.Tutor.BcUser.DisplayName)
+                            ? booking.TutorCourseModule.Tutor.BcUser.PersonnelNumber
+                            : booking.TutorCourseModule.Tutor.BcUser.DisplayName,
 
                         ModuleName =
                             booking.ProgrammeModule.ModuleName,
@@ -167,10 +170,5 @@ public class DashboardModel : PageModel
                 .Take(5)
                 .ToListAsync(cancellationToken);
 
-        foreach (BookingListItemViewModel session in Sessions)
-        {
-            session.TutorName =
-                TutorDisplayNames.GetName(session.TutorId);
-        }
     }
 }
