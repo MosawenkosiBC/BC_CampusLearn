@@ -338,6 +338,12 @@
     background-color: #f0f2f4;
 }
 
+.tutor-session-action-dots {
+    fill: currentColor;
+    height: 1.15rem;
+    width: 1.15rem;
+}
+
 .tutor-sessions-empty {
     color: #6b7480 !important;
     height: 16.25rem;

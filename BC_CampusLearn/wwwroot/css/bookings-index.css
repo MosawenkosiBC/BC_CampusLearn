@@ -188,10 +188,32 @@
     overflow-x: auto;
 }
 
-.bookings-page .tutor-session-action svg {
-    fill: currentColor;
-    height: 1.15rem;
-    width: 1.15rem;
+.bookings-page .tutor-sessions-table {
+    min-width: 720px;
+}
+
+.bookings-page .tutor-sessions-table th:nth-child(1) {
+    width: 20%;
+}
+
+.bookings-page .tutor-sessions-table th:nth-child(2) {
+    width: 12%;
+}
+
+.bookings-page .tutor-sessions-table th:nth-child(3) {
+    width: 22%;
+}
+
+.bookings-page .tutor-sessions-table th:nth-child(4) {
+    width: 17%;
+}
+
+.bookings-page .tutor-sessions-table th:nth-child(5) {
+    width: 17%;
+}
+
+.bookings-page .tutor-sessions-table th:nth-child(6) {
+    width: 12%;
 }
 
 @media (max-width: 1199.98px) {
@@ -353,6 +375,66 @@
 @media (max-width: 767.98px) {
     .bookings-heading h1 {
         font-size: 1.65rem;
+    }
+
+    .bookings-page .tutor-sessions-table-wrap {
+        overflow: visible;
+    }
+
+    .bookings-page .tutor-sessions-table {
+        min-width: 0;
+    }
+
+    .bookings-page .tutor-sessions-table tbody tr {
+        grid-template-areas:
+            "tutor status action"
+            "module status action"
+            "datetime datetime datetime"
+            "location location location";
+        grid-template-columns: minmax(0, 1fr) auto 2.25rem;
+    }
+
+    .bookings-page .tutor-sessions-table td:nth-child(1) {
+        font-size: 14px;
+        grid-area: tutor;
+    }
+
+    .bookings-page .tutor-sessions-table td:nth-child(2) {
+        font-size: 12px;
+        grid-area: module;
+    }
+
+    .bookings-page .tutor-sessions-table td:nth-child(3) {
+        font-size: 11px;
+        grid-area: datetime;
+    }
+
+    .bookings-page .tutor-sessions-table td:nth-child(3) .tutor-session-time {
+        font-size: inherit;
+    }
+
+    .bookings-page .tutor-sessions-table td:nth-child(4) {
+        color: #535b66;
+        font-size: 11px;
+        grid-area: location;
+        overflow: hidden;
+        padding-top: 0.25rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .bookings-page .tutor-sessions-table td:nth-child(5) {
+        grid-area: status;
+        text-align: left;
+    }
+
+    .bookings-page .tutor-session-status {
+        font-size: 12px;
+    }
+
+    .bookings-page .tutor-sessions-table td:nth-child(6) {
+        grid-area: action;
+        text-align: center;
     }
 
     .bookings-page .tutor-sessions-table tbody tr:nth-child(n + 5) {

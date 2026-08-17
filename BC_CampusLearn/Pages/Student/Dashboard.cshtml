@@ -237,7 +237,19 @@
             </h2>
             @if (Model.Sessions.Count > 0)
             {
-                <a asp-page="/Bookings/Index">View all sessions</a>
+                <a asp-page="/Bookings/Index"
+                   class="dashboard-view-all-sessions">
+                    <span>View all sessions</span>
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         width="1em"
+                         height="1em"
+                         viewBox="0 0 24 24"
+                         aria-hidden="true">
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        <path fill="currentColor"
+                              d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
+                    </svg>
+                </a>
             }
         </div>
 
@@ -303,9 +315,13 @@
                                         <button type="button"
                                                 class="tutor-session-action"
                                                 aria-label="Actions for session with @booking.TutorName">
-                                            <iconify-icon
-                                                icon="ph:dots-three-vertical-bold"
-                                                aria-hidden="true"></iconify-icon>
+                                            <svg class="tutor-session-action-dots"
+                                                 viewBox="0 0 24 24"
+                                                 aria-hidden="true">
+                                                <circle cx="12" cy="5" r="1.6" />
+                                                <circle cx="12" cy="12" r="1.6" />
+                                                <circle cx="12" cy="19" r="1.6" />
+                                            </svg>
                                         </button>
                                     </td>
                                 </tr>

@@ -136,6 +136,17 @@
     text-decoration: underline;
 }
 
+.dashboard-view-all-sessions {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.25rem;
+}
+
+.dashboard-view-all-sessions svg {
+    color: inherit;
+    flex: 0 0 auto;
+}
+
 .dashboard-next-session-actions {
     align-items: stretch;
 }
@@ -273,6 +284,44 @@
 
 .dashboard-page .tutor-sessions-empty {
     font-size: 14px;
+}
+
+.dashboard-all-sessions .tutor-sessions-table-wrap {
+    overflow-x: auto;
+}
+
+.dashboard-all-sessions .tutor-sessions-table {
+    min-width: 720px;
+}
+
+.dashboard-all-sessions .tutor-sessions-table th:nth-child(1) {
+    width: 20%;
+}
+
+.dashboard-all-sessions .tutor-sessions-table th:nth-child(2) {
+    width: 12%;
+}
+
+.dashboard-all-sessions .tutor-sessions-table th:nth-child(3) {
+    width: 22%;
+}
+
+.dashboard-all-sessions .tutor-sessions-table th:nth-child(4) {
+    width: 17%;
+}
+
+.dashboard-all-sessions .tutor-sessions-table th:nth-child(5) {
+    width: 17%;
+}
+
+.dashboard-all-sessions .tutor-sessions-table th:nth-child(6) {
+    width: 12%;
+}
+
+.dashboard-all-sessions .tutor-session-action:focus-visible {
+    background-color: #f0f2f4;
+    outline: 2px solid #4ac1c1;
+    outline-offset: 2px;
 }
 
 .dashboard-support-card {
@@ -545,6 +594,67 @@
 @media (min-width: 992px) {
     .dashboard-primary-grid .dashboard-tutor-card {
         margin-top: 2.25rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .dashboard-all-sessions .tutor-sessions-table-wrap {
+        overflow: visible;
+    }
+
+    .dashboard-all-sessions .tutor-sessions-table {
+        min-width: 0;
+    }
+
+    .dashboard-all-sessions .tutor-sessions-table tbody tr {
+        grid-template-areas:
+            "tutor status action"
+            "module status action"
+            "datetime datetime datetime"
+            "location location location";
+        grid-template-columns: minmax(0, 1fr) auto 2.25rem;
+    }
+
+    .dashboard-all-sessions .tutor-sessions-table td:nth-child(1) {
+        grid-area: tutor;
+    }
+
+    .dashboard-all-sessions .tutor-sessions-table td:nth-child(2) {
+        font-size: 12px;
+        grid-area: module;
+    }
+
+    .dashboard-all-sessions .tutor-sessions-table td:nth-child(3) {
+        font-size: 11px;
+        grid-area: datetime;
+    }
+
+    .dashboard-all-sessions .tutor-sessions-table td:nth-child(3) .tutor-session-time {
+        font-size: inherit;
+    }
+
+    .dashboard-all-sessions .tutor-sessions-table td:nth-child(4) {
+        color: #535b66;
+        font-size: 11px;
+        grid-area: location;
+        overflow: hidden;
+        padding-top: 0.25rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dashboard-all-sessions .tutor-sessions-table td:nth-child(5) {
+        grid-area: status;
+        text-align: left;
+    }
+
+    .dashboard-all-sessions .tutor-sessions-table td:nth-child(6) {
+        grid-area: action;
+        text-align: center;
+    }
+
+    .dashboard-all-sessions .tutor-sessions-table tbody tr:nth-child(n + 5) {
+        display: grid;
     }
 }
 

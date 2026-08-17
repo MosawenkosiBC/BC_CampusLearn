@@ -296,15 +296,17 @@
                                             </span>
                                         </td>
                                         <td data-label="Action">
-                                            <a asp-page="/Tutors/Details"
-                                               asp-route-id="@booking.TutorId"
-                                               class="tutor-session-action"
-                                               aria-label="View @booking.TutorName's tutor profile"
-                                               title="View tutor profile">
-                                                <svg aria-hidden="true" viewBox="0 0 24 24">
-                                                    <path d="M8.6 16.8 13.4 12 8.6 7.2 10 5.8l6.2 6.2-6.2 6.2z" />
+                                            <button type="button"
+                                                    class="tutor-session-action"
+                                                    aria-label="Actions for session with @booking.TutorName">
+                                                <svg class="tutor-session-action-dots"
+                                                     viewBox="0 0 24 24"
+                                                     aria-hidden="true">
+                                                    <circle cx="12" cy="5" r="1.6" />
+                                                    <circle cx="12" cy="12" r="1.6" />
+                                                    <circle cx="12" cy="19" r="1.6" />
                                                 </svg>
-                                            </a>
+                                            </button>
                                         </td>
                                     </tr>
                                 }
