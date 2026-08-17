@@ -287,11 +287,16 @@
 }
 
 .dashboard-all-sessions .tutor-sessions-table-wrap {
-    overflow-x: auto;
+    overflow: visible;
 }
 
 .dashboard-all-sessions .tutor-sessions-table {
     min-width: 720px;
+    overflow: visible;
+}
+
+.dashboard-all-sessions .tutor-sessions {
+    overflow: visible;
 }
 
 .dashboard-all-sessions .tutor-sessions-table th:nth-child(1) {
@@ -322,6 +327,39 @@
     background-color: #f0f2f4;
     outline: 2px solid #4ac1c1;
     outline-offset: 2px;
+}
+
+.dashboard-all-sessions .tutor-sessions-table tbody tr,
+.dashboard-all-sessions .tutor-sessions-table td:last-child {
+    overflow: visible;
+    position: relative;
+}
+
+.dashboard-session-action-menu {
+    display: inline-flex;
+}
+
+.dashboard-session-action-menu .dropdown-menu {
+    border: 1px solid #d9dee5;
+    border-radius: 0.35rem;
+    box-shadow: 0 0.45rem 1rem rgba(31, 36, 43, 0.14);
+    font-size: 14px;
+    min-width: 10.5rem;
+    padding: 0.3rem;
+    z-index: 1080;
+}
+
+.dashboard-session-action-menu .dropdown-item {
+    border-radius: 0.25rem;
+    color: #343a43;
+    padding: 0.55rem 0.7rem;
+}
+
+.dashboard-session-action-menu .dropdown-item:hover,
+.dashboard-session-action-menu .dropdown-item:focus-visible {
+    background-color: rgba(74, 193, 193, 0.13);
+    color: #137f83;
+    outline: none;
 }
 
 .dashboard-support-card {

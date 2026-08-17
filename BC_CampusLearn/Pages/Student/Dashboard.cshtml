@@ -1,5 +1,6 @@
 @page
 @model BC_CampusLearn.Pages.Student.DashboardModel
+@using BC_CampusLearn.Models.Entities
 
 @{
     ViewData["Title"] = "Student dashboard";
@@ -312,17 +313,36 @@
                                         </span>
                                     </td>
                                     <td data-label="Action">
-                                        <button type="button"
-                                                class="tutor-session-action"
-                                                aria-label="Actions for session with @booking.TutorName">
-                                            <svg class="tutor-session-action-dots"
-                                                 viewBox="0 0 24 24"
-                                                 aria-hidden="true">
-                                                <circle cx="12" cy="5" r="1.6" />
-                                                <circle cx="12" cy="12" r="1.6" />
-                                                <circle cx="12" cy="19" r="1.6" />
-                                            </svg>
-                                        </button>
+                                        <div class="dropdown dashboard-session-action-menu">
+                                            <button type="button"
+                                                    class="tutor-session-action"
+                                                    data-bs-toggle="dropdown"
+                                                    data-bs-display="static"
+                                                    aria-expanded="false"
+                                                    aria-label="Actions for session with @booking.TutorName">
+                                                <svg class="tutor-session-action-dots"
+                                                     viewBox="0 0 24 24"
+                                                     aria-hidden="true">
+                                                    <circle cx="12" cy="5" r="1.6" />
+                                                    <circle cx="12" cy="12" r="1.6" />
+                                                    <circle cx="12" cy="19" r="1.6" />
+                                                </svg>
+                                            </button>
+                                            <div class="dropdown-menu dropdown-menu-end">
+                                                <button type="button"
+                                                        class="dropdown-item">
+                                                    Session Details
+                                                </button>
+                                                @if (booking.Status == BookingStatus.Pending ||
+                                                    booking.Status == BookingStatus.Confirmed)
+                                                {
+                                                    <button type="button"
+                                                            class="dropdown-item">
+                                                        Cancel session
+                                                    </button>
+                                                }
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             }

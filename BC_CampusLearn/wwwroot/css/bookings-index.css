@@ -147,7 +147,7 @@
     background-color: #fff;
     border-radius: 0.4rem;
     box-shadow: var(--campus-card-shadow);
-    overflow: hidden;
+    overflow: visible;
 }
 
 .bookings-empty-results {
@@ -185,11 +185,12 @@
 
 .bookings-page .tutor-sessions-table-wrap {
     min-height: 24rem;
-    overflow-x: auto;
+    overflow: visible;
 }
 
 .bookings-page .tutor-sessions-table {
     min-width: 720px;
+    overflow: visible;
 }
 
 .bookings-page .tutor-sessions-table th:nth-child(1) {
@@ -214,6 +215,39 @@
 
 .bookings-page .tutor-sessions-table th:nth-child(6) {
     width: 12%;
+}
+
+.bookings-page .tutor-sessions-table tbody tr,
+.bookings-page .tutor-sessions-table td:last-child {
+    overflow: visible;
+    position: relative;
+}
+
+.bookings-session-action-menu {
+    display: inline-flex;
+}
+
+.bookings-session-action-menu .dropdown-menu {
+    border: 1px solid #d9dee5;
+    border-radius: 0.35rem;
+    box-shadow: 0 0.45rem 1rem rgba(31, 36, 43, 0.14);
+    font-size: 14px;
+    min-width: 10.5rem;
+    padding: 0.3rem;
+    z-index: 1080;
+}
+
+.bookings-session-action-menu .dropdown-item {
+    border-radius: 0.25rem;
+    color: #343a43;
+    padding: 0.55rem 0.7rem;
+}
+
+.bookings-session-action-menu .dropdown-item:hover,
+.bookings-session-action-menu .dropdown-item:focus-visible {
+    background-color: rgba(74, 193, 193, 0.13);
+    color: #137f83;
+    outline: none;
 }
 
 @media (max-width: 1199.98px) {
