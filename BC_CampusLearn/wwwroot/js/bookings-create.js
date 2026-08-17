@@ -1,4 +1,7 @@
 (() => {
+    const deleteIcon =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M1 5h22m-8.75-4h-4.5a1.5 1.5 0 0 0-1.5 1.5V5h7.5V2.5a1.5 1.5 0 0 0-1.5-1.5m-4.5 16.75v-7.5m4.5 7.5v-7.5m4.61 11.37A1.49 1.49 0 0 1 17.37 23H6.63a1.49 1.49 0 0 1-1.49-1.38L3.75 5h16.5z"/></svg>';
+
     if (window.jQuery?.validator?.unobtrusive) {
         window.jQuery.validator.addMethod(
             "mustbetrue",
@@ -46,14 +49,16 @@
     const bookingForm = document.querySelector("[data-booking-form]");
 
     if (bookingForm) {
+        const bookingFlow = bookingForm.closest(
+            ".booking-form-content") ?? bookingForm;
         const mobileLayout = window.matchMedia(
             "(max-width: 575.98px)");
         const stages = Array.from(
             bookingForm.querySelectorAll("[data-booking-stage]"));
         const stageButtons = Array.from(
-            bookingForm.querySelectorAll(
+            bookingFlow.querySelectorAll(
                 "[data-booking-stage-target]"));
-        const progress = bookingForm.querySelector(
+        const progress = bookingFlow.querySelector(
             ".booking-mobile-progress");
 
         const setFallbackError = (field, messageText) => {
@@ -228,8 +233,8 @@
                 }
 
                 if (number) {
-                    number.textContent =
-                        button.dataset.bookingStageTarget;
+                    number.textContent = String(
+                        Number(button.dataset.bookingStageTarget) + 4);
                 }
             });
 
@@ -371,18 +376,23 @@
             }
 
             const item = document.createElement("li");
-            const text = document.createElement("span");
+            const text = document.createElement("a");
             const removeButton = document.createElement("button");
 
             item.className = "booking-link-item";
             item.dataset.bookingLinkItem = "";
             item.dataset.linkIndex = String(index);
 
+            text.className = "booking-added-item-label";
+            text.href = linkValue;
+            text.target = "_blank";
+            text.rel = "noopener noreferrer";
             text.textContent = linkValue;
+            text.title = linkValue;
 
             removeButton.type = "button";
             removeButton.dataset.bookingLinkRemove = "";
-            removeButton.textContent = "Remove";
+            removeButton.innerHTML = deleteIcon;
             removeButton.setAttribute(
                 "aria-label",
                 `Remove ${linkValue}`);
@@ -391,17 +401,24 @@
             list.append(item);
         };
 
-        const addLink = () => {
+        const addLink = ({
+            focusAfter = true,
+            showEmptyError = true
+        } = {}) => {
             if (!input) {
-                return;
+                return false;
             }
 
             const linkValue = input.value.trim();
 
             if (!linkValue) {
-                setFeedback("Enter a link before selecting Add.", true);
-                input.focus();
-                return;
+                if (showEmptyError) {
+                    setFeedback("Enter a link before selecting Add.", true);
+                    if (focusAfter) {
+                        input.focus();
+                    }
+                }
+                return false;
             }
 
             let parsedLink;
@@ -410,24 +427,30 @@
                 parsedLink = new URL(linkValue);
             } catch {
                 setFeedback("Enter a valid web address.", true);
-                input.focus();
-                return;
+                if (focusAfter) {
+                    input.focus();
+                }
+                return false;
             }
 
             if (!["http:", "https:"].includes(parsedLink.protocol)) {
                 setFeedback(
                     "The link must start with http:// or https://.",
                     true);
-                input.focus();
-                return;
+                if (focusAfter) {
+                    input.focus();
+                }
+                return false;
             }
 
             const normalisedLink = parsedLink.href;
 
             if (values.some((value) => value.value === normalisedLink)) {
                 setFeedback("This link has already been added.", true);
-                input.focus();
-                return;
+                if (focusAfter) {
+                    input.focus();
+                }
+                return false;
             }
 
             const availableIndex = values.findIndex(
@@ -435,14 +458,17 @@
 
             if (availableIndex < 0) {
                 updateLinks();
-                return;
+                return false;
             }
 
             values[availableIndex].value = normalisedLink;
             createLinkItem(normalisedLink, availableIndex);
             input.value = "";
             updateLinks();
-            input.focus();
+            if (focusAfter) {
+                input.focus();
+            }
+            return true;
         };
 
         addButton?.addEventListener("click", addLink);
@@ -451,6 +477,33 @@
             if (event.key === "Enter") {
                 event.preventDefault();
                 addLink();
+            }
+        });
+
+        const commitPendingLink = () => {
+            if (input?.value.trim()) {
+                addLink({ focusAfter: false, showEmptyError: false });
+            }
+        };
+
+        links.addEventListener("focusout", (event) => {
+            if (!links.contains(event.relatedTarget)) {
+                commitPendingLink();
+            }
+        });
+
+        document.addEventListener("pointerdown", (event) => {
+            if (!links.contains(event.target)) {
+                commitPendingLink();
+            }
+        });
+
+        bookingForm?.addEventListener("submit", (event) => {
+            if (input?.value.trim() && !addLink({
+                focusAfter: false,
+                showEmptyError: false
+            })) {
+                event.preventDefault();
             }
         });
 
@@ -556,12 +609,14 @@
             item.dataset.bookingDocumentItem = "";
             item.dataset.documentId = id;
 
+            text.className = "booking-added-item-label";
+            text.title = file.name;
             text.textContent =
                 `${file.name} (${formatFileSize(file.size)})`;
 
             removeButton.type = "button";
             removeButton.dataset.bookingDocumentRemove = "";
-            removeButton.textContent = "Remove";
+            removeButton.innerHTML = deleteIcon;
             removeButton.setAttribute(
                 "aria-label",
                 `Remove ${file.name}`);
@@ -570,15 +625,22 @@
             list.append(item);
         };
 
-        const addDocument = () => {
+        const addDocument = ({
+            focusAfter = true,
+            showEmptyError = true
+        } = {}) => {
             const file = input?.files?.[0];
 
             if (!input || !file || !inputStore) {
-                setDocumentFeedback(
-                    "Choose a document before selecting Add.",
-                    true);
-                input?.focus();
-                return;
+                if (showEmptyError) {
+                    setDocumentFeedback(
+                        "Choose a document before selecting Add.",
+                        true);
+                    if (focusAfter) {
+                        input?.focus();
+                    }
+                }
+                return false;
             }
 
             const extension = file.name
@@ -589,8 +651,10 @@
                 setDocumentFeedback(
                     "Use a PDF, Word document, PNG, or JPG file.",
                     true);
-                input.focus();
-                return;
+                if (focusAfter) {
+                    input.focus();
+                }
+                return false;
             }
 
             if (file.size <= 0 || file.size > maximumFileSize) {
@@ -598,8 +662,10 @@
                     "Each document must be larger than 0 bytes " +
                         "and no more than 10 MB.",
                     true);
-                input.focus();
-                return;
+                if (focusAfter) {
+                    input.focus();
+                }
+                return false;
             }
 
             const isDuplicate = getStoredInputs().some(
@@ -614,8 +680,10 @@
                 setDocumentFeedback(
                     "This document has already been added.",
                     true);
-                input.focus();
-                return;
+                if (focusAfter) {
+                    input.focus();
+                }
+                return false;
             }
 
             const id = String(documentId++);
@@ -640,7 +708,10 @@
                 fileName.textContent = "Choose a document";
             }
             updateDocuments();
-            input.focus();
+            if (focusAfter) {
+                input.focus();
+            }
+            return true;
         };
 
         addButton?.addEventListener("click", addDocument);
@@ -650,6 +721,36 @@
                 event.target === input) {
                 event.preventDefault();
                 addDocument();
+            }
+        });
+
+        const commitPendingDocument = () => {
+            if (input?.files?.[0]) {
+                addDocument({
+                    focusAfter: false,
+                    showEmptyError: false
+                });
+            }
+        };
+
+        documents.addEventListener("focusout", (event) => {
+            if (!documents.contains(event.relatedTarget)) {
+                commitPendingDocument();
+            }
+        });
+
+        document.addEventListener("pointerdown", (event) => {
+            if (!documents.contains(event.target)) {
+                commitPendingDocument();
+            }
+        });
+
+        bookingForm?.addEventListener("submit", (event) => {
+            if (input?.files?.[0] && !addDocument({
+                focusAfter: false,
+                showEmptyError: false
+            })) {
+                event.preventDefault();
             }
         });
 

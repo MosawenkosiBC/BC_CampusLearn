@@ -39,7 +39,7 @@
 @await Html.PartialAsync(
     "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
 
-<section class="container py-4 booking-create-page">
+<section class="container py-4 booking-create-page @(Model.MobileTermsAccepted ? "has-mobile-terms-acceptance" : null)">
 
     <h1 class="booking-create-title">Confirm Your Booking</h1>
 
@@ -99,56 +99,64 @@
             <p>Complete the details below to book your tutoring session.</p>
         </header>
 
+        <nav class="booking-mobile-progress @(startOnSecondStage ? "is-stage-two" : null)"
+             aria-label="Booking form progress">
+            <button type="button"
+                    class="booking-mobile-step @(!startOnSecondStage ? "is-active" : "is-complete")"
+                    data-booking-stage-target="1"
+                    aria-current="@(!startOnSecondStage ? "step" : null)">
+                <span data-booking-step-number="5">5</span>
+                <span>
+                    <strong>Details</strong>
+                </span>
+            </button>
+
+            <button type="button"
+                    class="booking-mobile-step @(startOnSecondStage ? "is-active" : null)"
+                    data-booking-stage-target="2"
+                    aria-current="@(startOnSecondStage ? "step" : null)">
+                <span data-booking-step-number="6">6</span>
+                <span>
+                    <strong>Prepare</strong>
+                </span>
+            </button>
+
+            <button type="button"
+                    class="booking-mobile-step"
+                    data-booking-stage-target="3">
+                <span data-booking-step-number="7">7</span>
+                <span>
+                    <strong>Confirm</strong>
+                </span>
+            </button>
+        </nav>
+
         <form method="post"
               enctype="multipart/form-data"
               class="booking-form-card"
               data-booking-form
               novalidate
-              aria-labelledby="booking-form-title">
+              aria-label="Booking confirmation form">
             <input type="hidden"
                    asp-for="Input.TutorAvailabilityId" />
             <input type="hidden"
                    asp-for="Input.ProgrammeModuleId" />
+            <input type="hidden"
+                   asp-for="MobileTermsAccepted" />
 
             <div asp-validation-summary="ModelOnly"
                  class="booking-validation-summary text-danger"></div>
 
-            <nav class="booking-mobile-progress @(startOnSecondStage ? "is-stage-two" : null)"
-                 aria-label="Booking form progress">
-                <button type="button"
-                        class="booking-mobile-step @(!startOnSecondStage ? "is-active" : "is-complete")"
-                        data-booking-stage-target="1"
-                        aria-current="@(!startOnSecondStage ? "step" : null)">
-                    <span data-booking-step-number="1">
-                        1
-                    </span>
-                    <span>
-                        <strong>Details</strong>
-                    </span>
-                </button>
-
-                <button type="button"
-                        class="booking-mobile-step @(startOnSecondStage ? "is-active" : null)"
-                        data-booking-stage-target="2"
-                        aria-current="@(startOnSecondStage ? "step" : null)">
-                    <span data-booking-step-number="2">2</span>
-                    <span>
-                        <strong>Prepare</strong>
-                    </span>
-                </button>
-
-                <button type="button"
-                        class="booking-mobile-step"
-                        data-booking-stage-target="3">
-                    <span data-booking-step-number="3">3</span>
-                    <span>
-                        <strong>Confirm</strong>
-                    </span>
-                </button>
-            </nav>
-
             <section class="booking-form-stage @(!startOnSecondStage ? "is-active" : null)"
                      data-booking-stage="1">
+                <header class="booking-stage-header">
+                    <h2 tabindex="-1">5. Details</h2>
+                    <p>
+                        Confirm your session information and add
+                        meeting location.
+                    </p>
+                </header>
+
                 <div class="booking-field-grid">
                 <div class="booking-field">
                     <label for="booking-tutor-name">Tutor Name</label>
@@ -212,13 +220,24 @@
                     <button type="button"
                             class="booking-mobile-next"
                             data-booking-next-to="2">
-                        Continue
+                        <span>Next</span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m9 18l6-6l-6-6" />
+                        </svg>
                     </button>
                 </div>
             </section>
 
             <section class="booking-form-stage @(startOnSecondStage ? "is-active" : null)"
                      data-booking-stage="2">
+                <header class="booking-stage-header">
+                    <h2 tabindex="-1">6. Prepare</h2>
+                    <p>
+                        Add helpful resources and explain what you would like
+                        to cover in the session.
+                    </p>
+                </header>
+
                 <div class="booking-field-grid booking-attachment-fields">
                 <div class="booking-field booking-links-field"
                      data-booking-links>
@@ -226,11 +245,6 @@
                         <label for="booking-link">Links</label>
                         <span>Up to 3</span>
                     </div>
-                    <p id="booking-links-help"
-                       class="booking-field-help">
-                        Share useful pages or resources that will help your
-                        tutor prepare.
-                    </p>
 
                     <div class="booking-link-entry">
                         <div class="booking-link-input-wrap">
@@ -280,11 +294,30 @@
                             <li class="booking-link-item"
                                 data-booking-link-item
                                 data-link-index="@index">
-                                <span>@existingLinks[index]</span>
+                                <a class="booking-added-item-label"
+                                   href="@existingLinks[index]"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   title="@existingLinks[index]">
+                                    @existingLinks[index]
+                                </a>
                                 <button type="button"
                                         data-booking-link-remove
                                         aria-label="Remove @existingLinks[index]">
-                                    Remove
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         width="1em"
+                                         height="1em"
+                                         viewBox="0 0 24 24"
+                                         aria-hidden="true">
+                                        <path d="M0 0h24v24H0z"
+                                              fill="none" />
+                                        <path fill="none"
+                                              stroke="currentColor"
+                                              stroke-linecap="round"
+                                              stroke-linejoin="round"
+                                              stroke-width="1.5"
+                                              d="M1 5h22m-8.75-4h-4.5a1.5 1.5 0 0 0-1.5 1.5V5h7.5V2.5a1.5 1.5 0 0 0-1.5-1.5m-4.5 16.75v-7.5m4.5 7.5v-7.5m4.61 11.37A1.49 1.49 0 0 1 17.37 23H6.63a1.49 1.49 0 0 1-1.49-1.38L3.75 5h16.5z" />
+                                    </svg>
                                 </button>
                             </li>
                         }
@@ -301,11 +334,6 @@
                         <label for="booking-document">Document</label>
                         <span>Up to 2</span>
                     </div>
-                    <p id="booking-documents-help"
-                       class="booking-field-help">
-                        Attach notes, study material, or examples that show
-                        what you need help with.
-                    </p>
 
                     <div class="booking-document-entry">
                         <div class="booking-document-picker">
@@ -396,12 +424,18 @@
                     <button type="button"
                             class="booking-mobile-back"
                             data-booking-back-to="1">
-                        Back
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m15 18l-6-6l6-6" />
+                        </svg>
+                        <span>Back</span>
                     </button>
                     <button type="button"
                             class="booking-mobile-next"
                             data-booking-next-to="3">
-                        Continue
+                        <span>Next</span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m9 18l6-6l-6-6" />
+                        </svg>
                     </button>
                     <button type="submit"
                             class="booking-desktop-submit">
@@ -413,8 +447,8 @@
 
             <section class="booking-form-stage booking-confirm-stage"
                      data-booking-stage="3">
-                <header class="booking-confirm-heading">
-                    <h3>Booking Summary</h3>
+                <header class="booking-stage-header booking-confirm-heading">
+                    <h2 tabindex="-1">7. Confirm</h2>
                     <p>
                         Review your session details before confirming your
                         booking.
@@ -460,9 +494,17 @@
                     <button type="button"
                             class="booking-mobile-back"
                             data-booking-back-to="2">
-                        Back
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m15 18l-6-6l6-6" />
+                        </svg>
+                        <span>Back</span>
                     </button>
-                    <button type="submit">Book Session</button>
+                    <button type="submit">
+                        <span>Book Session</span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m9 18l6-6l-6-6" />
+                        </svg>
+                    </button>
                 </div>
             </section>
         </form>

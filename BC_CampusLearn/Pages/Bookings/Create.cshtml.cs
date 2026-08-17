@@ -9,6 +9,9 @@ namespace BC_CampusLearn.Pages.Bookings;
 [Authorize]
 public class CreateModel : PageModel
 {
+    private const string MobileTermsAcceptanceKey =
+        "MobileBookingTermsAcceptance";
+
     private readonly IBookingService _bookingService;
 
     public CreateModel(IBookingService bookingService)
@@ -20,6 +23,9 @@ public class CreateModel : PageModel
     public CreateBookingInput Input { get; set; }
         = new CreateBookingInput();
 
+    [BindProperty]
+    public bool MobileTermsAccepted { get; set; }
+
     public BookingPreviewViewModel Preview
     { get; private set; }
         = null!;
@@ -27,6 +33,7 @@ public class CreateModel : PageModel
     public async Task<IActionResult> OnGetAsync(
         int slotId,
         int? programmeModuleId,
+        bool mobileTerms,
         CancellationToken cancellationToken)
     {
         BookingPreviewViewModel? preview =
@@ -52,12 +59,44 @@ public class CreateModel : PageModel
                 programmeModuleId.Value;
         }
 
+        MobileTermsAccepted =
+            mobileTerms &&
+            programmeModuleId.HasValue &&
+            HasValidMobileTermsAcceptance(
+                slotId,
+                programmeModuleId.Value);
+
+        if (MobileTermsAccepted)
+        {
+            Input.AcceptedTerms = true;
+        }
+
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(
         CancellationToken cancellationToken)
     {
+        if (MobileTermsAccepted)
+        {
+            bool hasValidAcceptance =
+                HasValidMobileTermsAcceptance(
+                    Input.TutorAvailabilityId,
+                    Input.ProgrammeModuleId);
+
+            ModelState.Remove("Input.AcceptedTerms");
+            Input.AcceptedTerms = hasValidAcceptance;
+
+            if (!hasValidAcceptance)
+            {
+                MobileTermsAccepted = false;
+                ModelState.AddModelError(
+                    "Input.AcceptedTerms",
+                    "Review and accept the terms and conditions " +
+                    "before booking the session.");
+            }
+        }
+
         if (!ModelState.IsValid)
         {
             return await ReloadPageAsync(
@@ -84,8 +123,22 @@ public class CreateModel : PageModel
 
         TempData["SuccessMessage"] =
             "Your tutoring session was booked successfully.";
+        TempData.Remove(MobileTermsAcceptanceKey);
 
         return RedirectToPage("/Bookings/Index");
+    }
+
+    private bool HasValidMobileTermsAcceptance(
+        int slotId,
+        int programmeModuleId)
+    {
+        string expectedValue =
+            $"{slotId}:{programmeModuleId}";
+
+        return string.Equals(
+            TempData.Peek(MobileTermsAcceptanceKey) as string,
+            expectedValue,
+            StringComparison.Ordinal);
     }
 
     private async Task<IActionResult> ReloadPageAsync(

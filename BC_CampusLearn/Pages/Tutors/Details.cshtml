@@ -184,6 +184,14 @@
                 <aside class="module-selector"
                        aria-labelledby="module-selector-heading">
 
+                    <h3 id="module-selector-heading"
+                        class="booking-selection-step module-step-heading"
+                        aria-label="Step 1: Select a module">
+                        <span class="booking-selection-step-number"
+                              aria-hidden="true">1</span>
+                        <span>Select a module</span>
+                    </h3>
+
                     <select class="module-select-mobile"
                             data-module-select
                             aria-labelledby="module-selector-heading">
@@ -273,11 +281,6 @@
                         </p>
                     </div>
 
-                    <h3 id="module-selector-heading"
-                        class="module-heading-desktop">
-                        Select a module
-                    </h3>
-
                     <div class="module-filter-desktop">
                         <svg viewBox="0 0 24 24"
                              aria-hidden="true">
@@ -329,6 +332,13 @@
                 </aside>
 
                 <div class="date-time-selector">
+                        <h3 class="booking-selection-step"
+                            aria-label="Step 2: Choose a date">
+                            <span class="booking-selection-step-number"
+                                  aria-hidden="true">2</span>
+                            <span>Choose a date</span>
+                        </h3>
+
                         <div class="calendar-controls">
                             <button type="button"
                                     data-calendar-previous
@@ -364,7 +374,12 @@
                         </div>
 
                         <div class="slot-picker">
-                            <h3>Choose Your Preferred Slot</h3>
+                            <h3 class="booking-selection-step"
+                                aria-label="Step 3: Choose a time">
+                                <span class="booking-selection-step-number"
+                                      aria-hidden="true">3</span>
+                                <span>Choose a time</span>
+                            </h3>
                             <div class="slot-options"
                                  data-slot-options>
                             </div>
@@ -381,11 +396,11 @@
                             </p>
                         </div>
 
-                        <a class="save-session"
-                           data-save-session
-                           aria-disabled="true">
+                        <button type="button"
+                                class="save-session"
+                                data-save-session>
                             Save and Continue
-                        </a>
+                        </button>
 
                         <div hidden data-availability-data>
                             @foreach (
@@ -402,6 +417,92 @@
         </section>
     </div>
 </section>
+
+<div class="mobile-booking-terms-modal"
+     data-mobile-booking-terms-modal
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="mobile-booking-terms-title"
+     hidden>
+    <div class="mobile-booking-terms-dialog"
+         role="document">
+        <form method="post"
+              asp-page-handler="AcceptTerms"
+              asp-route-id="@Model.Tutor.TutorId"
+              data-mobile-booking-terms-form>
+            <header class="mobile-booking-terms-header">
+                <div class="booking-selection-step">
+                    <span class="booking-selection-step-number"
+                          aria-hidden="true">4</span>
+                    <div>
+                        <h2 id="mobile-booking-terms-title">
+                            Terms &amp; Conditions
+                        </h2>
+                    </div>
+                </div>
+                <button type="button"
+                        class="mobile-booking-terms-close"
+                        data-mobile-booking-terms-close
+                        aria-label="Close terms and conditions">
+                    <svg viewBox="0 0 24 24"
+                         aria-hidden="true">
+                        <path d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                </button>
+            </header>
+
+            <div class="mobile-booking-terms-body">
+                <ul>
+                    <li>
+                        All appointments with tutors must be scheduled a day
+                        ahead. We cannot organise a tutor for you at short
+                        notice.
+                    </li>
+                    <li>All sessions are limited to 1 hour.</li>
+                    <li>You must come prepared for the sessions.</li>
+                    <li>
+                        You will be given some exercises to do in your
+                        sessions.
+                    </li>
+                    <li>All online sessions via MS Teams are recorded.</li>
+                    <li>
+                        All face-to-face sessions are held at the study room.
+                    </li>
+                    <li>Respect the time and effort of your tutor.</li>
+                    <li>
+                        You will be required to complete a tutor evaluation
+                        form.
+                    </li>
+                </ul>
+                <p>
+                    For any inquiries, email
+                    <a href="mailto:tutors@belgiumcampus.ac.za">
+                        tutors@belgiumcampus.ac.za
+                    </a>.
+                </p>
+            </div>
+
+            <input type="hidden"
+                   name="slotId"
+                   data-mobile-terms-slot />
+            <input type="hidden"
+                   name="programmeModuleId"
+                   data-mobile-terms-module />
+
+            <footer class="mobile-booking-terms-actions">
+                <button type="button"
+                        class="mobile-booking-terms-cancel"
+                        data-mobile-booking-terms-close>
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="mobile-booking-terms-agree">
+                    Agree and Continue
+                </button>
+            </footer>
+        </form>
+    </div>
+</div>
 
 @section Scripts {
     <script src="~/js/components/navigation-drawer.js"

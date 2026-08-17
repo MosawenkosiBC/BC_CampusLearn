@@ -88,11 +88,21 @@
     ];
     const moduleSearchEmpty = root.querySelector(
         "[data-module-search-empty]");
-    const mobileModuleLayout = window.matchMedia(
-        "(max-width: 575.98px)");
     const moduleSummary = root.querySelector("[data-selection-module]");
     const timeSummary = root.querySelector("[data-selection-time]");
     const saveButton = root.querySelector("[data-save-session]");
+    const termsModal = document.querySelector(
+        "[data-mobile-booking-terms-modal]");
+    const termsForm = termsModal?.querySelector(
+        "[data-mobile-booking-terms-form]");
+    const termsSlotInput = termsModal?.querySelector(
+        "[data-mobile-terms-slot]");
+    const termsModuleInput = termsModal?.querySelector(
+        "[data-mobile-terms-module]");
+    const termsCloseButtons = termsModal?.querySelectorAll(
+        "[data-mobile-booking-terms-close]") ?? [];
+    const termsAgreeButton = termsModal?.querySelector(
+        ".mobile-booking-terms-agree");
     const monthNames = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
@@ -100,6 +110,9 @@
 
     let selectedModule = null;
     let selectedSlot = null;
+    let validationAttempted = false;
+    let termsModalOpen = false;
+    let termsCloseTimer = null;
     const today = startOfDay(new Date());
     const finalBookableMonth = new Date(
         today.getFullYear(),
@@ -198,8 +211,7 @@
     }
 
     function openModuleSearch() {
-        if (!mobileModuleLayout.matches ||
-            !moduleSearchPanel ||
+        if (!moduleSearchPanel ||
             !moduleSearchTrigger) {
             return;
         }
@@ -263,12 +275,6 @@
         if (event.key === "Escape") {
             event.preventDefault();
             closeModuleSearch(true);
-        }
-    });
-
-    mobileModuleLayout.addEventListener("change", (event) => {
-        if (!event.matches) {
-            closeModuleSearch();
         }
     });
 
@@ -452,7 +458,9 @@
     function updateSummary() {
         moduleSummary.textContent = selectedModule
             ? `${selectedModule.code}: ${selectedModule.name}`
-            : "No module selected";
+            : validationAttempted
+                ? "Please select a module."
+                : "No module selected";
 
         if (selectedSlot) {
             const end =
@@ -465,20 +473,122 @@
                     year: "numeric"
                 })}, ${formatTime(selectedSlot.date)} – ${formatTime(end)}`;
         } else {
-            timeSummary.textContent = "No date or time selected";
+            timeSummary.textContent = validationAttempted
+                ? "Please select a date and time."
+                : "No date or time selected";
         }
 
-        const isComplete = selectedModule && selectedSlot;
-        saveButton.setAttribute("aria-disabled", String(!isComplete));
-
-        if (isComplete) {
-            saveButton.href =
-                `/Bookings/Create?slotId=${selectedSlot.id}` +
-                `&programmeModuleId=${selectedModule.id}`;
-        } else {
-            saveButton.removeAttribute("href");
-        }
+        moduleSummary.classList.toggle(
+            "is-validation-error",
+            validationAttempted && !selectedModule);
+        timeSummary.classList.toggle(
+            "is-validation-error",
+            validationAttempted && !selectedSlot);
     }
+
+    function closeTermsModal(restoreFocus = true) {
+        if (!termsModal || !termsModalOpen) {
+            return;
+        }
+
+        termsModalOpen = false;
+        termsModal.classList.add("is-closing");
+
+        const finishClose = () => {
+            termsModal.hidden = true;
+            termsModal.classList.remove("is-closing");
+            document.body.classList.remove("mobile-booking-terms-open");
+            termsCloseTimer = null;
+
+            if (restoreFocus) {
+                saveButton.focus();
+            }
+        };
+
+        const reducedMotion = window.matchMedia(
+            "(prefers-reduced-motion: reduce)").matches;
+
+        if (reducedMotion || !mobileProfileLayout.matches) {
+            finishClose();
+            return;
+        }
+
+        termsCloseTimer = window.setTimeout(finishClose, 190);
+    }
+
+    function openTermsModal() {
+        if (!termsModal || !selectedModule || !selectedSlot) {
+            return;
+        }
+
+        if (termsSlotInput) {
+            termsSlotInput.value = String(selectedSlot.id);
+        }
+
+        if (termsModuleInput) {
+            termsModuleInput.value = String(selectedModule.id);
+        }
+
+        if (termsCloseTimer !== null) {
+            window.clearTimeout(termsCloseTimer);
+            termsCloseTimer = null;
+        }
+
+        termsModal.classList.remove("is-closing");
+        termsModal.hidden = false;
+        termsModalOpen = true;
+        document.body.classList.add("mobile-booking-terms-open");
+        termsModal.querySelector(
+            "[data-mobile-booking-terms-close]")?.focus();
+    }
+
+    termsCloseButtons.forEach((button) => {
+        button.addEventListener("click", () => closeTermsModal());
+    });
+
+    termsModal?.addEventListener("click", (event) => {
+        if (event.target === termsModal) {
+            closeTermsModal();
+        }
+    });
+
+    termsModal?.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            event.preventDefault();
+            closeTermsModal();
+        }
+    });
+
+    termsForm?.addEventListener("submit", () => {
+        if (termsAgreeButton) {
+            termsAgreeButton.disabled = true;
+            termsAgreeButton.textContent = "Continuing…";
+        }
+    });
+
+    mobileProfileLayout.addEventListener("change", (event) => {
+        if (!event.matches) {
+            closeTermsModal(false);
+        }
+    });
+
+    saveButton.addEventListener("click", () => {
+        validationAttempted = true;
+        updateSummary();
+
+        if (!selectedModule || !selectedSlot) {
+            return;
+        }
+
+        if (mobileProfileLayout.matches && termsModal) {
+            openTermsModal();
+            return;
+        }
+
+        window.location.assign(
+            `/Bookings/Create?slotId=${selectedSlot.id}` +
+            `&programmeModuleId=${selectedModule.id}`);
+    });
 
     function toDateKey(date) {
         const year = date.getFullYear();
