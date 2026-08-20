@@ -1,3 +1,13 @@
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0s;
+}
+
 .tutor-profile-page {
     align-items: flex-start;
     display: grid;
@@ -18,6 +28,10 @@
 .tutor-profile-page > div {
     max-width: 100%;
     min-width: 0;
+}
+
+.tutor-profile-mobile-card {
+    display: contents;
 }
 
 .tutor-profile-page::before {
@@ -913,30 +927,139 @@ a.tutor-profile-nav-link:focus-visible {
 }
 
 @media (max-width: 767.98px) {
+    .tutor-profile-mobile-card {
+        background-color: transparent;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        display: grid;
+        gap: 1.5rem;
+        min-width: 0;
+        overflow: visible;
+        width: 100%;
+    }
+
     .tutor-profile-card {
+        background-color: transparent;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        display: contents;
+        overflow: visible;
+        padding: 0;
+    }
+
+    .tutor-personal-details,
+    .tutor-public-profile,
+    .tutor-statistics-content {
         background-color: #fff;
-        border: 1px solid #e3e5e8;
-        border-radius: 0.55rem;
+        border: 0;
+        border-radius: 0 0 0.55rem 0.55rem;
         box-shadow: var(--campus-card-shadow);
+        margin: -1.5rem 0 0;
+        min-width: 0;
         overflow: hidden;
-        padding: 1.25rem 0 0;
+        position: relative;
+        width: 100%;
+    }
+
+    .tutor-personal-details-card,
+    .tutor-public-profile-card {
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .tutor-personal-details > .tutor-danger-zone,
+    .tutor-public-profile > .tutor-danger-zone {
+        margin: 1.5rem 1.25rem 1.25rem;
+        max-width: calc(100% - 2.5rem);
+        padding: 1.25rem;
+        width: auto;
+    }
+
+    .tutor-statistics-content {
+        padding: 1.25rem;
+    }
+
+    .tutor-statistics-content > .tutor-danger-zone {
+        margin: 1.5rem 0 0;
+        max-width: 100%;
+        padding: 1.25rem;
+        width: auto;
+    }
+
+    .tutor-danger-zone > .tutor-deregistration-button,
+    .tutor-danger-zone > .tutor-deregistration-pending {
+        margin-left: 0;
+        width: 100%;
     }
 
     .tutor-profile-identity {
-        padding-inline: 1.25rem;
+        background:
+            radial-gradient(circle at 5% 12%, rgba(74, 193, 193, 0.13) 0 1rem, transparent 1.05rem),
+            radial-gradient(circle at 97% 29%, rgba(173, 1, 81, 0.11) 0 0.55rem, transparent 0.6rem),
+            radial-gradient(circle at 95% 91%, rgba(173, 1, 81, 0.09) 0 1.45rem, transparent 1.5rem),
+            radial-gradient(circle at 50% 100%, rgba(74, 193, 193, 0.11) 0 0.7rem, transparent 0.75rem),
+            radial-gradient(circle at 1% 69%, rgba(74, 193, 193, 0.12) 0 0.35rem, transparent 0.4rem),
+            #fff;
+        border: 0;
+        border-radius: 0.55rem;
+        box-shadow: var(--campus-card-shadow);
+        isolation: isolate;
+        overflow: hidden;
+        padding: 1.25rem;
+        position: relative;
+    }
+
+    .tutor-profile-identity::before,
+    .tutor-profile-identity::after {
+        content: "";
+        height: 2.35rem;
+        pointer-events: none;
+        position: absolute;
+        width: 2.35rem;
+        z-index: 0;
+    }
+
+    .tutor-profile-identity::before {
+        border-right: 2px solid #ad0151;
+        border-top: 2px solid #ad0151;
+        border-radius: 0 0.35rem 0 0;
+        right: 0.65rem;
+        top: 0.65rem;
+    }
+
+    .tutor-profile-identity::after {
+        border-bottom: 2px solid #ad0151;
+        border-left: 2px solid #ad0151;
+        border-radius: 0 0 0 0.35rem;
+        bottom: 0.65rem;
+        left: 0.65rem;
+    }
+
+    .tutor-profile-identity > * {
+        position: relative;
+        z-index: 1;
     }
 
     .tutor-profile-divider {
-        margin-bottom: 0;
+        display: none;
     }
 
     .tutor-profile-nav {
-        border-bottom: 1px solid #dedfe2;
+        background-color: #fff;
+        border: 0;
+        border-radius: 0.55rem 0.55rem 0 0;
+        box-shadow:
+            inset 0 -1px #dedfe2,
+            var(--campus-card-shadow);
         display: flex;
         flex-direction: row;
         gap: 0;
         overflow-x: auto;
         overscroll-behavior-inline: contain;
+        position: relative;
         scrollbar-width: thin;
         -webkit-overflow-scrolling: touch;
     }
@@ -945,26 +1068,147 @@ a.tutor-profile-nav-link:focus-visible {
         border-bottom: 3px solid transparent;
         border-left: 0;
         flex: 1 0 max-content;
+        gap: 0;
         justify-content: center;
         min-height: 3.35rem;
         padding: 0.75rem 1rem;
+        transition:
+            color 180ms ease,
+            background-color 180ms ease;
         white-space: nowrap;
     }
 
     .tutor-profile-nav-link.is-active {
         border-bottom-color: #ad0151;
         border-left-color: transparent;
+        font-weight: 600;
+    }
+
+    .tutor-profile-nav.has-animated-indicator .tutor-profile-nav-link.is-active {
+        border-bottom-color: transparent;
+    }
+
+    .tutor-profile-nav-link.is-switching-to {
+        animation: tutor-profile-tab-activate 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .tutor-profile-tab-indicator {
+        background-color: #ad0151;
+        bottom: 0;
+        height: 3px;
+        left: 0;
+        pointer-events: none;
+        position: absolute;
+        z-index: 1;
+    }
+
+    .tutor-profile-tab-indicator.is-ready {
+        transition:
+            transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+            width 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    ::view-transition-group(root) {
+        animation-duration: 220ms;
+    }
+
+    ::view-transition-old(root) {
+        animation: tutor-profile-page-fade-out 160ms ease-in both;
+    }
+
+    ::view-transition-new(root) {
+        animation: tutor-profile-page-fade-in 220ms ease-out both;
     }
 
     .tutor-profile-nav-link > svg {
-        height: 1.15rem;
-        width: 1.15rem;
+        display: none;
+    }
+
+    .tutor-modules-heading {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .tutor-module-update-action {
+        align-self: flex-start;
+        justify-content: flex-start;
+        margin-left: 0;
+        max-width: 100%;
+    }
+
+    .tutor-module-update-action button {
+        gap: 0.35rem;
+        max-width: 100%;
+        padding: 0.25rem 0;
+    }
+
+    .tutor-module-update-icon {
+        flex-basis: 1.35rem;
+        height: 1.35rem;
+        width: 1.35rem;
+    }
+
+    .tutor-module-update-icon svg {
+        height: 0.9rem;
+        width: 0.9rem;
+    }
+
+    .tutor-module-update-copy strong {
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .tutor-profile-preference-options {
+        gap: 0.2rem 0.75rem;
+    }
+
+    .tutor-profile-preference-options label > span {
+        padding-block: 0.2rem;
     }
 
     .tutor-personal-details > h2,
     .tutor-public-profile > h2,
     .tutor-statistics-header h2 {
         display: none;
+    }
+}
+
+@keyframes tutor-profile-page-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes tutor-profile-tab-activate {
+    from {
+        opacity: 0.65;
+        transform: translateY(0.2rem) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes tutor-profile-page-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tutor-profile-tab-indicator,
+    .tutor-profile-nav-link {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    ::view-transition-group(root),
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation-duration: 0s !important;
     }
 }
 
@@ -1025,35 +1269,9 @@ a.tutor-profile-nav-link:focus-visible {
         width: 100%;
     }
 
-    .tutor-modules-heading {
-        align-items: stretch;
-        flex-direction: column;
-        gap: 0.65rem;
-    }
-
-    .tutor-module-update-action {
-        align-self: flex-start;
-        margin-left: 0;
-        max-width: 100%;
-    }
-
-    .tutor-module-update-action button {
-        max-width: 100%;
-    }
-
     .tutor-manage-profile-title {
         max-width: 100%;
         text-align: center;
     }
 
-    .tutor-danger-zone {
-        padding: 1.25rem;
-        width: 100%;
-    }
-
-    .tutor-danger-zone .tutor-deregistration-button,
-    .tutor-danger-zone .tutor-deregistration-pending {
-        margin-left: 0;
-        width: 100%;
-    }
 }

@@ -2,10 +2,61 @@ document.addEventListener("DOMContentLoaded", () => {
     const profileTabs = document.querySelector(".tutor-profile-nav");
     const activeProfileTab = profileTabs?.querySelector(
         ".tutor-profile-nav-link.is-active");
+    const mobileProfileTabs = window.matchMedia("(max-width: 767.98px)");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    if (profileTabs && activeProfileTab &&
-        window.matchMedia("(max-width: 767.98px)").matches) {
-        profileTabs.scrollLeft = activeProfileTab.offsetLeft;
+    if (profileTabs && activeProfileTab && mobileProfileTabs.matches) {
+        const profileTabLinks = Array.from(
+            profileTabs.querySelectorAll(".tutor-profile-nav-link"));
+        const activeTabIndex = profileTabLinks.indexOf(activeProfileTab);
+        const indicator = document.createElement("span");
+        let isNavigating = false;
+
+        indicator.className = "tutor-profile-tab-indicator";
+        indicator.setAttribute("aria-hidden", "true");
+        profileTabs.append(indicator);
+        profileTabs.classList.add("has-animated-indicator");
+
+        const positionIndicator = (link, animate = true) => {
+            if (!link) {
+                return;
+            }
+
+            indicator.classList.toggle("is-ready", animate);
+            indicator.style.width = `${link.offsetWidth}px`;
+            indicator.style.transform = `translateX(${link.offsetLeft}px)`;
+        };
+
+        profileTabs.scrollLeft = Math.max(
+            0,
+            activeProfileTab.offsetLeft -
+                ((profileTabs.clientWidth - activeProfileTab.offsetWidth) / 2));
+        positionIndicator(activeProfileTab, false);
+        requestAnimationFrame(() => indicator.classList.add("is-ready"));
+
+        profileTabLinks.forEach((link, targetTabIndex) => {
+            link.addEventListener("click", (event) => {
+                if (isNavigating || targetTabIndex === activeTabIndex ||
+                    event.button !== 0 || event.metaKey || event.ctrlKey ||
+                    event.shiftKey || event.altKey || !mobileProfileTabs.matches) {
+                    return;
+                }
+
+                if (reducedMotion.matches) {
+                    return;
+                }
+
+                event.preventDefault();
+                isNavigating = true;
+                activeProfileTab.classList.remove("is-active");
+                activeProfileTab.removeAttribute("aria-current");
+                link.classList.add("is-active", "is-switching-to");
+                link.setAttribute("aria-current", "page");
+                positionIndicator(link);
+
+                window.setTimeout(() => window.location.assign(link.href), 190);
+            });
+        });
     }
 
     document.querySelectorAll(".modal[data-open-on-load='true']").forEach((element) => {
