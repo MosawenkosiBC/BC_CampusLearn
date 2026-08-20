@@ -113,12 +113,13 @@
     width: 1.25rem;
 }
 
-.tutor-profile-camera:hover,
-.tutor-profile-photo-form:focus-within .tutor-profile-camera {
-    color: #ad0151;
-    outline: 3px solid rgba(74, 193, 193, 0.38);
-    outline-offset: 2px;
+.tutor-profile-camera:hover {
     transform: scale(1.04);
+}
+
+.tutor-profile-photo-form:focus-within .tutor-profile-camera {
+    color: #262b32;
+    outline: 0;
 }
 
 .tutor-profile-image-error {
