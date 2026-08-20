@@ -281,6 +281,18 @@
     object-fit: cover;
 }
 
+.static-tutor-initials {
+    align-items: center;
+    background-color: rgba(74, 193, 193, 0.16);
+    color: #287f7f;
+    display: flex;
+    font-size: 3rem;
+    font-weight: 700;
+    height: 100%;
+    justify-content: center;
+    width: 100%;
+}
+
 .static-tutor-card h4 {
     font-size: 1.05rem;
     margin-bottom: 10px;

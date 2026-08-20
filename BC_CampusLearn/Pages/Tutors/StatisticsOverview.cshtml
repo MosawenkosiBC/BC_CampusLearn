@@ -1,0 +1,392 @@
+@page
+@model BC_CampusLearn.Pages.Tutors.StatisticsOverviewModel
+
+@{
+    ViewData["Title"] = "Statistics Overview";
+    string trendLabels = System.Text.Json.JsonSerializer.Serialize(
+        Model.Statistics.TrendLabels);
+    string trendValues = System.Text.Json.JsonSerializer.Serialize(
+        Model.Statistics.TrendValues);
+    string statusLabels = System.Text.Json.JsonSerializer.Serialize(
+        Model.Statistics.StatusBreakdown.Select(item => item.Label));
+    string statusValues = System.Text.Json.JsonSerializer.Serialize(
+        Model.Statistics.StatusBreakdown.Select(item => item.Count));
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/components/navigation-drawer.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/tutor-profile.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/tutor-statistics.css"
+          asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<section class="tutor-profile-page tutor-statistics-page py-4">
+    <h1 class="tutor-manage-profile-title">Manage Account</h1>
+
+    <aside class="tutor-profile-card" aria-label="Tutor account navigation">
+        <div class="tutor-profile-identity">
+            <div class="tutor-profile-photo-wrap">
+                @if (!string.IsNullOrWhiteSpace(Model.ProfileImagePath))
+                {
+                    <img class="tutor-profile-photo"
+                         src="@Model.ProfileImagePath"
+                         alt="Profile photo of @Model.DisplayName" />
+                }
+                else
+                {
+                    <div class="tutor-profile-photo tutor-profile-initials"
+                         aria-label="@Model.DisplayName initials">
+                        @Model.Initials
+                    </div>
+                }
+
+                <form method="post"
+                      enctype="multipart/form-data"
+                      asp-page="/Tutors/Profile"
+                      asp-page-handler="UploadProfileImage"
+                      class="tutor-profile-photo-form">
+                    <input type="hidden"
+                           name="returnPage"
+                           value="/Tutors/StatisticsOverview" />
+                    <label class="tutor-profile-camera"
+                           for="tutor-statistics-profile-image"
+                           title="Add profile image">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             viewBox="0 0 24 24"
+                             aria-hidden="true">
+                            <path d="M9 4.5 7.7 6H5a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3h-2.7L15 4.5zm3 13a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9m0-2a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                        </svg>
+                        <span class="visually-hidden">Add profile image</span>
+                    </label>
+                    <input id="tutor-statistics-profile-image"
+                           name="ProfileImage"
+                           class="visually-hidden"
+                           type="file"
+                           accept="image/jpeg,image/png,image/webp"
+                           onchange="this.form.submit()" />
+                </form>
+            </div>
+
+            @if (TempData["ProfileImageError"] is string imageError)
+            {
+                <p class="tutor-profile-image-error" role="alert">@imageError</p>
+            }
+
+            <h1>@Model.DisplayName</h1>
+            <p>@Model.StudentNumber</p>
+        </div>
+
+        <div class="tutor-profile-divider"></div>
+
+        <nav class="tutor-profile-nav" aria-label="Tutor profile sections">
+            <a asp-page="/Tutors/Profile" class="tutor-profile-nav-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                        <circle cx="10" cy="7" r="4" />
+                        <path d="M11 14.035A14 14 0 0 0 10 14c-5 0-8 2.5-8 5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2q0-.504-.16-1m3.849-9.066l-.623-.623a1.063 1.063 0 0 0-1.503 0l-3.349 3.35a3.2 3.2 0 0 0-.872 1.629L15 15l1.71-.342a3.2 3.2 0 0 0 1.63-.872l3.349-3.349a1.063 1.063 0 0 0 0-1.503" />
+                    </g>
+                </svg>
+                <span>Personal Details</span>
+            </a>
+            <a asp-page="/Tutors/PublicProfile" class="tutor-profile-nav-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <g fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10" />
+                        <ellipse cx="12" cy="12" rx="4" ry="10" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2 12h20" />
+                    </g>
+                </svg>
+                <span>Public Profile</span>
+            </a>
+            <a asp-page="/Tutors/StatisticsOverview"
+               class="tutor-profile-nav-link is-active"
+               aria-current="page">
+                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <path fill="currentColor"
+                          d="M7 21H3v-8h4zm7 0h-4V3h4zm7-13v13h-4V8z" />
+                </svg>
+                <span>Statistics Overview</span>
+            </a>
+        </nav>
+    </aside>
+
+    <div class="tutor-statistics-content">
+        <header class="tutor-statistics-header">
+            <div>
+                <h2>Statistics Overview</h2>
+                <p>Performance based on your recorded tutoring sessions.</p>
+            </div>
+            <form method="get" class="tutor-statistics-range">
+                <label for="statistics-range">Period</label>
+                <select id="statistics-range"
+                        asp-for="Range"
+                        onchange="this.form.submit()">
+                    <option value="3m">Last 3 months</option>
+                    <option value="6m">Last 6 months</option>
+                    <option value="12m">Last 12 months</option>
+                    <option value="all">All time</option>
+                </select>
+            </form>
+        </header>
+
+        <div class="tutor-statistics-summary">
+            <article class="tutor-stat-card-premium is-magenta">
+                <span class="tutor-stat-card-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M8 2v3m8-3v3M4 9h16M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 9h3v3H8Z" /></svg>
+                </span>
+                <div>
+                    <p>Completed sessions</p>
+                    <strong>@Model.Statistics.CompletedSessions</strong>
+                    <span>@Model.PeriodLabel</span>
+                </div>
+            </article>
+            <article class="tutor-stat-card-premium is-teal">
+                <span class="tutor-stat-card-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                </span>
+                <div>
+                    <p>Students helped</p>
+                    <strong>@Model.Statistics.UniqueStudents</strong>
+                    <span>Unique students</span>
+                </div>
+            </article>
+            <article class="tutor-stat-card-premium is-charcoal">
+                <span class="tutor-stat-card-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                </span>
+                <div>
+                    <p>Tutoring hours</p>
+                    <strong>@Model.Statistics.TutoringHours</strong>
+                    <span>Completed hours</span>
+                </div>
+            </article>
+            <article class="tutor-stat-card-premium is-green">
+                <span class="tutor-stat-card-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 14l5-5 4 4 7-8" /><path d="M15 5h5v5" /></svg>
+                </span>
+                <div>
+                    <p>Completion rate</p>
+                    <strong>@Model.Statistics.CompletionRate.ToString("0.#")%</strong>
+                    <span>Completed vs cancelled</span>
+                </div>
+            </article>
+        </div>
+
+        <div class="tutor-statistics-primary-grid">
+            <section class="tutor-statistics-panel tutor-statistics-trend-panel">
+                <div class="tutor-statistics-panel-heading">
+                    <div>
+                        <h3>Session trend</h3>
+                        <p>Completed sessions over time</p>
+                    </div>
+                    <span class="tutor-statistics-period-badge">@Model.PeriodLabel</span>
+                </div>
+                <div class="tutor-statistics-chart-wrap">
+                    <canvas data-tutor-trend-chart
+                            data-labels="@trendLabels"
+                            data-values="@trendValues"
+                            aria-label="Completed sessions trend chart">
+                        Completed session counts by month.
+                    </canvas>
+                </div>
+            </section>
+
+            <section class="tutor-statistics-panel tutor-statistics-status-panel">
+                <div class="tutor-statistics-panel-heading">
+                    <div>
+                        <h3>Session status</h3>
+                        <p>Current booking distribution</p>
+                    </div>
+                </div>
+                <div class="tutor-statistics-doughnut-wrap">
+                    <canvas data-tutor-status-chart
+                            data-labels="@statusLabels"
+                            data-values="@statusValues"
+                            aria-label="Session status distribution chart">
+                        Session counts by booking status.
+                    </canvas>
+                    <div class="tutor-statistics-doughnut-total">
+                        <strong>@Model.Statistics.StatusBreakdown.Sum(item => item.Count)</strong>
+                        <span>Sessions</span>
+                    </div>
+                </div>
+                <div class="tutor-status-legend">
+                    @foreach (var status in Model.Statistics.StatusBreakdown)
+                    {
+                        <div>
+                            <span class="tutor-status-dot is-@status.CssClass"></span>
+                            <span>@status.Label</span>
+                            <strong>@status.Count</strong>
+                        </div>
+                    }
+                </div>
+            </section>
+        </div>
+
+        <div class="tutor-statistics-secondary-grid">
+            <section class="tutor-statistics-panel tutor-statistics-modules-panel">
+                <div class="tutor-statistics-panel-heading">
+                    <div>
+                        <h3>Top modules</h3>
+                        <p>Completed sessions by module</p>
+                    </div>
+                </div>
+                @if (Model.Statistics.TopModules.Count == 0)
+                {
+                    <div class="tutor-statistics-empty">
+                        Completed sessions will reveal your top modules.
+                    </div>
+                }
+                else
+                {
+                    <div class="tutor-module-ranking">
+                        @for (int index = 0; index < Model.Statistics.TopModules.Count; index++)
+                        {
+                            var module = Model.Statistics.TopModules[index];
+                            <div class="tutor-module-row">
+                                <span class="tutor-module-position">@(index + 1)</span>
+                                <div class="tutor-module-detail">
+                                    <div>
+                                        <strong>@module.ModuleName</strong>
+                                        <span>@module.SessionCount @(module.SessionCount == 1 ? "session" : "sessions")</span>
+                                    </div>
+                                    <div class="tutor-module-progress" aria-hidden="true">
+                                        <span style="width: @module.PercentageOfTopModule.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)%"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+
+            <section class="tutor-statistics-panel tutor-statistics-insights-panel">
+                <div class="tutor-statistics-panel-heading">
+                    <div>
+                        <h3>Activity insights</h3>
+                        <p>Patterns from your bookings</p>
+                    </div>
+                </div>
+                <dl class="tutor-statistics-insights">
+                    <div>
+                        <dt>Most requested module</dt>
+                        <dd>@Model.Statistics.MostRequestedModule</dd>
+                    </div>
+                    <div>
+                        <dt>Busiest tutoring day</dt>
+                        <dd>@Model.Statistics.BusiestDay</dd>
+                    </div>
+                    <div>
+                        <dt>Average booking lead time</dt>
+                        <dd>@Model.Statistics.AverageBookingLeadTime</dd>
+                    </div>
+                    <div class="is-action-needed">
+                        <dt>Pending requests</dt>
+                        <dd>@Model.Statistics.PendingRequests</dd>
+                    </div>
+                </dl>
+            </section>
+        </div>
+
+        @if (TempData["DeregistrationRequestSaved"] is true)
+        {
+            <div class="tutor-profile-success" role="status">
+                Your tutor deregistration request has been submitted for review.
+            </div>
+        }
+
+        <section class="tutor-danger-zone" aria-labelledby="statistics-danger-zone-title">
+            <div>
+                <h3 id="statistics-danger-zone-title">Danger Zone</h3>
+                <p>Submit a request to permanently leave the tutor programme.</p>
+            </div>
+            @if (Model.HasPendingDeregistrationRequest)
+            {
+                <span class="tutor-deregistration-pending">Request under review</span>
+            }
+            else
+            {
+                <button type="button"
+                        class="tutor-deregistration-button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#tutor-deregistration-modal">
+                    Request Tutor Deregistration
+                </button>
+            }
+        </section>
+    </div>
+</section>
+
+<div class="modal fade tutor-account-modal tutor-danger-modal"
+     id="tutor-deregistration-modal"
+     tabindex="-1"
+     aria-labelledby="tutor-deregistration-modal-title"
+     aria-hidden="true"
+     data-open-on-load="@Model.OpenDeregistrationModal.ToString().ToLowerInvariant()">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="RequestDeregistration">
+                <input type="hidden" asp-for="Range" />
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title" id="tutor-deregistration-modal-title">Request Tutor Deregistration</h2>
+                        <p>This request will be sent for review before your tutor access is removed.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div asp-validation-summary="ModelOnly" class="tutor-profile-validation"></div>
+                    <div class="tutor-profile-field">
+                        <label asp-for="DeregistrationInput.Reason"></label>
+                        <textarea asp-for="DeregistrationInput.Reason"
+                                  rows="5"
+                                  maxlength="1000"
+                                  placeholder="Explain why you want to leave the tutor programme."></textarea>
+                        <span asp-validation-for="DeregistrationInput.Reason"></span>
+                    </div>
+                    <div class="tutor-danger-confirmation">
+                        <p>
+                            To confirm, type
+                            <strong>@StatisticsOverviewModel.DeregistrationConfirmationPhrase</strong>
+                            below.
+                        </p>
+                        <input asp-for="DeregistrationInput.ConfirmationText"
+                               autocomplete="off"
+                               spellcheck="false"
+                               aria-describedby="deregistration-confirmation-help" />
+                        <span asp-validation-for="DeregistrationInput.ConfirmationText"></span>
+                        <small id="deregistration-confirmation-help">
+                            The phrase is case-sensitive.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="tutor-modal-cancel" data-bs-dismiss="modal">Keep tutoring</button>
+                    <button type="submit" class="tutor-modal-danger">Submit deregistration request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+    <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+    <script src="~/js/tutor-statistics.js"
+            asp-append-version="true"></script>
+    <script src="~/js/tutor-profile.js"
+            asp-append-version="true"></script>
+}

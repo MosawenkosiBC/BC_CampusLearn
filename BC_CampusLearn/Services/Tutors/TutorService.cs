@@ -7,9 +7,6 @@ namespace BC_CampusLearn.Services.Tutors;
 
 public class TutorService : ITutorService
 {
-    private const string FallbackProfileImage =
-        "/Media/tutorsProfiles/image.png";
-
     private readonly ApplicationDbContext _context;
 
     public TutorService(ApplicationDbContext context)
@@ -53,9 +50,11 @@ public class TutorService : ITutorService
                     ? tutor.BcUser.PersonnelNumber
                     : tutor.BcUser.DisplayName,
                 Biography = tutor.Biography ?? string.Empty,
-                ProfileImagePath = string.IsNullOrWhiteSpace(tutor.ProfileImagePath)
-                    ? FallbackProfileImage
-                    : tutor.ProfileImagePath,
+                ProfileImagePath = tutor.ProfileImagePath,
+                Initials = GetInitials(
+                    string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName)
+                        ? tutor.BcUser.PersonnelNumber
+                        : tutor.BcUser.DisplayName),
                 ProgrammeId = tutor.ProgrammeId,
                 ProgrammeName = tutor.Programme?.Name ?? "Belgium Campus programme",
                 YearOfStudy = tutor.YearOfStudy,
@@ -113,6 +112,10 @@ public class TutorService : ITutorService
             Email = tutor.BcUser.Email ?? string.Empty,
             Biography = tutor.Biography ?? string.Empty,
             ProfileImagePath = tutor.ProfileImagePath,
+            Initials = GetInitials(
+                string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName)
+                    ? tutor.BcUser.PersonnelNumber
+                    : tutor.BcUser.DisplayName),
             LinkedInUrl = GetSafeExternalUrl(tutor.LinkedInUrl),
             GitHubUrl = GetSafeExternalUrl(tutor.GitHubUrl),
             Modules = tutor.TutorCourseModules
@@ -180,6 +183,21 @@ public class TutorService : ITutorService
         }
 
         return uri.AbsoluteUri;
+    }
+
+    private static string GetInitials(string displayName)
+    {
+        string[] nameParts = displayName.Split(
+            ' ',
+            StringSplitOptions.RemoveEmptyEntries);
+
+        return nameParts.Length switch
+        {
+            > 1 => $"{nameParts[0][0]}{nameParts[^1][0]}"
+                .ToUpperInvariant(),
+            1 => nameParts[0][..1].ToUpperInvariant(),
+            _ => "T"
+        };
     }
 
 }

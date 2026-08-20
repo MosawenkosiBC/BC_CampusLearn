@@ -1,0 +1,243 @@
+@page
+@model BC_CampusLearn.Pages.Tutors.PublicProfileModel
+@using BC_CampusLearn.Models.Entities
+
+@{
+    ViewData["Title"] = "Public Profile";
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/components/navigation-drawer.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/tutor-profile.css"
+          asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<section class="tutor-profile-page py-4">
+    <h1 class="tutor-manage-profile-title">Manage Account</h1>
+
+    <aside class="tutor-profile-card" aria-label="Tutor account navigation">
+        <div class="tutor-profile-identity">
+            <div class="tutor-profile-photo-wrap">
+                @if (!string.IsNullOrWhiteSpace(Model.ProfileImagePath))
+                {
+                    <img class="tutor-profile-photo"
+                         src="@Model.ProfileImagePath"
+                         alt="Profile photo of @Model.DisplayName" />
+                }
+                else
+                {
+                    <div class="tutor-profile-photo tutor-profile-initials"
+                         aria-label="@Model.DisplayName initials">
+                        @Model.Initials
+                    </div>
+                }
+
+                <form method="post"
+                      enctype="multipart/form-data"
+                      asp-page="/Tutors/Profile"
+                      asp-page-handler="UploadProfileImage"
+                      class="tutor-profile-photo-form">
+                    <input type="hidden"
+                           name="returnPage"
+                           value="/Tutors/PublicProfile" />
+                    <label class="tutor-profile-camera"
+                           for="tutor-public-profile-image"
+                           title="Add profile image">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             viewBox="0 0 24 24"
+                             aria-hidden="true">
+                            <path d="M9 4.5 7.7 6H5a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3h-2.7L15 4.5zm3 13a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9m0-2a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                        </svg>
+                        <span class="visually-hidden">Add profile image</span>
+                    </label>
+                    <input id="tutor-public-profile-image"
+                           name="ProfileImage"
+                           class="visually-hidden"
+                           type="file"
+                           accept="image/jpeg,image/png,image/webp"
+                           onchange="this.form.submit()" />
+                </form>
+            </div>
+
+            @if (TempData["ProfileImageError"] is string imageError)
+            {
+                <p class="tutor-profile-image-error" role="alert">@imageError</p>
+            }
+
+            <h1>@Model.DisplayName</h1>
+            <p>@Model.StudentNumber</p>
+        </div>
+
+        <div class="tutor-profile-divider"></div>
+
+        <nav class="tutor-profile-nav" aria-label="Tutor profile sections">
+            <a asp-page="/Tutors/Profile"
+               class="tutor-profile-nav-link">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="1em" height="1em" viewBox="0 0 24 24"
+                     aria-hidden="true">
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                        <circle cx="10" cy="7" r="4" />
+                        <path d="M11 14.035A14 14 0 0 0 10 14c-5 0-8 2.5-8 5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2q0-.504-.16-1m3.849-9.066l-.623-.623a1.063 1.063 0 0 0-1.503 0l-3.349 3.35a3.2 3.2 0 0 0-.872 1.629L15 15l1.71-.342a3.2 3.2 0 0 0 1.63-.872l3.349-3.349a1.063 1.063 0 0 0 0-1.503" />
+                    </g>
+                </svg>
+                <span>Personal Details</span>
+            </a>
+            <a asp-page="/Tutors/PublicProfile"
+               class="tutor-profile-nav-link is-active"
+               aria-current="page">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="1em" height="1em" viewBox="0 0 24 24"
+                     aria-hidden="true">
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <g fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10" />
+                        <ellipse cx="12" cy="12" rx="4" ry="10" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2 12h20" />
+                    </g>
+                </svg>
+                <span>Public Profile</span>
+            </a>
+            <a asp-page="/Tutors/StatisticsOverview"
+               class="tutor-profile-nav-link">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="1em" height="1em" viewBox="0 0 24 24"
+                     aria-hidden="true">
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <path fill="currentColor"
+                          d="M7 21H3v-8h4zm7 0h-4V3h4zm7-13v13h-4V8z" />
+                </svg>
+                <span>Statistics Overview</span>
+            </a>
+        </nav>
+    </aside>
+
+    <div class="tutor-public-profile">
+        <h2>Public Profile</h2>
+
+        <section class="tutor-public-profile-card"
+                 aria-label="Edit public tutor profile">
+            @if (TempData["PublicProfileSaved"] is true)
+            {
+                <div class="tutor-profile-success" role="status">
+                    Public profile updated successfully.
+                </div>
+            }
+
+            <form method="post" class="tutor-public-profile-form">
+                <div asp-validation-summary="ModelOnly"
+                     class="tutor-profile-validation"></div>
+
+                <div class="tutor-profile-field">
+                    <label asp-for="Input.Biography"></label>
+                    <textarea asp-for="Input.Biography"
+                              rows="7"
+                              maxlength="500"
+                              placeholder="Tell students about yourself and how you support their learning."></textarea>
+                    <span asp-validation-for="Input.Biography"></span>
+                </div>
+
+                <fieldset class="tutor-profile-preference">
+                    <legend>Tutoring preference</legend>
+                    <div class="tutor-profile-preference-options">
+                        <label>
+                            <input asp-for="Input.PreferredTutoringMode"
+                                   type="radio"
+                                   value="@PreferredTutoringMode.Online" />
+                            <span>
+                                <span class="tutor-preference-copy">
+                                    <strong>Online</strong>
+                                </span>
+                                <i class="tutor-preference-switch" aria-hidden="true"></i>
+                            </span>
+                        </label>
+                        <label>
+                            <input asp-for="Input.PreferredTutoringMode"
+                                   type="radio"
+                                   value="@PreferredTutoringMode.FaceToFace" />
+                            <span>
+                                <span class="tutor-preference-copy">
+                                    <strong>Face-to-Face</strong>
+                                </span>
+                                <i class="tutor-preference-switch" aria-hidden="true"></i>
+                            </span>
+                        </label>
+                        <label>
+                            <input asp-for="Input.PreferredTutoringMode"
+                                   type="radio"
+                                   value="@PreferredTutoringMode.Both" />
+                            <span>
+                                <span class="tutor-preference-copy">
+                                    <strong>Both</strong>
+                                </span>
+                                <i class="tutor-preference-switch" aria-hidden="true"></i>
+                            </span>
+                        </label>
+                    </div>
+                    <span asp-validation-for="Input.PreferredTutoringMode"></span>
+                </fieldset>
+
+                <div class="tutor-profile-field">
+                    <label asp-for="Input.GitHubUrl"
+                           class="tutor-social-field-label">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="currentColor"
+                                  d="M12 2C6.48 2 2 6.59 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49v-1.92c-2.78.62-3.37-1.21-3.37-1.21-.45-1.19-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .08 1.53 1.06 1.53 1.06.9 1.57 2.35 1.12 2.92.86.09-.66.35-1.12.64-1.37-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.04 1.03-2.76-.1-.26-.45-1.31.1-2.72 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.98a9.3 9.3 0 0 1 2.5.35c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.46.1 2.72.64.72 1.03 1.64 1.03 2.76 0 3.94-2.34 4.8-4.57 5.06.36.32.68.94.68 1.9v2.77c0 .27.18.59.69.49A10.23 10.23 0 0 0 22 12.25C22 6.59 17.52 2 12 2Z" />
+                        </svg>
+                        <span>GitHub URL</span>
+                    </label>
+                    <input asp-for="Input.GitHubUrl"
+                           type="url"
+                           placeholder="https://github.com/username" />
+                    <span asp-validation-for="Input.GitHubUrl"></span>
+                </div>
+
+                <div class="tutor-profile-field">
+                    <label asp-for="Input.LinkedInUrl"
+                           class="tutor-social-field-label">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="currentColor"
+                                  d="M6.5 8.25H3.25V21H6.5V8.25ZM4.88 3A1.88 1.88 0 1 0 4.88 6.75 1.88 1.88 0 0 0 4.88 3ZM21 13.7c0-3.84-2.05-5.63-4.79-5.63-2.2 0-3.19 1.21-3.74 2.07V8.25H9.22V21h3.25v-6.31c0-1.66.31-3.27 2.37-3.27 2.03 0 2.06 1.9 2.06 3.38V21H21v-7.3Z" />
+                        </svg>
+                        <span>LinkedIn URL</span>
+                    </label>
+                    <input asp-for="Input.LinkedInUrl"
+                           type="url"
+                           placeholder="https://www.linkedin.com/in/username" />
+                    <span asp-validation-for="Input.LinkedInUrl"></span>
+                </div>
+
+                <div class="tutor-public-profile-actions">
+                    <button type="submit">Save Changes</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="tutor-danger-zone" aria-labelledby="public-profile-danger-zone-title">
+            <div>
+                <h3 id="public-profile-danger-zone-title">Danger Zone</h3>
+                <p>Submit a request to permanently leave the tutor programme.</p>
+            </div>
+            <a asp-page="/Tutors/StatisticsOverview"
+               asp-route-openDeregistration="true"
+               class="tutor-deregistration-button">
+                Request Tutor Deregistration
+            </a>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+    <script src="~/js/tutor-profile.js"
+            asp-append-version="true"></script>
+}

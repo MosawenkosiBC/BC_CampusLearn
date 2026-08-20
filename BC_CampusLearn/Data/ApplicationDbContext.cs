@@ -21,6 +21,12 @@ public class ApplicationDbContext : DbContext
     public DbSet<TutorCourseModule> TutorCourseModules =>
         Set<TutorCourseModule>();
 
+    public DbSet<TutorModuleChangeRequest> TutorModuleChangeRequests =>
+        Set<TutorModuleChangeRequest>();
+
+    public DbSet<TutorDeregistrationRequest> TutorDeregistrationRequests =>
+        Set<TutorDeregistrationRequest>();
+
     public DbSet<TutorAvailability> TutorAvailabilities =>
         Set<TutorAvailability>();
 

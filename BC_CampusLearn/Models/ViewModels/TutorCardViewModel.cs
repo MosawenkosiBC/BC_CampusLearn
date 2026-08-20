@@ -10,6 +10,8 @@ public class TutorCardViewModel
 
     public string? ProfileImagePath { get; set; }
 
+    public string Initials { get; set; } = string.Empty;
+
     public int ProgrammeId { get; set; }
 
     public string ProgrammeName { get; set; } = string.Empty;

@@ -1,0 +1,420 @@
+.tutor-statistics-content {
+    min-width: 0;
+}
+
+.tutor-statistics-header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.4rem;
+}
+
+.tutor-statistics-header h2 {
+    color: #111;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.tutor-statistics-header p {
+    color: #707782;
+    font-size: 0.84rem;
+    margin: 0.25rem 0 0;
+}
+
+.tutor-statistics-range {
+    align-items: center;
+    display: flex;
+    gap: 0.65rem;
+}
+
+.tutor-statistics-range label {
+    color: #626a75;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.tutor-statistics-range select {
+    background-color: #fff;
+    border: 1px solid #dfe2e6;
+    border-radius: 0.35rem;
+    color: #252a32;
+    font-size: 0.82rem;
+    min-height: 2.4rem;
+    padding: 0.45rem 2rem 0.45rem 0.75rem;
+}
+
+.tutor-statistics-summary {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 1rem;
+}
+
+.tutor-stat-card-premium {
+    align-items: center;
+    background-color: #fff;
+    border: 1px solid #eceef1;
+    border-radius: 0.45rem;
+    box-shadow: var(--campus-card-shadow);
+    display: flex;
+    gap: 0.8rem;
+    min-height: 7.5rem;
+    overflow: hidden;
+    padding: 1rem;
+    position: relative;
+}
+
+.tutor-stat-card-premium.is-magenta {
+    color: #ad0151;
+}
+
+.tutor-stat-card-premium.is-teal {
+    color: #258b8b;
+}
+
+.tutor-stat-card-premium.is-charcoal {
+    color: #3f4650;
+}
+
+.tutor-stat-card-premium.is-green {
+    color: #2c7a43;
+}
+
+.tutor-stat-card-icon {
+    align-items: center;
+    background-color: color-mix(in srgb, currentColor 11%, white);
+    border-radius: 0.45rem;
+    display: flex;
+    flex: 0 0 2.7rem;
+    height: 2.7rem;
+    justify-content: center;
+}
+
+.tutor-stat-card-icon svg {
+    fill: none;
+    height: 1.35rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.7;
+    width: 1.35rem;
+}
+
+.tutor-stat-card-premium div {
+    min-width: 0;
+}
+
+.tutor-stat-card-premium p {
+    color: #535a65;
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+}
+
+.tutor-stat-card-premium strong {
+    color: #15181d;
+    display: block;
+    font-size: 1.65rem;
+    line-height: 1.1;
+}
+
+.tutor-stat-card-premium div > span {
+    color: #90959d;
+    display: block;
+    font-size: 0.64rem;
+    margin-top: 0.35rem;
+}
+
+.tutor-statistics-primary-grid,
+.tutor-statistics-secondary-grid {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.tutor-statistics-primary-grid {
+    grid-template-columns: minmax(0, 1.75fr) minmax(17rem, 0.75fr);
+}
+
+.tutor-statistics-secondary-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.85fr);
+}
+
+.tutor-statistics-panel {
+    background-color: #fff;
+    border: 1px solid #eceef1;
+    border-radius: 0.45rem;
+    box-shadow: var(--campus-card-shadow);
+    min-width: 0;
+    padding: 1.2rem;
+}
+
+.tutor-statistics-panel-heading {
+    align-items: flex-start;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.tutor-statistics-panel-heading h3 {
+    color: #181b20;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.tutor-statistics-panel-heading p {
+    color: #8a9099;
+    font-size: 0.69rem;
+    margin: 0.18rem 0 0;
+}
+
+.tutor-statistics-period-badge {
+    background-color: rgba(173, 1, 81, 0.07);
+    border-radius: 999px;
+    color: #ad0151;
+    font-size: 0.64rem;
+    font-weight: 600;
+    padding: 0.28rem 0.55rem;
+}
+
+.tutor-statistics-chart-wrap {
+    height: 14rem;
+    position: relative;
+}
+
+.tutor-statistics-doughnut-wrap {
+    height: 10.5rem;
+    margin: 0 auto 0.75rem;
+    max-width: 10.5rem;
+    position: relative;
+}
+
+.tutor-statistics-doughnut-total {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    inset: 0;
+    justify-content: center;
+    pointer-events: none;
+    position: absolute;
+}
+
+.tutor-statistics-doughnut-total strong {
+    color: #1c2026;
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+.tutor-statistics-doughnut-total span {
+    color: #8b9199;
+    font-size: 0.62rem;
+    margin-top: 0.25rem;
+}
+
+.tutor-status-legend {
+    display: grid;
+    gap: 0.45rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tutor-status-legend > div {
+    align-items: center;
+    color: #626974;
+    display: grid;
+    font-size: 0.66rem;
+    gap: 0.38rem;
+    grid-template-columns: auto 1fr auto;
+}
+
+.tutor-status-legend strong {
+    color: #282d34;
+    font-size: 0.68rem;
+}
+
+.tutor-status-dot {
+    border-radius: 50%;
+    height: 0.48rem;
+    width: 0.48rem;
+}
+
+.tutor-status-dot.is-completed {
+    background-color: #4aa665;
+}
+
+.tutor-status-dot.is-confirmed {
+    background-color: #ad0151;
+}
+
+.tutor-status-dot.is-pending {
+    background-color: #4ac1c1;
+}
+
+.tutor-status-dot.is-cancelled {
+    background-color: #e07a89;
+}
+
+.tutor-status-dot.is-declined {
+    background-color: #9a9fa7;
+}
+
+.tutor-module-ranking {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.tutor-module-row {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: 1.8rem minmax(0, 1fr);
+}
+
+.tutor-module-position {
+    align-items: center;
+    background-color: #f1f3f4;
+    border-radius: 50%;
+    color: #626873;
+    display: flex;
+    font-size: 0.66rem;
+    font-weight: 700;
+    height: 1.8rem;
+    justify-content: center;
+    width: 1.8rem;
+}
+
+.tutor-module-detail > div:first-child {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.tutor-module-detail strong {
+    color: #30353d;
+    font-size: 0.72rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tutor-module-detail span {
+    color: #888e97;
+    flex: 0 0 auto;
+    font-size: 0.63rem;
+}
+
+.tutor-module-progress {
+    background-color: #f0f1f3;
+    border-radius: 999px;
+    height: 0.32rem;
+    margin-top: 0.42rem;
+    overflow: hidden;
+}
+
+.tutor-module-progress span {
+    background: linear-gradient(90deg, #ad0151, #d93d86);
+    border-radius: inherit;
+    display: block;
+    height: 100%;
+}
+
+.tutor-statistics-insights {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+}
+
+.tutor-statistics-insights > div {
+    background-color: #f8f8f9;
+    border-radius: 0.35rem;
+    min-height: 4.5rem;
+    padding: 0.75rem;
+}
+
+.tutor-statistics-insights > div.is-action-needed {
+    background-color: rgba(74, 193, 193, 0.11);
+}
+
+.tutor-statistics-insights dt {
+    color: #7b818b;
+    font-size: 0.62rem;
+    font-weight: 600;
+    margin-bottom: 0.38rem;
+}
+
+.tutor-statistics-insights dd {
+    color: #272c33;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.tutor-statistics-empty {
+    align-items: center;
+    color: #8b9199;
+    display: flex;
+    font-size: 0.75rem;
+    justify-content: center;
+    min-height: 10rem;
+    text-align: center;
+}
+
+@media (max-width: 1199.98px) {
+    .tutor-statistics-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tutor-statistics-primary-grid,
+    .tutor-statistics-secondary-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .tutor-statistics-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.9rem;
+    }
+
+    .tutor-statistics-range {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .tutor-statistics-range select {
+        flex: 1;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .tutor-statistics-content,
+    .tutor-statistics-summary,
+    .tutor-statistics-primary-grid,
+    .tutor-statistics-secondary-grid,
+    .tutor-statistics-panel {
+        max-width: 100%;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .tutor-statistics-panel canvas {
+        max-width: 100%;
+    }
+
+    .tutor-statistics-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .tutor-statistics-insights,
+    .tutor-status-legend {
+        grid-template-columns: 1fr;
+    }
+
+}
+    justify-content: center;

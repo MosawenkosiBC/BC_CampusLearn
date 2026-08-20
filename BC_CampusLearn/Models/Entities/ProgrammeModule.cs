@@ -19,4 +19,7 @@ public class ProgrammeModule
 
     public ICollection<Booking> Bookings { get; set; }
         = new List<Booking>();
+
+    public ICollection<TutorModuleChangeRequest> TutorModuleChangeRequests { get; set; }
+        = new List<TutorModuleChangeRequest>();
 }

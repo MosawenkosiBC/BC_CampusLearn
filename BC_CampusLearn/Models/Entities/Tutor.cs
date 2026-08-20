@@ -44,4 +44,10 @@ public class Tutor
     public ICollection<TutorAvailability> TutorAvailabilities { get; set; }
         = new List<TutorAvailability>();
 
+    public ICollection<TutorModuleChangeRequest> ModuleChangeRequests { get; set; }
+        = new List<TutorModuleChangeRequest>();
+
+    public ICollection<TutorDeregistrationRequest> DeregistrationRequests { get; set; }
+        = new List<TutorDeregistrationRequest>();
+
 }

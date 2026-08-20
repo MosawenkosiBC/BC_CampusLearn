@@ -12,6 +12,8 @@ public class TutorDetailsViewModel
 
     public string? ProfileImagePath { get; set; }
 
+    public string Initials { get; set; } = string.Empty;
+
     public string? LinkedInUrl { get; set; }
 
     public string? GitHubUrl { get; set; }

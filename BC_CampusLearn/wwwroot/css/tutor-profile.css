@@ -1,0 +1,1059 @@
+.tutor-profile-page {
+    align-items: flex-start;
+    display: grid;
+    column-gap: 4rem;
+    grid-template-columns: minmax(15rem, 18rem) minmax(0, 1fr);
+    isolation: isolate;
+    position: relative;
+    row-gap: 1.5rem;
+    width: 100%;
+}
+
+.tutor-profile-page,
+.tutor-profile-page * {
+    box-sizing: border-box;
+}
+
+.tutor-profile-page > aside,
+.tutor-profile-page > div {
+    max-width: 100%;
+    min-width: 0;
+}
+
+.tutor-profile-page::before {
+    background:
+        linear-gradient(
+            rgba(255, 255, 255, 0.9),
+            rgba(255, 255, 255, 0.9)),
+        url("/Media/common/backgroundNew.jpg") center top / 56rem auto repeat;
+    content: "";
+    inset: 0 calc(50% - 50vw);
+    pointer-events: none;
+    position: absolute;
+    z-index: -1;
+}
+
+.tutor-personal-details-card,
+.tutor-public-profile-card {
+    background-color: #fff;
+    border: 1px solid #ececef;
+    border-radius: 0.4rem;
+    box-shadow: var(--campus-card-shadow);
+}
+
+.tutor-profile-card {
+    margin-top: 0;
+    padding: 0 1.15rem;
+}
+
+.tutor-profile-identity {
+    text-align: center;
+}
+
+.tutor-profile-photo-wrap {
+    height: 12rem;
+    margin: 0 auto 1.1rem;
+    position: relative;
+    width: 12rem;
+}
+
+.tutor-profile-photo {
+    border-radius: 50%;
+    display: block;
+    height: 12rem;
+    object-fit: cover;
+    width: 12rem;
+}
+
+.tutor-profile-initials {
+    align-items: center;
+    background-color: rgba(74, 193, 193, 0.16);
+    color: #287f7f;
+    display: flex;
+    font-size: 3.1rem;
+    font-weight: 700;
+    justify-content: center;
+}
+
+.tutor-profile-camera {
+    align-items: center;
+    background-color: #fff;
+    border: 1px solid #e0e2e6;
+    border-radius: 50%;
+    bottom: 0.15rem;
+    box-shadow: 0 0.2rem 0.55rem rgba(0, 0, 0, 0.14);
+    color: #262b32;
+    cursor: pointer;
+    display: flex;
+    height: 2.45rem;
+    justify-content: center;
+    position: absolute;
+    right: 0.15rem;
+    transition: color 160ms ease, transform 160ms ease;
+    width: 2.45rem;
+}
+
+.tutor-profile-camera svg {
+    fill: currentColor;
+    height: 1.25rem;
+    width: 1.25rem;
+}
+
+.tutor-profile-camera:hover,
+.tutor-profile-photo-form:focus-within .tutor-profile-camera {
+    color: #ad0151;
+    outline: 3px solid rgba(74, 193, 193, 0.38);
+    outline-offset: 2px;
+    transform: scale(1.04);
+}
+
+.tutor-profile-image-error {
+    color: #b51228 !important;
+    font-size: 0.78rem !important;
+    margin: -0.4rem 0 0.75rem !important;
+}
+
+.tutor-profile-identity h1 {
+    color: #1e1e1e;
+    font-size: 1.12rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.tutor-profile-identity p {
+    color: #4f5866;
+    font-size: 0.9rem;
+    margin: 0.6rem 0 0;
+}
+
+.tutor-profile-divider {
+    border-top: 1px solid #e4e4e7;
+    margin: 1.4rem 0 1.25rem;
+}
+
+.tutor-profile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.tutor-profile-nav-link {
+    align-items: center;
+    border-left: 3px solid transparent;
+    color: #48505c;
+    display: flex;
+    font-size: 0.9rem;
+    gap: 0.8rem;
+    min-height: 2.8rem;
+    padding: 0.65rem 0.9rem;
+    text-decoration: none;
+}
+
+.tutor-profile-nav-link > svg {
+    flex: 0 0 auto;
+    font-size: 1.35rem;
+    height: 1.35rem;
+    width: 1.35rem;
+}
+
+.tutor-profile-nav-link.is-active {
+    background-color: transparent;
+    border-left-color: #ad0151;
+    color: #ad0151;
+    font-weight: 700;
+}
+
+a.tutor-profile-nav-link:hover,
+a.tutor-profile-nav-link:focus-visible {
+    color: #81003c;
+}
+
+.tutor-deregistration-button {
+    align-items: center;
+    background-color: #b4232e;
+    border: 1px solid #b4232e;
+    border-radius: 0.35rem;
+    color: #fff;
+    display: flex;
+    font-size: 0.78rem;
+    font-weight: 700;
+    justify-content: center;
+    min-height: 2.45rem;
+    padding: 0.55rem 0.9rem;
+    text-align: center;
+    text-decoration: none;
+    width: auto;
+}
+
+.tutor-deregistration-button:hover,
+.tutor-deregistration-button:focus-visible {
+    background-color: #911b24;
+    border-color: #911b24;
+    color: #fff;
+}
+
+.tutor-deregistration-pending {
+    background-color: #fff0f1;
+    border-radius: 999px;
+    color: #9e1c27;
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.42rem 0.7rem;
+    text-align: center;
+    width: auto;
+}
+
+.tutor-danger-zone {
+    background-color: #fff;
+    border: 1px solid #dc3545;
+    border-radius: 0.4rem;
+    display: block;
+    margin-top: 3rem;
+    padding: 1.5rem 2rem;
+}
+
+.tutor-danger-zone h3 {
+    color: #b4232e;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.tutor-danger-zone p {
+    color: #6e5558;
+    font-size: 0.8rem;
+    margin: 0.35rem 0 0;
+}
+
+.tutor-danger-zone > .tutor-deregistration-button,
+.tutor-danger-zone > .tutor-deregistration-pending {
+    display: flex;
+    margin-left: auto;
+    margin-top: 1.35rem;
+    width: fit-content;
+}
+
+.tutor-personal-details > h2,
+.tutor-public-profile > h2 {
+    color: #111;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.65rem;
+    text-align: left;
+}
+
+.tutor-manage-profile-title {
+    grid-column: 1 / -1;
+    margin: 0;
+    text-align: center;
+    width: 100%;
+}
+
+.tutor-social-field-label {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.45rem;
+    width: fit-content;
+}
+
+.tutor-social-field-label svg {
+    color: #1e1e1e;
+    flex: 0 0 auto;
+    height: 1.1rem;
+    width: 1.1rem;
+}
+
+.tutor-personal-details-card {
+    padding: 2rem;
+}
+
+.tutor-personal-details-grid {
+    display: grid;
+    gap: 1.5rem 3rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+}
+
+.tutor-personal-details-grid dt {
+    color: #252525;
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 0.45rem;
+}
+
+.tutor-personal-details-grid dd {
+    background-color: #f7f7f8;
+    color: #3d4550;
+    margin: 0;
+    min-height: 2.65rem;
+    overflow-wrap: anywhere;
+    padding: 0.7rem 0.85rem;
+}
+
+.tutor-phone-form {
+    align-items: center;
+    display: grid;
+    gap: 0.45rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.tutor-phone-form input {
+    background: #f7f7f8;
+    border: 0;
+    border-radius: 0.3rem;
+    color: inherit;
+    font: inherit;
+    min-width: 0;
+    outline: none;
+    padding: 0.65rem 0.75rem;
+}
+
+.tutor-phone-form input:focus {
+    box-shadow: 0 0 0 0.18rem rgba(91, 98, 107, 0.12);
+}
+
+.tutor-phone-form button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+    color: #7a818b;
+    display: flex;
+    height: 2.45rem;
+    justify-content: center;
+    padding: 0;
+    width: 2.45rem;
+}
+
+.tutor-phone-form button svg {
+    height: 1.15rem;
+    width: 1.15rem;
+}
+
+.tutor-phone-form button:hover,
+.tutor-phone-form button:focus-visible {
+    background: transparent;
+    box-shadow: none;
+    color: #4f5660;
+}
+
+.tutor-phone-detail dd {
+    background: transparent;
+    padding: 0;
+}
+
+.tutor-phone-form > span {
+    color: #b51228;
+    font-size: 0.75rem;
+    grid-column: 1 / -1;
+}
+
+.tutor-personal-details-modules {
+    border-top: 1px solid #e1e3e6;
+    grid-column: 1 / -1;
+    padding-top: 1.25rem;
+}
+
+.tutor-modules-heading {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+}
+
+.tutor-personal-details-modules dd {
+    background: transparent;
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 0;
+}
+
+.tutor-module-update-action {
+    display: flex;
+    justify-content: flex-end;
+    margin-left: 1rem;
+}
+
+.tutor-module-update-action button {
+    align-items: center;
+    background-color: transparent;
+    border: 0;
+    border-radius: 0.45rem;
+    color: #111;
+    display: inline-flex;
+    gap: 0.7rem;
+    padding: 0.65rem 0.85rem;
+    text-align: left;
+}
+
+.tutor-module-update-action button:hover,
+.tutor-module-update-action button:focus-visible {
+    background-color: transparent;
+    box-shadow: none;
+    text-decoration: underline;
+}
+
+.tutor-module-update-icon {
+    align-items: center;
+    background-color: transparent;
+    border-radius: 50%;
+    color: #7a818b;
+    display: flex;
+    flex: 0 0 2rem;
+    height: 2rem;
+    justify-content: center;
+    width: 2rem;
+}
+
+.tutor-module-update-icon svg {
+    height: 1.05rem;
+    width: 1.05rem;
+}
+
+.tutor-module-update-copy {
+    display: flex;
+    flex-direction: column;
+}
+
+.tutor-module-update-copy strong {
+    color: #ad0151;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.tutor-profile-module,
+.tutor-profile-empty-value {
+    background-color: #f7f7f8;
+    min-height: 2.65rem;
+    padding: 0.7rem 0.85rem;
+}
+
+.tutor-pending-module-requests {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+}
+
+.tutor-pending-module-requests strong {
+    color: #606873;
+    flex-basis: 100%;
+    font-size: 0.76rem;
+}
+
+.tutor-pending-module-requests span {
+    background-color: rgba(173, 1, 81, 0.08);
+    border-radius: 999px;
+    color: #8f0043;
+    font-size: 0.72rem;
+    padding: 0.32rem 0.65rem;
+}
+
+.tutor-public-profile-card {
+    padding: 2rem;
+}
+
+.tutor-public-profile-form {
+    display: grid;
+    gap: 1.35rem;
+}
+
+.tutor-profile-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.tutor-profile-field label {
+    color: #252525;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.tutor-required-marker {
+    color: #ad0151;
+    font-weight: 700;
+}
+
+.tutor-profile-field input,
+.tutor-profile-field textarea,
+.tutor-profile-field select {
+    background-color: #fff;
+    border: 1px solid #c9cdd2;
+    border-radius: 0.25rem;
+    color: #303640;
+    font: inherit;
+    padding: 0.8rem 0.9rem;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+    width: 100%;
+}
+
+.tutor-profile-field textarea {
+    min-height: 10rem;
+    resize: vertical;
+}
+
+.tutor-profile-field input:focus,
+.tutor-profile-field textarea:focus,
+.tutor-profile-field select:focus {
+    background-color: #f3f4f5;
+    border-color: #858b93;
+    box-shadow: 0 0 0 0.2rem rgba(91, 98, 107, 0.12);
+    outline: none;
+}
+
+.tutor-module-combobox {
+    position: relative;
+}
+
+.tutor-module-combobox-toggle {
+    align-items: center;
+    background-color: #fff;
+    border: 1px solid #c9cdd2;
+    border-radius: 0.25rem;
+    color: #303640;
+    display: flex;
+    font: inherit;
+    justify-content: space-between;
+    min-height: 2.85rem;
+    padding: 0.7rem 0.9rem;
+    text-align: left;
+    width: 100%;
+}
+
+.tutor-module-combobox-toggle:hover,
+.tutor-module-combobox-toggle:focus-visible,
+.tutor-module-combobox-toggle[aria-expanded="true"] {
+    background-color: #f3f4f5;
+    border-color: #858b93;
+    box-shadow: 0 0 0 0.2rem rgba(91, 98, 107, 0.12);
+    outline: none;
+}
+
+.tutor-module-combobox-toggle svg {
+    fill: none;
+    flex: 0 0 auto;
+    height: 1rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.7;
+    transition: transform 160ms ease;
+    width: 1rem;
+}
+
+.tutor-module-combobox-toggle[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+}
+
+.tutor-module-combobox-menu {
+    background-color: #fff;
+    border: 1px solid #c9cdd2;
+    border-radius: 0.35rem;
+    box-shadow: 0 0.75rem 1.6rem rgba(33, 38, 45, 0.14);
+    left: 0;
+    margin-top: 0.35rem;
+    overflow: hidden;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 1080;
+}
+
+.tutor-module-combobox-menu[hidden] {
+    display: none;
+}
+
+.tutor-module-combobox-search {
+    align-items: center;
+    border-bottom: 1px solid #e2e4e7;
+    display: flex;
+    padding: 0.6rem;
+    position: relative;
+}
+
+.tutor-module-combobox-search svg {
+    fill: none;
+    height: 1rem;
+    left: 1.15rem;
+    position: absolute;
+    stroke: #747b84;
+    stroke-linecap: round;
+    stroke-width: 1.6;
+    width: 1rem;
+}
+
+.tutor-module-combobox-search input {
+    background-color: #f3f4f5;
+    border: 0;
+    border-radius: 0.25rem;
+    color: #303640;
+    font: inherit;
+    padding: 0.6rem 0.7rem 0.6rem 2rem;
+    width: 100%;
+}
+
+.tutor-module-combobox-search input:focus {
+    box-shadow: 0 0 0 0.15rem rgba(91, 98, 107, 0.14);
+    outline: none;
+}
+
+.tutor-module-combobox-options {
+    max-height: 13rem;
+    overflow-y: auto;
+    padding: 0.35rem;
+}
+
+.tutor-module-combobox-option {
+    background: transparent;
+    border: 0;
+    border-radius: 0.25rem;
+    color: #303640;
+    display: block;
+    font-size: 0.85rem;
+    padding: 0.65rem 0.7rem;
+    text-align: left;
+    width: 100%;
+}
+
+.tutor-module-combobox-option:hover,
+.tutor-module-combobox-option:focus-visible,
+.tutor-module-combobox-option[aria-selected="true"] {
+    background-color: #f0f1f3;
+    outline: none;
+}
+
+.tutor-module-combobox-option[aria-selected="true"] {
+    color: #ad0151;
+    font-weight: 700;
+}
+
+.tutor-module-combobox-empty {
+    color: #737a84;
+    font-size: 0.78rem;
+    margin: 0;
+    padding: 0.8rem;
+    text-align: center;
+}
+
+.tutor-account-modal .modal-content {
+    border: 0;
+    border-radius: 0.55rem;
+    box-shadow: 0 1.25rem 3rem rgba(24, 27, 32, 0.2);
+}
+
+.tutor-account-modal .modal-header {
+    align-items: flex-start;
+    border-bottom-color: #eceef1;
+    padding: 1.35rem 1.5rem 1rem;
+}
+
+.tutor-account-modal .modal-title {
+    color: #181b20;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.tutor-account-modal .modal-header p {
+    color: #707782;
+    font-size: 0.8rem;
+    margin: 0.3rem 1rem 0 0;
+}
+
+.tutor-account-modal .modal-body {
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+}
+
+.tutor-account-modal .modal-footer {
+    border-top-color: #eceef1;
+    padding: 0.9rem 1.5rem 1.2rem;
+}
+
+.tutor-modal-cancel,
+.tutor-modal-primary,
+.tutor-modal-danger {
+    border-radius: 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    min-height: 2.5rem;
+    padding: 0.55rem 1rem;
+}
+
+.tutor-modal-cancel {
+    background-color: #fff;
+    border: 1px solid #dfe2e6;
+    color: #3f4650;
+}
+
+.tutor-modal-primary {
+    background-color: #ad0151;
+    border: 1px solid #ad0151;
+    color: #fff;
+}
+
+.tutor-modal-danger {
+    background-color: #b4232e;
+    border: 1px solid #b4232e;
+    color: #fff;
+}
+
+.tutor-danger-confirmation {
+    background-color: #fff6f6;
+    border: 1px solid #efc6c9;
+    border-radius: 0.4rem;
+    padding: 1rem;
+}
+
+.tutor-danger-confirmation p {
+    color: #4a2b2e;
+    font-size: 0.82rem;
+    margin: 0 0 0.65rem;
+}
+
+.tutor-danger-confirmation strong {
+    color: #9e1c27;
+}
+
+.tutor-danger-confirmation input {
+    background: #fff;
+    border: 1px solid #c9cdd2;
+    border-radius: 0.3rem;
+    font: inherit;
+    padding: 0.7rem 0.8rem;
+    width: 100%;
+}
+
+.tutor-danger-confirmation > span {
+    color: #b51228;
+    display: block;
+    font-size: 0.76rem;
+    margin-top: 0.35rem;
+}
+
+.tutor-danger-confirmation small {
+    color: #7a6265;
+    display: block;
+    font-size: 0.7rem;
+    margin-top: 0.35rem;
+}
+
+.tutor-profile-field > span,
+.tutor-profile-preference > span,
+.tutor-profile-validation {
+    color: #b51228;
+    font-size: 0.82rem;
+}
+
+.tutor-profile-preference {
+    border: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.tutor-profile-preference legend {
+    color: #252525;
+    float: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.65rem;
+}
+
+.tutor-profile-preference-options {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(3, max-content);
+    max-width: 100%;
+}
+
+.tutor-profile-preference-options label {
+    cursor: pointer;
+    display: block;
+    margin: 0;
+    position: relative;
+}
+
+.tutor-profile-preference-options input {
+    height: 1px;
+    opacity: 0;
+    position: absolute;
+    width: 1px;
+}
+
+.tutor-profile-preference-options label > span {
+    align-items: center;
+    background-color: transparent;
+    border: 0;
+    display: flex;
+    flex-direction: row;
+    gap: 0.45rem;
+    justify-content: flex-start;
+    min-height: 0;
+    padding: 0.35rem 0;
+}
+
+.tutor-preference-copy {
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    text-align: left;
+}
+
+.tutor-profile-preference-options strong {
+    color: #282d34;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.tutor-preference-switch {
+    background-color: #d5d8dc;
+    border-radius: 999px;
+    display: block;
+    flex: 0 0 auto;
+    height: 1.15rem;
+    position: relative;
+    transition: background-color 160ms ease, box-shadow 160ms ease;
+    width: 2.4rem;
+}
+
+.tutor-preference-switch::after {
+    background-color: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    content: "";
+    height: 0.85rem;
+    left: 0.15rem;
+    position: absolute;
+    top: 0.15rem;
+    transition: transform 160ms ease;
+    width: 0.85rem;
+}
+
+.tutor-profile-preference-options input:checked + span .tutor-preference-switch {
+    background-color: #ad0151;
+}
+
+.tutor-profile-preference-options input:checked + span .tutor-preference-switch::after {
+    transform: translateX(1.25rem);
+}
+
+.tutor-profile-preference-options input:focus-visible + span .tutor-preference-switch {
+    outline: 3px solid rgba(74, 193, 193, 0.4);
+    outline-offset: 2px;
+}
+
+.tutor-profile-preference-options label:hover .tutor-preference-switch {
+    box-shadow: 0 0 0 3px rgba(31, 36, 43, 0.05);
+}
+
+.tutor-profile-validation:empty {
+    display: none;
+}
+
+.tutor-public-profile-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 0.25rem;
+}
+
+.tutor-public-profile-actions button {
+    background-color: #ad0151;
+    border: 1px solid #ad0151;
+    border-radius: 0.3rem;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    min-height: 2.75rem;
+    padding: 0.65rem 1.4rem;
+}
+
+.tutor-public-profile-actions button:hover,
+.tutor-public-profile-actions button:focus-visible {
+    background-color: #8f0043;
+    border-color: #8f0043;
+}
+
+.tutor-profile-success {
+    background-color: rgba(74, 193, 193, 0.14);
+    border-left: 3px solid #4ac1c1;
+    color: #246f6f;
+    margin-bottom: 1.25rem;
+    padding: 0.8rem 1rem;
+}
+
+@media (max-width: 991.98px) {
+    .tutor-profile-page {
+        gap: 2rem;
+        grid-template-columns: 1fr;
+    }
+
+    .tutor-manage-profile-title {
+        grid-column: 1;
+    }
+
+    .tutor-profile-card {
+        margin-inline: auto;
+        max-width: 100%;
+        margin-top: 0;
+        padding: 0;
+        width: 100%;
+    }
+
+    .tutor-personal-details,
+    .tutor-public-profile,
+    .tutor-statistics-content {
+        margin-inline: auto;
+        max-width: 100%;
+        min-width: 0;
+        width: 100%;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .tutor-profile-card {
+        background-color: #fff;
+        border: 1px solid #e3e5e8;
+        border-radius: 0.55rem;
+        box-shadow: var(--campus-card-shadow);
+        overflow: hidden;
+        padding: 1.25rem 0 0;
+    }
+
+    .tutor-profile-identity {
+        padding-inline: 1.25rem;
+    }
+
+    .tutor-profile-divider {
+        margin-bottom: 0;
+    }
+
+    .tutor-profile-nav {
+        border-bottom: 1px solid #dedfe2;
+        display: flex;
+        flex-direction: row;
+        gap: 0;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tutor-profile-nav-link {
+        border-bottom: 3px solid transparent;
+        border-left: 0;
+        flex: 1 0 max-content;
+        justify-content: center;
+        min-height: 3.35rem;
+        padding: 0.75rem 1rem;
+        white-space: nowrap;
+    }
+
+    .tutor-profile-nav-link.is-active {
+        border-bottom-color: #ad0151;
+        border-left-color: transparent;
+    }
+
+    .tutor-profile-nav-link > svg {
+        height: 1.15rem;
+        width: 1.15rem;
+    }
+
+    .tutor-personal-details > h2,
+    .tutor-public-profile > h2,
+    .tutor-statistics-header h2 {
+        display: none;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .tutor-profile-page {
+        gap: 1.5rem;
+        margin-inline: auto;
+        overflow-x: clip;
+        padding-inline: 0.5rem;
+        width: 100%;
+    }
+
+    .tutor-profile-identity {
+        margin-inline: auto;
+        max-width: 100%;
+        padding-inline: 1rem;
+        width: 100%;
+    }
+
+    .tutor-profile-photo-wrap {
+        aspect-ratio: 1;
+        height: auto;
+        max-width: 100%;
+        width: clamp(8.5rem, 42vw, 10.5rem);
+    }
+
+    .tutor-profile-photo {
+        height: 100%;
+        width: 100%;
+    }
+
+    .tutor-profile-nav {
+        margin-inline: auto;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .tutor-personal-details-card,
+    .tutor-public-profile-card {
+        padding: 1.25rem;
+        width: 100%;
+    }
+
+    .tutor-personal-details-grid,
+    .tutor-personal-details-modules dd,
+    .tutor-profile-preference-options {
+        grid-template-columns: 1fr;
+    }
+
+    .tutor-personal-details-grid > div,
+    .tutor-personal-details-modules,
+    .tutor-phone-form,
+    .tutor-public-profile-form,
+    .tutor-profile-field,
+    .tutor-module-combobox {
+        max-width: 100%;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .tutor-modules-heading {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+
+    .tutor-module-update-action {
+        align-self: flex-start;
+        margin-left: 0;
+        max-width: 100%;
+    }
+
+    .tutor-module-update-action button {
+        max-width: 100%;
+    }
+
+    .tutor-manage-profile-title {
+        max-width: 100%;
+        text-align: center;
+    }
+
+    .tutor-danger-zone {
+        padding: 1.25rem;
+        width: 100%;
+    }
+
+    .tutor-danger-zone .tutor-deregistration-button,
+    .tutor-danger-zone .tutor-deregistration-pending {
+        margin-left: 0;
+        width: 100%;
+    }
+}

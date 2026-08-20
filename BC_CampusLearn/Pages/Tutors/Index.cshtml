@@ -168,9 +168,20 @@
                                class="tutor-card-link"
                                aria-label="View @tutor.DisplayName's profile">
                                 <div class="tutor-image-wrap">
-                                    <img src="@tutor.ProfileImagePath"
-                                         alt="@tutor.DisplayName"
-                                         loading="lazy" />
+                                    @if (!string.IsNullOrWhiteSpace(
+                                        tutor.ProfileImagePath))
+                                    {
+                                        <img src="@tutor.ProfileImagePath"
+                                             alt="Profile photo of @tutor.DisplayName"
+                                             loading="lazy" />
+                                    }
+                                    else
+                                    {
+                                        <span class="tutor-card-initials"
+                                              aria-label="@tutor.DisplayName initials">
+                                            @tutor.Initials
+                                        </span>
+                                    }
                                 </div>
 
                                 <div class="tutor-card-body">

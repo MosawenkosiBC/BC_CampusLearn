@@ -278,10 +278,20 @@
             {
                 <a asp-page="/Tutors/Details"
                    asp-route-id="@tutor.TutorId"
-                   class="static-tutor-card text-decoration-none text-dark">
+                    class="static-tutor-card text-decoration-none text-dark">
                     <div class="static-tutor-image-frame">
-                        <img src="@tutor.ProfileImagePath"
-                             alt="@tutor.DisplayName" />
+                        @if (!string.IsNullOrWhiteSpace(tutor.ProfileImagePath))
+                        {
+                            <img src="@tutor.ProfileImagePath"
+                                 alt="Profile photo of @tutor.DisplayName" />
+                        }
+                        else
+                        {
+                            <span class="static-tutor-initials"
+                                  aria-label="@tutor.DisplayName initials">
+                                @tutor.Initials
+                            </span>
+                        }
                     </div>
                     <h4>@tutor.DisplayName <i class="bi bi-patch-check-fill"></i></h4>
                     <p class="static-tutor-program">@tutor.ProgrammeName</p>

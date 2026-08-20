@@ -291,6 +291,18 @@
   transition: transform 250ms ease;
 }
 
+.tutor-card-initials {
+  align-items: center;
+  background-color: rgba(74, 193, 193, 0.16);
+  color: #287f7f;
+  display: flex;
+  font-size: 2.75rem;
+  font-weight: 700;
+  height: 100%;
+  justify-content: center;
+  width: 100%;
+}
+
 .tutor-card:hover .tutor-image-wrap img {
   transform: scale(1.025);
 }
