@@ -1,0 +1,181 @@
+@page
+@model BC_CampusLearn.Pages.LearningResources.IndexModel
+
+@{
+    ViewData["Title"] = "Learning Resources";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/Dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/learning-resources.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/navigation-drawer.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<main class="container py-4 student-resources-page"
+      data-resource-browser>
+    <header class="student-resources-header">
+        <h1>Your Learning Resources</h1>
+    </header>
+
+    @if (Model.Resources.Count == 0)
+    {
+        <section class="student-resources-empty">
+            <i class="bi bi-journal-text" aria-hidden="true"></i>
+            <h2>No learning resources available</h2>
+            <p>Subscribe to a module with published content from your dashboard.</p>
+            <a asp-page="/Student/Dashboard" asp-fragment="subscribed-modules">
+                Explore modules
+            </a>
+        </section>
+    }
+    else
+    {
+        <div class="student-resources-layout">
+            <aside id="resource-filter-panel"
+                   class="student-resource-filters"
+                   aria-labelledby="resource-filters-title"
+                   data-filter-breakpoint="767.98"
+                   data-filter-panel>
+                <div class="student-resource-filters-heading">
+                    <h2 id="resource-filters-title">Filters</h2>
+                    <button type="button" data-resource-filters-clear>Clear all</button>
+                    <button type="button"
+                            class="student-resource-filter-close"
+                            data-filter-close
+                            aria-label="Close filters">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 6l12 12M18 6 6 18" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form data-resource-filters-form>
+                    <label for="resource-name-filter">Search by Name</label>
+                    <div class="student-resource-filter-input">
+                        <input id="resource-name-filter"
+                               type="search"
+                               data-resource-name-filter
+                               autocomplete="off" />
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                    </div>
+
+                    <label for="resource-module-filter">Search by Module</label>
+                    <div class="student-resource-filter-input">
+                        <input id="resource-module-filter"
+                               type="search"
+                               data-resource-module-filter
+                               autocomplete="off" />
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                    </div>
+
+                    <label class="student-resource-bookmarked-filter">
+                        <input type="checkbox" data-resource-bookmarked-filter />
+                        <span>Bookmarked</span>
+                    </label>
+
+                    <button type="submit" class="student-resource-apply-filters">
+                        Apply filters
+                    </button>
+                </form>
+            </aside>
+            <button type="button"
+                    class="student-resource-filter-backdrop"
+                    data-filter-close
+                    aria-label="Close filters"></button>
+
+            <section class="student-resource-results" aria-label="Subscribed learning resources">
+                <div class="student-resource-results-toolbar">
+                    <div class="student-resource-results-count">
+                        <strong data-resource-results-count>@Model.Resources.Count</strong>
+                        <span data-resource-results-label>
+                            @(Model.Resources.Count == 1 ? "resource" : "resources")
+                        </span>
+                        displayed
+                    </div>
+                    <button type="button"
+                            class="student-resource-mobile-filter-trigger"
+                            data-resource-mobile-filter-trigger
+                            data-filter-open
+                            aria-controls="resource-filter-panel"
+                            aria-expanded="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="currentColor"
+                                  d="M4.38 3.22A1 1 0 0 1 5 3h14a1 1 0 0 1 .79 1.62L15 10.75v9.13c.04.3-.06.62-.29.83a.996.996 0 0 1-1.41 0l-4.01-4.01a.99.99 0 0 1-.29-.83v-5.12L4.21 4.62a1 1 0 0 1 .17-1.4Z" />
+                        </svg>
+                        <span>Filter</span>
+                    </button>
+                </div>
+
+                <div class="student-resource-grid" data-resource-grid>
+                    @foreach (var resource in Model.Resources)
+                    {
+                        <article class="student-resource-card"
+                                 data-resource-card
+                                 data-resource-id="@resource.LearningResourceId"
+                                 data-resource-name="@resource.Topic"
+                                 data-resource-module="@resource.ModuleCode @resource.ModuleName">
+                            <h2>@resource.ModuleName</h2>
+                            <p class="student-resource-topic"
+                               title="@resource.Topic">@resource.TopicDisplay</p>
+                            <div class="student-resource-meta">
+                                @if (!string.IsNullOrWhiteSpace(resource.TutorProfileImagePath))
+                                {
+                                    <img src="@resource.TutorProfileImagePath"
+                                         alt="@resource.TutorName profile picture"
+                                         class="student-resource-author-image"
+                                         loading="lazy" />
+                                }
+                                else
+                                {
+                                    <span class="student-resource-author-icon" aria-hidden="true">
+                                        <i class="bi bi-person"></i>
+                                    </span>
+                                }
+                                <a asp-page="/Tutors/Details"
+                                   asp-route-id="@resource.TutorId"
+                                   class="student-resource-tutor-link">@resource.TutorName</a>
+                                <span aria-hidden="true">|</span>
+                                <small>Posted: @resource.PublishedDateDisplay</small>
+                            </div>
+                            <div class="student-resource-card-actions">
+                                <a asp-page="./Details"
+                                   asp-route-resourceId="@resource.LearningResourceId"
+                                   class="student-resource-learn-more">Read</a>
+                                <button type="button"
+                                        class="student-resource-bookmark"
+                                        data-resource-bookmark
+                                        aria-label="Bookmark @resource.Topic"
+                                        aria-pressed="false">
+                                    <i class="bi bi-bookmark" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </article>
+                    }
+                </div>
+
+                <div class="student-resources-filtered-empty"
+                     data-resource-filtered-empty
+                     hidden>
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <h2>No resources match those filters</h2>
+                    <p>Try clearing a filter or searching for another resource.</p>
+                    <button type="button" data-resource-empty-clear>
+                        Clear all filters
+                    </button>
+                </div>
+            </section>
+        </div>
+    }
+</main>
+
+@section Scripts {
+    <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+    <script src="~/js/tutors.js"
+            asp-append-version="true"></script>
+    <script src="~/js/learning-resources-index.js"
+            asp-append-version="true"></script>
+}

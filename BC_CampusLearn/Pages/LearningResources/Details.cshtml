@@ -1,0 +1,420 @@
+@page "{resourceId:int}"
+@model BC_CampusLearn.Pages.LearningResources.DetailsModel
+
+@{
+    ViewData["Title"] = Model.Resource.Topic;
+    DateTimeOffset? published = Model.Resource.DatePublished?.ToOffset(TimeSpan.FromHours(2));
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.bubble.css" />
+    <link rel="stylesheet" href="~/css/learning-resources.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/navigation-drawer.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<main class="container-fluid px-3 px-xl-4 py-4 student-resource-reader-page">
+    <header class="student-resource-reader-heading">
+        <h1>@Model.Resource.Topic</h1>
+    </header>
+
+    <div class="student-resource-reader-layout @(Model.Resource.AllowSubscriberComments ? "has-open-discussion" : null)">
+        <div class="student-resource-reader-column">
+            <article class="student-resource-reader">
+                <header class="student-resource-reader-meta">
+                    <div class="student-resource-meta-row">
+                        <strong>Module:</strong>
+                        @Model.Resource.ProgrammeModule.ModuleName
+                    </div>
+                    <div class="student-resource-meta-row student-resource-meta-byline">
+                        <span>
+                            <strong>Tutor:</strong>
+                            <a asp-page="/Tutors/Details"
+                               asp-route-id="@Model.Resource.TutorId">@Model.TutorName</a>
+                        </span>
+                        @if (published.HasValue)
+                        {
+                            <span class="student-resource-published">
+                                <span aria-hidden="true">|</span>
+                                <strong>Posted:</strong>
+                                <time datetime="@Model.Resource.DatePublished?.ToString("O")">
+                                    @published.Value.ToString("dd/MM/yyyy")
+                                </time>
+                            </span>
+                        }
+                    </div>
+                </header>
+
+                <textarea hidden data-student-resource-delta>@Model.Resource.Content</textarea>
+                <section class="student-resource-content" data-student-resource-content></section>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Resource.Link1) ||
+                     !string.IsNullOrWhiteSpace(Model.Resource.Link2) ||
+                     Model.Resource.Documents.Count > 0)
+                {
+                    <section class="student-resource-further-reading">
+                        <h2>Further Reading</h2>
+                        @if (!string.IsNullOrWhiteSpace(Model.Resource.Link1))
+                        {
+                            <a href="@Model.Resource.Link1" target="_blank" rel="noopener">
+                                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                                @Model.Resource.Link1
+                            </a>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.Resource.Link2))
+                        {
+                            <a href="@Model.Resource.Link2" target="_blank" rel="noopener">
+                                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                                @Model.Resource.Link2
+                            </a>
+                        }
+                        @foreach (var document in Model.Resource.Documents.OrderBy(item => item.DocumentName))
+                        {
+                            <a href="@document.FileUrl" target="_blank" rel="noopener">
+                                <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
+                                @document.DocumentName
+                            </a>
+                        }
+                    </section>
+                }
+            </article>
+        </div>
+
+        <aside class="resource-discussion" id="discussion" aria-labelledby="discussion-title">
+            <header class="resource-discussion-heading">
+                <div>
+                    <h2 id="discussion-title">Resource discussion</h2>
+                    <p>Ask the tutor a question or join the discussion.</p>
+                    <span class="resource-discussion-count">
+                        @Model.CommentCount @(Model.CommentCount == 1 ? "comment" : "comments")
+                    </span>
+                </div>
+            </header>
+
+            @if (!string.IsNullOrWhiteSpace(Model.DiscussionMessage) &&
+                 (!Model.DiscussionError || !Model.Resource.AllowSubscriberComments))
+            {
+                <div class="resource-discussion-alert @(Model.DiscussionError ? "is-error" : null)"
+                     role="status">
+                    @Model.DiscussionMessage
+                </div>
+            }
+
+            @if (Model.CommentCount == 0)
+            {
+                <div class="resource-discussion-empty">
+                    <i class="bi bi-chat-square-text" aria-hidden="true"></i>
+                    <h3>No comments yet</h3>
+                    <p>
+                        @(Model.Resource.AllowSubscriberComments
+                            ? "Start the discussion by asking the first question."
+                            : "No comments were posted before this discussion was closed.")
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="resource-comment-list">
+                    @foreach (var comment in Model.GetRootComments())
+                    {
+                        string authorName = Model.GetAuthorName(comment);
+                        var replies = Model.GetReplies(comment.CommentId).ToList();
+                        <article id="comment-@comment.CommentId"
+                                 class="resource-comment @(comment.IsPinned ? "is-pinned" : null)">
+                            <div class="resource-comment-avatar">
+                                @if (!string.IsNullOrWhiteSpace(comment.Author.Tutor?.ProfileImagePath))
+                                {
+                                    <img src="@comment.Author.Tutor.ProfileImagePath"
+                                         alt="@authorName profile picture"
+                                         loading="lazy" />
+                                }
+                                else
+                                {
+                                    <span aria-hidden="true">@DetailsModel.GetAuthorInitials(comment)</span>
+                                }
+                            </div>
+                            <div class="resource-comment-body">
+                                <header>
+                                    <strong>@authorName</strong>
+                                    @if (Model.GetAuthorRole(comment) == "Tutor")
+                                    {
+                                        <span class="resource-comment-verified"
+                                              role="img"
+                                              aria-label="Verified tutor"
+                                              title="Verified tutor">
+                                            <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+                                        </span>
+                                    }
+                                    <time datetime="@DateTime.SpecifyKind(comment.DateCreated, DateTimeKind.Utc).ToString("O")">
+                                        @DetailsModel.GetCommentTimeDisplay(comment.DateCreated)
+                                    </time>
+                                    @if (comment.IsEdited && !comment.IsDeleted)
+                                    {
+                                        <span class="resource-comment-edited">Edited</span>
+                                    }
+                                    @if (comment.IsPinned)
+                                    {
+                                        <span class="resource-comment-pinned">
+                                            <i class="bi bi-pin-angle-fill" aria-hidden="true"></i>
+                                            Pinned
+                                        </span>
+                                    }
+                                </header>
+                                @if (comment.IsDeleted)
+                                {
+                                    <p class="resource-comment-deleted">
+                                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                                        This comment was deleted.
+                                    </p>
+                                }
+                                else
+                                {
+                                    <p id="comment-text-@comment.CommentId">@comment.CommentText</p>
+                                    <div class="resource-comment-actions" id="comment-actions-@comment.CommentId">
+                                        @if (Model.Resource.AllowSubscriberComments)
+                                        {
+                                            <button type="button"
+                                                    class="resource-comment-action"
+                                                    data-comment-reply
+                                                    data-comment-id="@comment.CommentId"
+                                                    data-author-name="@authorName">
+                                                <i class="bi bi-reply" aria-hidden="true"></i>
+                                                Reply
+                                            </button>
+                                        }
+                                        @if (comment.AuthorUserId == Model.CurrentBcUserId)
+                                        {
+                                            <button type="button"
+                                                    class="resource-comment-action"
+                                                    data-comment-edit
+                                                    data-edit-form="comment-edit-@comment.CommentId"
+                                                    data-edit-text="comment-text-@comment.CommentId"
+                                                    data-edit-actions="comment-actions-@comment.CommentId">
+                                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                Edit
+                                            </button>
+                                            <button type="button"
+                                                    class="resource-comment-action is-delete"
+                                                    data-comment-delete-trigger
+                                                    data-comment-id="@comment.CommentId"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#delete-resource-comment-modal">
+                                                <i class="bi bi-trash3" aria-hidden="true"></i>
+                                                Delete
+                                            </button>
+                                        }
+                                    </div>
+                                    @if (comment.AuthorUserId == Model.CurrentBcUserId)
+                                    {
+                                        <form method="post"
+                                              asp-page-handler="EditComment"
+                                              asp-route-resourceId="@Model.Resource.LearningResourceId"
+                                              id="comment-edit-@comment.CommentId"
+                                              class="resource-comment-edit-form"
+                                              data-comment-edit-form
+                                              novalidate
+                                              hidden>
+                                            <input type="hidden" name="commentId" value="@comment.CommentId" />
+                                            <textarea name="commentText" rows="3">@comment.CommentText</textarea>
+                                            <div>
+                                                <button type="submit" class="is-save">Save changes</button>
+                                                <button type="button" data-comment-edit-cancel>Cancel</button>
+                                            </div>
+                                        </form>
+                                    }
+                                }
+
+                                <div class="resource-comment-replies"
+                                     id="comment-replies-@comment.CommentId"
+                                     data-comment-replies>
+                                    @foreach (var reply in replies)
+                                    {
+                                        string replyAuthorName = Model.GetAuthorName(reply);
+                                        <article id="comment-@reply.CommentId"
+                                                 class="resource-comment resource-comment-child">
+                                        <div class="resource-comment-avatar">
+                                            @if (!string.IsNullOrWhiteSpace(reply.Author.Tutor?.ProfileImagePath))
+                                            {
+                                                <img src="@reply.Author.Tutor.ProfileImagePath"
+                                                     alt="@replyAuthorName profile picture"
+                                                     loading="lazy" />
+                                            }
+                                            else
+                                            {
+                                                <span aria-hidden="true">@DetailsModel.GetAuthorInitials(reply)</span>
+                                            }
+                                        </div>
+                                        <div class="resource-comment-body">
+                                            <header>
+                                                <strong>@replyAuthorName</strong>
+                                                @if (Model.GetAuthorRole(reply) == "Tutor")
+                                                {
+                                                    <span class="resource-comment-verified"
+                                                          role="img"
+                                                          aria-label="Verified tutor"
+                                                          title="Verified tutor">
+                                                        <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+                                                    </span>
+                                                }
+                                                <time datetime="@DateTime.SpecifyKind(reply.DateCreated, DateTimeKind.Utc).ToString("O")">
+                                                    @DetailsModel.GetCommentTimeDisplay(reply.DateCreated)
+                                                </time>
+                                                @if (reply.IsEdited)
+                                                {
+                                                    <span class="resource-comment-edited">Edited</span>
+                                                }
+                                            </header>
+                                            <p id="comment-text-@reply.CommentId">@reply.CommentText</p>
+                                            @if (reply.AuthorUserId == Model.CurrentBcUserId)
+                                            {
+                                                <div class="resource-comment-actions" id="comment-actions-@reply.CommentId">
+                                                    <button type="button"
+                                                            class="resource-comment-action"
+                                                            data-comment-edit
+                                                            data-edit-form="comment-edit-@reply.CommentId"
+                                                            data-edit-text="comment-text-@reply.CommentId"
+                                                            data-edit-actions="comment-actions-@reply.CommentId">
+                                                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                        Edit
+                                                    </button>
+                                                    <button type="button"
+                                                            class="resource-comment-action is-delete"
+                                                            data-comment-delete-trigger
+                                                            data-comment-id="@reply.CommentId"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#delete-resource-comment-modal">
+                                                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                                <form method="post"
+                                                      asp-page-handler="EditComment"
+                                                      asp-route-resourceId="@Model.Resource.LearningResourceId"
+                                                      id="comment-edit-@reply.CommentId"
+                                                      class="resource-comment-edit-form"
+                                                      data-comment-edit-form
+                                                      novalidate
+                                                      hidden>
+                                                    <input type="hidden" name="commentId" value="@reply.CommentId" />
+                                                    <textarea name="commentText" rows="3">@reply.CommentText</textarea>
+                                                    <div>
+                                                        <button type="submit" class="is-save">Save changes</button>
+                                                        <button type="button" data-comment-edit-cancel>Cancel</button>
+                                                    </div>
+                                                </form>
+                                            }
+                                        </div>
+                                        </article>
+                                    }
+                                </div>
+                                @if (replies.Count > 1)
+                                {
+                                    <button type="button"
+                                            class="resource-comment-view-replies"
+                                            data-comment-view-replies
+                                            data-replies-target="comment-replies-@comment.CommentId"
+                                            data-hidden-count="@(replies.Count - 1)"
+                                            aria-controls="comment-replies-@comment.CommentId"
+                                            aria-expanded="false">
+                                        <span>View replies (@(replies.Count - 1))</span>
+                                        <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                                    </button>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+
+            @if (Model.Resource.AllowSubscriberComments)
+            {
+                <form method="post"
+                      asp-page-handler="AddComment"
+                      asp-route-resourceId="@Model.Resource.LearningResourceId"
+                      class="resource-comment-form"
+                      data-comment-form
+                      novalidate>
+                    <input type="hidden" name="parentCommentId" data-comment-parent-id />
+                    <div class="resource-comment-replying" data-comment-replying hidden>
+                        <span>Replying to <strong data-comment-replying-name></strong></span>
+                        <button type="button" data-comment-reply-cancel>Cancel</button>
+                    </div>
+                    <label for="resource-comment-text" class="visually-hidden">Add to the discussion</label>
+                    <div class="resource-comment-composer">
+                        <textarea id="resource-comment-text"
+                                  name="commentText"
+                                  rows="1"
+                                  data-comment-text
+                                  placeholder="Add to discussion"></textarea>
+                        <button type="submit" aria-label="Send comment">
+                            <i class="bi bi-arrow-up" aria-hidden="true"></i>
+                            <span>Send</span>
+                        </button>
+                    </div>
+                    @if (Model.DiscussionError && !string.IsNullOrWhiteSpace(Model.DiscussionMessage))
+                    {
+                        <p class="resource-comment-validation" data-comment-validation role="alert">
+                            @Model.DiscussionMessage
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="resource-comment-validation" data-comment-validation role="alert" hidden></p>
+                    }
+                    <footer>
+                        <span><strong data-comment-character-count>0</strong> / 2000</span>
+                    </footer>
+                </form>
+            }
+            else
+            {
+                <div class="resource-discussion-closed">
+                    <i class="bi bi-lock" aria-hidden="true"></i>
+                    The tutor has disabled comments for this resource.
+                </div>
+            }
+        </aside>
+    </div>
+</main>
+
+<div class="modal fade resource-comment-delete-modal"
+     id="delete-resource-comment-modal"
+     tabindex="-1"
+     aria-labelledby="delete-resource-comment-title"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <form method="post"
+                  asp-page-handler="DeleteComment"
+                  asp-route-resourceId="@Model.Resource.LearningResourceId">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="delete-resource-comment-title">Delete comment?</h2>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>This comment will be removed from the discussion.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="resource-comment-modal-cancel"
+                            data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="resource-comment-modal-delete">Delete</button>
+                </div>
+                <input type="hidden" name="commentId" data-comment-delete-id />
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <script src="~/js/components/navigation-drawer.js" asp-append-version="true"></script>
+    <script src="~/js/learning-resource-reader.js" asp-append-version="true"></script>
+    <script src="~/js/learning-resource-discussion.js" asp-append-version="true"></script>
+}

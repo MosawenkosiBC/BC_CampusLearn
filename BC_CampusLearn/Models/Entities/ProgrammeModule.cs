@@ -22,4 +22,7 @@ public class ProgrammeModule
 
     public ICollection<TutorModuleChangeRequest> TutorModuleChangeRequests { get; set; }
         = new List<TutorModuleChangeRequest>();
+
+    public ICollection<LearningResource> LearningResources { get; set; }
+        = new List<LearningResource>();
 }

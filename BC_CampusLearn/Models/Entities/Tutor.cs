@@ -50,4 +50,7 @@ public class Tutor
     public ICollection<TutorDeregistrationRequest> DeregistrationRequests { get; set; }
         = new List<TutorDeregistrationRequest>();
 
+    public ICollection<LearningResource> LearningResources { get; set; }
+        = new List<LearningResource>();
+
 }

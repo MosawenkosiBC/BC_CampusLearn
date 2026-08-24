@@ -3,6 +3,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,6 +36,24 @@ public class DashboardModel : PageModel
         Sessions
     { get; private set; }
         = new List<BookingListItemViewModel>();
+
+    public IReadOnlyList<ResourceModuleSubscriptionItem> AvailableResourceModules
+    { get; private set; } = Array.Empty<ResourceModuleSubscriptionItem>();
+
+    public IReadOnlyList<ResourceModuleSubscriptionItem> SubscribableResourceModules
+    { get; private set; } = Array.Empty<ResourceModuleSubscriptionItem>();
+
+    public IReadOnlyList<ResourceModuleSubscriptionItem> SubscribedResourceModules
+    { get; private set; } = Array.Empty<ResourceModuleSubscriptionItem>();
+
+    public IReadOnlyList<StudentLearningResourceListItem> RecentSubscribedResources
+    { get; private set; } = Array.Empty<StudentLearningResourceListItem>();
+
+    [TempData]
+    public string? ResourceSubscriptionMessage { get; set; }
+
+    [TempData]
+    public bool ResourceSubscriptionError { get; set; }
 
     public async Task OnGetAsync(
         CancellationToken cancellationToken)
@@ -170,5 +189,229 @@ public class DashboardModel : PageModel
                 .Take(5)
                 .ToListAsync(cancellationToken);
 
+        await LoadResourceSubscriptionsAsync(
+            CurrentUser.PersonnelNumber,
+            cancellationToken);
+
     }
+
+    public async Task<IActionResult> OnPostSubscribeResourceModuleAsync(
+        string moduleCode,
+        CancellationToken cancellationToken)
+    {
+        CurrentUser = _currentUserService.GetRequiredUser();
+        string requestedCode = moduleCode?.Trim() ?? string.Empty;
+
+        List<ResourceModuleSubscriptionItem> matchingResources =
+            await _context.LearningResources
+                .AsNoTracking()
+                .Where(resource =>
+                    resource.ProgrammeModule.ModuleCode == requestedCode &&
+                    resource.Status == LearningResourceStatus.Published)
+                .Select(resource => new ResourceModuleSubscriptionItem
+                {
+                    ModuleCode = resource.ProgrammeModule.ModuleCode,
+                    ModuleName = resource.ProgrammeModule.ModuleName
+                })
+                .ToListAsync(cancellationToken);
+        ResourceModuleSubscriptionItem? availableModule = matchingResources
+            .GroupBy(module => module.ModuleCode, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new ResourceModuleSubscriptionItem
+            {
+                ModuleCode = group.Key,
+                ModuleName = group.First().ModuleName,
+                PublishedResourceCount = group.Count()
+            })
+            .FirstOrDefault();
+
+        if (availableModule is null)
+        {
+            ResourceSubscriptionError = true;
+            ResourceSubscriptionMessage =
+                "That module does not currently have published learning resources.";
+            return RedirectToPage(null, null, null, "subscribed-modules");
+        }
+
+        ResourceSubscription? subscription =
+            await _context.ResourceSubscriptions
+                .SingleOrDefaultAsync(item =>
+                    item.PersonnelNumber == CurrentUser.PersonnelNumber &&
+                    item.ModuleCode == availableModule.ModuleCode,
+                    cancellationToken);
+
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        if (subscription is null)
+        {
+            subscription = new ResourceSubscription
+            {
+                PersonnelNumber = CurrentUser.PersonnelNumber,
+                ModuleCode = availableModule.ModuleCode,
+                DateSubscribed = now,
+                IsActive = true
+            };
+            _context.ResourceSubscriptions.Add(subscription);
+        }
+        else
+        {
+            subscription.IsActive = true;
+            subscription.DateSubscribed = now;
+            subscription.LastAccessedAt = null;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+        ResourceSubscriptionMessage =
+            $"You subscribed to {availableModule.ModuleCode}.";
+        return RedirectToPage(null, null, null, "subscribed-modules");
+    }
+
+    public async Task<IActionResult> OnPostUnsubscribeResourceModuleAsync(
+        string moduleCode,
+        CancellationToken cancellationToken)
+    {
+        CurrentUser = _currentUserService.GetRequiredUser();
+        string requestedCode = moduleCode?.Trim() ?? string.Empty;
+
+        ResourceSubscription? subscription =
+            await _context.ResourceSubscriptions
+                .SingleOrDefaultAsync(item =>
+                    item.PersonnelNumber == CurrentUser.PersonnelNumber &&
+                    item.ModuleCode == requestedCode &&
+                    item.IsActive,
+                    cancellationToken);
+
+        if (subscription is null)
+        {
+            ResourceSubscriptionError = true;
+            ResourceSubscriptionMessage =
+                "That module subscription is no longer active.";
+            return RedirectToPage(null, null, null, "subscribed-modules");
+        }
+
+        subscription.IsActive = false;
+        await _context.SaveChangesAsync(cancellationToken);
+        ResourceSubscriptionMessage =
+            $"You unsubscribed from {subscription.ModuleCode}.";
+        return RedirectToPage(null, null, null, "subscribed-modules");
+    }
+
+    private async Task LoadResourceSubscriptionsAsync(
+        string personnelNumber,
+        CancellationToken cancellationToken)
+    {
+        List<ResourceModuleSubscriptionItem> publishedResourceModules =
+            await _context.LearningResources
+                .AsNoTracking()
+                .Where(resource =>
+                    resource.Status == LearningResourceStatus.Published)
+                .Select(resource => new ResourceModuleSubscriptionItem
+                {
+                    ModuleCode = resource.ProgrammeModule.ModuleCode,
+                    ModuleName = resource.ProgrammeModule.ModuleName
+                })
+                .ToListAsync(cancellationToken);
+        List<ResourceModuleSubscriptionItem> availableModules =
+            publishedResourceModules
+                .GroupBy(module => module.ModuleCode, StringComparer.OrdinalIgnoreCase)
+                .Select(group => new ResourceModuleSubscriptionItem
+                {
+                    ModuleCode = group.Key,
+                    ModuleName = group.First().ModuleName,
+                    PublishedResourceCount = group.Count()
+                })
+                .OrderBy(module => module.ModuleCode)
+                .ToList();
+
+        List<string> activeModuleCodes =
+            await _context.ResourceSubscriptions
+                .AsNoTracking()
+                .Where(subscription =>
+                    subscription.PersonnelNumber == personnelNumber &&
+                    subscription.IsActive)
+                .Select(subscription => subscription.ModuleCode)
+                .ToListAsync(cancellationToken);
+
+        HashSet<string> activeCodeSet =
+            activeModuleCodes.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (ResourceModuleSubscriptionItem module in availableModules)
+        {
+            module.IsSubscribed = activeCodeSet.Contains(module.ModuleCode);
+        }
+
+        AvailableResourceModules = availableModules;
+        SubscribableResourceModules = availableModules
+            .Where(module => !module.IsSubscribed)
+            .ToList();
+        List<ResourceModuleSubscriptionItem> subscribedModules = availableModules
+            .Where(module => module.IsSubscribed)
+            .ToList();
+
+        List<string> unavailableActiveCodes = activeModuleCodes
+            .Where(code => !availableModules.Any(module =>
+                module.ModuleCode.Equals(code, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+        if (unavailableActiveCodes.Count > 0)
+        {
+            List<ResourceModuleSubscriptionItem> unavailableModules =
+                await _context.ProgrammeModules
+                    .AsNoTracking()
+                    .Where(module => unavailableActiveCodes.Contains(module.ModuleCode))
+                    .Select(module => new ResourceModuleSubscriptionItem
+                    {
+                        ModuleCode = module.ModuleCode,
+                        ModuleName = module.ModuleName,
+                        PublishedResourceCount = 0,
+                        IsSubscribed = true
+                    })
+                    .ToListAsync(cancellationToken);
+
+            subscribedModules.AddRange(unavailableModules);
+            HashSet<string> foundCodes = unavailableModules
+                .Select(module => module.ModuleCode)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            subscribedModules.AddRange(unavailableActiveCodes
+                .Where(code => !foundCodes.Contains(code))
+                .Select(code => new ResourceModuleSubscriptionItem
+                {
+                    ModuleCode = code,
+                    ModuleName = "Module no longer available",
+                    PublishedResourceCount = 0,
+                    IsSubscribed = true
+                }));
+        }
+
+        SubscribedResourceModules = subscribedModules
+            .OrderBy(module => module.ModuleCode)
+            .ToList();
+
+        RecentSubscribedResources = await _context.LearningResources
+            .AsNoTracking()
+            .Where(resource =>
+                resource.Status == LearningResourceStatus.Published &&
+                activeModuleCodes.Contains(resource.ProgrammeModule.ModuleCode))
+            .OrderByDescending(resource => resource.DatePublished ?? resource.DateCreated)
+            .Take(4)
+            .Select(resource => new StudentLearningResourceListItem
+            {
+                LearningResourceId = resource.LearningResourceId,
+                Topic = resource.Topic,
+                Content = resource.Content,
+                ModuleCode = resource.ProgrammeModule.ModuleCode,
+                ModuleName = resource.ProgrammeModule.ModuleName,
+                TutorId = resource.TutorId,
+                TutorName = string.IsNullOrWhiteSpace(resource.Tutor.BcUser.DisplayName)
+                    ? resource.Tutor.BcUser.PersonnelNumber
+                    : resource.Tutor.BcUser.DisplayName,
+                TutorProfileImagePath = resource.Tutor.ProfileImagePath,
+                DatePublished = resource.DatePublished
+            })
+            .ToListAsync(cancellationToken);
+    }
+}
+
+public class ResourceModuleSubscriptionItem
+{
+    public string ModuleCode { get; set; } = string.Empty;
+    public string ModuleName { get; set; } = string.Empty;
+    public int PublishedResourceCount { get; set; }
+    public bool IsSubscribed { get; set; }
 }

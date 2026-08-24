@@ -40,6 +40,18 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<ProgrammeOfStudy> ProgrammesOfStudy { get; set; }
 
+    public DbSet<LearningResource> LearningResources =>
+        Set<LearningResource>();
+
+    public DbSet<LearningResourceDocument> LearningResourceDocuments =>
+        Set<LearningResourceDocument>();
+
+    public DbSet<ResourceSubscription> ResourceSubscriptions =>
+        Set<ResourceSubscription>();
+
+    public DbSet<ResourceComment> ResourceComments =>
+        Set<ResourceComment>();
+
 
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)

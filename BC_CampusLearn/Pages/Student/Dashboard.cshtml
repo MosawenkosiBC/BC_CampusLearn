@@ -14,6 +14,9 @@
           href="~/css/Dashboard.css"
           asp-append-version="true" />
     <link rel="stylesheet"
+          href="~/css/learning-resources.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
           href="~/css/components/navigation-drawer.css"
           asp-append-version="true" />
 }
@@ -218,9 +221,9 @@
                         </a>
                         <button type="button"
                                 class="dashboard-explore-resources"
-                                data-bs-toggle="modal"
-                                data-bs-target="#moduleSubscriptionsModal"
-                                aria-controls="moduleSubscriptionsModal">
+                                data-bs-toggle="offcanvas"
+                                data-bs-target="#moduleSubscriptionsPanel"
+                                aria-controls="moduleSubscriptionsPanel">
                             Explore Resources
                         </button>
                     </div>
@@ -353,68 +356,290 @@
         </div>
     </section>
 
-    <section class="dashboard-resources" aria-labelledby="subscribed-modules-title">
-        <h2 id="subscribed-modules-title">Subscribed Modules</h2>
+    <section class="dashboard-resources"
+             id="subscribed-modules"
+             aria-labelledby="subscribed-modules-title">
+        <div class="dashboard-resources-heading">
+            <h2 id="subscribed-modules-title">Subscribed Modules</h2>
+            @if (Model.RecentSubscribedResources.Count > 0)
+            {
+                <a asp-page="/LearningResources/Index"
+                   class="dashboard-view-all-sessions">
+                    <span>All resources</span>
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         width="1em"
+                         height="1em"
+                         viewBox="0 0 24 24"
+                         aria-hidden="true">
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        <path fill="currentColor"
+                              d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
+                    </svg>
+                </a>
+            }
+        </div>
 
-        <div class="dashboard-resources-empty">
-            <svg aria-hidden="true" width="38" height="38" viewBox="0 0 24 24">
+        @if (!string.IsNullOrWhiteSpace(Model.ResourceSubscriptionMessage))
+        {
+            <div class="dashboard-subscription-alert @(Model.ResourceSubscriptionError ? "is-error" : null)"
+                 role="status">
+                @Model.ResourceSubscriptionMessage
+            </div>
+        }
+
+        @if (Model.RecentSubscribedResources.Count == 0)
+        {
+            <div class="dashboard-resources-empty">
+                <svg aria-hidden="true" width="38" height="38" viewBox="0 0 24 24">
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <path fill="currentColor" d="M8.25 8A.75.75 0 0 1 9 7.25h7a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 8M9 10.25a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5z" />
+                    <path fill="currentColor" fill-rule="evenodd" d="M8.5 3.25A4.75 4.75 0 0 0 3.75 8v10a3.75 3.75 0 0 0 3.75 3.75h11A1.75 1.75 0 0 0 20.25 20V5a1.75 1.75 0 0 0-1.75-1.75zm10.25 11V5a.25.25 0 0 0-.25-.25h-10A3.25 3.25 0 0 0 5.25 8v7a3.73 3.73 0 0 1 2.25-.75zm0 1.5H7.5a2.25 2.25 0 0 0 0 4.5h11a.25.25 0 0 0 .25-.25z" clip-rule="evenodd" />
+                </svg>
+
+                @if (Model.SubscribedResourceModules.Count == 0)
+                {
+                    <h3>No subscribed modules yet</h3>
+                    <p>
+                        Select Explore Resources to subscribe to modules with
+                        published learning content.
+                    </p>
+                }
+                else
+                {
+                    <h3>No published resources currently available</h3>
+                    <p>New content from your subscribed modules will appear here.</p>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="student-resource-grid dashboard-resource-preview-grid">
+                @foreach (var resource in Model.RecentSubscribedResources)
+                {
+                    <article class="student-resource-card"
+                             data-dashboard-resource-card
+                             data-resource-id="@resource.LearningResourceId"
+                             data-resource-name="@resource.Topic">
+                        <h2>@resource.ModuleName</h2>
+                        <p class="student-resource-topic"
+                           title="@resource.Topic">@resource.TopicDisplay</p>
+                        <div class="student-resource-meta">
+                            @if (!string.IsNullOrWhiteSpace(resource.TutorProfileImagePath))
+                            {
+                                <img src="@resource.TutorProfileImagePath"
+                                     alt="@resource.TutorName profile picture"
+                                     class="student-resource-author-image"
+                                     loading="lazy" />
+                            }
+                            else
+                            {
+                                <span class="student-resource-author-icon" aria-hidden="true">
+                                    <i class="bi bi-person"></i>
+                                </span>
+                            }
+                            <a asp-page="/Tutors/Details"
+                               asp-route-id="@resource.TutorId"
+                               class="student-resource-tutor-link">@resource.TutorName</a>
+                            <span aria-hidden="true">|</span>
+                            <small>Posted: @resource.PublishedDateDisplay</small>
+                        </div>
+                        <div class="student-resource-card-actions">
+                            <a asp-page="/LearningResources/Details"
+                               asp-route-resourceId="@resource.LearningResourceId"
+                               class="student-resource-learn-more">Read</a>
+                            <button type="button"
+                                    class="student-resource-bookmark"
+                                    data-dashboard-resource-bookmark
+                                    aria-label="Bookmark @resource.Topic"
+                                    aria-pressed="false">
+                                <i class="bi bi-bookmark" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+</section>
+
+<aside class="offcanvas offcanvas-end dashboard-subscriptions-panel"
+     id="moduleSubscriptionsPanel"
+     tabindex="-1"
+     aria-labelledby="moduleSubscriptionsPanelTitle"
+     aria-hidden="true">
+    <div class="offcanvas-header">
+        <div class="dashboard-subscriptions-title">
+            <svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24">
                 <path d="M0 0h24v24H0z" fill="none" />
                 <path fill="currentColor" d="M8.25 8A.75.75 0 0 1 9 7.25h7a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 8M9 10.25a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5z" />
                 <path fill="currentColor" fill-rule="evenodd" d="M8.5 3.25A4.75 4.75 0 0 0 3.75 8v10a3.75 3.75 0 0 0 3.75 3.75h11A1.75 1.75 0 0 0 20.25 20V5a1.75 1.75 0 0 0-1.75-1.75zm10.25 11V5a.25.25 0 0 0-.25-.25h-10A3.25 3.25 0 0 0 5.25 8v7a3.73 3.73 0 0 1 2.25-.75zm0 1.5H7.5a2.25 2.25 0 0 0 0 4.5h11a.25.25 0 0 0 .25-.25z" clip-rule="evenodd" />
             </svg>
-
-            <h3>No module resources yet</h3>
-            <p>
-                Module subscriptions are coming soon. Once available, resources
-                for your subscribed modules will appear here.
-            </p>
+            <h2 class="offcanvas-title" id="moduleSubscriptionsPanelTitle">Module Subscriptions</h2>
         </div>
-    </section>
-</section>
 
-<div class="modal fade dashboard-subscriptions-modal"
-     id="moduleSubscriptionsModal"
-     tabindex="-1"
-     aria-labelledby="moduleSubscriptionsModalTitle"
-     aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="dashboard-subscriptions-title">
-                    <svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24">
-                        <path d="M0 0h24v24H0z" fill="none" />
-                        <path fill="currentColor" d="M8.25 8A.75.75 0 0 1 9 7.25h7a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 8M9 10.25a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5z" />
-                        <path fill="currentColor" fill-rule="evenodd" d="M8.5 3.25A4.75 4.75 0 0 0 3.75 8v10a3.75 3.75 0 0 0 3.75 3.75h11A1.75 1.75 0 0 0 20.25 20V5a1.75 1.75 0 0 0-1.75-1.75zm10.25 11V5a.25.25 0 0 0-.25-.25h-10A3.25 3.25 0 0 0 5.25 8v7a3.73 3.73 0 0 1 2.25-.75zm0 1.5H7.5a2.25 2.25 0 0 0 0 4.5h11a.25.25 0 0 0 .25-.25z" clip-rule="evenodd" />
-                    </svg>
-                    <h2 class="modal-title" id="moduleSubscriptionsModalTitle">Module Subscriptions</h2>
-                </div>
-
-                <button type="button"
-                        class="btn-close"
-                        data-bs-dismiss="modal"
-                        aria-label="Close"></button>
-            </div>
-
-            <div class="modal-body">
-                <p class="dashboard-subscriptions-description">
-                    Subscribe to a module to view and engage with learning resources shared by tutors.
-                </p>
-
-                <div class="dashboard-subscriptions-fields">
-                    <label for="subscribe-module">Select a Module to Subscribe:</label>
-                    <select id="subscribe-module" disabled>
-                        <option selected></option>
-                    </select>
-
-                    <label for="unsubscribe-module">Select a Module to Unsubscribe:</label>
-                    <select id="unsubscribe-module" disabled>
-                        <option selected></option>
-                    </select>
-                </div>
-            </div>
-        </div>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="offcanvas"
+                aria-label="Close"></button>
     </div>
-</div>
+
+    <div class="offcanvas-body">
+                <div class="dashboard-subscription-sections">
+                    <section class="dashboard-subscription-section"
+                             aria-labelledby="subscribe-resource-module-title">
+                        <h3 id="subscribe-resource-module-title">Subscribe to a module</h3>
+                        <p class="dashboard-subscription-note">
+                            Only modules with published resources are available to subscribe to.
+                        </p>
+
+                        @if (Model.SubscribableResourceModules.Count == 0)
+                        {
+                            <div class="dashboard-subscription-section-empty">
+                                <span>
+                                    @(Model.AvailableResourceModules.Count == 0
+                                        ? "No modules have published resources yet."
+                                        : "You are subscribed to every available module.")
+                                </span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div data-module-subscription-control>
+                                <div class="dashboard-subscription-picker"
+                                     data-module-subscription-picker>
+                                    <label id="subscribe-module-label">Choose a module</label>
+                                    <button type="button"
+                                            class="dashboard-subscription-trigger"
+                                            data-module-subscription-trigger
+                                            aria-labelledby="subscribe-module-label subscribe-module-value"
+                                            aria-expanded="false"
+                                            aria-controls="subscribe-module-panel">
+                                        <span id="subscribe-module-value"
+                                              data-module-subscription-value>Select a module</span>
+                                        <svg viewBox="0 0 16 16" aria-hidden="true">
+                                            <path d="m4 6 4 4 4-4" fill="none" stroke="currentColor"
+                                                  stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" />
+                                        </svg>
+                                    </button>
+                                    <div id="subscribe-module-panel"
+                                         class="dashboard-subscription-panel"
+                                         data-module-subscription-panel hidden>
+                                        <div class="dashboard-subscription-search">
+                                            <i class="bi bi-search" aria-hidden="true"></i>
+                                            <label class="visually-hidden"
+                                                   for="subscribe-module-search">Search modules to subscribe</label>
+                                            <input id="subscribe-module-search" type="search"
+                                                   data-module-subscription-search
+                                                   placeholder="Search by module code or name" autocomplete="off" />
+                                        </div>
+                                        <div class="dashboard-subscription-options" role="listbox"
+                                             aria-labelledby="subscribe-module-label">
+                                            @foreach (var module in Model.SubscribableResourceModules)
+                                            {
+                                                <button type="button" class="dashboard-subscription-option"
+                                                        data-module-subscription-option
+                                                        data-module-code="@module.ModuleCode"
+                                                        data-module-name="@module.ModuleName"
+                                                        role="option" aria-selected="false">
+                                                    <strong>@module.ModuleCode</strong>
+                                                    <span>@module.ModuleName</span>
+                                                </button>
+                                            }
+                                        </div>
+                                        <p class="dashboard-subscription-no-results"
+                                           data-module-subscription-no-results hidden>No modules match your search.</p>
+                                    </div>
+                                </div>
+                                <form method="post" asp-page-handler="SubscribeResourceModule"
+                                      class="dashboard-subscription-selection-form"
+                                      data-module-subscription-form
+                                      data-validation-message="Select a module before subscribing.">
+                                    <input type="hidden" name="moduleCode" data-module-subscription-code />
+                                    <button type="submit" class="dashboard-subscribe-button"
+                                            data-module-subscription-submit>Subscribe</button>
+                                </form>
+                                <p class="dashboard-subscription-validation"
+                                   data-module-subscription-validation
+                                   role="alert"
+                                   hidden></p>
+                            </div>
+                        }
+                    </section>
+
+                    <section class="dashboard-subscription-section"
+                             aria-labelledby="unsubscribe-resource-module-title">
+                        <h3 id="unsubscribe-resource-module-title">Unsubscribe from a module</h3>
+
+                        @if (Model.SubscribedResourceModules.Count == 0)
+                        {
+                            <div class="dashboard-subscription-section-empty">
+                                <i class="bi bi-journal" aria-hidden="true"></i>
+                                <span>You do not have any active module subscriptions.</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div data-module-subscription-control>
+                                <div class="dashboard-subscription-picker"
+                                     data-module-subscription-picker>
+                                    <label id="unsubscribe-module-label">Choose a subscribed module</label>
+                                    <button type="button" class="dashboard-subscription-trigger"
+                                            data-module-subscription-trigger
+                                            aria-labelledby="unsubscribe-module-label unsubscribe-module-value"
+                                            aria-expanded="false" aria-controls="unsubscribe-module-panel">
+                                        <span id="unsubscribe-module-value"
+                                              data-module-subscription-value>Select a subscribed module</span>
+                                        <svg viewBox="0 0 16 16" aria-hidden="true">
+                                            <path d="m4 6 4 4 4-4" fill="none" stroke="currentColor"
+                                                  stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" />
+                                        </svg>
+                                    </button>
+                                    <div id="unsubscribe-module-panel" class="dashboard-subscription-panel"
+                                         data-module-subscription-panel hidden>
+                                        <div class="dashboard-subscription-search">
+                                            <i class="bi bi-search" aria-hidden="true"></i>
+                                            <label class="visually-hidden"
+                                                   for="unsubscribe-module-search">Search subscribed modules</label>
+                                            <input id="unsubscribe-module-search" type="search"
+                                                   data-module-subscription-search
+                                                   placeholder="Search subscribed modules" autocomplete="off" />
+                                        </div>
+                                        <div class="dashboard-subscription-options" role="listbox"
+                                             aria-labelledby="unsubscribe-module-label">
+                                            @foreach (var module in Model.SubscribedResourceModules)
+                                            {
+                                                <button type="button" class="dashboard-subscription-option"
+                                                        data-module-subscription-option
+                                                        data-module-code="@module.ModuleCode"
+                                                        data-module-name="@module.ModuleName"
+                                                        role="option" aria-selected="false">
+                                                    <strong>@module.ModuleCode</strong>
+                                                    <span>@module.ModuleName</span>
+                                                </button>
+                                            }
+                                        </div>
+                                        <p class="dashboard-subscription-no-results"
+                                           data-module-subscription-no-results hidden>No subscriptions match your search.</p>
+                                    </div>
+                                </div>
+                                <form method="post" asp-page-handler="UnsubscribeResourceModule"
+                                      class="dashboard-subscription-selection-form"
+                                      data-module-subscription-form
+                                      data-validation-message="Select a module before unsubscribing.">
+                                    <input type="hidden" name="moduleCode" data-module-subscription-code />
+                                    <button type="submit" class="dashboard-unsubscribe-button"
+                                            data-module-subscription-submit>Unsubscribe</button>
+                                </form>
+                                <p class="dashboard-subscription-validation"
+                                   data-module-subscription-validation
+                                   role="alert"
+                                   hidden></p>
+                            </div>
+                        }
+                    </section>
+                </div>
+    </div>
+</aside>
 
 @section Scripts {
     <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>

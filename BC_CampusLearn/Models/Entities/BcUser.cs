@@ -14,4 +14,6 @@ public class BcUser
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
     public Tutor? Tutor { get; set; }
+    public ICollection<ResourceComment> ResourceComments { get; set; }
+        = new List<ResourceComment>();
 }

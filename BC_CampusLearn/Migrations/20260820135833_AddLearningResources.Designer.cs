@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260820135833_AddLearningResources")]
+    partial class AddLearningResources
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -240,16 +243,16 @@ namespace BC_CampusLearn.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTimeOffset>("DateCreated")
+                    b.Property<DateTime>("DateCreated")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetimeoffset")
+                        .HasColumnType("datetime2")
                         .HasDefaultValueSql("SYSUTCDATETIME()");
 
-                    b.Property<DateTimeOffset?>("DatePublished")
-                        .HasColumnType("datetimeoffset");
+                    b.Property<DateTime?>("DatePublished")
+                        .HasColumnType("datetime2");
 
-                    b.Property<DateTimeOffset?>("DateUpdated")
-                        .HasColumnType("datetimeoffset");
+                    b.Property<DateTime?>("DateUpdated")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Link1")
                         .HasMaxLength(1000)
@@ -292,9 +295,9 @@ namespace BC_CampusLearn.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ResourceDocumentId"));
 
-                    b.Property<DateTimeOffset>("DateUploaded")
+                    b.Property<DateTime>("DateUploaded")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetimeoffset")
+                        .HasColumnType("datetime2")
                         .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.Property<string>("DocumentName")
@@ -399,59 +402,6 @@ namespace BC_CampusLearn.Migrations
                         });
                 });
 
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.ResourceComment", b =>
-                {
-                    b.Property<int>("CommentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CommentId"));
-
-                    b.Property<int>("AuthorUserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("CommentText")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<DateTime>("DateCreated")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
-
-                    b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsEdited")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsPinned")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<int?>("ParentCommentId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ResourceId")
-                        .HasColumnType("int");
-
-                    b.HasKey("CommentId");
-
-                    b.HasIndex("AuthorUserId");
-
-                    b.HasIndex("ParentCommentId");
-
-                    b.HasIndex("ResourceId", "IsPinned", "DateCreated");
-
-                    b.ToTable("ResourceComments", (string)null);
-                });
-
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.ResourceSubscription", b =>
                 {
                     b.Property<int>("ResourceSubscriptionId")
@@ -460,9 +410,9 @@ namespace BC_CampusLearn.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ResourceSubscriptionId"));
 
-                    b.Property<DateTimeOffset>("DateSubscribed")
+                    b.Property<DateTime>("DateSubscribed")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetimeoffset")
+                        .HasColumnType("datetime2")
                         .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.Property<bool>("IsActive")
@@ -470,8 +420,8 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
-                    b.Property<DateTimeOffset?>("LastAccessedAt")
-                        .HasColumnType("datetimeoffset");
+                    b.Property<DateTime?>("LastAccessedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("ModuleCode")
                         .IsRequired()
@@ -849,35 +799,6 @@ namespace BC_CampusLearn.Migrations
                     b.Navigation("Programme");
                 });
 
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.ResourceComment", b =>
-                {
-                    b.HasOne("BC_CampusLearn.Models.Entities.BcUser", "Author")
-                        .WithMany("ResourceComments")
-                        .HasForeignKey("AuthorUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_ResourceComments_Authors");
-
-                    b.HasOne("BC_CampusLearn.Models.Entities.ResourceComment", "ParentComment")
-                        .WithMany("Replies")
-                        .HasForeignKey("ParentCommentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("FK_ResourceComments_Parent");
-
-                    b.HasOne("BC_CampusLearn.Models.Entities.LearningResource", "Resource")
-                        .WithMany("Comments")
-                        .HasForeignKey("ResourceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_ResourceComments_Resources");
-
-                    b.Navigation("Author");
-
-                    b.Navigation("ParentComment");
-
-                    b.Navigation("Resource");
-                });
-
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.Tutor", b =>
                 {
                     b.HasOne("BC_CampusLearn.Models.Entities.BcUser", "BcUser")
@@ -970,8 +891,6 @@ namespace BC_CampusLearn.Migrations
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.BcUser", b =>
                 {
-                    b.Navigation("ResourceComments");
-
                     b.Navigation("Tutor");
                 });
 
@@ -984,8 +903,6 @@ namespace BC_CampusLearn.Migrations
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.LearningResource", b =>
                 {
-                    b.Navigation("Comments");
-
                     b.Navigation("Documents");
                 });
 
@@ -1005,11 +922,6 @@ namespace BC_CampusLearn.Migrations
                     b.Navigation("ProgrammeModules");
 
                     b.Navigation("Tutors");
-                });
-
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.ResourceComment", b =>
-                {
-                    b.Navigation("Replies");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.Tutor", b =>

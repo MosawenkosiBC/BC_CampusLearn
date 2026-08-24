@@ -1,0 +1,552 @@
+@page
+@using BC_CampusLearn.Models.Entities
+@model BC_CampusLearn.Pages.Tutors.ManageResourcesModel
+
+@{
+    ViewData["Title"] = "Manage Resources";
+    var selectedModule = Model.ModuleOptions.FirstOrDefault(option =>
+        option.Value == Model.Input.ProgrammeModuleId.ToString());
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" />
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.bubble.css" />
+    <link rel="stylesheet" href="~/css/tutors.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/navigation-drawer.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/manage-resources.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<section class="container py-4 manage-resources-page"
+         aria-labelledby="manage-resources-title">
+    <header class="resource-page-header">
+        <h1 id="manage-resources-title">Manage Resources</h1>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+    {
+        <div class="resource-alert" role="status">
+            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+            <span>@Model.SuccessMessage</span>
+            <button type="button" aria-label="Dismiss message" data-alert-dismiss>&times;</button>
+        </div>
+    }
+
+    <section class="resource-editor @(Model.IsEditing || !ViewData.ModelState.IsValid ? "is-open" : null)"
+             data-resource-editor
+             aria-labelledby="resource-editor-title">
+        <div class="resource-editor-heading">
+            <div>
+                <h2 id="resource-editor-title">@(Model.IsEditing ? "Edit resource" : "Create a resource")</h2>
+            </div>
+            <a asp-page="./ManageResources" class="resource-editor-close" aria-label="Close editor">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </a>
+        </div>
+
+        @if (Model.ModuleOptions.Count == 0)
+        {
+            <div class="resource-empty-note">
+                You need at least one assigned module before you can create a resource.
+            </div>
+        }
+
+        <form method="post" asp-page-handler="Save" enctype="multipart/form-data" class="resource-form">
+            <input asp-for="Input.LearningResourceId" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="resource-validation"></div>
+
+            <div class="resource-form-grid">
+                <div class="resource-field resource-field--wide">
+                    <label asp-for="Input.Topic">Resource title or topic</label>
+                    <input asp-for="Input.Topic" placeholder="e.g. Introduction to object-oriented programming" />
+                    <span asp-validation-for="Input.Topic"></span>
+                </div>
+                <div class="resource-field resource-field--wide">
+                    <label asp-for="Input.ProgrammeModuleId">Module</label>
+                    <div class="resource-module-picker" data-resource-module-picker>
+                        <button type="button"
+                                class="resource-module-trigger"
+                                data-resource-module-trigger
+                                aria-expanded="false"
+                                aria-controls="resource-module-panel"
+                                disabled="@(Model.ModuleOptions.Count == 0)">
+                            <span data-resource-module-label>
+                                @(selectedModule?.Text ?? "Select a module")
+                            </span>
+                            <svg viewBox="0 0 16 16" aria-hidden="true">
+                                <path d="m4 6 4 4 4-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      stroke-width="1.6" />
+                            </svg>
+                        </button>
+
+                        <div id="resource-module-panel"
+                             class="resource-module-panel"
+                             data-resource-module-panel
+                             hidden>
+                            <label class="visually-hidden"
+                                   for="resource-module-search">Search modules</label>
+                            <div class="resource-module-search">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle cx="11" cy="11" r="7"
+                                            fill="none" stroke="currentColor" stroke-width="1.8" />
+                                    <path d="m16.25 16.25 4 4"
+                                          fill="none" stroke="currentColor"
+                                          stroke-linecap="round" stroke-width="1.8" />
+                                </svg>
+                                <input id="resource-module-search"
+                                       type="search"
+                                       data-resource-module-search
+                                       placeholder="Search by code or module name"
+                                       autocomplete="off" />
+                            </div>
+                            <div class="resource-module-options"
+                                 role="listbox"
+                                 aria-label="Assigned modules">
+                                @foreach (var module in Model.ModuleOptions)
+                                {
+                                    string[] moduleParts = module.Text.Split(
+                                        " — ",
+                                        2,
+                                        StringSplitOptions.None);
+                                    <button type="button"
+                                            class="resource-module-option"
+                                            data-resource-module-option
+                                            data-value="@module.Value"
+                                            data-label="@module.Text"
+                                            role="option"
+                                            aria-selected="@(module.Value == Model.Input.ProgrammeModuleId.ToString() ? "true" : "false")">
+                                        <strong>@moduleParts[0]</strong>
+                                        @if (moduleParts.Length > 1)
+                                        {
+                                            <span>@moduleParts[1]</span>
+                                        }
+                                    </button>
+                                }
+                            </div>
+                            <p class="resource-module-empty"
+                               data-resource-module-empty
+                               hidden>No matching modules found.</p>
+                        </div>
+
+                        <select asp-for="Input.ProgrammeModuleId"
+                                asp-items="Model.ModuleOptions"
+                                class="visually-hidden"
+                                data-resource-module-select
+                                tabindex="-1"
+                                aria-hidden="true">
+                            <option value="0">Select a module</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="Input.ProgrammeModuleId"></span>
+                </div>
+                <div class="resource-field resource-field--content resource-field--wide">
+                    <label asp-for="Input.Content">Learning content</label>
+                    <div class="resource-quill-editor"
+                         data-resource-quill-editor
+                         aria-label="Learning content editor"></div>
+                    <textarea asp-for="Input.Content"
+                              hidden
+                              data-resource-content-input></textarea>
+                    <span asp-validation-for="Input.Content"
+                          data-resource-content-validation></span>
+                    <small data-content-count>0 characters</small>
+                </div>
+                <div class="resource-form-side">
+                    <div class="resource-links-heading">
+                        <h3>Learning links</h3>
+                    </div>
+                    <div class="resource-field">
+                        <label asp-for="Input.Link1">Learning link 1 <small>Optional</small></label>
+                        <div class="resource-input-icon">
+                            <i class="bi bi-link-45deg" aria-hidden="true"></i>
+                            <input asp-for="Input.Link1" placeholder="https://..." />
+                        </div>
+                        <span asp-validation-for="Input.Link1"></span>
+                    </div>
+                    <div class="resource-field">
+                        <label asp-for="Input.Link2">Learning link 2 <small>Optional</small></label>
+                        <div class="resource-input-icon">
+                            <i class="bi bi-link-45deg" aria-hidden="true"></i>
+                            <input asp-for="Input.Link2" placeholder="https://..." />
+                        </div>
+                        <span asp-validation-for="Input.Link2"></span>
+                    </div>
+                    <div class="resource-upload">
+                        <label for="resource-documents">
+                            <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                            <strong>Add documents</strong>
+                            <span>PDF, Office, TXT or ZIP · max 10 MB each</span>
+                        </label>
+                        <input asp-for="Input.Documents" id="resource-documents" type="file" multiple
+                               accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip" />
+                        <div class="resource-selected-files" data-selected-files></div>
+                        <span asp-validation-for="Input.Documents"></span>
+                    </div>
+                    <div class="resource-preview-placement">
+                        <button type="button"
+                                class="resource-preview-action"
+                                data-resource-preview-open>
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                            Preview
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.ExistingDocuments.Count > 0)
+            {
+                <div class="resource-existing-documents">
+                    <h3>Attached documents</h3>
+                    <div>
+                        @foreach (var document in Model.ExistingDocuments)
+                        {
+                            <article>
+                                <span class="resource-file-type">@document.FileType</span>
+                                <span>
+                                    <a href="@document.FileUrl" target="_blank" rel="noopener">@document.DocumentName</a>
+                                    <small>@((document.FileSizeBytes / 1024d).ToString("N0")) KB</small>
+                                </span>
+                                <button type="submit" form="delete-document-@document.ResourceDocumentId"
+                                        aria-label="Remove @document.DocumentName">
+                                    <i class="bi bi-trash3" aria-hidden="true"></i>
+                                </button>
+                            </article>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="resource-form-footer">
+                <label class="resource-comments-toggle">
+                    <span class="resource-comments-label">Allow students to comment</span>
+                    <input asp-for="Input.AllowSubscriberComments" />
+                    <span class="resource-comments-switch" aria-hidden="true"></span>
+                </label>
+                <div class="resource-form-actions">
+                    <a asp-page="./ManageResources" class="resource-cancel-action">Cancel</a>
+                    <button type="submit" name="submitAction" value="draft" class="resource-secondary-action"
+                            disabled="@(Model.ModuleOptions.Count == 0)">Save draft</button>
+                    <button type="submit" name="submitAction" value="publish" class="resource-primary-action"
+                            disabled="@(Model.ModuleOptions.Count == 0)">
+                        <i class="bi bi-send" aria-hidden="true"></i> Publish
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        @foreach (var document in Model.ExistingDocuments)
+        {
+            <form method="post" asp-page-handler="DeleteDocument"
+                  id="delete-document-@document.ResourceDocumentId">
+                <input type="hidden" name="documentId" value="@document.ResourceDocumentId" />
+                <input type="hidden" name="resourceId" value="@Model.Input.LearningResourceId" />
+            </form>
+        }
+    </section>
+
+    <div class="modal fade resource-preview-modal"
+         id="resource-preview-modal"
+         tabindex="-1"
+         aria-labelledby="resource-preview-title"
+         aria-hidden="true"
+         data-resource-preview-modal>
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <p>Resource preview</p>
+                        <h2 class="modal-title"
+                            id="resource-preview-title"
+                            data-resource-preview-topic>Untitled resource</h2>
+                        <span data-resource-preview-module>No module selected</span>
+                    </div>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close preview"></button>
+                </div>
+                <div class="modal-body">
+                    <article class="resource-preview-article">
+                        <div data-resource-preview-editor></div>
+                    </article>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="resource-preview-close"
+                            data-bs-dismiss="modal">Close preview</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="resource-library" aria-label="Manage learning resources">
+        <div class="resource-library-heading">
+            <button type="button" class="resource-primary-action" data-resource-editor-open>
+                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                New resource
+            </button>
+        </div>
+
+        <div class="resource-workspace">
+            <aside id="resource-filter-panel"
+                   class="tutor-filters resource-filter-panel"
+                   aria-labelledby="resource-filter-title"
+                   data-filter-breakpoint="1199.98"
+                   data-filter-panel>
+                <div class="filter-heading">
+                    <h3 id="resource-filter-title">Filters</h3>
+                    <a asp-page="./ManageResources">Clear all</a>
+                    <button type="button"
+                            class="filter-modal-close"
+                            data-filter-close
+                            aria-label="Close filters">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 6l12 12M18 6 6 18" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form method="get">
+                    <div class="filter-group">
+                        <label asp-for="ModuleCode">Search By Module Code</label>
+                        <div class="filter-search">
+                            <input asp-for="ModuleCode" type="search" autocomplete="off" />
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label asp-for="Search">Search By Topic</label>
+                        <div class="filter-search">
+                            <input asp-for="Search" type="search" autocomplete="off" />
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <fieldset class="filter-group resource-published-range">
+                        <legend>Date Published</legend>
+                        <label>
+                            <span>From:</span>
+                            <input asp-for="PublishedFrom"
+                                   type="date"
+                                   class="@(Model.PublishedFrom.HasValue ? "has-value" : null)"
+                                   data-date-filter />
+                        </label>
+                        <label>
+                            <span>To:</span>
+                            <input asp-for="PublishedTo"
+                                   type="date"
+                                   class="@(Model.PublishedTo.HasValue ? "has-value" : null)"
+                                   data-date-filter />
+                        </label>
+                    </fieldset>
+
+                    <div class="filter-group">
+                        <label asp-for="Status">Filter By Status</label>
+                        <select asp-for="Status" asp-items="Html.GetEnumSelectList<LearningResourceStatus>()">
+                            <option value="">All statuses</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group resource-engagement-filter">
+                        <span class="resource-filter-label">Student Engagement</span>
+                        <label class="resource-filter-switch">
+                            <input type="checkbox"
+                                   name="Engagement"
+                                   value="true"
+                                   checked="@(Model.Engagement == true)" />
+                            <span aria-hidden="true"></span>
+                            <span class="visually-hidden">Show resources with student engagement enabled</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="apply-filters">Apply filters</button>
+                </form>
+            </aside>
+            <button type="button"
+                    class="tutor-filter-backdrop"
+                    data-filter-close
+                    aria-label="Close filters"></button>
+
+            <div class="resource-results">
+                <div class="results-toolbar resource-results-toolbar">
+                    <div class="results-count">
+                        <strong>@Model.Resources.Count</strong>
+                        resource@(Model.Resources.Count == 1 ? "" : "s") displayed
+                    </div>
+                    <button type="button"
+                            class="mobile-filter-trigger @(Model.HasActiveFilters ? "has-active-filters" : null)"
+                            data-filter-open
+                            aria-controls="resource-filter-panel"
+                            aria-expanded="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="currentColor"
+                                  d="M4.38 3.22A1 1 0 0 1 5 3h14a1 1 0 0 1 .79 1.62L15 10.75v9.13c.04.3-.06.62-.29.83a.996.996 0 0 1-1.41 0l-4.01-4.01a.99.99 0 0 1-.29-.83v-5.12L4.21 4.62a1 1 0 0 1 .17-1.4Z" />
+                        </svg>
+                        <span>Filter</span>
+                    </button>
+                </div>
+
+                <div class="resource-table-card">
+                    @if (Model.Resources.Count == 0)
+                    {
+                        <div class="resource-empty-state resource-empty-results">
+                            <span class="resource-empty-search-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <circle cx="10.5" cy="10.5" r="6.5" />
+                                    <path d="m15.4 15.4 4.1 4.1" />
+                                </svg>
+                            </span>
+                            @if (Model.HasActiveFilters)
+                            {
+                                <h3>No resources match those filters</h3>
+                                <p>Try clearing a filter or searching for another resource.</p>
+                                <a asp-page="./ManageResources">Clear all filters</a>
+                            }
+                            else
+                            {
+                                <h3>No resources available yet</h3>
+                                <p>Create a new learning resource to share with your students.</p>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="resource-table-wrap">
+                            <table class="resource-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Module Code</th>
+                                        <th scope="col">Topic</th>
+                                        <th scope="col">Date Published</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Student Engagement</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var resource in Model.Resources)
+                                    {
+                                        <tr>
+                                            <td data-label="Module Code">
+                                                <span class="resource-module-cell">@resource.ModuleCode</span>
+                                            </td>
+                                            <td data-label="Topic">
+                                                <span class="resource-topic-cell"
+                                                      title="@resource.Topic">@resource.TopicDisplay</span>
+                                            </td>
+                                            <td data-label="Date Published">
+                                                <span class="resource-published-date">
+                                                    @resource.PublishedDateDisplay
+                                                </span>
+                                                @if (resource.PublishedTimeDisplay is not null)
+                                                {
+                                                    <small class="resource-published-time">
+                                                        @resource.PublishedTimeDisplay
+                                                    </small>
+                                                }
+                                            </td>
+                                            <td data-label="Status">
+                                                <span class="resource-status-text is-@resource.Status.ToString().ToLowerInvariant()">@resource.Status</span>
+                                            </td>
+                                            <td data-label="Student Engagement">
+                                                <form method="post"
+                                                      asp-page-handler="ToggleEngagement"
+                                                      asp-route-Search="@Model.Search"
+                                                      asp-route-ModuleCode="@Model.ModuleCode"
+                                                      asp-route-Status="@Model.Status"
+                                                      asp-route-PublishedFrom="@Model.PublishedFrom?.ToString("yyyy-MM-dd")"
+                                                      asp-route-PublishedTo="@Model.PublishedTo?.ToString("yyyy-MM-dd")"
+                                                      asp-route-Engagement="@Model.Engagement">
+                                                    <input type="hidden" name="resourceId" value="@resource.LearningResourceId" />
+                                                    <button type="submit"
+                                                            class="resource-engagement-toggle @(resource.AllowSubscriberComments ? "is-enabled" : null)"
+                                                            role="switch"
+                                                            aria-checked="@resource.AllowSubscriberComments.ToString().ToLowerInvariant()"
+                                                            aria-label="@(resource.AllowSubscriberComments ? "Disable" : "Enable") student engagement for @resource.Topic">
+                                                        <span aria-hidden="true"></span>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                            <td data-label="Action">
+                                                <div class="dropdown resource-action-menu bookings-session-action-menu">
+                                                    <button type="button"
+                                                            class="tutor-session-action"
+                                                            data-bs-toggle="dropdown"
+                                                            data-bs-display="static"
+                                                            aria-expanded="false"
+                                                            aria-label="Actions for @resource.Topic">
+                                                        <svg class="tutor-session-action-dots"
+                                                             viewBox="0 0 24 24"
+                                                             aria-hidden="true">
+                                                            <circle cx="12" cy="5" r="1.6" />
+                                                            <circle cx="12" cy="12" r="1.6" />
+                                                            <circle cx="12" cy="19" r="1.6" />
+                                                        </svg>
+                                                    </button>
+                                                    <div class="dropdown-menu dropdown-menu-end">
+                                                        <div>
+                                                            <a class="dropdown-item"
+                                                               asp-page="./ManageResources"
+                                                               asp-route-editId="@resource.LearningResourceId">
+                                                                Edit resource
+                                                            </a>
+                                                        </div>
+                                                        <div>
+                                                            <form method="post"
+                                                                  asp-page-handler="ChangeStatus"
+                                                                  asp-route-Search="@Model.Search"
+                                                                  asp-route-ModuleCode="@Model.ModuleCode"
+                                                                  asp-route-Status="@Model.Status"
+                                                                  asp-route-PublishedFrom="@Model.PublishedFrom?.ToString("yyyy-MM-dd")"
+                                                                  asp-route-PublishedTo="@Model.PublishedTo?.ToString("yyyy-MM-dd")"
+                                                                  asp-route-Engagement="@Model.Engagement">
+                                                                <input type="hidden" name="resourceId" value="@resource.LearningResourceId" />
+                                                                @if (resource.Status == LearningResourceStatus.Published)
+                                                                {
+                                                                    <button class="dropdown-item" type="submit" name="newStatus" value="Archived">
+                                                                        Archive resource
+                                                                    </button>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <button class="dropdown-item" type="submit" name="newStatus" value="Published">
+                                                                        Publish resource
+                                                                    </button>
+                                                                }
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <script src="~/js/components/navigation-drawer.js" asp-append-version="true"></script>
+    <script src="~/js/tutors.js" asp-append-version="true"></script>
+    <script src="~/js/manage-resources.js" asp-append-version="true"></script>
+}
