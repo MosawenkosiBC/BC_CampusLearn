@@ -1,0 +1,148 @@
+@{
+    var pagePath = ViewContext.RouteData.Values["Page"]?.ToString() ?? "/Index";
+    var pageTitle = ViewData["Title"]?.ToString();
+    var breadcrumbs = new List<(string Label, string? Page)>();
+
+    void AddHome()
+    {
+        breadcrumbs.Add(("Home", pagePath == "/Index" ? null : "/Index"));
+    }
+
+    AddHome();
+
+    switch (pagePath)
+    {
+        case "/Index":
+            break;
+        case "/Student/Dashboard":
+            breadcrumbs.Add(("Dashboard", null));
+            break;
+        case "/Bookings/Index":
+            breadcrumbs.Add(("Dashboard", "/Student/Dashboard"));
+            breadcrumbs.Add(("My Bookings", null));
+            break;
+        case "/Bookings/Create":
+            breadcrumbs.Add(("All Tutors", "/Tutors/Index"));
+            breadcrumbs.Add(("Book Session", null));
+            break;
+        case "/Tutors/Index":
+            breadcrumbs.Add(("All Tutors", null));
+            break;
+        case "/Tutors/Details":
+            breadcrumbs.Add(("All Tutors", "/Tutors/Index"));
+            breadcrumbs.Add((pageTitle ?? "Tutor Details", null));
+            break;
+        case "/Tutors/TutorApplication":
+            breadcrumbs.Add(("All Tutors", "/Tutors/Index"));
+            breadcrumbs.Add(("Tutor Application", null));
+            break;
+        case "/Tutors/TutorDashboard":
+            breadcrumbs.Add(("Tutor Dashboard", null));
+            break;
+        case "/Tutors/ManageAvailability":
+            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
+            breadcrumbs.Add(("Manage Availability", null));
+            break;
+        case "/Tutors/ManageResources":
+            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
+            breadcrumbs.Add(("Manage Resources", null));
+            break;
+        case "/Tutors/Profile":
+            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
+            breadcrumbs.Add(("Personal Details", null));
+            break;
+        case "/Tutors/PublicProfile":
+            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
+            breadcrumbs.Add(("Personal Details", "/Tutors/Profile"));
+            breadcrumbs.Add(("Public Profile", null));
+            break;
+        case "/Tutors/StatisticsOverview":
+            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
+            breadcrumbs.Add(("Personal Details", "/Tutors/Profile"));
+            breadcrumbs.Add(("Statistics Overview", null));
+            break;
+        case "/LearningResources/Index":
+            breadcrumbs.Add(("Dashboard", "/Student/Dashboard"));
+            breadcrumbs.Add(("Learning Resources", null));
+            break;
+        case "/LearningResources/Details":
+            breadcrumbs.Add(("Dashboard", "/Student/Dashboard"));
+            breadcrumbs.Add(("Learning Resources", "/LearningResources/Index"));
+            breadcrumbs.Add((pageTitle ?? "Resource Details", null));
+            break;
+        case "/Account/SignIn":
+            breadcrumbs.Add(("Log In", null));
+            break;
+        case "/Account/AccessDenied":
+            breadcrumbs.Add(("Access Denied", null));
+            break;
+        case "/Account/PostLogin":
+            breadcrumbs.Add(("Signing In", null));
+            break;
+        case "/Account/SignOut":
+            breadcrumbs.Add(("Signing Out", null));
+            break;
+        case "/Privacy":
+            breadcrumbs.Add(("Privacy Policy", null));
+            break;
+        case "/Error":
+            breadcrumbs.Add(("Error", null));
+            break;
+        default:
+            var fallbackLabel = pageTitle;
+            if (string.IsNullOrWhiteSpace(fallbackLabel))
+            {
+                fallbackLabel = pagePath
+                    .Split('/', StringSplitOptions.RemoveEmptyEntries)
+                    .LastOrDefault()?
+                    .Replace("-", " ") ?? "Page";
+            }
+
+            breadcrumbs.Add((fallbackLabel, null));
+            break;
+    }
+
+    if (breadcrumbs.Count >= 4)
+    {
+        breadcrumbs =
+        [
+            breadcrumbs[0],
+            ("...", null),
+            breadcrumbs[^2],
+            breadcrumbs[^1]
+        ];
+    }
+}
+
+@if (pagePath is not "/Index" and not "/Account/SignIn")
+{
+    <nav class="campus-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="campus-breadcrumbs-list">
+            @for (var index = 0; index < breadcrumbs.Count; index++)
+            {
+                var breadcrumb = breadcrumbs[index];
+                var isCurrent = index == breadcrumbs.Count - 1;
+                var isCollapsed = breadcrumb.Label == "...";
+
+                <li class="campus-breadcrumbs-item@(isCurrent ? " is-current" : null)@(isCollapsed ? " is-collapsed" : null)"
+                    @if (isCurrent)
+                    {
+                        <text>aria-current="page"</text>
+                    }
+                    @if (isCollapsed)
+                    {
+                        <text>aria-hidden="true"</text>
+                    }>
+                    @if (!string.IsNullOrWhiteSpace(breadcrumb.Page))
+                    {
+                        <a asp-page="@breadcrumb.Page" title="@breadcrumb.Label">@breadcrumb.Label</a>
+                    }
+                    else
+                    {
+                        <span title="@(isCollapsed ? null : breadcrumb.Label)">@breadcrumb.Label</span>
+                    }
+                </li>
+            }
+        </ol>
+    </nav>
+}

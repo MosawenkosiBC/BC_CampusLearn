@@ -65,9 +65,90 @@ body {
   padding-top: 76px;
 }
 
+.campus-breadcrumbs {
+  padding: 1rem 0 0.85rem;
+  font-size: 0.9rem;
+}
+
+.campus-breadcrumbs-list {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  color: #6c757d;
+  list-style: none;
+  overflow: hidden;
+}
+
+.campus-breadcrumbs-item {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-width: 0;
+  max-width: 14rem;
+}
+
+.campus-breadcrumbs-item + .campus-breadcrumbs-item::before {
+  content: "/";
+  padding: 0 0.65rem;
+  color: #adb5bd;
+}
+
+.campus-breadcrumbs-item a {
+  color: #5f6368;
+  text-decoration: none;
+}
+
+.campus-breadcrumbs-item a:hover {
+  color: #a90046;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.campus-breadcrumbs-item a:focus-visible {
+  border-radius: 0.15rem;
+  outline: 3px solid rgba(74, 193, 193, 0.35);
+  outline-offset: 3px;
+}
+
+.campus-breadcrumbs-item.is-current {
+  flex: 1 1 auto;
+  color: #1e1e1e;
+  font-weight: 600;
+}
+
+.campus-breadcrumbs-item a,
+.campus-breadcrumbs-item span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campus-breadcrumbs-item.is-current span {
+  max-width: 100%;
+}
+
+.campus-breadcrumbs-item.is-collapsed {
+  max-width: none;
+  color: #6c757d;
+  letter-spacing: 0.08em;
+}
+
 @media (max-width: 575.98px) {
   body {
     padding-top: 68px;
+  }
+
+  .campus-breadcrumbs {
+    padding: 0.8rem 0 0.7rem;
+    font-size: 0.82rem;
+  }
+
+  .campus-breadcrumbs-item + .campus-breadcrumbs-item::before {
+    padding: 0 0.45rem;
   }
 }
 
