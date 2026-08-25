@@ -14,6 +14,7 @@ public class LearningResource
     public DateTimeOffset DateCreated { get; set; }
     public DateTimeOffset? DatePublished { get; set; }
     public DateTimeOffset? DateUpdated { get; set; }
+    public DateTime? TutorLastViewedDiscussionAt { get; set; }
 
     public Tutor Tutor { get; set; } = null!;
     public ProgrammeModule ProgrammeModule { get; set; } = null!;

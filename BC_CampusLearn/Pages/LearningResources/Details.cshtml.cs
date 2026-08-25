@@ -25,6 +25,8 @@ public class DetailsModel : PageModel
     public LearningResource Resource { get; private set; } = null!;
     public string TutorName { get; private set; } = string.Empty;
     public int CurrentBcUserId { get; private set; }
+    public bool IsPublished =>
+        Resource.Status == LearningResourceStatus.Published;
     public IReadOnlyList<ResourceComment> Comments { get; private set; }
         = Array.Empty<ResourceComment>();
 
@@ -49,28 +51,36 @@ public class DetailsModel : PageModel
                 .ThenInclude(tutor => tutor.BcUser)
             .Include(item => item.Documents)
             .SingleOrDefaultAsync(item =>
-                item.LearningResourceId == resourceId &&
-                item.Status == LearningResourceStatus.Published,
+                item.LearningResourceId == resourceId,
                 cancellationToken);
         if (resource is null)
         {
             return NotFound();
         }
 
-        ResourceSubscription? subscription = await _context.ResourceSubscriptions
-            .SingleOrDefaultAsync(item =>
-                item.PersonnelNumber == currentUser.PersonnelNumber &&
-                item.ModuleCode == resource.ProgrammeModule.ModuleCode &&
-                item.IsActive,
-                cancellationToken);
-        if (subscription is null)
+        bool isOwningTutor = resource.Tutor.BcUserId == currentUser.BcUserId;
+        if (!isOwningTutor &&
+            resource.Status != LearningResourceStatus.Published)
         {
-            return Forbid();
+            return NotFound();
         }
 
-        subscription.LastAccessedAt = DateTimeOffset.UtcNow;
-        await _context.SaveChangesAsync(cancellationToken);
+        if (!isOwningTutor)
+        {
+            ResourceSubscription? subscription = await _context.ResourceSubscriptions
+                .SingleOrDefaultAsync(item =>
+                    item.PersonnelNumber == currentUser.PersonnelNumber &&
+                    item.ModuleCode == resource.ProgrammeModule.ModuleCode &&
+                    item.IsActive,
+                    cancellationToken);
+            if (subscription is null)
+            {
+                return Forbid();
+            }
 
+            subscription.LastAccessedAt = DateTimeOffset.UtcNow;
+            await _context.SaveChangesAsync(cancellationToken);
+        }
         Resource = resource;
         TutorName = string.IsNullOrWhiteSpace(resource.Tutor.BcUser.DisplayName)
             ? resource.Tutor.BcUser.PersonnelNumber
@@ -83,6 +93,17 @@ public class DetailsModel : PageModel
             .OrderByDescending(comment => comment.IsPinned)
             .ThenBy(comment => comment.DateCreated)
             .ToListAsync(cancellationToken);
+        if (isOwningTutor)
+        {
+            await _context.LearningResources
+                .Where(item =>
+                    item.LearningResourceId == resourceId)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(
+                        item => item.TutorLastViewedDiscussionAt,
+                        DateTime.UtcNow),
+                    cancellationToken);
+        }
         return Page();
     }
 
@@ -96,6 +117,7 @@ public class DetailsModel : PageModel
         LearningResource? resource = await _context.LearningResources
             .AsNoTracking()
             .Include(item => item.ProgrammeModule)
+            .Include(item => item.Tutor)
             .SingleOrDefaultAsync(item =>
                 item.LearningResourceId == resourceId &&
                 item.Status == LearningResourceStatus.Published,
@@ -112,7 +134,8 @@ public class DetailsModel : PageModel
                 item.ModuleCode == resource.ProgrammeModule.ModuleCode &&
                 item.IsActive,
                 cancellationToken);
-        if (!hasActiveSubscription)
+        bool isOwningTutor = resource.Tutor.BcUserId == currentUser.BcUserId;
+        if (!isOwningTutor && !hasActiveSubscription)
         {
             return Forbid();
         }
@@ -333,6 +356,7 @@ public class DetailsModel : PageModel
         LearningResource? resource = await _context.LearningResources
             .AsNoTracking()
             .Include(item => item.ProgrammeModule)
+            .Include(item => item.Tutor)
             .SingleOrDefaultAsync(item =>
                 item.LearningResourceId == resourceId &&
                 item.Status == LearningResourceStatus.Published,
@@ -349,7 +373,8 @@ public class DetailsModel : PageModel
                 item.ModuleCode == resource.ProgrammeModule.ModuleCode &&
                 item.IsActive,
                 cancellationToken);
-        return hasActiveSubscription ? null : Forbid();
+        bool isOwningTutor = resource.Tutor.BcUserId == currentUser.BcUserId;
+        return isOwningTutor || hasActiveSubscription ? null : Forbid();
     }
 
     private RedirectToPageResult RedirectToDiscussion(int resourceId) =>

@@ -21,7 +21,7 @@
         <h1>@Model.Resource.Topic</h1>
     </header>
 
-    <div class="student-resource-reader-layout @(Model.Resource.AllowSubscriberComments ? "has-open-discussion" : null)">
+    <div class="student-resource-reader-layout @(Model.IsPublished && Model.Resource.AllowSubscriberComments ? "has-open-discussion" : null) @(!Model.IsPublished ? "is-owner-preview" : null)">
         <div class="student-resource-reader-column">
             <article class="student-resource-reader">
                 <header class="student-resource-reader-meta">
@@ -45,6 +45,17 @@
                                 </time>
                             </span>
                         }
+                    </div>
+                    <div class="student-resource-reader-bookmark-row">
+                        <button type="button"
+                                class="student-resource-bookmark student-resource-reader-bookmark"
+                                data-resource-detail-bookmark
+                                data-resource-id="@Model.Resource.LearningResourceId"
+                                data-resource-name="@Model.Resource.Topic"
+                                aria-label="Bookmark @Model.Resource.Topic"
+                                aria-pressed="false">
+                            <i class="bi bi-bookmark" aria-hidden="true"></i>
+                        </button>
                     </div>
                 </header>
 
@@ -83,6 +94,8 @@
             </article>
         </div>
 
+        @if (Model.IsPublished)
+        {
         <aside class="resource-discussion" id="discussion" aria-labelledby="discussion-title">
             <header class="resource-discussion-heading">
                 <div>
@@ -377,6 +390,7 @@
                 </div>
             }
         </aside>
+        }
     </div>
 </main>
 

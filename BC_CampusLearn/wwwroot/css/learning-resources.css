@@ -406,6 +406,7 @@
     color: #30343a;
     font-size: .82rem;
     font-weight: 650;
+    letter-spacing: .02em;
     text-decoration: none;
 }
 
@@ -418,12 +419,12 @@
 }
 
 .student-resource-learn-more:focus-visible::after {
-    outline: 2px solid #ad0151;
+    outline: 2px solid #979797;
     outline-offset: 3px;
 }
 .student-resource-learn-more:hover,
 .student-resource-learn-more:focus-visible {
-    background: #ad0151;
+    background: #979797;
     color: #fff;
     outline: none;
 }
@@ -533,6 +534,11 @@
     max-width: 1760px;
 }
 
+.student-resource-reader-layout.is-owner-preview {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 1120px;
+}
+
 .student-resource-reader-column { min-width: 0; }
 
 .student-resource-reader-column .student-resource-reader-heading,
@@ -616,6 +622,18 @@
 .student-resource-published strong { color: inherit; font-weight: 500; }
 
 .student-resource-published > span { color: #a4a8ae; }
+
+.student-resource-reader-bookmark-row {
+    display: flex;
+    align-items: center;
+    min-height: 2rem;
+    margin-top: .25rem;
+}
+
+.student-resource-reader-bookmark {
+    margin-left: -.5rem;
+}
+
 .student-resource-content .ql-container.ql-bubble {
     border: 0;
     color: #303238;

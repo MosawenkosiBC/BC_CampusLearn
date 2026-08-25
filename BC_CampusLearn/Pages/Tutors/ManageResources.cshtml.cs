@@ -69,6 +69,9 @@ public class ManageResourcesModel : PageModel
     [BindProperty(SupportsGet = true)]
     public int? EditId { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public bool Create { get; set; }
+
     [TempData]
     public string? SuccessMessage { get; set; }
 
@@ -408,7 +411,15 @@ public class ManageResourcesModel : PageModel
                 DatePublished = item.DatePublished,
                 DateUpdated = item.DateUpdated,
                 DocumentCount = item.Documents.Count,
-                AllowSubscriberComments = item.AllowSubscriberComments
+                AllowSubscriberComments = item.AllowSubscriberComments,
+                UnreadCommentCount = item.AllowSubscriberComments
+                    ? item.Comments.Count(comment =>
+                        !comment.IsDeleted &&
+                        comment.AuthorUserId != item.Tutor.BcUserId &&
+                        (!item.TutorLastViewedDiscussionAt.HasValue ||
+                         comment.DateCreated >
+                         item.TutorLastViewedDiscussionAt.Value))
+                    : 0
             }).ToListAsync(cancellationToken);
     }
 
@@ -620,6 +631,7 @@ public class ResourceListItem
     public DateTimeOffset? DateUpdated { get; set; }
     public int DocumentCount { get; set; }
     public bool AllowSubscriberComments { get; set; }
+    public int UnreadCommentCount { get; set; }
 
     public string TopicDisplay
     {

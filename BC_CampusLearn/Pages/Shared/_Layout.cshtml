@@ -476,7 +476,7 @@
                             <a class="nav-link text-dark @(ViewContext.RouteData.Values["Page"]?.ToString() == "/Student/Dashboard" ? "active" : "")" asp-area="" asp-page="/Student/Dashboard">Dashboard</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark @(ViewContext.RouteData.Values["Page"]?.ToString()?.StartsWith("/Tutors") == true ? "active" : "")" asp-area="" asp-page="/Tutors/Index">All Tutors</a>
+                            <a class="nav-link text-dark @(ViewContext.RouteData.Values["Page"]?.ToString() == "/Tutors/Index" ? "active" : "")" asp-area="" asp-page="/Tutors/Index">All Tutors</a>
                         </li>
                     </ul>
 

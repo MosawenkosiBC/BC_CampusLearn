@@ -36,7 +36,8 @@
         </div>
     }
 
-    <section class="resource-editor @(Model.IsEditing || !ViewData.ModelState.IsValid ? "is-open" : null)"
+    <section id="resource-editor"
+             class="resource-editor @(Model.Create || Model.IsEditing || !ViewData.ModelState.IsValid ? "is-open" : null)"
              data-resource-editor
              aria-labelledby="resource-editor-title">
         <div class="resource-editor-heading">
@@ -487,7 +488,7 @@
                                                             data-bs-toggle="dropdown"
                                                             data-bs-display="static"
                                                             aria-expanded="false"
-                                                            aria-label="Actions for @resource.Topic">
+                                                            aria-label="Actions for @resource.Topic@(resource.UnreadCommentCount > 0 ? $", {resource.UnreadCommentCount} unread comments" : null)">
                                                         <svg class="tutor-session-action-dots"
                                                              viewBox="0 0 24 24"
                                                              aria-hidden="true">
@@ -495,8 +496,27 @@
                                                             <circle cx="12" cy="12" r="1.6" />
                                                             <circle cx="12" cy="19" r="1.6" />
                                                         </svg>
+                                                        @if (resource.UnreadCommentCount > 0)
+                                                        {
+                                                            <span class="resource-unread-indicator"
+                                                                  aria-hidden="true"></span>
+                                                        }
                                                     </button>
                                                     <div class="dropdown-menu dropdown-menu-end">
+                                                        <div>
+                                                            <a class="dropdown-item resource-view-action"
+                                                               asp-page="/LearningResources/Details"
+                                                               asp-route-resourceId="@resource.LearningResourceId">
+                                                                <span>View resource</span>
+                                                                @if (resource.UnreadCommentCount > 0)
+                                                                {
+                                                                    <span class="resource-menu-unread-indicator"
+                                                                          aria-label="Unread comments">
+                                                                        <span aria-hidden="true"></span>
+                                                                    </span>
+                                                                }
+                                                            </a>
+                                                        </div>
                                                         <div>
                                                             <a class="dropdown-item"
                                                                asp-page="./ManageResources"
@@ -526,6 +546,31 @@
                                                                         Publish resource
                                                                     </button>
                                                                 }
+                                                            </form>
+                                                        </div>
+                                                        <div class="resource-mobile-engagement-action">
+                                                            <form method="post"
+                                                                  asp-page-handler="ToggleEngagement"
+                                                                  asp-route-Search="@Model.Search"
+                                                                  asp-route-ModuleCode="@Model.ModuleCode"
+                                                                  asp-route-Status="@Model.Status"
+                                                                  asp-route-PublishedFrom="@Model.PublishedFrom?.ToString("yyyy-MM-dd")"
+                                                                  asp-route-PublishedTo="@Model.PublishedTo?.ToString("yyyy-MM-dd")"
+                                                                  asp-route-Engagement="@Model.Engagement">
+                                                                <input type="hidden"
+                                                                       name="resourceId"
+                                                                       value="@resource.LearningResourceId" />
+                                                                <button type="submit"
+                                                                        class="dropdown-item resource-mobile-engagement-item"
+                                                                        role="switch"
+                                                                        aria-checked="@resource.AllowSubscriberComments.ToString().ToLowerInvariant()"
+                                                                        aria-label="@(resource.AllowSubscriberComments ? "Disable" : "Enable") student engagement for @resource.Topic">
+                                                                    <span>Student engagement</span>
+                                                                    <span class="resource-menu-switch @(resource.AllowSubscriberComments ? "is-enabled" : null)"
+                                                                          aria-hidden="true">
+                                                                        <span></span>
+                                                                    </span>
+                                                                </button>
                                                             </form>
                                                         </div>
                                                     </div>

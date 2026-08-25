@@ -341,17 +341,19 @@
                 </div>
 
                 <div class="tutor-learning-resources-actions">
-                    <button type="button"
-                            class="tutor-resource-add">
+                    <a asp-page="/Tutors/ManageResources"
+                       asp-route-create="true"
+                       asp-fragment="resource-editor"
+                       class="tutor-resource-add">
                         Add resource
-                    </button>
-                    <button type="button"
-                            class="tutor-resource-manage">
+                    </a>
+                    <a asp-page="/Tutors/ManageResources"
+                       class="tutor-resource-manage">
                         Manage resources
                         <iconify-icon
                             icon="solar:alt-arrow-right-linear"
                             aria-hidden="true"></iconify-icon>
-                    </button>
+                    </a>
                 </div>
             </section>
         </div>

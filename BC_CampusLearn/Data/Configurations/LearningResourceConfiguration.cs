@@ -22,6 +22,8 @@ public class LearningResourceConfiguration
             .HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.Property(resource => resource.DateCreated)
             .HasDefaultValueSql("SYSUTCDATETIME()");
+        builder.Property(resource => resource.TutorLastViewedDiscussionAt)
+            .HasColumnType("datetime2");
 
         builder.HasOne(resource => resource.Tutor)
             .WithMany(tutor => tutor.LearningResources)

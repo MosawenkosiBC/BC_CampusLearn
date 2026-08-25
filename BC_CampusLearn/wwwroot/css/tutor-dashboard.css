@@ -786,7 +786,8 @@
     }
 }
 
-.tutor-learning-resources-actions button {
+.tutor-learning-resources-actions button,
+.tutor-learning-resources-actions a {
     align-items: center;
     border-radius: 0.35rem;
     display: inline-flex;
@@ -795,6 +796,7 @@
     justify-content: center;
     min-height: 2.35rem;
     padding: 0.45rem 0.75rem;
+    text-decoration: none;
 }
 
 .tutor-learning-resources-actions iconify-icon {
@@ -809,6 +811,7 @@
 
 .tutor-resource-add:hover {
     background-color: #f1f2f3;
+    color: #626972;
 }
 
 .tutor-resource-manage {
@@ -820,6 +823,7 @@
 
 .tutor-resource-manage:hover {
     background-color: #f1f2f3;
+    color: #626972;
 }
 
 .tutor-weekly-header {
