@@ -19,6 +19,8 @@
 
 <section class="container py-4 manage-availability-page"
          aria-labelledby="manage-availability-title">
+    <div hidden
+         data-occupied-schedule-times="@string.Join('|', Model.OccupiedScheduleTimes)"></div>
     <h1 id="manage-availability-title"
         class="text-center">Manage Availability</h1>
 
@@ -963,6 +965,33 @@
                             Delete
                         </button>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade availability-delete-modal"
+     id="availability-overlap-warning-modal"
+     data-availability-overlap-warning-modal
+     tabindex="-1"
+     aria-labelledby="availability-overlap-warning-title"
+     aria-describedby="availability-overlap-warning-message"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h2 id="availability-overlap-warning-title">
+                    Availability overlap
+                </h2>
+                <p id="availability-overlap-warning-message"
+                   data-availability-overlap-warning-message></p>
+                <div class="availability-delete-modal-actions">
+                    <button type="button"
+                            class="availability-delete-cancel"
+                            data-bs-dismiss="modal">
+                        Okay
+                    </button>
                 </div>
             </div>
         </div>

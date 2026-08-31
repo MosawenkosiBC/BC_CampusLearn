@@ -291,16 +291,32 @@ public class TutorDashboardModel : PageModel
 
         if (shouldRestoreAvailability)
         {
+            DateTimeOffset conflictRangeStart =
+                booking.ScheduledStartTime.AddHours(-1);
+            DateTimeOffset conflictRangeEnd =
+                booking.ScheduledStartTime.AddHours(1);
             bool availabilityExists =
                 await _context.TutorAvailabilities
                     .AnyAsync(
                         slot =>
                             slot.TutorId == tutorId.Value &&
-                            slot.AvailableTime ==
-                                booking.ScheduledStartTime,
+                            slot.AvailableTime > conflictRangeStart &&
+                            slot.AvailableTime < conflictRangeEnd,
+                        cancellationToken);
+            bool activeBookingExists =
+                await _context.Bookings
+                    .AsNoTracking()
+                    .AnyAsync(
+                        item =>
+                            item.BookingId != bookingId &&
+                            item.TutorId == tutorId.Value &&
+                            item.Status != BookingStatus.Cancelled &&
+                            item.Status != BookingStatus.Declined &&
+                            item.ScheduledStartTime > conflictRangeStart &&
+                            item.ScheduledStartTime < conflictRangeEnd,
                         cancellationToken);
 
-            if (!availabilityExists)
+            if (!availabilityExists && !activeBookingExists)
             {
                 _context.TutorAvailabilities.Add(
                     new TutorAvailability

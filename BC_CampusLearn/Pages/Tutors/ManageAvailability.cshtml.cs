@@ -11,6 +11,10 @@ namespace BC_CampusLearn.Pages.Tutors;
 public class ManageAvailabilityModel : PageModel
 {
     private const int AvailabilityPageSize = 6;
+    private static readonly TimeSpan SessionLength =
+        TimeSpan.FromHours(1);
+    private const string ScheduleConflictMessage =
+        "Availability slots must be at least one hour apart and cannot overlap an existing session.";
     private static readonly TimeSpan SouthAfricaOffset =
         TimeSpan.FromHours(2);
 
@@ -119,6 +123,9 @@ public class ManageAvailabilityModel : PageModel
     public IReadOnlyList<AvailabilityListItem> AvailabilityRows
     { get; private set; } = new List<AvailabilityListItem>();
 
+    public IReadOnlyList<string> OccupiedScheduleTimes { get; private set; } =
+        Array.Empty<string>();
+
     public int TotalAvailabilityCount { get; private set; }
 
     public int TotalAvailabilityPages { get; private set; }
@@ -202,20 +209,14 @@ public class ManageAvailabilityModel : PageModel
             return Page();
         }
 
-        bool slotExists =
-            await _context.TutorAvailabilities
-                .AsNoTracking()
-                .AnyAsync(
-                    slot =>
-                        slot.TutorId == tutorId.Value &&
-                        slot.AvailableTime == availableTime,
-                    cancellationToken);
-
-        if (slotExists)
+        if (await HasScheduleConflictAsync(
+                tutorId.Value,
+                new[] { availableTime },
+                cancellationToken: cancellationToken))
         {
             ModelState.AddModelError(
                 string.Empty,
-                "An availability slot already exists for that date and time.");
+                ScheduleConflictMessage);
             return Page();
         }
 
@@ -235,7 +236,7 @@ public class ManageAvailabilityModel : PageModel
         {
             ModelState.AddModelError(
                 string.Empty,
-                "An availability slot already exists for that date and time.");
+                ScheduleConflictMessage);
             return Page();
         }
 
@@ -325,30 +326,19 @@ public class ManageAvailabilityModel : PageModel
             return Page();
         }
 
-        List<DateTimeOffset> existingTimes =
-            await _context.TutorAvailabilities
-                .AsNoTracking()
-                .Where(slot =>
-                    slot.TutorId == tutorId.Value &&
-                    candidateTimes.Contains(slot.AvailableTime))
-                .Select(slot => slot.AvailableTime)
-                .ToListAsync(cancellationToken);
-        HashSet<DateTimeOffset> existingTimeSet =
-            existingTimes.ToHashSet();
-        List<DateTimeOffset> newTimes = candidateTimes
-            .Where(time => !existingTimeSet.Contains(time))
-            .ToList();
-
-        if (newTimes.Count == 0)
+        if (await HasScheduleConflictAsync(
+                tutorId.Value,
+                candidateTimes,
+                cancellationToken: cancellationToken))
         {
             ModelState.AddModelError(
                 string.Empty,
-                "All selected availability slots already exist.");
+                ScheduleConflictMessage);
             return Page();
         }
 
         _context.TutorAvailabilities.AddRange(
-            newTimes.Select(time =>
+            candidateTimes.Select(time =>
                 new TutorAvailability
                 {
                     TutorId = tutorId.Value,
@@ -364,14 +354,14 @@ public class ManageAvailabilityModel : PageModel
         {
             ModelState.AddModelError(
                 string.Empty,
-                "One or more selected availability slots already exist.");
+                ScheduleConflictMessage);
             return Page();
         }
 
         AvailabilityCreated = true;
-        SuccessMessage = newTimes.Count == 1
+        SuccessMessage = candidateTimes.Count == 1
             ? "1 availability slot was created successfully."
-            : $"{newTimes.Count} availability slots were created successfully.";
+            : $"{candidateTimes.Count} availability slots were created successfully.";
 
         return RedirectToPage();
     }
@@ -534,20 +524,18 @@ public class ManageAvailabilityModel : PageModel
                 "Choose a future time.");
         }
 
-        bool slotExists = EditAvailabilityTime.HasValue &&
-            await _context.TutorAvailabilities
-                .AsNoTracking()
-                .AnyAsync(slot =>
-                    slot.TutorId == tutorId.Value &&
-                    slot.TutorAvailabilityId != EditAvailabilityId &&
-                    slot.AvailableTime == updatedTime,
-                    cancellationToken);
+        bool hasScheduleConflict = EditAvailabilityTime.HasValue &&
+            await HasScheduleConflictAsync(
+                tutorId.Value,
+                new[] { updatedTime },
+                EditAvailabilityId,
+                cancellationToken);
 
-        if (slotExists)
+        if (hasScheduleConflict)
         {
             ModelState.AddModelError(
                 nameof(EditAvailabilityTime),
-                "An availability slot already exists at that time.");
+                ScheduleConflictMessage);
         }
 
         if (!ModelState.IsValid)
@@ -571,7 +559,7 @@ public class ManageAvailabilityModel : PageModel
         {
             ModelState.AddModelError(
                 nameof(EditAvailabilityTime),
-                "An availability slot already exists at that time.");
+                ScheduleConflictMessage);
             BuildRecurringScheduleDays();
             await LoadAvailabilityInsightsAsync(
                 tutorId.Value,
@@ -673,31 +661,20 @@ public class ManageAvailabilityModel : PageModel
             return Page();
         }
 
-        List<DateTimeOffset> existingTimes =
-            await _context.TutorAvailabilities
-                .AsNoTracking()
-                .Where(slot =>
-                    slot.TutorId == tutorId.Value &&
-                    candidateTimes.Contains(slot.AvailableTime))
-                .Select(slot => slot.AvailableTime)
-                .ToListAsync(cancellationToken);
-        HashSet<DateTimeOffset> existingTimeSet =
-            existingTimes.ToHashSet();
-        List<DateTimeOffset> newTimes = candidateTimes
-            .Where(time => !existingTimeSet.Contains(time))
-            .ToList();
-
-        if (newTimes.Count == 0)
+        if (await HasScheduleConflictAsync(
+                tutorId.Value,
+                candidateTimes,
+                cancellationToken: cancellationToken))
         {
             ModelState.AddModelError(
                 string.Empty,
-                "All selected availability slots already exist.");
+                ScheduleConflictMessage);
             CustomAvailabilityModalOpen = true;
             return Page();
         }
 
         _context.TutorAvailabilities.AddRange(
-            newTimes.Select(time => new TutorAvailability
+            candidateTimes.Select(time => new TutorAvailability
             {
                 TutorId = tutorId.Value,
                 AvailableTime = time
@@ -706,9 +683,9 @@ public class ManageAvailabilityModel : PageModel
         await _context.SaveChangesAsync(cancellationToken);
 
         AvailabilityCreated = true;
-        SuccessMessage = newTimes.Count == 1
+        SuccessMessage = candidateTimes.Count == 1
             ? "1 availability slot was created successfully."
-            : $"{newTimes.Count} availability slots were created successfully.";
+            : $"{candidateTimes.Count} availability slots were created successfully.";
 
         return RedirectToPage();
     }
@@ -729,6 +706,25 @@ public class ManageAvailabilityModel : PageModel
         List<DateTimeOffset> futureSlots = futureAvailability
             .Select(slot => slot.AvailableTime)
             .ToList();
+        List<DateTimeOffset> activeBookingTimes =
+            await _context.Bookings
+                .AsNoTracking()
+                .Where(booking =>
+                    booking.TutorId == tutorId &&
+                    booking.ScheduledStartTime > now &&
+                    booking.Status != BookingStatus.Cancelled &&
+                    booking.Status != BookingStatus.Declined)
+                .Select(booking => booking.ScheduledStartTime)
+                .ToListAsync(cancellationToken);
+
+        OccupiedScheduleTimes = futureSlots
+            .Concat(activeBookingTimes)
+            .Distinct()
+            .OrderBy(time => time)
+            .Select(time => time
+                .ToOffset(SouthAfricaOffset)
+                .ToString("yyyy-MM-dd'T'HH:mm"))
+            .ToArray();
 
         TotalAvailabilityCount = futureAvailability.Count;
         TotalAvailabilityPages = (int)Math.Ceiling(
@@ -830,6 +826,63 @@ public class ManageAvailabilityModel : PageModel
                 tutor.BcUserId == currentUser.BcUserId)
             .Select(tutor => (int?)tutor.TutorId)
             .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    private async Task<bool> HasScheduleConflictAsync(
+        int tutorId,
+        IReadOnlyCollection<DateTimeOffset> candidateTimes,
+        int? excludedAvailabilityId = null,
+        CancellationToken cancellationToken = default)
+    {
+        List<DateTimeOffset> orderedCandidates = candidateTimes
+            .OrderBy(time => time)
+            .ToList();
+
+        if (orderedCandidates.Count == 0)
+        {
+            return false;
+        }
+
+        for (int index = 1; index < orderedCandidates.Count; index++)
+        {
+            if (orderedCandidates[index] - orderedCandidates[index - 1] <
+                SessionLength)
+            {
+                return true;
+            }
+        }
+
+        DateTimeOffset rangeStart =
+            orderedCandidates[0].Subtract(SessionLength);
+        DateTimeOffset rangeEnd =
+            orderedCandidates[^1].Add(SessionLength);
+
+        List<DateTimeOffset> existingTimes =
+            await _context.TutorAvailabilities
+                .AsNoTracking()
+                .Where(slot =>
+                    slot.TutorId == tutorId &&
+                    (!excludedAvailabilityId.HasValue ||
+                     slot.TutorAvailabilityId != excludedAvailabilityId.Value) &&
+                    slot.AvailableTime > rangeStart &&
+                    slot.AvailableTime < rangeEnd)
+                .Select(slot => slot.AvailableTime)
+                .Concat(
+                    _context.Bookings
+                        .AsNoTracking()
+                        .Where(booking =>
+                            booking.TutorId == tutorId &&
+                            booking.Status != BookingStatus.Cancelled &&
+                            booking.Status != BookingStatus.Declined &&
+                            booking.ScheduledStartTime > rangeStart &&
+                            booking.ScheduledStartTime < rangeEnd)
+                        .Select(booking => booking.ScheduledStartTime))
+                .ToListAsync(cancellationToken);
+
+        return orderedCandidates.Any(candidate =>
+            existingTimes.Any(existing =>
+                existing > candidate.Subtract(SessionLength) &&
+                existing < candidate.Add(SessionLength)));
     }
 
     private void BuildRecurringScheduleDays()
