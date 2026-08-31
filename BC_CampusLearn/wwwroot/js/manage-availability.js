@@ -23,6 +23,67 @@
         return new Date(year, month - 1, day);
     };
 
+    const occupiedScheduleElement = document.querySelector(
+        "[data-occupied-schedule-times]");
+    const occupiedScheduleValues = occupiedScheduleElement?.dataset
+        .occupiedScheduleTimes
+        .split("|")
+        .filter(Boolean) ?? [];
+    const toScheduleMinute = (dateValue, timeValue) => {
+        const [year, month, day] = dateValue.split("-").map(Number);
+        const [hours, minutes] = timeValue.split(":").map(Number);
+        return Date.UTC(year, month - 1, day, hours, minutes) / 60000;
+    };
+    const occupiedScheduleMinutes = occupiedScheduleValues.map((value) => {
+        const [dateValue, timeValue] = value.split("T");
+        return toScheduleMinute(dateValue, timeValue);
+    });
+    const overlapsSchedule = (candidateMinutes, otherMinutes) =>
+        otherMinutes.some((minutes) =>
+            Math.abs(candidateMinutes - minutes) < 60);
+    const overlapWarningElement = document.querySelector(
+        "[data-availability-overlap-warning-modal]");
+    const overlapWarningMessage = document.querySelector(
+        "[data-availability-overlap-warning-message]");
+    let modalToRestore = null;
+
+    const showOverlapWarning = (time, sourceModal = null) => {
+        const message = `${time} overlaps another availability, ` +
+            "time slots must be 1 hour apart to avoid double booking";
+
+        if (overlapWarningMessage) {
+            overlapWarningMessage.textContent = message;
+        }
+
+        if (!overlapWarningElement || !window.bootstrap?.Modal) {
+            return message;
+        }
+
+        const warningModal = window.bootstrap.Modal.getOrCreateInstance(
+            overlapWarningElement);
+
+        if (sourceModal?.classList.contains("show")) {
+            modalToRestore = sourceModal;
+            sourceModal.addEventListener("hidden.bs.modal", () => {
+                warningModal.show();
+            }, { once: true });
+            window.bootstrap.Modal.getOrCreateInstance(sourceModal).hide();
+        } else {
+            warningModal.show();
+        }
+
+        return "";
+    };
+
+    overlapWarningElement?.addEventListener("hidden.bs.modal", () => {
+        if (!modalToRestore) {
+            return;
+        }
+
+        window.bootstrap.Modal.getOrCreateInstance(modalToRestore).show();
+        modalToRestore = null;
+    });
+
     const formatValue = (date) => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -226,6 +287,22 @@
 
             if (specificTimes.includes(time)) {
                 showSpecificError("That time slot has already been added.");
+                return;
+            }
+
+            const selectedDateValue = valueInput.value;
+            const candidateMinutes = toScheduleMinute(
+                selectedDateValue,
+                time);
+            const pendingMinutes = specificTimes.map((existingTime) =>
+                toScheduleMinute(selectedDateValue, existingTime));
+
+            if (overlapsSchedule(
+                    candidateMinutes,
+                    [...occupiedScheduleMinutes, ...pendingMinutes])) {
+                showSpecificError(showOverlapWarning(
+                    time,
+                    specificAvailabilityModal));
                 return;
             }
 
@@ -651,6 +728,34 @@
 
             if (scheduleTimes.includes(time)) {
                 showEditorError("That time slot has already been added.");
+                return;
+            }
+
+            const selectedDateValues = [...selectedDates];
+            const candidateMinutes = selectedDateValues.map((dateValue) =>
+                toScheduleMinute(dateValue, time));
+            const pendingMinutes = selectedDateValues.flatMap((dateValue) =>
+                scheduleTimes.map((existingTime) =>
+                    toScheduleMinute(dateValue, existingTime)));
+            const candidateHasConflict = candidateMinutes.length > 0
+                ? candidateMinutes.some((minutes) =>
+                    overlapsSchedule(
+                        minutes,
+                        [...occupiedScheduleMinutes, ...pendingMinutes]))
+                : scheduleTimes.some((existingTime) => {
+                    const [candidateHours, candidateMinute] = time
+                        .split(":")
+                        .map(Number);
+                    const [existingHours, existingMinute] = existingTime
+                        .split(":")
+                        .map(Number);
+                    return Math.abs(
+                        candidateHours * 60 + candidateMinute -
+                        (existingHours * 60 + existingMinute)) < 60;
+                });
+
+            if (candidateHasConflict) {
+                showEditorError(showOverlapWarning(time));
                 return;
             }
 
