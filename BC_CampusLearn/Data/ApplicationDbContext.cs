@@ -38,6 +38,18 @@ public class ApplicationDbContext : DbContext
     public DbSet<BookingDocument> BookingDocuments =>
         Set<BookingDocument>();
 
+    public DbSet<BookingStatusHistory> BookingStatusHistory =>
+        Set<BookingStatusHistory>();
+
+    public DbSet<SessionExecution> SessionExecutions =>
+        Set<SessionExecution>();
+
+    public DbSet<SessionMessage> SessionMessages =>
+        Set<SessionMessage>();
+
+    public DbSet<SessionReview> SessionReviews =>
+        Set<SessionReview>();
+
     public DbSet<ProgrammeOfStudy> ProgrammesOfStudy { get; set; }
 
     public DbSet<LearningResource> LearningResources =>

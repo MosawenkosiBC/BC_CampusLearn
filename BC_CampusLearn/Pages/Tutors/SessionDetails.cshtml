@@ -1,0 +1,495 @@
+@page "{bookingId:int}"
+@model BC_CampusLearn.Pages.Tutors.SessionDetailsModel
+
+@{
+    ViewData["Title"] = "Manage session";
+    DateTimeOffset start = Model.Session.ScheduledStartTime.ToOffset(TimeSpan.FromHours(2));
+    DateTimeOffset end = start.AddHours((int)Model.Session.Duration);
+    bool hasAttachedLinks = !string.IsNullOrWhiteSpace(Model.Session.MeetingLink) ||
+        Model.Session.PreparationLinks.Count > 0;
+    bool hasAttachedDocuments = Model.Session.Documents.Count > 0;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/tutor-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/navigation-drawer.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/tutor-session-details.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync("~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<main class="container-fluid px-3 px-xl-5 pt-2 pb-4 tutor-session-details-page">
+    <header class="manage-session-heading">
+        <h1>Manage Session</h1>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.SessionActionMessage))
+    {
+        <div class="session-action-message @(Model.SessionActionError ? "is-error" : "is-success")"
+             role="@(Model.SessionActionError ? "alert" : "status")">
+            @Model.SessionActionMessage
+        </div>
+    }
+
+    <div class="manage-session-layout">
+        <div class="manage-session-primary">
+            <section class="session-information-section" aria-labelledby="session-information-title">
+                <header class="manage-card-heading">
+                    <h2 id="session-information-title">Session Information</h2>
+                </header>
+
+                <div class="manage-session-card session-information-card">
+                    <span class="session-status-badge status-@Model.Session.Status.ToString().ToLowerInvariant()">
+                        @Model.Session.Status
+                    </span>
+                    <div class="session-information-content">
+                        <div class="session-information-main">
+                            <div class="session-information-grid">
+                                <div class="session-readonly-field">
+                                    <label for="session-student-name">Student Name</label>
+                                    <input id="session-student-name"
+                                           type="text"
+                                           value="@Model.Session.StudentName"
+                                           readonly />
+                                </div>
+                                <div class="session-readonly-field">
+                                    <label for="session-student-email">Student Email</label>
+                                    <input id="session-student-email"
+                                           type="email"
+                                           value="@(string.IsNullOrWhiteSpace(Model.Session.StudentEmail) ? "Not available" : Model.Session.StudentEmail)"
+                                           readonly />
+                                </div>
+                            </div>
+
+                            <div class="session-information-grid">
+                                <div class="session-readonly-field">
+                                    <label for="session-location">Location</label>
+                                    <input id="session-location"
+                                           type="text"
+                                           value="@Model.Session.Location"
+                                           readonly />
+                                </div>
+                                <div class="session-readonly-field">
+                                    <label for="session-duration">Duration</label>
+                                    <input id="session-duration"
+                                           type="text"
+                                           value="@((int)Model.Session.Duration) hour"
+                                           readonly />
+                                </div>
+                            </div>
+
+                            <section class="session-summary-panel" aria-labelledby="session-summary-title">
+                                <label id="session-summary-title" for="session-summary">Session Summary</label>
+                                <textarea id="session-summary"
+                                          rows="5"
+                                          readonly>@(string.IsNullOrWhiteSpace(Model.Session.Summary) ? "The student did not add a session summary." : Model.Session.Summary)</textarea>
+                            </section>
+
+                            <section class="session-attachments" aria-labelledby="session-attachments-title">
+                                <h3 id="session-attachments-title">Attachments</h3>
+                                @if (!hasAttachedLinks && !hasAttachedDocuments)
+                                {
+                                    <p class="session-no-attachments">No links or documents were attached.</p>
+                                }
+                                else
+                                {
+                                <div class="session-attachments-grid @(!hasAttachedLinks || !hasAttachedDocuments ? "single-column" : null)">
+                                    @if (hasAttachedLinks)
+                                    {
+                                        <div class="session-material-list">
+                                        @if (!string.IsNullOrWhiteSpace(Model.Session.MeetingLink))
+                                        {
+                                            <div class="session-readonly-row">
+                                                <input type="url" value="@Model.Session.MeetingLink" aria-label="Meeting link" readonly />
+                                                <a href="@Model.Session.MeetingLink" target="_blank" rel="noopener noreferrer" aria-label="Open meeting link">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path d="M0 0h24v24H0z" fill="none" />
+                                                        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M5.576 13.481a3.5 3.5 0 0 0 4.95 4.95m2.473-7.423a3.5 3.5 0 0 1 0 4.95l-2.475 2.475m-2.475-7.425l-2.475 2.475m12.857-2.957a3.5 3.5 0 1 0-4.95-4.95M11.01 13a3.5 3.5 0 0 1 0-4.95l2.474-2.475M15.958 13l2.475-2.475" />
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                        }
+                                        @foreach (var link in Model.Session.PreparationLinks.OrderBy(item => item.Position))
+                                        {
+                                            <div class="session-readonly-row">
+                                                <input type="url" value="@link.Url" aria-label="Preparation link" readonly />
+                                                <a href="@link.Url" target="_blank" rel="noopener noreferrer" aria-label="Open preparation link">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path d="M0 0h24v24H0z" fill="none" />
+                                                        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M5.576 13.481a3.5 3.5 0 0 0 4.95 4.95m2.473-7.423a3.5 3.5 0 0 1 0 4.95l-2.475 2.475m-2.475-7.425l-2.475 2.475m12.857-2.957a3.5 3.5 0 1 0-4.95-4.95M11.01 13a3.5 3.5 0 0 1 0-4.95l2.474-2.475M15.958 13l2.475-2.475" />
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                        }
+                                        </div>
+                                    }
+
+                                    @if (hasAttachedDocuments)
+                                    {
+                                        <div class="session-material-list">
+                                            @foreach (var document in Model.Session.Documents.OrderBy(item => item.Position))
+                                            {
+                                                <div class="session-readonly-row">
+                                                    <input type="text" value="@document.OriginalFileName (@SessionDetailsModel.FormatFileSize(document.SizeBytes))" aria-label="Uploaded document" readonly />
+                                                    <span class="session-material-actions">
+                                                        <a asp-page="/Tutors/SessionDetails" asp-page-handler="Document" asp-route-bookingId="@Model.Session.BookingId" asp-route-documentId="@document.BookingDocumentId" aria-label="Download @document.OriginalFileName">
+                                                            <i class="bi bi-download" aria-hidden="true"></i>
+                                                        </a>
+                                                    </span>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                                }
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            @if (Model.Session.Status is BC_CampusLearn.Models.Entities.BookingStatus.Confirmed or
+                 BC_CampusLearn.Models.Entities.BookingStatus.InProgress)
+            {
+                <section class="confirmed-session-panel">
+                    <h2>Microsoft Teams meeting</h2>
+                    <div class="manage-session-card session-meeting-card">
+                        <div>
+                            <h3>Session with @Model.Session.StudentName</h3>
+                            <strong>@Model.Session.ProgrammeModule.ModuleCode: @Model.Session.ProgrammeModule.ModuleName</strong>
+                        </div>
+                        <span class="session-time-left"
+                              data-session-start-remaining
+                              data-session-start="@Model.Session.ScheduledStartTime.ToString("O")"
+                              data-session-active="@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.InProgress ? "true" : "false")"
+                              data-session-locked="false">
+                            @(Model.Session.SessionExecution is null
+                                ? Model.SessionStartRemainingText
+                                : "Session active")
+                        </span>
+                        <dl>
+                            <div><dt>Scheduled:</dt><dd>@start.ToString("dd MMM yyyy, HH:mm")</dd></div>
+                            <div><dt>Location:</dt><dd>@Model.Session.Location</dd></div>
+                        </dl>
+                        <form method="post" asp-page-handler="Join">
+                            <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                            <button type="submit"
+                                    class="session-join-button"
+                                    data-session-start-trigger
+                                    disabled="@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Confirmed && !Model.CanStartSession)">
+                                <i class="bi bi-microsoft-teams" aria-hidden="true"></i>
+                                Join Meeting
+                            </button>
+                        </form>
+                    </div>
+                </section>
+            }
+        </div>
+
+        <aside class="manage-session-sidebar session-top-sidebar" aria-label="Session status">
+            <header class="manage-card-heading">
+                <h2>Manage Session</h2>
+            </header>
+            <section class="manage-session-card session-status-card" data-session-status-control>
+                <div class="session-status-dates">
+                    <div>
+                        <span>Date Booked</span>
+                        <strong>
+                            <span class="session-status-date-line">@Model.Session.DateBooked.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy")</span>
+                            <span class="session-status-date-line">
+                                @Model.Session.DateBooked.ToOffset(TimeSpan.FromHours(2)).ToString("HH:mm")
+                            </span>
+                        </strong>
+                    </div>
+                    <div>
+                        <span>Session Date</span>
+                        <strong>
+                            <span class="session-status-date-line">@start.ToString("dd MMM yyyy")</span>
+                            <span class="session-status-date-line">
+                                @start.ToString("HH:mm")
+                            </span>
+                        </strong>
+                    </div>
+                </div>
+
+                <label for="session-status-action">Change Status</label>
+                <select id="session-status-action" data-session-status-select
+                        disabled="@(Model.Session.Status is not (BC_CampusLearn.Models.Entities.BookingStatus.Pending or BC_CampusLearn.Models.Entities.BookingStatus.Confirmed))">
+                    <option value="">@Model.Session.Status</option>
+                    @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending)
+                    {
+                        <option value="confirm">Confirmed</option>
+                        <option value="decline">Declined</option>
+                    }
+                    else if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Confirmed)
+                    {
+                        <option value="start" disabled="@(!Model.CanStartSession)">In progress</option>
+                        <option value="cancel">Cancelled</option>
+                    }
+                </select>
+
+                @if (Model.Session.Status is BC_CampusLearn.Models.Entities.BookingStatus.Pending or
+                    BC_CampusLearn.Models.Entities.BookingStatus.Confirmed)
+                {
+                    <button type="button" class="session-status-save" data-session-status-save>
+                        Save
+                    </button>
+                }
+
+                <form method="post" asp-page-handler="Start" data-session-start-form hidden>
+                    <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                </form>
+                <form method="post" asp-page-handler="Decline" data-session-decline-form hidden>
+                    <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                </form>
+            </section>
+
+            @if (!string.IsNullOrWhiteSpace(Model.LatestStatusReason))
+            {
+                <section class="session-status-reason">
+                    @if (!string.IsNullOrWhiteSpace(Model.LatestStatusReasonTitle))
+                    {
+                        <h2>@Model.LatestStatusReasonTitle</h2>
+                    }
+                    <div class="session-status-warning @(Model.LatestStatusReasonIsUnreviewedWarning ? "is-unreviewed" : null)" role="alert">
+                        @Model.LatestStatusReason
+                    </div>
+                </section>
+            }
+
+            @if (Model.Session.Status is BC_CampusLearn.Models.Entities.BookingStatus.Confirmed or
+                 BC_CampusLearn.Models.Entities.BookingStatus.InProgress or
+                 BC_CampusLearn.Models.Entities.BookingStatus.Completed)
+            {
+                <section class="completed-session-countdown" aria-labelledby="completed-countdown-title">
+                    <h2 id="completed-countdown-title">Session Countdown</h2>
+                    <div class="manage-session-card session-countdown-card"
+                         data-session-runtime
+                         data-countdown-target="@(Model.Session.SessionExecution?.ExpectedCompletionAt.ToString("O") ?? Model.Session.ScheduledStartTime.ToString("O"))"
+                         data-countdown-duration-seconds="@((int)BC_CampusLearn.Services.Sessions.SessionSchedulingRules.TriggeredCountdownLength.TotalSeconds)"
+                         data-countdown-mode="@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Completed
+                            ? "completed"
+                            : Model.Session.SessionExecution is null ? "idle" : "session-completion")">
+                        <div class="session-countdown-controls">
+                            <form method="post" asp-page-handler="Start">
+                                <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                                <button type="submit"
+                                        aria-label="@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Completed ? "Session completed" : "Start session")"
+                                        data-session-start-trigger
+                                        disabled="@(Model.Session.Status != BC_CampusLearn.Models.Entities.BookingStatus.Confirmed || !Model.CanStartSession)">
+                                    <i class="bi bi-play-fill" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                            <span class="session-status-pill status-@Model.Session.Status.ToString().ToLowerInvariant()">
+                                @(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.InProgress
+                                    ? "In Progress"
+                                    : Model.Session.Status.ToString())
+                            </span>
+                        </div>
+                        <output class="session-clock" data-session-runtime-countdown>
+                            <span><strong><span data-session-hours>@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Completed ? "00" : "01")</span></strong><small>Hour</small></span>
+                            <span><strong><span data-session-minutes>@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Completed ? "00" : "05")</span></strong><small>minutes</small></span>
+                            <span><strong><span data-session-seconds>@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Completed ? "00" : "59")</span></strong><small>Seconds</small></span>
+                        </output>
+                    </div>
+                </section>
+
+                <div class="completed-session-review">
+                    @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Completed)
+                    {
+                        @if (Model.Session.SessionReviews.Any(item => item.ReviewerBcUserId == Model.CurrentBcUserId))
+                        {
+                            <button type="button" disabled>Review Submitted</button>
+                        }
+                        else
+                        {
+                            <button type="button" data-bs-toggle="modal" data-bs-target="#review-session-modal">
+                                Review Session
+                            </button>
+                        }
+                    }
+                    else
+                    {
+                        <button type="button" disabled>Review Session</button>
+                    }
+                </div>
+            }
+        </aside>
+    </div>
+
+    <div class="manage-session-layout session-lower-layout">
+        <div class="manage-session-primary">
+
+            <section class="manage-session-card session-chat" aria-labelledby="communication-title"
+                     data-session-chat
+                     data-booking-id="@Model.Session.BookingId"
+                     data-current-user-id="@Model.CurrentBcUserId">
+                <header class="communication-placeholder-heading">
+                    <span class="communication-avatar" aria-hidden="true"><i class="bi bi-chat-dots-fill"></i></span>
+                    <div>
+                        <h2 id="communication-title">Real-time communication</h2>
+                        <p>Chat with @Model.Session.StudentName about this session.</p>
+                    </div>
+                </header>
+                <div class="session-chat-messages" data-session-chat-messages aria-live="polite">
+                    @foreach (var message in Model.Session.SessionMessages
+                        .Where(item => item.DeletedAt == null)
+                        .OrderBy(item => item.SentAt))
+                    {
+                        <article class="session-chat-message @(message.SenderBcUserId == Model.CurrentBcUserId ? "is-mine" : null)">
+                            <strong>@message.Sender.DisplayName</strong>
+                            <p>@message.MessageText</p>
+                            <time datetime="@message.SentAt.ToString("O")">@message.SentAt.ToOffset(TimeSpan.FromHours(2)).ToString("HH:mm")</time>
+                        </article>
+                    }
+                </div>
+                <form class="session-chat-form" data-session-chat-form>
+                    <label class="visually-hidden" for="session-chat-message">Message</label>
+                    <input id="session-chat-message" maxlength="2000" autocomplete="off"
+                           placeholder="Write a message..." data-session-chat-input />
+                    <button type="submit">Send</button>
+                </form>
+                <p class="session-chat-error" data-session-chat-error role="alert" hidden></p>
+            </section>
+        </div>
+
+    </div>
+</main>
+
+<div class="modal fade meeting-link-modal"
+     id="meeting-link-modal"
+     tabindex="-1"
+     aria-labelledby="meeting-link-modal-title"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post"
+                  asp-page-handler="@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending ? "Confirm" : "SaveMeetingLink")"
+                  novalidate>
+                <input type="hidden"
+                       name="bookingId"
+                       value="@Model.Session.BookingId" />
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title" id="meeting-link-modal-title">
+                            @(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending
+                                ? "Confirm session"
+                                : "Edit meeting link")
+                        </h2>
+                        <p>Paste the link students will use to join this session.</p>
+                    </div>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    @if (Model.MeetingLinkError &&
+                         !string.IsNullOrWhiteSpace(Model.MeetingLinkMessage))
+                    {
+                        <div class="meeting-link-modal-error" role="alert">
+                            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+                            @Model.MeetingLinkMessage
+                        </div>
+                    }
+                    <label asp-for="MeetingLink">Meeting link</label>
+                    <div class="meeting-link-entry">
+                        <i class="bi bi-link-45deg" aria-hidden="true"></i>
+                        <input asp-for="MeetingLink"
+                               type="url"
+                               maxlength="2048"
+                               placeholder="https://teams.microsoft.com/..."
+                               autocomplete="url" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="meeting-link-modal-cancel"
+                            data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="submit" class="meeting-link-modal-save">
+                        @(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending
+                            ? "Confirm session"
+                            : "Save meeting link")
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade meeting-link-modal" id="decline-session-modal" tabindex="-1"
+     aria-labelledby="decline-session-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Cancel">
+                <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                <div class="modal-header">
+                    <div><h2 id="decline-session-title">Cancel session</h2><p>Tell the student why this confirmed session is being cancelled.</p></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label asp-for="DeclineReason">Reason</label>
+                    <textarea asp-for="DeclineReason" rows="4" minlength="5" maxlength="1000" required></textarea>
+                    <label class="session-checkbox">
+                        <input asp-for="ReopenAvailability" />
+                        Reopen this time as availability if it does not conflict
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="meeting-link-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="meeting-link-modal-save">Cancel session</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade meeting-link-modal" id="review-session-modal" tabindex="-1"
+     aria-labelledby="review-session-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Review">
+                <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                <div class="modal-header">
+                    <div><h2 id="review-session-title">Review @Model.Session.StudentName</h2><p>Share feedback about the completed session.</p></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label asp-for="ReviewRating">Rating</label>
+                    <select asp-for="ReviewRating" required>
+                        <option value="">Select a rating</option>
+                        @for (byte rating = 1; rating <= 5; rating++)
+                        {
+                            <option value="@rating">@rating / 5</option>
+                        }
+                    </select>
+                    <label asp-for="ReviewComment">Comment (optional)</label>
+                    <textarea asp-for="ReviewComment" rows="4" maxlength="2000"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="meeting-link-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="meeting-link-modal-save">Submit review</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@10.0.9/dist/browser/signalr.min.js"></script>
+    <script src="~/js/components/navigation-drawer.js" asp-append-version="true"></script>
+    <script src="~/js/tutor-session-details.js" asp-append-version="true"></script>
+    @if (Model.MeetingLinkError)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("meeting-link-modal");
+                if (modalElement && window.bootstrap) {
+                    bootstrap.Modal.getOrCreateInstance(modalElement).show();
+                }
+            });
+        </script>
+    }
+}

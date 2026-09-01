@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260825083021_AddBookingMeetingLink")]
+    partial class AddBookingMeetingLink
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -107,19 +110,10 @@ namespace BC_CampusLearn.Migrations
                     b.Property<int>("ProgrammeModuleId")
                         .HasColumnType("int");
 
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
                     b.Property<DateTimeOffset>("ScheduledStartTime")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("StudentBcUserId")
                         .HasColumnType("int");
 
                     b.Property<string>("StudentEmail")
@@ -151,8 +145,6 @@ namespace BC_CampusLearn.Migrations
                     b.HasKey("BookingId");
 
                     b.HasIndex("ProgrammeModuleId");
-
-                    b.HasIndex("StudentBcUserId");
 
                     b.HasIndex("TutorId", "ProgrammeModuleId");
 
@@ -238,52 +230,6 @@ namespace BC_CampusLearn.Migrations
                         {
                             t.HasCheckConstraint("CK_BookingPreparationLinks_Position", "[Position] BETWEEN 1 AND 3");
                         });
-                });
-
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.BookingStatusHistory", b =>
-                {
-                    b.Property<int>("BookingStatusHistoryId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BookingStatusHistoryId"));
-
-                    b.Property<bool>("AvailabilityReopened")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("BookingId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset>("ChangedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<int?>("ChangedByBcUserId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("ChangedBySystem")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("NewStatus")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PreviousStatus")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("ReasonCode")
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.HasKey("BookingStatusHistoryId");
-
-                    b.HasIndex("ChangedByBcUserId");
-
-                    b.HasIndex("BookingId", "ChangedAt");
-
-                    b.ToTable("BookingStatusHistory", (string)null);
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.LearningResource", b =>
@@ -553,115 +499,6 @@ namespace BC_CampusLearn.Migrations
                         .IsUnique();
 
                     b.ToTable("ResourceSubscriptions", (string)null);
-                });
-
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.SessionExecution", b =>
-                {
-                    b.Property<int>("BookingId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset?>("CompletedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset>("ExpectedCompletionAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.Property<int>("StartSource")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset>("StartedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("BookingId");
-
-                    b.HasIndex("ExpectedCompletionAt");
-
-                    b.ToTable("SessionExecutions", (string)null);
-                });
-
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.SessionMessage", b =>
-                {
-                    b.Property<long>("SessionMessageId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("SessionMessageId"));
-
-                    b.Property<int>("BookingId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset?>("EditedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("MessageText")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<int>("SenderBcUserId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset>("SentAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("SessionMessageId");
-
-                    b.HasIndex("SenderBcUserId");
-
-                    b.HasIndex("BookingId", "SentAt");
-
-                    b.ToTable("SessionMessages", (string)null);
-                });
-
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.SessionReview", b =>
-                {
-                    b.Property<int>("SessionReviewId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SessionReviewId"));
-
-                    b.Property<int>("BookingId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Comment")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<byte>("Rating")
-                        .HasColumnType("tinyint");
-
-                    b.Property<int?>("RevieweeBcUserId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ReviewerBcUserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("SessionReviewId");
-
-                    b.HasIndex("RevieweeBcUserId");
-
-                    b.HasIndex("ReviewerBcUserId");
-
-                    b.HasIndex("BookingId", "ReviewerBcUserId")
-                        .IsUnique();
-
-                    b.ToTable("SessionReviews", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_SessionReviews_Rating", "[Rating] BETWEEN 1 AND 5");
-                        });
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.Tutor", b =>
@@ -948,11 +785,6 @@ namespace BC_CampusLearn.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("BC_CampusLearn.Models.Entities.BcUser", "StudentBcUser")
-                        .WithMany()
-                        .HasForeignKey("StudentBcUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("BC_CampusLearn.Models.Entities.TutorCourseModule", "TutorCourseModule")
                         .WithMany("Bookings")
                         .HasForeignKey("TutorId", "ProgrammeModuleId")
@@ -960,8 +792,6 @@ namespace BC_CampusLearn.Migrations
                         .IsRequired();
 
                     b.Navigation("ProgrammeModule");
-
-                    b.Navigation("StudentBcUser");
 
                     b.Navigation("TutorCourseModule");
                 });
@@ -986,24 +816,6 @@ namespace BC_CampusLearn.Migrations
                         .IsRequired();
 
                     b.Navigation("Booking");
-                });
-
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.BookingStatusHistory", b =>
-                {
-                    b.HasOne("BC_CampusLearn.Models.Entities.Booking", "Booking")
-                        .WithMany("StatusHistory")
-                        .HasForeignKey("BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("BC_CampusLearn.Models.Entities.BcUser", "ChangedByBcUser")
-                        .WithMany()
-                        .HasForeignKey("ChangedByBcUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Booking");
-
-                    b.Navigation("ChangedByBcUser");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.LearningResource", b =>
@@ -1074,62 +886,6 @@ namespace BC_CampusLearn.Migrations
                     b.Navigation("ParentComment");
 
                     b.Navigation("Resource");
-                });
-
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.SessionExecution", b =>
-                {
-                    b.HasOne("BC_CampusLearn.Models.Entities.Booking", "Booking")
-                        .WithOne("SessionExecution")
-                        .HasForeignKey("BC_CampusLearn.Models.Entities.SessionExecution", "BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Booking");
-                });
-
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.SessionMessage", b =>
-                {
-                    b.HasOne("BC_CampusLearn.Models.Entities.Booking", "Booking")
-                        .WithMany("SessionMessages")
-                        .HasForeignKey("BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("BC_CampusLearn.Models.Entities.BcUser", "Sender")
-                        .WithMany()
-                        .HasForeignKey("SenderBcUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Booking");
-
-                    b.Navigation("Sender");
-                });
-
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.SessionReview", b =>
-                {
-                    b.HasOne("BC_CampusLearn.Models.Entities.Booking", "Booking")
-                        .WithMany("SessionReviews")
-                        .HasForeignKey("BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("BC_CampusLearn.Models.Entities.BcUser", "Reviewee")
-                        .WithMany()
-                        .HasForeignKey("RevieweeBcUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("BC_CampusLearn.Models.Entities.BcUser", "Reviewer")
-                        .WithMany()
-                        .HasForeignKey("ReviewerBcUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Booking");
-
-                    b.Navigation("Reviewee");
-
-                    b.Navigation("Reviewer");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.Tutor", b =>
@@ -1234,14 +990,6 @@ namespace BC_CampusLearn.Migrations
                     b.Navigation("Documents");
 
                     b.Navigation("PreparationLinks");
-
-                    b.Navigation("SessionExecution");
-
-                    b.Navigation("SessionMessages");
-
-                    b.Navigation("SessionReviews");
-
-                    b.Navigation("StatusHistory");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.LearningResource", b =>

@@ -179,6 +179,7 @@
     font-weight: 500;
     gap: 0.25rem;
     padding: 0.25rem 0;
+    text-decoration: none;
 }
 
 .tutor-sessions-heading {
@@ -615,7 +616,8 @@
     margin-top: 1.25rem;
 }
 
-.tutor-next-session-actions button {
+.tutor-next-session-actions button,
+.tutor-next-session-actions a {
     align-items: center;
     border-radius: 0.3rem;
     display: inline-flex;
@@ -624,6 +626,7 @@
     justify-content: center;
     min-height: 2.35rem;
     padding: 0.4rem 0.75rem;
+    text-decoration: none;
 }
 
 .tutor-next-session-actions .tutor-view-session {

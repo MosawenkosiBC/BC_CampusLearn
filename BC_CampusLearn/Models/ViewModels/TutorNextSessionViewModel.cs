@@ -18,6 +18,8 @@ public class TutorNextSessionViewModel
 
     public SessionDuration Duration { get; set; }
 
+    public string? MeetingLink { get; set; }
+
     public DateTimeOffset SessionEnd =>
         ScheduledStartTime.AddHours((int)Duration);
 

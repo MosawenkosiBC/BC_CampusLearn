@@ -67,9 +67,9 @@
         </div>
 
         <div class="col-6 col-xl-3">
-            <a href="#tutor-sessions"
+            <a asp-page="/Tutors/Sessions"
                class="tutor-stat-card tutor-dashboard-stat-link"
-               aria-label="View upcoming sessions">
+               aria-label="View all sessions">
                 <div class="tutor-stat-main">
                     <div class="tutor-stat-icon tutor-stat-icon--magenta">
                         <svg xmlns="http://www.w3.org/2000/svg"
@@ -263,17 +263,31 @@
                         </dl>
 
                         <div class="tutor-next-session-actions">
-                            <button type="button"
-                                    class="tutor-view-session">
+                            <a asp-page="/Tutors/SessionDetails"
+                               asp-route-bookingId="@Model.NextSession.BookingId"
+                               class="tutor-view-session">
                                 View session
-                            </button>
-                            <button type="button"
-                                    class="tutor-join-session">
-                                <iconify-icon
-                                    icon="mdi:microsoft-teams"
-                                    aria-hidden="true"></iconify-icon>
-                                Join Meeting
-                            </button>
+                            </a>
+                            @if (!string.IsNullOrWhiteSpace(Model.NextSession.MeetingLink))
+                            {
+                                <a href="@Model.NextSession.MeetingLink"
+                                   class="tutor-join-session"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    <iconify-icon
+                                        icon="mdi:microsoft-teams"
+                                        aria-hidden="true"></iconify-icon>
+                                    Join Meeting
+                                </a>
+                            }
+                            else
+                            {
+                                <button type="button"
+                                        class="tutor-join-session"
+                                        disabled>
+                                    Meeting link pending
+                                </button>
+                            }
                         </div>
                     </div>
                 }
@@ -365,8 +379,8 @@
                         class="tutor-availability-section-title">
                         All sessions
                     </h2>
-                    <button type="button"
-                            class="tutor-sessions-view-all">
+                    <a asp-page="/Tutors/Sessions"
+                       class="tutor-sessions-view-all">
                         View All Sessions
                         <svg xmlns="http://www.w3.org/2000/svg"
                              width="1em"
@@ -378,7 +392,7 @@
                             <path fill="currentColor"
                                   d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
                         </svg>
-                    </button>
+                    </a>
                 </div>
 
                 <section class="tutor-sessions"
@@ -645,30 +659,15 @@
             </div>
         </dl>
 
-        <form method="post"
-              asp-page-handler="UpdateBookingStatus"
+        <form method="get"
+              asp-page="/Tutors/SessionDetails"
               class="tutor-booking-popover-actions">
             <input type="hidden"
                    name="bookingId"
                    data-booking-id-input />
 
-            <button type="submit"
-                    name="status"
-                    value="Confirmed"
-                    class="is-accept">
-                Accept
-            </button>
-            <button type="submit"
-                    name="status"
-                    value="Cancelled"
-                    class="is-cancel">
-                Cancel
-            </button>
-            <button type="submit"
-                    name="status"
-                    value="Declined"
-                    class="is-decline">
-                Decline
+            <button type="submit" class="is-accept">
+                Manage session
             </button>
         </form>
     </div>

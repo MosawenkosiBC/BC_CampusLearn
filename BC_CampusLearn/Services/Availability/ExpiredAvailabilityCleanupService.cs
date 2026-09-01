@@ -1,4 +1,5 @@
 using BC_CampusLearn.Data;
+using BC_CampusLearn.Services.Sessions;
 using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Services.Availability;
@@ -6,7 +7,7 @@ namespace BC_CampusLearn.Services.Availability;
 public class ExpiredAvailabilityCleanupService : BackgroundService
 {
     private static readonly TimeSpan CleanupInterval =
-        TimeSpan.FromMinutes(15);
+        TimeSpan.FromMinutes(1);
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ExpiredAvailabilityCleanupService> _logger;
@@ -45,30 +46,17 @@ public class ExpiredAvailabilityCleanupService : BackgroundService
                     .GetRequiredService<ApplicationDbContext>();
 
             DateTimeOffset now = DateTimeOffset.UtcNow;
+            ISessionLifecycleService lifecycleService =
+                scope.ServiceProvider
+                    .GetRequiredService<ISessionLifecycleService>();
 
-            int declinedCount = await context.Bookings
-                .Where(booking =>
-                    booking.Status ==
-                        Models.Entities.BookingStatus.Pending &&
-                    booking.ScheduledStartTime <= now)
-                .ExecuteUpdateAsync(
-                    updates => updates.SetProperty(
-                        booking => booking.Status,
-                        Models.Entities.BookingStatus.Declined),
-                    cancellationToken);
+            await lifecycleService.ProcessDueTransitionsAsync(
+                cancellationToken);
 
             int removedCount =
                 await context.TutorAvailabilities
                     .Where(slot => slot.AvailableTime <= now)
                     .ExecuteDeleteAsync(cancellationToken);
-
-            if (declinedCount > 0)
-            {
-                _logger.LogInformation(
-                    "Declined {ExpiredPendingBookingCount} " +
-                    "expired pending bookings.",
-                    declinedCount);
-            }
 
             if (removedCount > 0)
             {

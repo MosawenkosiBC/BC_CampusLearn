@@ -5,16 +5,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using BC_CampusLearn.Services.Sessions;
 
 namespace BC_CampusLearn.Pages.Tutors;
 
 public class ManageAvailabilityModel : PageModel
 {
     private const int AvailabilityPageSize = 6;
-    private static readonly TimeSpan SessionLength =
-        TimeSpan.FromHours(1);
+    private static readonly TimeSpan MinimumStartSeparation =
+        SessionSchedulingRules.MinimumStartSeparation;
     private const string ScheduleConflictMessage =
-        "Availability slots must be at least one hour apart and cannot overlap an existing session.";
+        "Availability start times must be at least 75 minutes apart to avoid double booking.";
     private static readonly TimeSpan SouthAfricaOffset =
         TimeSpan.FromHours(2);
 
@@ -846,16 +847,16 @@ public class ManageAvailabilityModel : PageModel
         for (int index = 1; index < orderedCandidates.Count; index++)
         {
             if (orderedCandidates[index] - orderedCandidates[index - 1] <
-                SessionLength)
+                MinimumStartSeparation)
             {
                 return true;
             }
         }
 
         DateTimeOffset rangeStart =
-            orderedCandidates[0].Subtract(SessionLength);
+            orderedCandidates[0].Subtract(MinimumStartSeparation);
         DateTimeOffset rangeEnd =
-            orderedCandidates[^1].Add(SessionLength);
+            orderedCandidates[^1].Add(MinimumStartSeparation);
 
         List<DateTimeOffset> existingTimes =
             await _context.TutorAvailabilities
@@ -881,8 +882,8 @@ public class ManageAvailabilityModel : PageModel
 
         return orderedCandidates.Any(candidate =>
             existingTimes.Any(existing =>
-                existing > candidate.Subtract(SessionLength) &&
-                existing < candidate.Add(SessionLength)));
+                existing > candidate.Subtract(MinimumStartSeparation) &&
+                existing < candidate.Add(MinimumStartSeparation)));
     }
 
     private void BuildRecurringScheduleDays()

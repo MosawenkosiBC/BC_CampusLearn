@@ -26,4 +26,6 @@ public class BookingListItemViewModel
     public BookingStatus Status { get; set; }
 
     public string? Summary { get; set; }
+
+    public string? MeetingLink { get; set; }
 }

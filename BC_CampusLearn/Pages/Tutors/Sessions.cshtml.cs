@@ -9,10 +9,10 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using BC_CampusLearn.Services.Sessions;
 
-namespace BC_CampusLearn.Pages.Bookings;
+namespace BC_CampusLearn.Pages.Tutors;
 
 [Authorize]
-public class IndexModel : PageModel
+public class SessionsModel : PageModel
 {
     private static readonly TimeSpan SouthAfricaOffset =
         TimeSpan.FromHours(2);
@@ -21,7 +21,7 @@ public class IndexModel : PageModel
     private readonly ICurrentUserService _currentUserService;
     private readonly ISessionLifecycleService _lifecycleService;
 
-    public IndexModel(
+    public SessionsModel(
         ApplicationDbContext context,
         ICurrentUserService currentUserService,
         ISessionLifecycleService lifecycleService)
@@ -32,7 +32,7 @@ public class IndexModel : PageModel
     }
 
     [BindProperty(SupportsGet = true)]
-    public string? TutorFilter { get; set; }
+    public string? StudentFilter { get; set; }
 
     [BindProperty(SupportsGet = true)]
     public string? ModuleFilter { get; set; }
@@ -52,8 +52,8 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public string SortDirection { get; set; } = "desc";
 
-    public IReadOnlyList<BookingListItemViewModel> Bookings
-    { get; private set; } = new List<BookingListItemViewModel>();
+    public IReadOnlyList<TutorSessionListItemViewModel> Sessions
+    { get; private set; } = Array.Empty<TutorSessionListItemViewModel>();
 
     public IEnumerable<SelectListItem> StatusOptions =>
         Enum.GetValues<BookingStatus>()
@@ -62,7 +62,7 @@ public class IndexModel : PageModel
                 status.ToString()));
 
     public bool HasActiveFilters =>
-        !string.IsNullOrWhiteSpace(TutorFilter) ||
+        !string.IsNullOrWhiteSpace(StudentFilter) ||
         !string.IsNullOrWhiteSpace(ModuleFilter) ||
         DateFilter.HasValue ||
         !string.IsNullOrWhiteSpace(LocationFilter) ||
@@ -74,32 +74,68 @@ public class IndexModel : PageModel
             column,
             StringComparison.OrdinalIgnoreCase);
 
-    public string GetNextSortDirection(string column)
-    {
-        return IsSortedBy(column) &&
-            string.Equals(
-                SortDirection,
-                "asc",
-                StringComparison.OrdinalIgnoreCase)
+    public string GetNextSortDirection(string column) =>
+        IsSortedBy(column) &&
+        string.Equals(
+            SortDirection,
+            "asc",
+            StringComparison.OrdinalIgnoreCase)
             ? "desc"
             : "asc";
+
+    public IDictionary<string, string> GetRouteData(string column)
+    {
+        Dictionary<string, string> routeData = new()
+        {
+            ["SortBy"] = column,
+            ["SortDirection"] = GetNextSortDirection(column)
+        };
+
+        AddRouteValue(routeData, "StudentFilter", StudentFilter);
+        AddRouteValue(routeData, "ModuleFilter", ModuleFilter);
+        AddRouteValue(
+            routeData,
+            "DateFilter",
+            DateFilter?.ToString("yyyy-MM-dd"));
+        AddRouteValue(routeData, "LocationFilter", LocationFilter);
+        AddRouteValue(
+            routeData,
+            "StatusFilter",
+            StatusFilter?.ToString());
+
+        return routeData;
     }
 
-    public async Task OnGetAsync(
+    public async Task<IActionResult> OnGetAsync(
         CancellationToken cancellationToken)
     {
-        CurrentUser student =
+        CurrentUser currentUser =
             _currentUserService.GetRequiredUser();
+        int? tutorId = await _context.Tutors
+            .AsNoTracking()
+            .Where(tutor =>
+                tutor.BcUserId == currentUser.BcUserId &&
+                tutor.IsActive)
+            .Select(tutor => (int?)tutor.TutorId)
+            .SingleOrDefaultAsync(cancellationToken);
 
-        DateTimeOffset now = DateTimeOffset.UtcNow;
+        if (!tutorId.HasValue)
+        {
+            return Forbid();
+        }
 
         await _lifecycleService.ProcessDueTransitionsAsync(cancellationToken);
 
         IQueryable<Booking> query = _context.Bookings
             .AsNoTracking()
-            .Where(booking =>
-                booking.StudentObjectId == student.ObjectId &&
-                booking.StudentTenantId == student.TenantId);
+            .Where(booking => booking.TutorId == tutorId.Value);
+
+        if (!string.IsNullOrWhiteSpace(StudentFilter))
+        {
+            string studentFilter = StudentFilter.Trim();
+            query = query.Where(booking =>
+                booking.StudentName.Contains(studentFilter));
+        }
 
         if (!string.IsNullOrWhiteSpace(ModuleFilter))
         {
@@ -137,65 +173,62 @@ public class IndexModel : PageModel
                 booking.Status == StatusFilter.Value);
         }
 
-        List<BookingListItemViewModel> bookings = await query
-            .Select(booking =>
-                new BookingListItemViewModel
-                {
-                    BookingId = booking.BookingId,
-                    TutorId = booking.TutorId,
-                    TutorName = string.IsNullOrWhiteSpace(
-                        booking.TutorCourseModule.Tutor.BcUser.DisplayName)
-                        ? booking.TutorCourseModule.Tutor.BcUser.PersonnelNumber
-                        : booking.TutorCourseModule.Tutor.BcUser.DisplayName,
-                    ModuleName = booking.ProgrammeModule.ModuleName,
-                    ModuleCode = booking.ProgrammeModule.ModuleCode,
-                    Location = booking.Location,
-                    AvailableTime = booking.ScheduledStartTime,
-                    Duration = booking.Duration,
-                    Status = booking.Status,
-                    Summary = booking.Summary
-                })
+        List<TutorSessionListItemViewModel> sessions = await query
+            .Select(booking => new TutorSessionListItemViewModel
+            {
+                BookingId = booking.BookingId,
+                StudentName = booking.StudentName,
+                ModuleCode = booking.ProgrammeModule.ModuleCode,
+                ModuleName = booking.ProgrammeModule.ModuleName,
+                Location = booking.Location,
+                ScheduledStartTime = booking.ScheduledStartTime,
+                Duration = booking.Duration,
+                Status = booking.Status
+            })
             .ToListAsync(cancellationToken);
-
-        if (!string.IsNullOrWhiteSpace(TutorFilter))
-        {
-            string tutorFilter = TutorFilter.Trim();
-            bookings = bookings
-                .Where(booking => booking.TutorName.Contains(
-                    tutorFilter,
-                    StringComparison.OrdinalIgnoreCase))
-                .ToList();
-        }
 
         bool descending = string.Equals(
             SortDirection,
             "desc",
             StringComparison.OrdinalIgnoreCase);
 
-        bookings = SortBy.Trim().ToLowerInvariant() switch
+        sessions = SortBy.Trim().ToLowerInvariant() switch
         {
-            "tutor" => descending
-                ? bookings.OrderByDescending(booking => booking.TutorName)
+            "student" => descending
+                ? sessions.OrderByDescending(session => session.StudentName)
                     .ToList()
-                : bookings.OrderBy(booking => booking.TutorName).ToList(),
+                : sessions.OrderBy(session => session.StudentName).ToList(),
             "module" => descending
-                ? bookings.OrderByDescending(booking => booking.ModuleCode)
+                ? sessions.OrderByDescending(session => session.ModuleCode)
                     .ToList()
-                : bookings.OrderBy(booking => booking.ModuleCode).ToList(),
+                : sessions.OrderBy(session => session.ModuleCode).ToList(),
             "location" => descending
-                ? bookings.OrderByDescending(booking => booking.Location)
+                ? sessions.OrderByDescending(session => session.Location)
                     .ToList()
-                : bookings.OrderBy(booking => booking.Location).ToList(),
+                : sessions.OrderBy(session => session.Location).ToList(),
             "status" => descending
-                ? bookings.OrderByDescending(booking => booking.Status)
+                ? sessions.OrderByDescending(session => session.Status)
                     .ToList()
-                : bookings.OrderBy(booking => booking.Status).ToList(),
+                : sessions.OrderBy(session => session.Status).ToList(),
             _ => descending
-                ? bookings.OrderByDescending(booking => booking.AvailableTime)
-                    .ToList()
-                : bookings.OrderBy(booking => booking.AvailableTime).ToList()
+                ? sessions.OrderByDescending(
+                    session => session.ScheduledStartTime).ToList()
+                : sessions.OrderBy(
+                    session => session.ScheduledStartTime).ToList()
         };
 
-        Bookings = bookings;
+        Sessions = sessions;
+        return Page();
+    }
+
+    private static void AddRouteValue(
+        IDictionary<string, string> routeData,
+        string key,
+        string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            routeData[key] = value;
+        }
     }
 }

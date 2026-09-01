@@ -40,7 +40,7 @@
     });
     const overlapsSchedule = (candidateMinutes, otherMinutes) =>
         otherMinutes.some((minutes) =>
-            Math.abs(candidateMinutes - minutes) < 60);
+            Math.abs(candidateMinutes - minutes) < 75);
     const overlapWarningElement = document.querySelector(
         "[data-availability-overlap-warning-modal]");
     const overlapWarningMessage = document.querySelector(
@@ -49,7 +49,7 @@
 
     const showOverlapWarning = (time, sourceModal = null) => {
         const message = `${time} overlaps another availability, ` +
-            "time slots must be 1 hour apart to avoid double booking";
+            "time slots must be 75 minutes apart to avoid double booking";
 
         if (overlapWarningMessage) {
             overlapWarningMessage.textContent = message;
@@ -751,7 +751,7 @@
                         .map(Number);
                     return Math.abs(
                         candidateHours * 60 + candidateMinute -
-                        (existingHours * 60 + existingMinute)) < 60;
+                        (existingHours * 60 + existingMinute)) < 75;
                 });
 
             if (candidateHasConflict) {

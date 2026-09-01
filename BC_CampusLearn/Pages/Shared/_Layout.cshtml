@@ -1,5 +1,14 @@
 @using BC_CampusLearn.Authentication
 
+@{
+    string layoutPagePath =
+        ViewContext.RouteData.Values["Page"]?.ToString()
+        ?? string.Empty;
+    bool hasSessionDetailsBackground = layoutPagePath.Equals(
+        "/Tutors/SessionDetails",
+        StringComparison.OrdinalIgnoreCase);
+}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -636,7 +645,7 @@
         </nav>
     </header>
 
-    <div class="container flex-grow-1">
+    <div class="container flex-grow-1 @(hasSessionDetailsBackground ? "session-details-content-background" : null)">
         <main role="main">
             <partial name="_Breadcrumbs" />
             @RenderBody()

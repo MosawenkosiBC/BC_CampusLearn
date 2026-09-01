@@ -1,0 +1,306 @@
+@page
+@model BC_CampusLearn.Pages.Tutors.SessionsModel
+
+@{
+    ViewData["Title"] = "Tutor sessions";
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/tutor-dashboard.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/tutors.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/components/navigation-drawer.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/bookings-index.css"
+          asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<main class="container py-4 bookings-page tutor-all-sessions-page">
+    <header class="bookings-heading">
+        <h1>All Sessions</h1>
+    </header>
+
+    <div class="bookings-workspace">
+        <aside id="tutor-session-filter-panel"
+               class="tutor-filters bookings-filters"
+               aria-labelledby="tutor-session-filter-title"
+               data-filter-breakpoint="1199.98"
+               data-filter-panel>
+            <div class="filter-heading">
+                <h2 id="tutor-session-filter-title">Filters</h2>
+                <a asp-page="/Tutors/Sessions">Clear all</a>
+                <button type="button"
+                        class="filter-modal-close"
+                        data-filter-close
+                        aria-label="Close filters">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 6l12 12M18 6 6 18" />
+                    </svg>
+                </button>
+            </div>
+
+            <form method="get">
+                <div class="filter-group">
+                    <label asp-for="StudentFilter">Search by student</label>
+                    <div class="filter-search">
+                        <input asp-for="StudentFilter"
+                               type="search"
+                               autocomplete="off" />
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label asp-for="ModuleFilter">Search by module</label>
+                    <div class="filter-search">
+                        <input asp-for="ModuleFilter"
+                               type="search"
+                               autocomplete="off" />
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label asp-for="StatusFilter">Filter by status</label>
+                    <select asp-for="StatusFilter"
+                            asp-items="Model.StatusOptions">
+                        <option value="">All statuses</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label asp-for="DateFilter">Filter by date</label>
+                    <div class="filter-search bookings-date-filter">
+                        <input asp-for="DateFilter" type="date" />
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label asp-for="LocationFilter">Search by location</label>
+                    <div class="filter-search">
+                        <input asp-for="LocationFilter"
+                               type="search"
+                               autocomplete="off" />
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <button type="submit" class="apply-filters">
+                    Apply filters
+                </button>
+            </form>
+        </aside>
+        <button type="button"
+                class="tutor-filter-backdrop"
+                data-filter-close
+                aria-label="Close filters"></button>
+
+        <div class="bookings-results">
+            <div class="results-toolbar bookings-results-toolbar">
+                <div id="all-tutor-sessions-title" class="results-count">
+                    <span class="visually-hidden">All tutor sessions. </span>
+                    <strong>@Model.Sessions.Count</strong>
+                    @(Model.Sessions.Count == 1 ? "session" : "sessions")
+                    displayed
+                </div>
+
+                <button type="button"
+                        class="mobile-filter-trigger @(Model.HasActiveFilters ? "has-active-filters" : null)"
+                        data-filter-open
+                        aria-controls="tutor-session-filter-panel"
+                        aria-expanded="false">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="currentColor"
+                              d="M4.38 3.22A1 1 0 0 1 5 3h14a1 1 0 0 1 .79 1.62L15 10.75v9.13c.04.3-.06.62-.29.83a.996.996 0 0 1-1.41 0l-4.01-4.01a.99.99 0 0 1-.29-.83v-5.12L4.21 4.62a1 1 0 0 1 .17-1.4Z" />
+                    </svg>
+                    <span>Filter</span>
+                </button>
+            </div>
+
+            <section class="bookings-section"
+                     aria-labelledby="all-tutor-sessions-title">
+                @if (Model.Sessions.Count == 0 && Model.HasActiveFilters)
+                {
+                    <div class="empty-tutors bookings-empty-results">
+                        <span class="bookings-empty-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <circle cx="10.5" cy="10.5" r="6.5" />
+                                <path d="m15.4 15.4 4.1 4.1" />
+                            </svg>
+                        </span>
+                        <h2>No sessions match those filters</h2>
+                        <p>
+                            Try clearing a filter or searching for another session.
+                        </p>
+                        <a asp-page="/Tutors/Sessions">Clear all filters</a>
+                    </div>
+                }
+                else
+                {
+                    <div class="tutor-sessions">
+                        <div class="tutor-sessions-table-wrap">
+                            <table class="tutor-sessions-table bookings-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">
+                                            <a asp-page="/Tutors/Sessions"
+                                               asp-all-route-data="@Model.GetRouteData("student")"
+                                               class="bookings-sort-link @(Model.IsSortedBy("student") ? "is-active" : null)">
+                                                <span>Student Name</span>
+                                                <span class="bookings-sort-arrows" aria-hidden="true">
+                                                    <i class="bookings-sort-up"></i>
+                                                    <i class="bookings-sort-down"></i>
+                                                </span>
+                                            </a>
+                                        </th>
+                                        <th scope="col">
+                                            <a asp-page="/Tutors/Sessions"
+                                               asp-all-route-data="@Model.GetRouteData("module")"
+                                               class="bookings-sort-link @(Model.IsSortedBy("module") ? "is-active" : null)">
+                                                <span>Module</span>
+                                                <span class="bookings-sort-arrows" aria-hidden="true">
+                                                    <i class="bookings-sort-up"></i>
+                                                    <i class="bookings-sort-down"></i>
+                                                </span>
+                                            </a>
+                                        </th>
+                                        <th scope="col">
+                                            <a asp-page="/Tutors/Sessions"
+                                               asp-all-route-data="@Model.GetRouteData("date")"
+                                               class="bookings-sort-link @(Model.IsSortedBy("date") ? "is-active" : null)">
+                                                <span>Date &amp; Time</span>
+                                                <span class="bookings-sort-arrows" aria-hidden="true">
+                                                    <i class="bookings-sort-up"></i>
+                                                    <i class="bookings-sort-down"></i>
+                                                </span>
+                                            </a>
+                                        </th>
+                                        <th scope="col">
+                                            <a asp-page="/Tutors/Sessions"
+                                               asp-all-route-data="@Model.GetRouteData("location")"
+                                               class="bookings-sort-link @(Model.IsSortedBy("location") ? "is-active" : null)">
+                                                <span>Location</span>
+                                                <span class="bookings-sort-arrows" aria-hidden="true">
+                                                    <i class="bookings-sort-up"></i>
+                                                    <i class="bookings-sort-down"></i>
+                                                </span>
+                                            </a>
+                                        </th>
+                                        <th scope="col">
+                                            <a asp-page="/Tutors/Sessions"
+                                               asp-all-route-data="@Model.GetRouteData("status")"
+                                               class="bookings-sort-link @(Model.IsSortedBy("status") ? "is-active" : null)">
+                                                <span>Status</span>
+                                                <span class="bookings-sort-arrows" aria-hidden="true">
+                                                    <i class="bookings-sort-up"></i>
+                                                    <i class="bookings-sort-down"></i>
+                                                </span>
+                                            </a>
+                                        </th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.Sessions.Count == 0)
+                                    {
+                                        <tr>
+                                            <td colspan="6"
+                                                class="tutor-sessions-empty">
+                                                No sessions have been booked with you yet.
+                                            </td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var session in Model.Sessions)
+                                        {
+                                            DateTimeOffset localStart =
+                                                session.ScheduledStartTime.ToLocalTime();
+                                            DateTimeOffset localEnd =
+                                                session.SessionEnd.ToLocalTime();
+                                            string statusClass = session.Status
+                                                .ToString()
+                                                .ToLowerInvariant();
+
+                                            <tr>
+                                                <td data-label="Student Name">
+                                                    @session.StudentName
+                                                </td>
+                                                <td data-label="Module"
+                                                    title="@session.ModuleName">
+                                                    @session.ModuleCode
+                                                </td>
+                                                <td data-label="Date &amp; Time">
+                                                    <span class="tutor-session-date">
+                                                        @localStart.ToString("dd MMM yyyy")
+                                                    </span>
+                                                    <span class="tutor-session-time">
+                                                        @localStart.ToString("HH:mm")&ndash;@localEnd.ToString("HH:mm")
+                                                    </span>
+                                                </td>
+                                                <td data-label="Location">
+                                                    @session.Location
+                                                </td>
+                                                <td data-label="Status">
+                                                    <span class="tutor-session-status tutor-session-status--@statusClass">
+                                                        @session.Status
+                                                    </span>
+                                                </td>
+                                                <td data-label="Action">
+                                                    <div class="dropdown bookings-session-action-menu">
+                                                        <button type="button"
+                                                                class="tutor-session-action"
+                                                                data-bs-toggle="dropdown"
+                                                                data-bs-display="static"
+                                                                aria-expanded="false"
+                                                                aria-label="Actions for session with @session.StudentName">
+                                                            <svg class="tutor-session-action-dots"
+                                                                 viewBox="0 0 24 24"
+                                                                 aria-hidden="true">
+                                                                <circle cx="12" cy="5" r="1.6" />
+                                                                <circle cx="12" cy="12" r="1.6" />
+                                                                <circle cx="12" cy="19" r="1.6" />
+                                                            </svg>
+                                                        </button>
+                                                        <div class="dropdown-menu dropdown-menu-end">
+                                                            <a asp-page="/Tutors/SessionDetails"
+                                                               asp-route-bookingId="@session.BookingId"
+                                                               class="dropdown-item">
+                                                                View session
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+            </section>
+        </div>
+    </div>
+</main>
+
+@section Scripts {
+    <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+    <script src="~/js/tutors.js"
+            asp-append-version="true"></script>
+}

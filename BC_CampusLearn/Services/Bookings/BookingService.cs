@@ -164,6 +164,8 @@ public class BookingService : IBookingService
         {
             TutorId = slot.TutorId,
 
+            StudentBcUserId = student.BcUserId,
+
             ProgrammeModuleId = input.ProgrammeModuleId,
 
             StudentObjectId = student.ObjectId,

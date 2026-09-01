@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using BC_CampusLearn.Services.Sessions;
 
 namespace BC_CampusLearn.Pages.Student;
 
@@ -14,13 +15,16 @@ public class DashboardModel : PageModel
 {
     private readonly ApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
+    private readonly ISessionLifecycleService _lifecycleService;
 
     public DashboardModel(
         ApplicationDbContext context,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        ISessionLifecycleService lifecycleService)
     {
         _context = context;
         _currentUserService = currentUserService;
+        _lifecycleService = lifecycleService;
     }
 
     public CurrentUser CurrentUser { get; private set; }
@@ -63,15 +67,7 @@ public class DashboardModel : PageModel
 
         DateTimeOffset now = DateTimeOffset.UtcNow;
 
-        await _context.Bookings
-            .Where(booking =>
-                booking.Status == BookingStatus.Pending &&
-                booking.ScheduledStartTime <= now)
-            .ExecuteUpdateAsync(
-                updates => updates.SetProperty(
-                    booking => booking.Status,
-                    BookingStatus.Declined),
-                cancellationToken);
+        await _lifecycleService.ProcessDueTransitionsAsync(cancellationToken);
 
         IQueryable<Booking> studentBookings =
             _context.Bookings
@@ -149,7 +145,8 @@ public class DashboardModel : PageModel
 
                         Status = booking.Status,
 
-                        Summary = booking.Summary
+                        Summary = booking.Summary,
+                        MeetingLink = booking.MeetingLink
                     })
                 .FirstOrDefaultAsync(cancellationToken);
 

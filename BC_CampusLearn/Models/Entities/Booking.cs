@@ -8,6 +8,8 @@ public class Booking
 
     public int ProgrammeModuleId { get; set; }
 
+    public int? StudentBcUserId { get; set; }
+
     // Identity of the student from Entra claims.
     public string StudentObjectId { get; set; } = string.Empty;
 
@@ -22,6 +24,8 @@ public class Booking
 
     public string? Summary { get; set; }
 
+    public string? MeetingLink { get; set; }
+
     public BookingStatus Status { get; set; }
 
     public SessionDuration Duration { get; set; }
@@ -30,9 +34,24 @@ public class Booking
 
     public DateTimeOffset DateBooked { get; set; }
 
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+
     public ProgrammeModule ProgrammeModule { get; set; } = null!;
 
     public TutorCourseModule TutorCourseModule { get; set; } = null!;
+
+    public BcUser? StudentBcUser { get; set; }
+
+    public SessionExecution? SessionExecution { get; set; }
+
+    public ICollection<BookingStatusHistory> StatusHistory { get; set; }
+        = new List<BookingStatusHistory>();
+
+    public ICollection<SessionMessage> SessionMessages { get; set; }
+        = new List<SessionMessage>();
+
+    public ICollection<SessionReview> SessionReviews { get; set; }
+        = new List<SessionReview>();
 
     public ICollection<BookingPreparationLink> PreparationLinks
     { get; set; } = new List<BookingPreparationLink>();

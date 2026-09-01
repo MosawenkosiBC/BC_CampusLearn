@@ -179,13 +179,26 @@
                                class="tutor-view-session">
                                 View session
                             </a>
-                            <button type="button"
-                                    class="tutor-join-session">
-                                <iconify-icon
-                                    icon="mdi:microsoft-teams"
-                                    aria-hidden="true"></iconify-icon>
-                                Join Meeting
-                            </button>
+                            @if (!string.IsNullOrWhiteSpace(Model.NextSession.MeetingLink))
+                            {
+                                <a href="@Model.NextSession.MeetingLink"
+                                   class="tutor-join-session"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    <iconify-icon
+                                        icon="mdi:microsoft-teams"
+                                        aria-hidden="true"></iconify-icon>
+                                    Join Meeting
+                                </a>
+                            }
+                            else
+                            {
+                                <button type="button"
+                                        class="tutor-join-session"
+                                        disabled>
+                                    Meeting link pending
+                                </button>
+                            }
                         </div>
                     </div>
                 }

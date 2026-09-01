@@ -10,6 +10,8 @@ public class TutorSessionListItemViewModel
 
     public string ModuleCode { get; set; } = string.Empty;
 
+    public string ModuleName { get; set; } = string.Empty;
+
     public string Location { get; set; } = string.Empty;
 
     public DateTimeOffset ScheduledStartTime { get; set; }

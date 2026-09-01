@@ -4,6 +4,8 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Services.Bookings;
 using BC_CampusLearn.Services.Availability;
 using BC_CampusLearn.Services.Tutors;
+using BC_CampusLearn.Services.Sessions;
+using BC_CampusLearn.Hubs;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication;
@@ -78,6 +80,12 @@ builder.Services.AddScoped<
     IBookingService,
     BookingService>();
 
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<
+    ISessionLifecycleService,
+    SessionLifecycleService>();
+builder.Services.AddSignalR();
+
 builder.Services.AddHostedService<
     ExpiredAvailabilityCleanupService>();
 
@@ -111,5 +119,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();
+app.MapHub<SessionHub>("/hubs/session");
 
 app.Run();

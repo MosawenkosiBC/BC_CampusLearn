@@ -33,6 +33,12 @@ public class BookingConfiguration
         builder.Property(booking => booking.Summary)
             .HasMaxLength(1000);
 
+        builder.Property(booking => booking.MeetingLink)
+            .HasMaxLength(2048);
+
+        builder.Property(booking => booking.RowVersion)
+            .IsRowVersion();
+
         builder.Property(booking => booking.DateBooked)
             .HasColumnType("datetimeoffset");
 
@@ -63,6 +69,11 @@ public class BookingConfiguration
                 booking.TutorId,
                 booking.ProgrammeModuleId
             })
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(booking => booking.StudentBcUser)
+            .WithMany()
+            .HasForeignKey(booking => booking.StudentBcUserId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

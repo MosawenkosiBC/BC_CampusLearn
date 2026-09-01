@@ -39,6 +39,15 @@
         case "/Tutors/TutorDashboard":
             breadcrumbs.Add(("Tutor Dashboard", null));
             break;
+        case "/Tutors/Sessions":
+            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
+            breadcrumbs.Add(("All Sessions", null));
+            break;
+        case "/Tutors/SessionDetails":
+            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
+            breadcrumbs.Add(("All Sessions", "/Tutors/Sessions"));
+            breadcrumbs.Add(("Session Details", null));
+            break;
         case "/Tutors/ManageAvailability":
             breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
             breadcrumbs.Add(("Manage Availability", null));

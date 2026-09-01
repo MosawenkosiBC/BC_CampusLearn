@@ -5,6 +5,7 @@ using BC_CampusLearn.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using BC_CampusLearn.Services.Sessions;
 
 namespace BC_CampusLearn.Pages.Tutors;
 
@@ -12,13 +13,16 @@ public class TutorDashboardModel : PageModel
 {
     private readonly ApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
+    private readonly ISessionLifecycleService _lifecycleService;
 
     public TutorDashboardModel(
         ApplicationDbContext context,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        ISessionLifecycleService lifecycleService)
     {
         _context = context;
         _currentUserService = currentUserService;
+        _lifecycleService = lifecycleService;
     }
 
     public int PendingSessionCount { get; private set; }
@@ -51,6 +55,7 @@ public class TutorDashboardModel : PageModel
     public async Task<IActionResult> OnGetAsync(
         CancellationToken cancellationToken)
     {
+        await _lifecycleService.ProcessDueTransitionsAsync(cancellationToken);
         int? tutorId =
             await GetCurrentTutorIdAsync(cancellationToken);
 
@@ -102,7 +107,8 @@ public class TutorDashboardModel : PageModel
                 Pending = bookings.Count(booking =>
                     booking.Status == BookingStatus.Pending),
                 Upcoming = bookings.Count(booking =>
-                    booking.Status == BookingStatus.Confirmed),
+                    booking.Status == BookingStatus.Confirmed ||
+                    booking.Status == BookingStatus.InProgress),
                 Total = bookings.Count(booking =>
                     booking.Status == BookingStatus.Completed)
             })
@@ -141,7 +147,8 @@ public class TutorDashboardModel : PageModel
                     Location = booking.Location,
                     ScheduledStartTime =
                         booking.ScheduledStartTime,
-                    Duration = booking.Duration
+                    Duration = booking.Duration,
+                    MeetingLink = booking.MeetingLink
                 })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -193,7 +200,8 @@ public class TutorDashboardModel : PageModel
                     booking.ScheduledStartTime >= calendarStart &&
                     booking.ScheduledStartTime < calendarEnd &&
                     (booking.Status == BookingStatus.Pending ||
-                     booking.Status == BookingStatus.Confirmed))
+                     booking.Status == BookingStatus.Confirmed ||
+                     booking.Status == BookingStatus.InProgress))
                 .Select(booking =>
                     new TutorWeeklySlotViewModel
                     {
@@ -207,8 +215,8 @@ public class TutorDashboardModel : PageModel
                             booking.ProgrammeModule.ModuleName,
                         Location = booking.Location,
                         Status =
-                            booking.Status ==
-                                BookingStatus.Confirmed
+                            booking.Status == BookingStatus.Confirmed ||
+                            booking.Status == BookingStatus.InProgress
                                 ? TutorWeeklySlotStatus.Active
                                 : TutorWeeklySlotStatus.Booked
                     })
@@ -224,16 +232,8 @@ public class TutorDashboardModel : PageModel
 
     public async Task<IActionResult> OnPostUpdateBookingStatusAsync(
         int bookingId,
-        BookingStatus status,
         CancellationToken cancellationToken)
     {
-        if (status != BookingStatus.Confirmed &&
-            status != BookingStatus.Cancelled &&
-            status != BookingStatus.Declined)
-        {
-            return BadRequest();
-        }
-
         int? tutorId =
             await GetCurrentTutorIdAsync(cancellationToken);
 
@@ -242,100 +242,21 @@ public class TutorDashboardModel : PageModel
             return Forbid();
         }
 
-        var booking = await _context.Bookings
+        bool bookingExists = await _context.Bookings
             .AsNoTracking()
-            .Where(item =>
+            .AnyAsync(item =>
                 item.BookingId == bookingId &&
-                item.TutorId == tutorId.Value)
-            .Select(item => new
-            {
-                item.ScheduledStartTime,
-                item.Status
-            })
-            .SingleOrDefaultAsync(cancellationToken);
+                item.TutorId == tutorId.Value,
+                cancellationToken);
 
-        if (booking is null)
+        if (!bookingExists)
         {
             return NotFound();
         }
 
-        if (booking.Status != BookingStatus.Pending)
-        {
-            return RedirectToPage();
-        }
-
-        await using var transaction =
-            await _context.Database.BeginTransactionAsync(
-                cancellationToken);
-
-        int updatedCount = await _context.Bookings
-            .Where(item =>
-                item.BookingId == bookingId &&
-                item.TutorId == tutorId.Value &&
-                item.Status == BookingStatus.Pending)
-            .ExecuteUpdateAsync(
-                updates => updates.SetProperty(
-                    item => item.Status,
-                    status),
-                cancellationToken);
-
-        if (updatedCount == 0)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            return RedirectToPage();
-        }
-
-        bool shouldRestoreAvailability =
-            (status == BookingStatus.Cancelled ||
-             status == BookingStatus.Declined) &&
-            booking.ScheduledStartTime >
-                DateTimeOffset.UtcNow;
-
-        if (shouldRestoreAvailability)
-        {
-            DateTimeOffset conflictRangeStart =
-                booking.ScheduledStartTime.AddHours(-1);
-            DateTimeOffset conflictRangeEnd =
-                booking.ScheduledStartTime.AddHours(1);
-            bool availabilityExists =
-                await _context.TutorAvailabilities
-                    .AnyAsync(
-                        slot =>
-                            slot.TutorId == tutorId.Value &&
-                            slot.AvailableTime > conflictRangeStart &&
-                            slot.AvailableTime < conflictRangeEnd,
-                        cancellationToken);
-            bool activeBookingExists =
-                await _context.Bookings
-                    .AsNoTracking()
-                    .AnyAsync(
-                        item =>
-                            item.BookingId != bookingId &&
-                            item.TutorId == tutorId.Value &&
-                            item.Status != BookingStatus.Cancelled &&
-                            item.Status != BookingStatus.Declined &&
-                            item.ScheduledStartTime > conflictRangeStart &&
-                            item.ScheduledStartTime < conflictRangeEnd,
-                        cancellationToken);
-
-            if (!availabilityExists && !activeBookingExists)
-            {
-                _context.TutorAvailabilities.Add(
-                    new TutorAvailability
-                    {
-                        TutorId = tutorId.Value,
-                        AvailableTime =
-                            booking.ScheduledStartTime
-                    });
-
-                await _context.SaveChangesAsync(
-                    cancellationToken);
-            }
-        }
-
-        await transaction.CommitAsync(cancellationToken);
-
-        return RedirectToPage();
+        return RedirectToPage(
+            "/Tutors/SessionDetails",
+            new { bookingId });
     }
 
     private async Task<int?> GetCurrentTutorIdAsync(
