@@ -1,4 +1,113 @@
 (() => {
+    document.querySelectorAll("[data-session-information-toggle]")
+        .forEach((toggle) => toggle.addEventListener("click", () => {
+            const section = toggle.closest(".session-information-section");
+            if (!section) return;
+            const collapsed = section.classList.toggle("is-mobile-collapsed");
+            toggle.setAttribute("aria-expanded", String(!collapsed));
+            toggle.setAttribute("aria-label", collapsed
+                ? "Show session information"
+                : "Hide session information");
+        }));
+
+    const evaluationPanel = document.getElementById("review-session-modal");
+    if (evaluationPanel?.parentElement !== document.body) {
+        document.body.append(evaluationPanel);
+    }
+    const setEvaluationScrollLock = (locked) => {
+        document.documentElement.classList.toggle(
+            "tutor-evaluation-panel-open", locked);
+        document.body.classList.toggle(
+            "tutor-evaluation-panel-open", locked);
+    };
+    evaluationPanel?.addEventListener(
+        "show.bs.modal", () => setEvaluationScrollLock(true));
+    evaluationPanel?.addEventListener(
+        "hidden.bs.modal", () => setEvaluationScrollLock(false));
+
+    const evaluationForm = evaluationPanel?.querySelector(
+        "[data-session-evaluation-form]");
+    const evaluationQuestions = Array.from(
+        evaluationForm?.querySelectorAll(".evaluation-question") ?? []);
+    const clearError = (question) => {
+        question.classList.remove("has-validation-error");
+        question.querySelector(".evaluation-validation-error")?.remove();
+        question.querySelectorAll("input, textarea")
+            .forEach((control) => {
+                control.removeAttribute("aria-invalid");
+                control.removeAttribute("aria-describedby");
+            });
+    };
+    const showEvaluationError = (question, message, index) => {
+        clearError(question);
+        const error = document.createElement("p");
+        error.className = "evaluation-validation-error";
+        error.id = `student-evaluation-error-${index}`;
+        error.setAttribute("role", "alert");
+        error.textContent = message;
+        question.classList.add("has-validation-error");
+        question.querySelectorAll("input, textarea")
+            .forEach((control) => {
+                control.setAttribute("aria-invalid", "true");
+                control.setAttribute("aria-describedby", error.id);
+            });
+        question.append(error);
+    };
+    const validateQuestion = (question, index) => {
+        const radio = question.querySelector("input[type='radio']");
+        const text = question.querySelector("input:not([type='radio']), textarea");
+        if (radio && !question.querySelector("input[type='radio']:checked")) {
+            showEvaluationError(question, "Select one option.", index);
+            return false;
+        }
+        const value = text?.value.trim() ?? "";
+        if (text && !value) {
+            showEvaluationError(question, "This response is required.", index);
+            return false;
+        }
+        clearError(question);
+        return true;
+    };
+    evaluationQuestions.forEach((question, index) => {
+        question.querySelectorAll("input, textarea").forEach((control) => {
+            control.addEventListener(
+                control.type === "radio" ? "change" : "input",
+                () => {
+                    if (question.classList.contains("has-validation-error")) {
+                        validateQuestion(question, index);
+                    }
+                });
+        });
+    });
+
+    evaluationForm?.querySelectorAll(".evaluation-rating-group")
+        .forEach((group) => {
+            const options = Array.from(group.querySelectorAll(
+                ".evaluation-rating-option"));
+            const updateStars = () => {
+                const selectedIndex = options.findIndex((option) =>
+                    option.querySelector("input")?.checked);
+                options.forEach((option, index) => option.classList.toggle(
+                    "is-filled",
+                    selectedIndex >= 0 && index <= selectedIndex));
+            };
+            group.querySelectorAll("input[type='radio']")
+                .forEach((input) => input.addEventListener(
+                    "change",
+                    updateStars));
+            updateStars();
+        });
+
+    evaluationForm?.addEventListener("submit", (event) => {
+        const results = evaluationQuestions.map(validateQuestion);
+        const firstInvalid = results.findIndex((valid) => !valid);
+        if (firstInvalid < 0) return;
+        event.preventDefault();
+        const question = evaluationQuestions[firstInvalid];
+        question.scrollIntoView({ behavior: "smooth", block: "center" });
+        question.querySelector("input, textarea")?.focus({ preventScroll: true });
+    });
+
     const chat = document.querySelector("[data-session-chat]");
     if (!chat) {
         return;

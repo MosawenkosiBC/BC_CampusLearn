@@ -57,6 +57,8 @@ public class Booking
 
     public TutorStudentEvaluation? TutorEvaluation { get; set; }
 
+    public StudentEvaluation? StudentEvaluation { get; set; }
+
     public ICollection<BookingPreparationLink> PreparationLinks
     { get; set; } = new List<BookingPreparationLink>();
 

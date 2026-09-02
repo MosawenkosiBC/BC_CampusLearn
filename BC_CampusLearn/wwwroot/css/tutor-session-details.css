@@ -1244,6 +1244,94 @@
     gap: 0.65rem;
 }
 
+.tutor-evaluation-modal .evaluation-radio-group-wrap {
+    flex-wrap: wrap;
+}
+
+.tutor-evaluation-modal .evaluation-radio-group-stack {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.tutor-evaluation-modal .evaluation-rating-group {
+    gap: 1rem;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-group {
+    align-items: start;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: 100%;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option {
+    align-items: center;
+    color: #667085;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+    text-align: center;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option input {
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option svg {
+    fill: none;
+    height: 2.35rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+    width: 2.35rem;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option > span {
+    color: currentColor;
+    font-size: 0.87rem;
+    line-height: 1.2;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option.is-strongly-agree {
+    color: #16803c;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option.is-agree {
+    color: #5a9f3d;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option.is-neutral {
+    color: #cc8700;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option.is-disagree {
+    color: #df6b20;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option.is-strongly-disagree {
+    color: #c62828;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option input:checked + svg {
+    background: color-mix(in srgb, currentColor 12%, #fff);
+    border-radius: 50%;
+    stroke-width: 1.9;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option input:checked ~ span {
+    font-weight: 700;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option input:focus-visible + svg {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+}
+
 .tutor-evaluation-modal .evaluation-radio-group label {
     align-items: center;
     background: transparent;
@@ -1273,6 +1361,72 @@
 .tutor-evaluation-modal .evaluation-radio-group input:focus-visible {
     outline: 2px solid rgba(181, 0, 85, 0.35);
     outline-offset: 3px;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option {
+    border: 2px solid transparent;
+    border-radius: 0.55rem;
+    padding: 0.55rem 0.25rem;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option:has(input:checked) {
+    background: transparent;
+    border-color: currentColor;
+}
+
+.tutor-evaluation-modal .evaluation-sentiment-option input:checked + svg {
+    background: currentColor;
+    stroke: #fff;
+    stroke-width: 1.9;
+    transform: scale(1.08);
+}
+
+.tutor-evaluation-modal .evaluation-rating-group {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: 100%;
+}
+
+.tutor-evaluation-modal .evaluation-rating-option {
+    align-items: center;
+    border: 0;
+    border-radius: 0;
+    color: #cfd3d8;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0.4rem 0.2rem;
+}
+
+.tutor-evaluation-modal .evaluation-rating-option input {
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+}
+
+.tutor-evaluation-modal .evaluation-rating-option svg {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    fill: currentColor;
+    height: 2rem;
+    outline: 0;
+    stroke: none;
+    width: 2rem;
+}
+
+.tutor-evaluation-modal .evaluation-rating-option.is-filled svg {
+    color: #c68100;
+}
+
+.tutor-evaluation-modal .evaluation-rating-option input:focus-visible + svg {
+    opacity: 0.75;
+}
+
+.tutor-evaluation-modal .evaluation-rating-option input:focus,
+.tutor-evaluation-modal .evaluation-rating-option input:focus-visible {
+    box-shadow: none;
+    outline: 0;
 }
 
 html.tutor-evaluation-panel-open,

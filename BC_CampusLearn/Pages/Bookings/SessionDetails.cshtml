@@ -35,7 +35,7 @@
             <div class="completed-session-review manage-session-review-action">
                 @if (Model.Session.Status == BookingStatus.Completed)
                 {
-                    @if (Model.Session.SessionReviews.Any(item => item.ReviewerBcUserId == Model.CurrentBcUserId))
+                    @if (Model.Session.StudentEvaluation is not null)
                     {
                         <button type="button" disabled aria-label="Review submitted" title="Review submitted">
                             <span class="review-action-label">Review Submitted</span>
@@ -395,37 +395,171 @@
     </div>
 </main>
 
-@if (Model.Session.Status == BookingStatus.Completed &&
-     !Model.Session.SessionReviews.Any(item => item.ReviewerBcUserId == Model.CurrentBcUserId))
+@if (Model.Session.Status == BookingStatus.Completed && Model.Session.StudentEvaluation is null)
 {
     <div class="modal fade meeting-link-modal" id="review-session-modal" tabindex="-1"
          aria-labelledby="review-session-title" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog tutor-evaluation-modal student-evaluation-modal">
             <div class="modal-content">
-                <form method="post" asp-page-handler="Review">
+                <form method="post" asp-page-handler="Review" novalidate data-session-evaluation-form>
                     <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
                     <div class="modal-header">
-                        <div>
-                            <h2 id="review-session-title">Review @Model.TutorName</h2>
-                            <p>Share feedback about your completed session.</p>
-                        </div>
+                        <div><h2 id="review-session-title">Evaluate @Model.TutorName</h2></div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-                        <label asp-for="ReviewRating">Rating</label>
-                        <select asp-for="ReviewRating" required>
-                            <option value="">Select a rating</option>
-                            @for (byte rating = 1; rating <= 5; rating++)
+                    <div class="modal-body tutor-evaluation-form">
+                        <fieldset class="evaluation-question" data-evaluation-required>
+                            <legend>1. Mode of tutoring <span aria-hidden="true">*</span></legend>
+                            <div class="evaluation-radio-group">
+                                <label><input asp-for="EvaluationInput.TutoringMode" id="tutoring-mode-online" type="radio" value="Online" /> <span>Online</span></label>
+                                <label><input asp-for="EvaluationInput.TutoringMode" id="tutoring-mode-face" type="radio" value="Face-to-face" /> <span>Face-to-face</span></label>
+                            </div>
+                        </fieldset>
+                        <div class="evaluation-question" data-evaluation-required>
+                            <label asp-for="EvaluationInput.PlatformExperience">2. What was your experience with the platform? <span aria-hidden="true">*</span></label>
+                            <textarea asp-for="EvaluationInput.PlatformExperience" rows="3" maxlength="1000"></textarea>
+                        </div>
+                        @{
+                            var threeWayQuestions = new[]
                             {
-                                <option value="@rating">@rating / 5</option>
-                            }
-                        </select>
-                        <label asp-for="ReviewComment">Comment (optional)</label>
-                        <textarea asp-for="ReviewComment" rows="4" maxlength="2000"></textarea>
+                                (3, "TutorResponse", "Did the tutor listen carefully and respond clearly and directly?"),
+                                (4, "TutorInterest", "Did the tutor understand and show genuine interest in teaching the module?")
+                            };
+                        }
+                        @foreach (var question in threeWayQuestions)
+                        {
+                            <fieldset class="evaluation-question" data-evaluation-required>
+                                <legend>@question.Item1. @question.Item3 <span aria-hidden="true">*</span></legend>
+                                <div class="evaluation-radio-group evaluation-radio-group-wrap">
+                                    @foreach (string option in new[] { "Yes", "No", "Maybe" })
+                                    {
+                                        string id = $"{question.Item2}-{option}".ToLowerInvariant();
+                                        <label><input name="EvaluationInput.@question.Item2" id="@id" type="radio" value="@option" /> <span>@option</span></label>
+                                    }
+                                </div>
+                            </fieldset>
+                        }
+                        @{
+                            var agreementQuestions = new[]
+                            {
+                                (5, "TutorFriendliness", "The tutor was friendly and helped me feel comfortable."),
+                                (6, "TutorExplanation", "The tutor explained the subject in a way I understood and could apply independently."),
+                                (7, "TutorParticipation", "The tutor encouraged my participation in the session.")
+                            };
+                            var agreementOptions = new[]
+                            {
+                                (Value: "Strongly agree", CssClass: "is-strongly-agree", IconPath: "M8 15a5 5 0 0 0 4 2a5 5 0 0 0 4-2M6.5 8.8c.342-.486.887-.8 1.5-.8s1.158.314 1.5.8m5 0c.342-.486.887-.8 1.5-.8s1.158.314 1.5.8"),
+                                (Value: "Agree", CssClass: "is-agree", IconPath: "M8 15a5 5 0 0 0 4 2a5 5 0 0 0 4-2m-.375-6.613v.53m-7.25-.53v.53m.375-.167c0-.414-.168-.75-.375-.75S8 8.336 8 8.75s.168.75.375.75s.375-.336.375-.75m7.25 0c0-.414-.168-.75-.375-.75s-.375.336-.375.75s.168.75.375.75s.375-.336.375-.75"),
+                                (Value: "Neither agree nor disagree", CssClass: "is-neutral", IconPath: "M9 16h6m.625-6.613v.53m-7.25-.53v.53m.375-.167c0-.414-.168-.75-.375-.75S8 9.336 8 9.75s.168.75.375.75s.375-.336.375-.75m7.25 0c0-.414-.168-.75-.375-.75s-.375.336-.375.75s.168.75.375.75s.375-.336.375-.75"),
+                                (Value: "Disagree", CssClass: "is-disagree", IconPath: "M8 16a5 5 0 0 1 4-2c1.636 0 3.088.786 4 2m-.375-7.613v.53m-7.25-.53v.53m.375-.167c0-.414-.168-.75-.375-.75S8 8.336 8 8.75s.168.75.375.75s.375-.336.375-.75m7.25 0c0-.414-.168-.75-.375-.75s-.375.336-.375.75s.168.75.375.75s.375-.336.375-.75"),
+                                (Value: "Strongly disagree", CssClass: "is-strongly-disagree", IconPath: "M8 17a5 5 0 0 1 4-2c1.636 0 3.088.786 4 2M7 9.01s1.41-.127 2.196.498m0 0l-.263.835c-.104.329.167.657.543.657c.396 0 .657-.357.453-.665a3.6 3.6 0 0 0-.733-.827M17 9.011s-1.41-.128-2.196.497m0 0l.263.835c.104.329-.167.657-.543.657c-.396 0-.657-.357-.453-.665a3.6 3.6 0 0 1 .733-.827")
+                            };
+                        }
+                        @foreach (var question in agreementQuestions)
+                        {
+                            <fieldset class="evaluation-question" data-evaluation-required>
+                                <legend>@question.Item1. @question.Item3 <span aria-hidden="true">*</span></legend>
+                                <div class="evaluation-radio-group evaluation-radio-group-stack evaluation-sentiment-group">
+                                    @foreach (var option in agreementOptions)
+                                    {
+                                        string id = $"{question.Item2}-{option.Value.Replace(" ", "-")}".ToLowerInvariant();
+                                        <label class="evaluation-sentiment-option @option.CssClass">
+                                            <input name="EvaluationInput.@question.Item2" id="@id" type="radio" value="@option.Value" />
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <path d="@option.IconPath" />
+                                            </svg>
+                                            <span>@option.Value</span>
+                                        </label>
+                                    }
+                                </div>
+                            </fieldset>
+                        }
+                        <fieldset class="evaluation-question" data-evaluation-required>
+                            <legend>8. Did the tutor commit to the arranged session times? <span aria-hidden="true">*</span></legend>
+                            <div class="evaluation-radio-group">
+                                @foreach (string option in new[] { "Yes", "No", "Maybe" })
+                                {
+                                    <label><input asp-for="EvaluationInput.TutorPunctuality" id="punctuality-@option.ToLowerInvariant()" type="radio" value="@option" /> <span>@option</span></label>
+                                }
+                            </div>
+                        </fieldset>
+                        <fieldset class="evaluation-question" data-evaluation-required>
+                            <legend>9. Did the tutor suggest ways to improve your study habits and become a more independent learner? <span aria-hidden="true">*</span></legend>
+                            <div class="evaluation-radio-group evaluation-radio-group-stack evaluation-sentiment-group">
+                                @foreach (var option in agreementOptions)
+                                {
+                                    <label class="evaluation-sentiment-option @option.CssClass">
+                                        <input asp-for="EvaluationInput.TutorAdvice" id="advice-@option.Value.Replace(" ", "-").ToLowerInvariant()" type="radio" value="@option.Value" />
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <path d="@option.IconPath" />
+                                        </svg>
+                                        <span>@option.Value</span>
+                                    </label>
+                                }
+                            </div>
+                        </fieldset>
+                        <fieldset class="evaluation-question" data-evaluation-required>
+                            <legend>10. In what way did the tutor help you? <span aria-hidden="true">*</span></legend>
+                            <div class="evaluation-radio-group evaluation-radio-group-stack">
+                                @foreach (string option in new[] { "Test Preparation", "Explanation of Content", "Understanding the Concept", "Memory Techniques", "Problem Solving Technique" })
+                                {
+                                    <label><input asp-for="EvaluationInput.TutorHelp" id="help-@option.Replace(" ", "-").ToLowerInvariant()" type="radio" value="@option" /> <span>@option</span></label>
+                                }
+                            </div>
+                        </fieldset>
+                        <div class="evaluation-question" data-evaluation-required>
+                            <label asp-for="EvaluationInput.TutorTopic">11. What topic did the tutor assist you with? Please be specific. <span aria-hidden="true">*</span></label>
+                            <textarea asp-for="EvaluationInput.TutorTopic" rows="3" maxlength="1000"></textarea>
+                        </div>
+                        <fieldset class="evaluation-question" data-evaluation-required>
+                            <legend>12. Do you plan on using the tutoring service again? <span aria-hidden="true">*</span></legend>
+                            <div class="evaluation-radio-group">
+                                @foreach (string option in new[] { "Yes", "No", "Maybe" })
+                                {
+                                    <label><input asp-for="EvaluationInput.TutoringService" id="service-@option.ToLowerInvariant()" type="radio" value="@option" /> <span>@option</span></label>
+                                }
+                            </div>
+                        </fieldset>
+                        <div class="evaluation-question" data-evaluation-required>
+                            <label asp-for="EvaluationInput.ImproveBCProgramme">13. Do you have suggestions to improve the BC Peer-Tutoring programme? <span aria-hidden="true">*</span></label>
+                            <textarea asp-for="EvaluationInput.ImproveBCProgramme" rows="3" maxlength="2000"></textarea>
+                        </div>
+                        <fieldset class="evaluation-question" data-evaluation-required>
+                            <legend>14. How would you rate the overall tutoring experience? <span aria-hidden="true">*</span></legend>
+                            <div class="evaluation-radio-group evaluation-rating-group">
+                                @for (byte rating = 1; rating <= 5; rating++)
+                                {
+                                    <label class="evaluation-rating-option">
+                                        <input asp-for="EvaluationInput.ModeRating" id="mode-rating-@rating" type="radio" value="@rating" aria-label="@rating out of 5" />
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M0 0h24v24H0z" fill="none" />
+                                            <path d="m13.728 3.444 1.76 3.549c.24.494.88.968 1.42 1.058l3.189.535c2.04.343 2.52 1.835 1.05 3.307l-2.48 2.5c-.42.423-.65 1.24-.52 1.825l.71 3.095c.56 2.45-.73 3.397-2.88 2.117l-2.99-1.785c-.54-.322-1.43-.322-1.98 0L8.019 21.43c-2.14 1.28-3.44.322-2.88-2.117l.71-3.095c.13-.585-.1-1.402-.52-1.825l-2.48-2.5C1.39 10.42 1.86 8.929 3.899 8.586l3.19-.535c.53-.09 1.17-.564 1.41-1.058l1.76-3.549c.96-1.925 2.52-1.925 3.47 0" />
+                                        </svg>
+                                    </label>
+                                }
+                            </div>
+                        </fieldset>
+                        <fieldset class="evaluation-question" data-evaluation-required>
+                            <legend>15. How would you rate the tutoring platform? <span aria-hidden="true">*</span></legend>
+                            <div class="evaluation-radio-group evaluation-rating-group">
+                                @for (byte rating = 1; rating <= 5; rating++)
+                                {
+                                    <label class="evaluation-rating-option">
+                                        <input asp-for="EvaluationInput.PlatformRating" id="platform-rating-@rating" type="radio" value="@rating" aria-label="@rating out of 5" />
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M0 0h24v24H0z" fill="none" />
+                                            <path d="m13.728 3.444 1.76 3.549c.24.494.88.968 1.42 1.058l3.189.535c2.04.343 2.52 1.835 1.05 3.307l-2.48 2.5c-.42.423-.65 1.24-.52 1.825l.71 3.095c.56 2.45-.73 3.397-2.88 2.117l-2.99-1.785c-.54-.322-1.43-.322-1.98 0L8.019 21.43c-2.14 1.28-3.44.322-2.88-2.117l.71-3.095c.13-.585-.1-1.402-.52-1.825l-2.48-2.5C1.39 10.42 1.86 8.929 3.899 8.586l3.19-.535c.53-.09 1.17-.564 1.41-1.058l1.76-3.549c.96-1.925 2.52-1.925 3.47 0" />
+                                        </svg>
+                                    </label>
+                                }
+                            </div>
+                        </fieldset>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="meeting-link-modal-cancel" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="meeting-link-modal-save">Submit review</button>
+                        <button type="submit" class="meeting-link-modal-save">Submit evaluation</button>
                     </div>
                 </form>
             </div>

@@ -53,6 +53,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<TutorStudentEvaluation> TutorStudentEvaluations =>
         Set<TutorStudentEvaluation>();
 
+    public DbSet<StudentEvaluation> StudentEvaluations =>
+        Set<StudentEvaluation>();
+
     public DbSet<ProgrammeOfStudy> ProgrammesOfStudy { get; set; }
 
     public DbSet<LearningResource> LearningResources =>

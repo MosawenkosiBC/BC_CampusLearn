@@ -1,6 +1,7 @@
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Sessions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,20 +17,17 @@ public class SessionDetailsModel : PageModel
     private readonly ICurrentUserService _currentUserService;
     private readonly IWebHostEnvironment _environment;
     private readonly ISessionLifecycleService _lifecycleService;
-    private readonly TimeProvider _timeProvider;
 
     public SessionDetailsModel(
         ApplicationDbContext context,
         ICurrentUserService currentUserService,
         IWebHostEnvironment environment,
-        ISessionLifecycleService lifecycleService,
-        TimeProvider timeProvider)
+        ISessionLifecycleService lifecycleService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _environment = environment;
         _lifecycleService = lifecycleService;
-        _timeProvider = timeProvider;
     }
 
     public Booking Session { get; private set; } = null!;
@@ -47,10 +45,7 @@ public class SessionDetailsModel : PageModel
     public string? LatestStatusReasonTitle { get; private set; }
 
     [BindProperty]
-    public byte ReviewRating { get; set; }
-
-    [BindProperty]
-    public string? ReviewComment { get; set; }
+    public StudentEvaluationInput EvaluationInput { get; set; } = new();
 
     [TempData]
     public string? SessionActionMessage { get; set; }
@@ -76,7 +71,7 @@ public class SessionDetailsModel : PageModel
             .Include(booking => booking.Documents)
             .Include(booking => booking.SessionMessages)
                 .ThenInclude(message => message.Sender)
-            .Include(booking => booking.SessionReviews)
+            .Include(booking => booking.StudentEvaluation)
             .Include(booking => booking.StatusHistory)
             .SingleOrDefaultAsync(
                 booking => booking.BookingId == bookingId,
@@ -160,9 +155,7 @@ public class SessionDetailsModel : PageModel
     {
         CurrentUser student = _currentUserService.GetRequiredUser();
         Booking? booking = await StudentBookings(student)
-            .Include(item => item.SessionReviews)
-            .Include(item => item.TutorCourseModule)
-                .ThenInclude(assignment => assignment.Tutor)
+            .Include(item => item.StudentEvaluation)
             .SingleOrDefaultAsync(
                 item => item.BookingId == bookingId,
                 cancellationToken);
@@ -172,33 +165,72 @@ public class SessionDetailsModel : PageModel
             return NotFound();
         }
 
-        string comment = ReviewComment?.Trim() ?? string.Empty;
-        bool reviewExists = booking.SessionReviews.Any(review =>
-            review.ReviewerBcUserId == student.BcUserId);
-        if (booking.Status != BookingStatus.Completed ||
-            ReviewRating is < 1 or > 5 ||
-            comment.Length > 2000 ||
-            reviewExists)
+        bool reviewExists = booking.StudentEvaluation is not null;
+        if (booking.Status != BookingStatus.Completed || reviewExists)
         {
             SessionActionError = true;
             SessionActionMessage = reviewExists
                 ? "You have already reviewed this session."
-                : "A review requires a completed session and a rating from 1 to 5.";
+                : "An evaluation can only be submitted for a completed session.";
             return RedirectToPage(new { bookingId });
         }
 
-        _context.SessionReviews.Add(new SessionReview
+        string[] threeWay = ["Yes", "No", "Maybe"];
+        string[] agreement =
+        [
+            "Strongly agree", "Agree", "Neither agree nor disagree",
+            "Disagree", "Strongly disagree"
+        ];
+        string[] tutoringModes = ["Online", "Face-to-face"];
+        string[] helpOptions =
+        [
+            "Test Preparation", "Explanation of Content",
+            "Understanding the Concept", "Memory Techniques",
+            "Problem Solving Technique"
+        ];
+        bool selectionsAreValid =
+            tutoringModes.Contains(EvaluationInput.TutoringMode) &&
+            threeWay.Contains(EvaluationInput.TutorResponse) &&
+            threeWay.Contains(EvaluationInput.TutorInterest) &&
+            agreement.Contains(EvaluationInput.TutorFriendliness) &&
+            agreement.Contains(EvaluationInput.TutorExplanation) &&
+            agreement.Contains(EvaluationInput.TutorParticipation) &&
+            threeWay.Contains(EvaluationInput.TutorPunctuality) &&
+            agreement.Contains(EvaluationInput.TutorAdvice) &&
+            helpOptions.Contains(EvaluationInput.TutorHelp) &&
+            threeWay.Contains(EvaluationInput.TutoringService) &&
+            !string.IsNullOrWhiteSpace(EvaluationInput.PlatformExperience) &&
+            !string.IsNullOrWhiteSpace(EvaluationInput.TutorTopic) &&
+            !string.IsNullOrWhiteSpace(EvaluationInput.ImproveBCProgramme);
+        if (!ModelState.IsValid || !selectionsAreValid)
+        {
+            SessionActionError = true;
+            SessionActionMessage = "Complete all required evaluation questions.";
+            return RedirectToPage(new { bookingId });
+        }
+
+        _context.StudentEvaluations.Add(new StudentEvaluation
         {
             BookingId = bookingId,
-            ReviewerBcUserId = student.BcUserId,
-            RevieweeBcUserId = booking.TutorCourseModule.Tutor.BcUserId,
-            Rating = ReviewRating,
-            Comment = string.IsNullOrWhiteSpace(comment) ? null : comment,
-            CreatedAt = _timeProvider.GetUtcNow()
+            TutoringMode = EvaluationInput.TutoringMode,
+            PlatformExperience = EvaluationInput.PlatformExperience.Trim(),
+            ModeRating = EvaluationInput.ModeRating!.Value,
+            TutorResponse = EvaluationInput.TutorResponse,
+            TutorInterest = EvaluationInput.TutorInterest,
+            TutorFriendliness = EvaluationInput.TutorFriendliness,
+            TutorExplanation = EvaluationInput.TutorExplanation,
+            TutorParticipation = EvaluationInput.TutorParticipation,
+            TutorPunctuality = EvaluationInput.TutorPunctuality,
+            TutorAdvice = EvaluationInput.TutorAdvice,
+            TutorHelp = EvaluationInput.TutorHelp,
+            TutorTopic = EvaluationInput.TutorTopic.Trim(),
+            TutoringService = EvaluationInput.TutoringService,
+            ImproveBCProgramme = EvaluationInput.ImproveBCProgramme.Trim(),
+            PlatformRating = EvaluationInput.PlatformRating!.Value
         });
         await _context.SaveChangesAsync(cancellationToken);
 
-        SessionActionMessage = "Your review was submitted.";
+        SessionActionMessage = "Your tutor evaluation was submitted.";
         return RedirectToPage(new { bookingId });
     }
 
