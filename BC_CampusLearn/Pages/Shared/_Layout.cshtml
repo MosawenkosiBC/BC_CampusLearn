@@ -4,9 +4,13 @@
     string layoutPagePath =
         ViewContext.RouteData.Values["Page"]?.ToString()
         ?? string.Empty;
-    bool hasSessionDetailsBackground = layoutPagePath.Equals(
-        "/Tutors/SessionDetails",
-        StringComparison.OrdinalIgnoreCase);
+    bool hasSessionDetailsBackground =
+        layoutPagePath.Equals(
+            "/Tutors/SessionDetails",
+            StringComparison.OrdinalIgnoreCase) ||
+        layoutPagePath.Equals(
+            "/Bookings/SessionDetails",
+            StringComparison.OrdinalIgnoreCase);
 }
 
 <!DOCTYPE html>
@@ -452,20 +456,9 @@
                             <span class="notification-indicator" aria-hidden="true"></span>
                         </button>
 
-                        <button class="navbar-action-button"
-                                type="button"
-                                aria-label="Messages"
-                                title="Messages">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                 width="1em"
-                                 height="1em"
-                                 viewBox="0 0 24 24"
-                                 aria-hidden="true"
-                                 focusable="false">
-                                <path d="M0 0h24v24H0z" fill="none" />
-                                <path fill="currentColor" d="M4 20q-.825 0-1.412-.587T2 18V6q0-.825.588-1.412T4 4h16q.825 0 1.413.588T22 6v12q0 .825-.587 1.413T20 20zm8-7l8-5V6l-8 5l-8-5v2z" />
-                            </svg>
-                        </button>
+                        @await Component.InvokeAsync(
+                            "MessageNotifications",
+                            new { instance = "mobile" })
                     </div>
                 }
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
@@ -524,20 +517,9 @@
                                 <span class="notification-indicator" aria-hidden="true"></span>
                             </button>
 
-                            <button class="navbar-action-button"
-                                    type="button"
-                                    aria-label="Messages"
-                                    title="Messages">
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     width="1em"
-                                     height="1em"
-                                     viewBox="0 0 24 24"
-                                     aria-hidden="true"
-                                     focusable="false">
-                                    <path d="M0 0h24v24H0z" fill="none" />
-                                    <path fill="currentColor" d="M4 20q-.825 0-1.412-.587T2 18V6q0-.825.588-1.412T4 4h16q.825 0 1.413.588T22 6v12q0 .825-.587 1.413T20 20zm8-7l8-5V6l-8 5l-8-5v2z" />
-                                </svg>
-                            </button>
+                            @await Component.InvokeAsync(
+                                "MessageNotifications",
+                                new { instance = "desktop" })
 
                             <span class="navbar-action-divider" aria-hidden="true"></span>
 
@@ -740,6 +722,11 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <script src="~/lib/microsoft-signalr/signalr.min.js" asp-append-version="true"></script>
+        <script src="~/js/session-notifications.js" asp-append-version="true"></script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

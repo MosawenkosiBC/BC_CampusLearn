@@ -154,6 +154,7 @@ public class SessionLifecycleServiceTests
             expectedCompletion,
             booking.SessionExecution!.ExpectedCompletionAt);
         Assert.Equal(expectedCompletion, booking.SessionExecution.CompletedAt);
+        Assert.Equal(expectedCompletion, booking.CompletedAt);
     }
 
     [Fact]

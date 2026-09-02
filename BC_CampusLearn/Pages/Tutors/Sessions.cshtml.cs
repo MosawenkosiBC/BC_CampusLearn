@@ -58,7 +58,7 @@ public class SessionsModel : PageModel
     public IEnumerable<SelectListItem> StatusOptions =>
         Enum.GetValues<BookingStatus>()
             .Select(status => new SelectListItem(
-                status.ToString(),
+                status.ToDisplayText(),
                 status.ToString()));
 
     public bool HasActiveFilters =>

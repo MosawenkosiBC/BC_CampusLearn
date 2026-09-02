@@ -20,6 +20,8 @@ public class SessionMessageConfiguration
             .HasColumnType("datetimeoffset");
         builder.Property(item => item.DeletedAt)
             .HasColumnType("datetimeoffset");
+        builder.Property(item => item.ReadAt)
+            .HasColumnType("datetimeoffset");
         builder.HasOne(item => item.Booking)
             .WithMany(booking => booking.SessionMessages)
             .HasForeignKey(item => item.BookingId)
@@ -28,6 +30,16 @@ public class SessionMessageConfiguration
             .WithMany()
             .HasForeignKey(item => item.SenderBcUserId)
             .OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(item => item.Recipient)
+            .WithMany()
+            .HasForeignKey(item => item.RecipientBcUserId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(item => new { item.BookingId, item.SentAt });
+        builder.HasIndex(item => new
+        {
+            item.RecipientBcUserId,
+            item.ReadAt,
+            item.SentAt
+        });
     }
 }

@@ -1,0 +1,58 @@
+@model BC_CampusLearn.Models.ViewModels.MessageNotificationMenuViewModel
+
+<div class="dropdown message-notifications"
+     data-message-notifications
+     data-unread-count="@Model.UnreadCount">
+    <button class="navbar-action-button"
+            type="button"
+            id="messageNotifications-@Model.Instance"
+            data-bs-toggle="dropdown"
+            data-bs-auto-close="outside"
+            data-message-notification-trigger
+            aria-expanded="false"
+            aria-label="Messages, @Model.UnreadCount unread"
+            title="Messages">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             width="1em"
+             height="1em"
+             viewBox="0 0 24 24"
+             aria-hidden="true"
+             focusable="false">
+            <path d="M0 0h24v24H0z" fill="none" />
+            <path fill="currentColor" d="M4 20q-.825 0-1.412-.587T2 18V6q0-.825.588-1.412T4 4h16q.825 0 1.413.588T22 6v12q0 .825-.587 1.413T20 20zm8-7l8-5V6l-8 5l-8-5v2z" />
+        </svg>
+        <span class="message-notification-count"
+              data-message-notification-count
+              hidden="@(Model.UnreadCount == 0)">
+            @(Model.UnreadCount > 99 ? "99+" : Model.UnreadCount)
+        </span>
+    </button>
+
+    <div class="dropdown-menu dropdown-menu-end message-notification-menu"
+         aria-labelledby="messageNotifications-@Model.Instance">
+        <div class="message-notification-heading">
+            <strong>Messages</strong>
+            <span data-message-notification-summary>@Model.UnreadCount unread</span>
+        </div>
+        <div class="message-notification-list" data-message-notification-list>
+            @foreach (var message in Model.Messages)
+            {
+                <a class="message-notification-item"
+                   href="/Messages/Open/@message.SessionMessageId"
+                   data-message-id="@message.SessionMessageId"
+                   data-booking-id="@message.BookingId">
+                    <span class="message-notification-sender">@message.SenderName</span>
+                    <span class="message-notification-preview">@message.MessageText</span>
+                    <time datetime="@message.SentAt.ToString("O")">
+                        @message.SentAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM, HH:mm")
+                    </time>
+                </a>
+            }
+        </div>
+        <p class="message-notification-empty"
+           data-message-notification-empty
+           hidden="@(Model.UnreadCount > 0)">
+            You have no unread messages.
+        </p>
+    </div>
+</div>

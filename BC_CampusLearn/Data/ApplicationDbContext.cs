@@ -50,6 +50,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<SessionReview> SessionReviews =>
         Set<SessionReview>();
 
+    public DbSet<TutorStudentEvaluation> TutorStudentEvaluations =>
+        Set<TutorStudentEvaluation>();
+
     public DbSet<ProgrammeOfStudy> ProgrammesOfStudy { get; set; }
 
     public DbSet<LearningResource> LearningResources =>

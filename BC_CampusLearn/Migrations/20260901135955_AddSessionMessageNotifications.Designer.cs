@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260901135955_AddSessionMessageNotifications")]
+    partial class AddSessionMessageNotifications
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -88,9 +91,6 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BookingId"));
-
-                    b.Property<DateTimeOffset?>("CompletedAt")
-                        .HasColumnType("datetimeoffset");
 
                     b.Property<DateTimeOffset>("DateBooked")
                         .HasColumnType("datetimeoffset");
@@ -951,65 +951,6 @@ namespace BC_CampusLearn.Migrations
                     b.ToTable("TutorModuleChangeRequests");
                 });
 
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorStudentEvaluation", b =>
-                {
-                    b.Property<int>("TutorEvaluationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TutorEvaluationId"));
-
-                    b.Property<int>("BookingId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PreviousHomework")
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<string>("RecordingLink")
-                        .IsRequired()
-                        .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)");
-
-                    b.Property<bool>("SessionPlan")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("StudentFocus")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<string>("StudentInteract")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<string>("StudentIssues")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<bool>("StudentPreparationInfo")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("StudentPrepared")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("StudentPunctuality")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("TutorComments")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("TutorEvaluationId");
-
-                    b.HasIndex("BookingId")
-                        .IsUnique();
-
-                    b.ToTable("TutorStudentEvaluations", (string)null);
-                });
-
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.Booking", b =>
                 {
                     b.HasOne("BC_CampusLearn.Models.Entities.ProgrammeModule", "ProgrammeModule")
@@ -1299,17 +1240,6 @@ namespace BC_CampusLearn.Migrations
                     b.Navigation("Tutor");
                 });
 
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorStudentEvaluation", b =>
-                {
-                    b.HasOne("BC_CampusLearn.Models.Entities.Booking", "Booking")
-                        .WithOne("TutorEvaluation")
-                        .HasForeignKey("BC_CampusLearn.Models.Entities.TutorStudentEvaluation", "BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Booking");
-                });
-
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.BcUser", b =>
                 {
                     b.Navigation("ResourceComments");
@@ -1330,8 +1260,6 @@ namespace BC_CampusLearn.Migrations
                     b.Navigation("SessionReviews");
 
                     b.Navigation("StatusHistory");
-
-                    b.Navigation("TutorEvaluation");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.LearningResource", b =>

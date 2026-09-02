@@ -311,6 +311,11 @@
     color: #ad0151;
 }
 
+.tutor-session-status--inprogress {
+    background-color: #ece6f6;
+    color: #6f4a8a;
+}
+
 .tutor-session-status--completed {
     background-color: #d9f1dc;
     color: #246b2d;

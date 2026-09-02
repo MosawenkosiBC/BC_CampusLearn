@@ -1,6 +1,7 @@
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -64,10 +65,7 @@ public class SessionDetailsModel : PageModel
     public bool ReopenAvailability { get; set; }
 
     [BindProperty]
-    public byte ReviewRating { get; set; }
-
-    [BindProperty]
-    public string? ReviewComment { get; set; }
+    public TutorStudentEvaluationInput EvaluationInput { get; set; } = new();
 
     [TempData]
     public string? SessionActionMessage { get; set; }
@@ -96,7 +94,7 @@ public class SessionDetailsModel : PageModel
             .Include(booking => booking.StatusHistory)
             .Include(booking => booking.SessionMessages)
                 .ThenInclude(message => message.Sender)
-            .Include(booking => booking.SessionReviews)
+            .Include(booking => booking.TutorEvaluation)
             .SingleOrDefaultAsync(booking =>
                 booking.BookingId == bookingId &&
                 booking.TutorId == tutorId.Value,
@@ -153,8 +151,8 @@ public class SessionDetailsModel : PageModel
 
         int totalHours = (int)remaining.TotalHours;
         return totalHours > 0
-            ? $"{totalHours}h {remaining.Minutes}m {remaining.Seconds}s Left"
-            : $"{remaining.Minutes}m {remaining.Seconds}s Left";
+            ? $"{totalHours}h {remaining.Minutes}m Left"
+            : $"{Math.Max(1, remaining.Minutes)}m Left";
     }
 
     public async Task<IActionResult> OnPostConfirmAsync(
@@ -294,7 +292,6 @@ public class SessionDetailsModel : PageModel
         int bookingId,
         CancellationToken cancellationToken)
     {
-        CurrentUser currentUser = _currentUserService.GetRequiredUser();
         int? tutorId = await GetCurrentTutorIdAsync(cancellationToken);
         if (!tutorId.HasValue)
         {
@@ -302,7 +299,7 @@ public class SessionDetailsModel : PageModel
         }
 
         Booking? booking = await _context.Bookings
-            .Include(item => item.SessionReviews)
+            .Include(item => item.TutorEvaluation)
             .SingleOrDefaultAsync(item =>
                 item.BookingId == bookingId &&
                 item.TutorId == tutorId.Value,
@@ -312,33 +309,74 @@ public class SessionDetailsModel : PageModel
             return NotFound();
         }
 
-        string comment = ReviewComment?.Trim() ?? string.Empty;
-        bool reviewExists = booking.SessionReviews.Any(review =>
-            review.ReviewerBcUserId == currentUser.BcUserId);
-        if (booking.Status != BookingStatus.Completed ||
-            ReviewRating is < 1 or > 5 ||
-            comment.Length > 2000 ||
-            reviewExists)
+        bool evaluationExists = booking.TutorEvaluation is not null;
+        if (booking.Status != BookingStatus.Completed || evaluationExists)
         {
             SessionActionError = true;
-            SessionActionMessage = reviewExists
-                ? "You have already reviewed this session."
-                : "A review requires a completed session and a rating from 1 to 5.";
+            SessionActionMessage = evaluationExists
+                ? "You have already evaluated this session."
+                : "An evaluation can only be submitted for a completed session.";
             return RedirectToPage(new { bookingId });
         }
 
-        _context.SessionReviews.Add(new SessionReview
+        if (!ModelState.IsValid)
+        {
+            SessionActionError = true;
+            SessionActionMessage = ModelState.Values
+                .SelectMany(value => value.Errors)
+                .Select(error => error.ErrorMessage)
+                .FirstOrDefault(message => !string.IsNullOrWhiteSpace(message))
+                ?? "Complete all required evaluation questions.";
+            return RedirectToPage(new { bookingId });
+        }
+
+        string studentInteract = EvaluationInput.StudentInteract.Trim();
+        string studentFocus = EvaluationInput.StudentFocus.Trim();
+        string studentIssues = EvaluationInput.StudentIssues.Trim();
+        string tutorComments = EvaluationInput.TutorComments.Trim();
+        string recordingLink = EvaluationInput.RecordingLink.Trim();
+        bool recordingLinkIsValid = Uri.TryCreate(
+            recordingLink,
+            UriKind.Absolute,
+            out Uri? recordingUri) &&
+            (recordingUri.Scheme == Uri.UriSchemeHttp ||
+             recordingUri.Scheme == Uri.UriSchemeHttps);
+        if (studentInteract.Length == 0 ||
+            studentFocus.Length == 0 ||
+            studentIssues.Length == 0 ||
+            tutorComments.Length == 0 ||
+            !recordingLinkIsValid)
+        {
+            SessionActionError = true;
+            SessionActionMessage = recordingLinkIsValid
+                ? "Complete all required evaluation questions."
+                : "Enter a valid HTTP or HTTPS recording link.";
+            return RedirectToPage(new { bookingId });
+        }
+
+        _context.TutorStudentEvaluations.Add(new TutorStudentEvaluation
         {
             BookingId = bookingId,
-            ReviewerBcUserId = currentUser.BcUserId,
-            RevieweeBcUserId = booking.StudentBcUserId,
-            Rating = ReviewRating,
-            Comment = string.IsNullOrWhiteSpace(comment) ? null : comment,
-            CreatedAt = _timeProvider.GetUtcNow()
+            SessionPlan = EvaluationInput.SessionPlan!.Value,
+            StudentPreparationInfo = EvaluationInput.StudentPreparationInfo!.Value,
+            StudentPunctuality = EvaluationInput.StudentPunctuality!.Value,
+            StudentPrepared = EvaluationInput.StudentPrepared!.Value,
+            PreviousHomework = NormalizeOptional(EvaluationInput.PreviousHomework),
+            StudentInteract = studentInteract,
+            StudentFocus = studentFocus,
+            StudentIssues = studentIssues,
+            TutorComments = tutorComments,
+            RecordingLink = recordingLink
         });
         await _context.SaveChangesAsync(cancellationToken);
-        SessionActionMessage = "Your review was submitted.";
+        SessionActionMessage = "Your student evaluation was submitted.";
         return RedirectToPage(new { bookingId });
+    }
+
+    private static string? NormalizeOptional(string? value)
+    {
+        string normalized = value?.Trim() ?? string.Empty;
+        return normalized.Length == 0 ? null : normalized;
     }
 
     public async Task<IActionResult> OnPostSaveMeetingLinkAsync(

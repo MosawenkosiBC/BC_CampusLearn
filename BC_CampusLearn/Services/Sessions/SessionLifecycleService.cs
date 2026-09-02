@@ -76,6 +76,7 @@ public class SessionLifecycleService : ISessionLifecycleService
             else if (automaticStatus == BookingStatus.Completed)
             {
                 booking.SessionExecution!.CompletedAt = now;
+                booking.CompletedAt = now;
                 ChangeStatus(
                     booking,
                     BookingStatus.Completed,

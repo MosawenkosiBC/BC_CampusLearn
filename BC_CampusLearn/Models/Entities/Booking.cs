@@ -34,6 +34,8 @@ public class Booking
 
     public DateTimeOffset DateBooked { get; set; }
 
+    public DateTimeOffset? CompletedAt { get; set; }
+
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     public ProgrammeModule ProgrammeModule { get; set; } = null!;
@@ -52,6 +54,8 @@ public class Booking
 
     public ICollection<SessionReview> SessionReviews { get; set; }
         = new List<SessionReview>();
+
+    public TutorStudentEvaluation? TutorEvaluation { get; set; }
 
     public ICollection<BookingPreparationLink> PreparationLinks
     { get; set; } = new List<BookingPreparationLink>();

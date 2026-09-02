@@ -42,6 +42,9 @@ public class BookingConfiguration
         builder.Property(booking => booking.DateBooked)
             .HasColumnType("datetimeoffset");
 
+        builder.Property(booking => booking.CompletedAt)
+            .HasColumnType("datetimeoffset");
+
         builder.Property(booking => booking.ScheduledStartTime)
             .HasColumnType("datetimeoffset")
             .IsRequired();

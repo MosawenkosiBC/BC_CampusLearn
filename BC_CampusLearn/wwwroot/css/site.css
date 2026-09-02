@@ -28,6 +28,117 @@ textarea {
   box-shadow: var(--campus-card-shadow) !important;
 }
 
+.message-notifications {
+  position: relative;
+}
+
+.message-notifications .navbar-action-button {
+  position: relative;
+}
+
+.message-notification-count {
+  align-items: center;
+  background: #ad0151;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 0.62rem;
+  font-weight: 700;
+  height: 1.15rem;
+  justify-content: center;
+  min-width: 1.15rem;
+  padding: 0 0.22rem;
+  position: absolute;
+  right: -0.28rem;
+  top: -0.28rem;
+}
+
+.message-notification-menu {
+  border: 0;
+  border-radius: 0.7rem;
+  box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.14);
+  max-height: min(31rem, 75vh);
+  overflow-y: auto;
+  padding: 0;
+  width: min(24rem, calc(100vw - 1.5rem));
+}
+
+.message-notification-heading {
+  align-items: center;
+  border-bottom: 1px solid #ececec;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.9rem 1rem;
+}
+
+.message-notification-heading strong {
+  color: #252525;
+  font-size: 1rem;
+}
+
+.message-notification-heading span {
+  color: #727272;
+  font-size: 0.78rem;
+}
+
+.message-notification-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.message-notification-item {
+  border-bottom: 1px solid #f0f0f0;
+  color: #252525;
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.8rem 1rem;
+  text-decoration: none;
+}
+
+.message-notification-item:hover,
+.message-notification-item:focus-visible,
+.message-notification-item.is-new {
+  background: #fdf1f7;
+  color: #252525;
+}
+
+.message-notification-sender {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.message-notification-preview {
+  display: -webkit-box;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.message-notification-item time {
+  color: #7a7a7a;
+  font-size: 0.72rem;
+}
+
+.message-notification-empty {
+  color: #707070;
+  font-size: 0.85rem;
+  margin: 0;
+  padding: 1.35rem 1rem;
+  text-align: center;
+}
+
+@media (max-width: 575.98px) {
+  .message-notification-menu {
+    position: fixed !important;
+    right: 0.75rem !important;
+    top: 4.25rem !important;
+    transform: none !important;
+  }
+}
+
 @media (min-width: 768px) {
   html {
     font-size: 16px;
