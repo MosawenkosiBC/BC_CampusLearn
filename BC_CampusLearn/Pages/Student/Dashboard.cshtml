@@ -7,6 +7,10 @@
 }
 
 @section Styles {
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Valley+Sans:ital,wght@0,100..900;1,100..900&amp;display=swap"
+          rel="stylesheet" />
     <link rel="stylesheet"
           href="~/css/tutor-dashboard.css"
           asp-append-version="true" />
@@ -41,7 +45,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h2>Upcoming sessions</h2>
+                        <h2>Upcoming<span class="dashboard-stat-label-suffix"> sessions</span></h2>
                         <p>@Model.Summary.UpcomingSessionCount</p>
                     </div>
                 </div>
@@ -61,7 +65,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h2>Pending sessions</h2>
+                        <h2>Pending<span class="dashboard-stat-label-suffix"> sessions</span></h2>
                         <p>@Model.Summary.PendingSessionCount</p>
                     </div>
                 </div>
@@ -81,7 +85,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h2>Completed sessions</h2>
+                        <h2>Completed<span class="dashboard-stat-label-suffix"> sessions</span></h2>
                         <p>@Model.Summary.CompletedSessionCount</p>
                     </div>
                 </div>
@@ -104,7 +108,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h2>Cancelled sessions</h2>
+                        <h2>Cancelled<span class="dashboard-stat-label-suffix"> sessions</span></h2>
                         <p>@Model.Summary.CancelledSessionCount</p>
                     </div>
                 </div>
@@ -175,7 +179,8 @@
                         </dl>
 
                         <div class="tutor-next-session-actions dashboard-next-session-actions">
-                            <a asp-page="/Bookings/Index"
+                            <a asp-page="/Bookings/SessionDetails"
+                               asp-route-bookingId="@Model.NextSession.BookingId"
                                class="tutor-view-session">
                                 View session
                             </a>
@@ -234,10 +239,11 @@
                         </a>
                         <button type="button"
                                 class="dashboard-explore-resources"
+                                aria-label="Explore resources"
                                 data-bs-toggle="offcanvas"
                                 data-bs-target="#moduleSubscriptionsPanel"
                                 aria-controls="moduleSubscriptionsPanel">
-                            Explore Resources
+                            <span class="dashboard-explore-label-prefix">Explore</span>Resources
                         </button>
                     </div>
                 </div>
@@ -269,6 +275,14 @@
                 </a>
             }
         </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.SessionActionMessage))
+        {
+            <div class="dashboard-session-alert @(Model.SessionActionError ? "is-error" : null)"
+                 role="@(Model.SessionActionError ? "alert" : "status")">
+                @Model.SessionActionMessage
+            </div>
+        }
 
             <div class="tutor-sessions">
                 <div class="tutor-sessions-table-wrap">
@@ -345,15 +359,30 @@
                                                 </svg>
                                             </button>
                                             <div class="dropdown-menu dropdown-menu-end">
-                                                <button type="button"
-                                                        class="dropdown-item">
+                                                <a asp-page="/Bookings/SessionDetails"
+                                                   asp-route-bookingId="@booking.BookingId"
+                                                   class="dropdown-item">
                                                     Session Details
-                                                </button>
-                                                @if (booking.Status == BookingStatus.Pending ||
-                                                    booking.Status == BookingStatus.Confirmed)
+                                                </a>
+                                                @if (booking.Status == BookingStatus.Pending)
+                                                {
+                                                    <form method="post"
+                                                          asp-page-handler="CancelSession">
+                                                        <input type="hidden"
+                                                               name="bookingId"
+                                                               value="@booking.BookingId" />
+                                                        <button type="submit"
+                                                                class="dropdown-item">
+                                                            Cancel session
+                                                        </button>
+                                                    </form>
+                                                }
+                                                else if (booking.Status == BookingStatus.Confirmed)
                                                 {
                                                     <button type="button"
-                                                            class="dropdown-item">
+                                                            class="dropdown-item"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#cancel-session-modal-@booking.BookingId">
                                                         Cancel session
                                                     </button>
                                                 }
@@ -653,6 +682,65 @@
                 </div>
     </div>
 </aside>
+
+@section Modals {
+    @foreach (var booking in Model.Sessions.Where(item =>
+        item.Status == BookingStatus.Confirmed))
+    {
+        <div class="modal fade dashboard-cancel-session-modal"
+             id="cancel-session-modal-@booking.BookingId"
+             tabindex="-1"
+             aria-labelledby="cancel-session-title-@booking.BookingId"
+             aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form method="post" asp-page-handler="CancelSession">
+                        <input type="hidden"
+                               name="bookingId"
+                               value="@booking.BookingId" />
+                        <div class="modal-header">
+                            <div>
+                                <h2 id="cancel-session-title-@booking.BookingId">
+                                    Cancel session
+                                </h2>
+                                <p>
+                                    Tell @booking.TutorName why this confirmed
+                                    session is being cancelled.
+                                </p>
+                            </div>
+                            <button type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <label for="cancellation-reason-@booking.BookingId">
+                                Reason
+                            </label>
+                            <textarea id="cancellation-reason-@booking.BookingId"
+                                      name="cancellationReason"
+                                      rows="4"
+                                      minlength="5"
+                                      maxlength="1000"
+                                      required></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button"
+                                    class="dashboard-cancel-modal-dismiss"
+                                    data-bs-dismiss="modal">
+                                Keep session
+                            </button>
+                            <button type="submit"
+                                    class="dashboard-cancel-modal-confirm">
+                                Cancel session
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
 
 @section Scripts {
     <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>

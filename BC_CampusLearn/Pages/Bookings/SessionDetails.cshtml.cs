@@ -110,6 +110,7 @@ public class SessionDetailsModel : PageModel
         {
             SessionLifecycleService.TutorDeclinedReasonCode => "Decline Reason",
             SessionLifecycleService.TutorCancelledReasonCode => "Cancel Reason",
+            SessionLifecycleService.StudentCancelledReasonCode => "Cancel Reason",
             _ => null
         };
 

@@ -16,6 +16,7 @@ public class SessionLifecycleService : ISessionLifecycleService
         "You accepted this booking but did not start the session. The administrator has been notified, and repeated incidents may result in disciplinary action.";
     public const string TutorDeclinedReasonCode = "TutorDeclined";
     public const string TutorCancelledReasonCode = "TutorCancelled";
+    public const string StudentCancelledReasonCode = "StudentCancelled";
 
     private readonly ApplicationDbContext _context;
     private readonly TimeProvider _timeProvider;
@@ -201,6 +202,55 @@ public class SessionLifecycleService : ISessionLifecycleService
             });
         }
 
+        await _context.SaveChangesAsync(cancellationToken);
+        return SessionLifecycleResult.Success();
+    }
+
+    public async Task<SessionLifecycleResult> CancelByStudentAsync(
+        int studentBcUserId,
+        string studentObjectId,
+        string studentTenantId,
+        int bookingId,
+        string? reason,
+        CancellationToken cancellationToken = default)
+    {
+        Booking? booking = await _context.Bookings
+            .Include(item => item.StatusHistory)
+            .SingleOrDefaultAsync(item =>
+                item.BookingId == bookingId &&
+                (item.StudentBcUserId == studentBcUserId ||
+                 (item.StudentObjectId == studentObjectId &&
+                  item.StudentTenantId == studentTenantId)),
+                cancellationToken);
+        if (booking is null)
+        {
+            return SessionLifecycleResult.Failure(
+                "The session could not be found.");
+        }
+
+        if (booking.Status is not (BookingStatus.Pending or
+            BookingStatus.Confirmed))
+        {
+            return SessionLifecycleResult.Failure(
+                "Only a pending or confirmed session can be cancelled.");
+        }
+
+        string actionReason = reason?.Trim() ?? string.Empty;
+        if (booking.Status == BookingStatus.Confirmed &&
+            (actionReason.Length < 5 || actionReason.Length > 1000))
+        {
+            return SessionLifecycleResult.Failure(
+                "Provide a cancellation reason between 5 and 1000 characters.");
+        }
+
+        bool reasonIsRequired = booking.Status == BookingStatus.Confirmed;
+        ChangeStatus(
+            booking,
+            BookingStatus.Cancelled,
+            _timeProvider.GetUtcNow(),
+            StudentCancelledReasonCode,
+            reasonIsRequired ? actionReason : null,
+            studentBcUserId);
         await _context.SaveChangesAsync(cancellationToken);
         return SessionLifecycleResult.Success();
     }

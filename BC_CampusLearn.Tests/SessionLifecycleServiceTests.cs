@@ -124,6 +124,91 @@ public class SessionLifecycleServiceTests
     }
 
     [Fact]
+    public async Task StudentCancel_PendingBooking_CancelsWithoutAReason()
+    {
+        DateTimeOffset now = new(2026, 8, 31, 10, 0, 0, TimeSpan.Zero);
+        await using ApplicationDbContext context = CreateContext();
+        Booking booking = CreateBooking(now.AddHours(1));
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var service = new SessionLifecycleService(
+            context,
+            new TestTimeProvider(now));
+
+        SessionLifecycleResult result = await service.CancelByStudentAsync(
+            booking.StudentBcUserId!.Value,
+            booking.StudentObjectId,
+            booking.StudentTenantId,
+            booking.BookingId,
+            reason: null);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(BookingStatus.Cancelled, booking.Status);
+        BookingStatusHistory history = Assert.Single(booking.StatusHistory);
+        Assert.Equal(
+            SessionLifecycleService.StudentCancelledReasonCode,
+            history.ReasonCode);
+        Assert.Null(history.Reason);
+    }
+
+    [Fact]
+    public async Task StudentCancel_ConfirmedBooking_RequiresAReason()
+    {
+        DateTimeOffset now = new(2026, 8, 31, 10, 0, 0, TimeSpan.Zero);
+        await using ApplicationDbContext context = CreateContext();
+        Booking booking = CreateBooking(now.AddHours(1));
+        booking.Status = BookingStatus.Confirmed;
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var service = new SessionLifecycleService(
+            context,
+            new TestTimeProvider(now));
+
+        SessionLifecycleResult invalid = await service.CancelByStudentAsync(
+            booking.StudentBcUserId!.Value,
+            booking.StudentObjectId,
+            booking.StudentTenantId,
+            booking.BookingId,
+            reason: null);
+        SessionLifecycleResult valid = await service.CancelByStudentAsync(
+            booking.StudentBcUserId.Value,
+            booking.StudentObjectId,
+            booking.StudentTenantId,
+            booking.BookingId,
+            "I can no longer attend the session.");
+
+        Assert.False(invalid.Succeeded);
+        Assert.True(valid.Succeeded);
+        Assert.Equal(BookingStatus.Cancelled, booking.Status);
+        BookingStatusHistory history = Assert.Single(booking.StatusHistory);
+        Assert.Equal("I can no longer attend the session.", history.Reason);
+    }
+
+    [Fact]
+    public async Task StudentCancel_DoesNotCancelAnotherStudentsBooking()
+    {
+        DateTimeOffset now = new(2026, 8, 31, 10, 0, 0, TimeSpan.Zero);
+        await using ApplicationDbContext context = CreateContext();
+        Booking booking = CreateBooking(now.AddHours(1));
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var service = new SessionLifecycleService(
+            context,
+            new TestTimeProvider(now));
+
+        SessionLifecycleResult result = await service.CancelByStudentAsync(
+            studentBcUserId: 999,
+            studentObjectId: "another-object-id",
+            studentTenantId: "another-tenant-id",
+            booking.BookingId,
+            reason: null);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(BookingStatus.Pending, booking.Status);
+        Assert.Empty(booking.StatusHistory);
+    }
+
+    [Fact]
     public async Task Start_CompletesWhenTriggeredCountdownEnds()
     {
         DateTimeOffset scheduled =
@@ -205,6 +290,7 @@ public class SessionLifecycleServiceTests
         {
             TutorId = 12,
             ProgrammeModuleId = 3,
+            StudentBcUserId = 21,
             StudentObjectId = Guid.NewGuid().ToString(),
             StudentTenantId = Guid.NewGuid().ToString(),
             StudentName = "Student",

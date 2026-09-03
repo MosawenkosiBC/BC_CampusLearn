@@ -59,6 +59,12 @@ public class DashboardModel : PageModel
     [TempData]
     public bool ResourceSubscriptionError { get; set; }
 
+    [TempData]
+    public string? SessionActionMessage { get; set; }
+
+    [TempData]
+    public bool SessionActionError { get; set; }
+
     public async Task OnGetAsync(
         CancellationToken cancellationToken)
     {
@@ -259,6 +265,28 @@ public class DashboardModel : PageModel
         ResourceSubscriptionMessage =
             $"You subscribed to {availableModule.ModuleCode}.";
         return RedirectToPage(null, null, null, "subscribed-modules");
+    }
+
+    public async Task<IActionResult> OnPostCancelSessionAsync(
+        int bookingId,
+        string? cancellationReason,
+        CancellationToken cancellationToken)
+    {
+        CurrentUser student = _currentUserService.GetRequiredUser();
+        SessionLifecycleResult result =
+            await _lifecycleService.CancelByStudentAsync(
+                student.BcUserId,
+                student.ObjectId,
+                student.TenantId,
+                bookingId,
+                cancellationReason,
+                cancellationToken);
+
+        SessionActionError = !result.Succeeded;
+        SessionActionMessage = result.Succeeded
+            ? "Session cancelled."
+            : result.ErrorMessage;
+        return RedirectToPage(null, null, null, "student-all-sessions-title");
     }
 
     public async Task<IActionResult> OnPostUnsubscribeResourceModuleAsync(

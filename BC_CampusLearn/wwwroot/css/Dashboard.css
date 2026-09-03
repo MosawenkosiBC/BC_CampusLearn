@@ -1,10 +1,13 @@
 .dashboard-page {
     font-size: 16px;
+}
+
+.dashboard-content-background {
     isolation: isolate;
     position: relative;
 }
 
-.dashboard-page::before {
+.dashboard-content-background::before {
     background-color: #fff;
     background-image:
         linear-gradient(
@@ -26,6 +29,7 @@
 
 .dashboard-summary .tutor-stat-card {
     height: 100%;
+    min-height: 9.5rem;
 }
 
 .dashboard-stat-link {
@@ -75,7 +79,9 @@
     font-size: max(12px, 0.9rem);
     grid-area: heading;
     margin: 0;
-    white-space: nowrap;
+    min-width: 0;
+    overflow-wrap: break-word;
+    white-space: normal;
 }
 
 .dashboard-summary .tutor-stat-card p {
@@ -291,7 +297,7 @@
 }
 
 .dashboard-all-sessions .tutor-sessions-table {
-    min-width: 720px;
+    min-width: 100%;
     overflow: visible;
 }
 
@@ -360,6 +366,96 @@
     background-color: rgba(74, 193, 193, 0.13);
     color: #137f83;
     outline: none;
+}
+
+.dashboard-session-action-menu .dropdown-menu form {
+    margin: 0;
+}
+
+.dashboard-session-alert {
+    background-color: #edf9f3;
+    border: 1px solid #b8dfcc;
+    border-radius: 0.4rem;
+    color: #1d6748;
+    font-size: 16px;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+}
+
+.dashboard-session-alert.is-error {
+    background-color: #fff0f1;
+    border-color: #efbcc3;
+    color: #9d2432;
+}
+
+.dashboard-cancel-session-modal .modal-content {
+    border: 0;
+    border-radius: 0.65rem;
+    box-shadow: 0 18px 55px rgba(0, 0, 0, 0.2);
+}
+
+.dashboard-cancel-session-modal .modal-header {
+    align-items: flex-start;
+    border-bottom: 1px solid #e7e7e7;
+    padding: 1.25rem 1.35rem;
+}
+
+.dashboard-cancel-session-modal .modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.dashboard-cancel-session-modal .modal-header p {
+    color: #666;
+    font-size: 16px;
+    margin: 0.3rem 0 0;
+}
+
+.dashboard-cancel-session-modal .modal-body {
+    padding: 1.25rem 1.35rem;
+}
+
+.dashboard-cancel-session-modal .modal-body label {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 0.45rem;
+}
+
+.dashboard-cancel-session-modal textarea {
+    border: 1px solid #cfd4dc;
+    border-radius: 0.4rem;
+    font-size: 16px;
+    padding: 0.65rem;
+    width: 100%;
+}
+
+.dashboard-cancel-session-modal .modal-footer {
+    border-top: 1px solid #e7e7e7;
+    gap: 0.65rem;
+    padding: 1rem 1.35rem;
+}
+
+.dashboard-cancel-modal-dismiss,
+.dashboard-cancel-modal-confirm {
+    border-radius: 0.35rem;
+    font-size: 16px;
+    font-weight: 550;
+    min-height: 2.6rem;
+    padding: 0.5rem 1rem;
+}
+
+.dashboard-cancel-modal-dismiss {
+    background: #fff;
+    border: 1px solid #888;
+    color: #333;
+}
+
+.dashboard-cancel-modal-confirm {
+    background: #ad0151;
+    border: 1px solid #ad0151;
+    color: #fff;
 }
 
 .dashboard-support-card {
@@ -464,6 +560,10 @@
     background-color: #fff;
     border: 1px solid #4ac1c1;
     color: #4ac1c1;
+}
+
+.dashboard-explore-label-prefix {
+    margin-right: 0.25em;
 }
 
 .dashboard-find-tutor:hover,
@@ -655,6 +755,19 @@
     transform: translateY(-.18rem);
 }
 
+.dashboard-resource-preview-grid .student-resource-learn-more {
+    font-size: 16px;
+    min-width: 6rem;
+    padding-inline: 1.25rem;
+    text-align: center;
+}
+
+.dashboard-resource-preview-grid .student-resource-bookmark {
+    font-size: 1.5rem;
+    height: 2.75rem;
+    width: 2.75rem;
+}
+
 @media (max-width: 1199.98px) {
     .dashboard-resource-preview-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -715,7 +828,7 @@
     display: block;
     margin-bottom: .15rem;
     color: #ad0151;
-    font-size: .7rem;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: .055em;
     text-transform: uppercase;
@@ -736,7 +849,7 @@
 .dashboard-subscription-module p {
     margin: .25rem 0 0;
     color: #717680;
-    font-size: .72rem;
+    font-size: 12px;
 }
 
 .dashboard-subscribed-module-card form button,
@@ -1015,7 +1128,7 @@
 .dashboard-subscription-validation {
     margin: -.55rem 0 0;
     color: #b42335;
-    font-size: .74rem;
+    font-size: 12px;
     text-align: left;
 }
 
@@ -1144,7 +1257,7 @@
     }
 
     .dashboard-all-sessions .tutor-sessions-table td:nth-child(3) {
-        font-size: 11px;
+        font-size: 12px;
         grid-area: datetime;
     }
 
@@ -1154,7 +1267,7 @@
 
     .dashboard-all-sessions .tutor-sessions-table td:nth-child(4) {
         color: #535b66;
-        font-size: 11px;
+        font-size: 12px;
         grid-area: location;
         overflow: hidden;
         padding-top: 0.25rem;
@@ -1183,13 +1296,32 @@
         --bs-gutter-y: 0.75rem;
     }
 
+    .dashboard-stat-label-suffix {
+        display: none;
+    }
+
+    .dashboard-explore-label-prefix {
+        display: none;
+    }
+
     .dashboard-summary .tutor-stat-card {
-        padding: 0.9rem 0.65rem;
+        min-height: 9.25rem;
+        padding: 1rem 0.65rem;
     }
 
     .dashboard-summary .tutor-stat-main {
         column-gap: 0.35rem;
         grid-template-columns: 2.5rem minmax(0, 1fr);
+    }
+
+    .dashboard-summary .tutor-stat-icon {
+        flex-basis: 2.5rem;
+        height: 2.5rem;
+        width: 2.5rem;
+    }
+
+    .dashboard-summary .tutor-stat-icon svg {
+        font-size: 2.5rem;
     }
 
     .dashboard-summary .tutor-stat-card h2 {
@@ -1224,7 +1356,7 @@
     }
 
     .dashboard-tutor-content p {
-        font-size: 11.9px;
+        font-size: 12px;
         grid-column: 2;
         grid-row: 2;
     }
@@ -1265,4 +1397,85 @@
         gap: 0.75rem;
     }
 
+}
+
+/* Student dashboard typography: body copy is 16px or larger; only
+   supporting labels and metadata use the 12px minimum. */
+.dashboard-page .dashboard-summary .tutor-stat-card h2,
+.dashboard-page .dashboard-section-heading a,
+.dashboard-page .dashboard-tutor-content p,
+.dashboard-page .dashboard-find-tutor,
+.dashboard-page .dashboard-explore-resources,
+.dashboard-page .dashboard-next-session-actions a,
+.dashboard-page .dashboard-next-session-actions button,
+.dashboard-page .tutor-next-session-student p,
+.dashboard-page .tutor-next-session-details dd,
+.dashboard-page .tutor-sessions-table th,
+.dashboard-page .tutor-sessions-table td,
+.dashboard-page .dashboard-session-action-menu .dropdown-item,
+.dashboard-page .dashboard-resources-empty p,
+.dashboard-page .dashboard-resources-heading a,
+.dashboard-page .dashboard-subscription-alert,
+.dashboard-page .dashboard-resource-preview-grid .student-resource-topic,
+.dashboard-page .dashboard-resource-preview-grid .student-resource-summary {
+    font-size: 16px;
+}
+
+.dashboard-page .dashboard-section-title,
+.dashboard-page .dashboard-resources-heading h2,
+.dashboard-page .dashboard-resources-empty h3,
+.dashboard-page .dashboard-resource-preview-grid .student-resource-card h2 {
+    font-size: 18px;
+}
+
+.dashboard-page .tutor-session-countdown,
+.dashboard-page .tutor-session-status,
+.dashboard-page .tutor-next-session-details dt,
+.dashboard-page .tutor-session-time,
+.dashboard-page .dashboard-resource-preview-grid .student-resource-module,
+.dashboard-page .dashboard-resource-preview-grid .student-resource-meta,
+.dashboard-page .dashboard-resource-preview-grid .student-resource-meta small,
+.dashboard-page .dashboard-subscribed-module-copy > span,
+.dashboard-page .dashboard-subscribed-module-copy p {
+    font-size: 12px;
+}
+
+.dashboard-page .dashboard-subscribed-module-copy h3,
+.dashboard-page .dashboard-subscribed-module-card form button {
+    font-size: 16px;
+}
+
+.dashboard-subscriptions-panel .dashboard-subscriptions-title h2 {
+    font-size: 22px;
+}
+
+.dashboard-subscriptions-panel .dashboard-subscription-section > h3 {
+    font-size: 18px;
+}
+
+.dashboard-subscriptions-panel .dashboard-subscription-picker > label,
+.dashboard-subscriptions-panel .dashboard-subscription-trigger,
+.dashboard-subscriptions-panel .dashboard-subscription-search input,
+.dashboard-subscriptions-panel .dashboard-subscription-option,
+.dashboard-subscriptions-panel .dashboard-subscribe-button,
+.dashboard-subscriptions-panel .dashboard-unsubscribe-button {
+    font-size: 16px;
+}
+
+.dashboard-subscriptions-panel .dashboard-subscription-note,
+.dashboard-subscriptions-panel .dashboard-subscription-section-empty,
+.dashboard-subscriptions-panel .dashboard-subscription-option strong,
+.dashboard-subscriptions-panel .dashboard-subscription-option span,
+.dashboard-subscriptions-panel .dashboard-subscription-no-results,
+.dashboard-subscriptions-panel .dashboard-subscription-selection-form p,
+.dashboard-subscriptions-panel .dashboard-subscription-validation,
+.dashboard-subscriptions-panel .dashboard-subscription-module > div > span,
+.dashboard-subscriptions-panel .dashboard-subscription-module p,
+.dashboard-subscriptions-panel .dashboard-subscriptions-empty p {
+    font-size: 12px;
+}
+
+.dashboard-subscriptions-panel .dashboard-subscription-module h3,
+.dashboard-subscriptions-panel .dashboard-subscriptions-empty h3 {
+    font-size: 16px;
 }

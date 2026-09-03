@@ -22,6 +22,14 @@ public interface ISessionLifecycleService
         bool reopenAvailability,
         CancellationToken cancellationToken = default);
 
+    Task<SessionLifecycleResult> CancelByStudentAsync(
+        int studentBcUserId,
+        string studentObjectId,
+        string studentTenantId,
+        int bookingId,
+        string? reason,
+        CancellationToken cancellationToken = default);
+
     Task<SessionLifecycleResult> StartAsync(
         int tutorId,
         int changedByBcUserId,

@@ -4,6 +4,10 @@
     string layoutPagePath =
         ViewContext.RouteData.Values["Page"]?.ToString()
         ?? string.Empty;
+    bool hasStudentDashboardBackground =
+        layoutPagePath.Equals(
+            "/Student/Dashboard",
+            StringComparison.OrdinalIgnoreCase);
     bool hasSessionDetailsBackground =
         layoutPagePath.Equals(
             "/Tutors/SessionDetails",
@@ -627,12 +631,14 @@
         </nav>
     </header>
 
-    <div class="container flex-grow-1 @(hasSessionDetailsBackground ? "session-details-content-background" : null)">
+    <div class="container flex-grow-1 @(hasSessionDetailsBackground ? "session-details-content-background" : null) @(hasStudentDashboardBackground ? "dashboard-content-background" : null)">
         <main role="main">
             <partial name="_Breadcrumbs" />
             @RenderBody()
         </main>
     </div>
+
+    @await RenderSectionAsync("Modals", required: false)
 
     <footer class="text-light pt-4 pb-4" style="background-color:#1E1E1E;">
         <div class="container">
