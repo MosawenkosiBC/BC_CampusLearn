@@ -24,6 +24,25 @@
     <h1 id="manage-availability-title"
         class="text-center">Manage Availability</h1>
 
+    @if (Model.AvailabilityCreated &&
+        !string.IsNullOrWhiteSpace(Model.SuccessMessage))
+    {
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(Model.SuccessMessage))
+    }
+    @if (Model.AvailabilityDeleted &&
+        !string.IsNullOrWhiteSpace(Model.DeleteSuccessMessage))
+    {
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(Model.DeleteSuccessMessage))
+    }
+    @if (Model.AvailabilityUpdated &&
+        !string.IsNullOrWhiteSpace(Model.UpdateSuccessMessage))
+    {
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(Model.UpdateSuccessMessage))
+    }
+
     <div class="manage-availability-card">
         <form method="post"
               asp-page-handler="Create"
@@ -649,26 +668,6 @@
             </div>
         </div>
 
-        @if (Model.AvailabilityDeleted)
-        {
-            <div class="availability-delete-success" role="status">
-                <iconify-icon
-                    icon="solar:check-circle-linear"
-                    aria-hidden="true"></iconify-icon>
-                <span>@Model.DeleteSuccessMessage</span>
-            </div>
-        }
-
-        @if (Model.AvailabilityUpdated)
-        {
-            <div class="availability-delete-success" role="status">
-                <iconify-icon
-                    icon="solar:check-circle-linear"
-                    aria-hidden="true"></iconify-icon>
-                <span>@Model.UpdateSuccessMessage</span>
-            </div>
-        }
-
         @if (Model.AvailabilityRows.Count > 0)
         {
             <div class="availability-table-wrap">
@@ -1048,32 +1047,6 @@
         <p>Please wait while your schedule is being saved.</p>
     </div>
 </div>
-
-@if (Model.AvailabilityCreated)
-{
-    <div class="modal fade manage-availability-success-modal"
-         id="availability-success-modal"
-         data-availability-success-modal
-         tabindex="-1"
-         aria-labelledby="availability-success-title"
-         aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <h2 id="availability-success-title">
-                        Availability created
-                    </h2>
-                    <p>@Model.SuccessMessage</p>
-                    <button type="button"
-                            class="manage-availability-success-close"
-                            data-bs-dismiss="modal">
-                        Done
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

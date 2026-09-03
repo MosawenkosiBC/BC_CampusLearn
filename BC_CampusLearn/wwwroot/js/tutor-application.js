@@ -11,10 +11,6 @@
         "[data-existing-application]");
     const existingApplicationCloseButtons = document.querySelectorAll(
         "[data-existing-application-close]");
-    const applicationSuccess = document.querySelector(
-        "[data-application-success]");
-    const applicationSuccessCloseButtons = document.querySelectorAll(
-        "[data-application-success-close]");
     const siteFooter = document.querySelector("body > footer");
     const orientationAccordionTriggers = Array.from(
         document.querySelectorAll(
@@ -68,8 +64,6 @@
 
     syncOrientationAccordion();
     mobileAccordion.addEventListener("change", syncOrientationAccordion);
-
-    applicationSuccess?.showModal();
 
     phoneInput?.addEventListener("input", () => {
         phoneInput.value = phoneInput.value
@@ -664,15 +658,4 @@
         }
     });
 
-    applicationSuccessCloseButtons.forEach(button => {
-        button.addEventListener("click", () => {
-            applicationSuccess?.close();
-        });
-    });
-
-    applicationSuccess?.addEventListener("click", event => {
-        if (event.target === applicationSuccess) {
-            applicationSuccess.close();
-        }
-    });
 })();

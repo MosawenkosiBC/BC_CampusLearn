@@ -1107,12 +1107,4 @@
         editModal.show();
     }
 
-    const successModalElement = document.querySelector(
-        "[data-availability-success-modal]");
-
-    if (successModalElement && window.bootstrap?.Modal) {
-        const successModal = new window.bootstrap.Modal(
-            successModalElement);
-        successModal.show();
-    }
 })();

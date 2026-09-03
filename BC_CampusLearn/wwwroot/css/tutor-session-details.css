@@ -776,16 +776,6 @@
     }
 }
 /* Tutor session lifecycle, countdown and SignalR conversation. */
-.session-action-message {
-    border-radius: 0.55rem;
-    margin: 0 auto 1rem;
-    max-width: 92rem;
-    padding: 0.8rem 1rem;
-}
-
-.session-action-message.is-success { background: #e8f8f3; color: #126b58; }
-.session-action-message.is-error { background: #fff0f3; color: #8e0043; }
-
 .session-countdown-card {
     align-items: center;
     display: flex;

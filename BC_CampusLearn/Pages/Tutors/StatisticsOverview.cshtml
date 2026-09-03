@@ -31,6 +31,20 @@
 <section class="tutor-profile-page tutor-statistics-page py-4">
     <h1 class="tutor-manage-profile-title">Manage Account</h1>
 
+    @if (TempData["ProfileImageError"] is string imageError)
+    {
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(
+                imageError,
+                CampusAlertVariant.Danger))
+    }
+    @if (TempData["DeregistrationRequestSaved"] is true)
+    {
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(
+                "Your tutor deregistration request has been submitted for review."))
+    }
+
     <div class="tutor-profile-mobile-card">
     <aside class="tutor-profile-card" aria-label="Tutor account navigation">
         <div class="tutor-profile-identity">
@@ -75,11 +89,6 @@
                            onchange="this.form.submit()" />
                 </form>
             </div>
-
-            @if (TempData["ProfileImageError"] is string imageError)
-            {
-                <p class="tutor-profile-image-error" role="alert">@imageError</p>
-            }
 
             <h1>@Model.DisplayName</h1>
             <p>@Model.StudentNumber</p>
@@ -300,12 +309,6 @@
             </section>
         </div>
 
-        @if (TempData["DeregistrationRequestSaved"] is true)
-        {
-            <div class="tutor-profile-success" role="status">
-                Your tutor deregistration request has been submitted for review.
-            </div>
-        }
 
         <section class="tutor-danger-zone" aria-labelledby="statistics-danger-zone-title">
             <div>

@@ -73,10 +73,12 @@
 
     @if (!string.IsNullOrWhiteSpace(Model.SessionActionMessage))
     {
-        <div class="session-action-message @(Model.SessionActionError ? "is-error" : "is-success")"
-             role="@(Model.SessionActionError ? "alert" : "status")">
-            @Model.SessionActionMessage
-        </div>
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(
+                Model.SessionActionMessage,
+                Model.SessionActionError
+                    ? CampusAlertVariant.Danger
+                    : CampusAlertVariant.Success))
     }
 
     <div class="manage-session-layout">

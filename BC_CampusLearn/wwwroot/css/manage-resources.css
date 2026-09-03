@@ -87,9 +87,6 @@
 .resource-primary-action:disabled, .resource-secondary-action:disabled { opacity: .5; cursor: not-allowed; }
 .resource-secondary-action { background: white; color: var(--resource-teal-dark); }
 
-.resource-alert { display: flex; align-items: center; gap: .7rem; margin-bottom: 1.25rem; padding: .9rem 1rem; border: 1px solid #bfe6da; border-radius: .65rem; background: #effbf7; color: #176b55; }
-.resource-alert button { margin-left: auto; border: 0; background: transparent; color: inherit; font-size: 1.5rem; line-height: 1; }
-
 .resource-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
 .resource-summary-card { display: flex; align-items: center; gap: 1rem; padding: 1.15rem; border: 1px solid var(--resource-line); border-radius: .8rem; background: white; box-shadow: var(--campus-card-shadow); color: inherit; text-decoration: none; }
 .resource-summary-card:hover { transform: translateY(-2px); color: inherit; box-shadow: 0 .5rem 1.25rem rgba(25, 40, 50, .09); }

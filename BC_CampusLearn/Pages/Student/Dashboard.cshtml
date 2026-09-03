@@ -31,6 +31,26 @@
 <section class="container py-4 dashboard-page">
     <h1 class="text-center">Dashboard</h1>
 
+    @if (!string.IsNullOrWhiteSpace(Model.SessionActionMessage))
+    {
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(
+                Model.SessionActionMessage,
+                Model.SessionActionError
+                    ? CampusAlertVariant.Danger
+                    : CampusAlertVariant.Success))
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.ResourceSubscriptionMessage))
+    {
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(
+                Model.ResourceSubscriptionMessage,
+                Model.ResourceSubscriptionError
+                    ? CampusAlertVariant.Danger
+                    : CampusAlertVariant.Success))
+    }
+
     <div class="row g-4 my-4 dashboard-summary">
         <div class="col-6 col-xl-3">
             <a asp-page="/Bookings/Index"
@@ -276,14 +296,6 @@
             }
         </div>
 
-        @if (!string.IsNullOrWhiteSpace(Model.SessionActionMessage))
-        {
-            <div class="dashboard-session-alert @(Model.SessionActionError ? "is-error" : null)"
-                 role="@(Model.SessionActionError ? "alert" : "status")">
-                @Model.SessionActionMessage
-            </div>
-        }
-
             <div class="tutor-sessions">
                 <div class="tutor-sessions-table-wrap">
                     <table class="tutor-sessions-table">
@@ -420,14 +432,6 @@
                 </a>
             }
         </div>
-
-        @if (!string.IsNullOrWhiteSpace(Model.ResourceSubscriptionMessage))
-        {
-            <div class="dashboard-subscription-alert @(Model.ResourceSubscriptionError ? "is-error" : null)"
-                 role="status">
-                @Model.ResourceSubscriptionMessage
-            </div>
-        }
 
         @if (Model.RecentSubscribedResources.Count == 0)
         {

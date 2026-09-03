@@ -31,9 +31,8 @@
 
     @if (TempData["SuccessMessage"] is string message)
     {
-        <div class="alert alert-success bookings-alert" role="status">
-            @message
-        </div>
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(message))
     }
 
     <div class="bookings-workspace">

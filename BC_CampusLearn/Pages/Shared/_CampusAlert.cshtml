@@ -1,0 +1,14 @@
+@model BC_CampusLearn.Models.ViewModels.CampusAlertViewModel
+
+@if (!string.IsNullOrWhiteSpace(Model.Message))
+{
+    <div class="alert alert-@Model.BootstrapClass alert-dismissible fade show campus-alert"
+         role="@Model.Role">
+        <i class="bi @Model.IconClass campus-alert-icon" aria-hidden="true"></i>
+        <span class="campus-alert-message">@Model.Message</span>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Dismiss message"></button>
+    </div>
+}

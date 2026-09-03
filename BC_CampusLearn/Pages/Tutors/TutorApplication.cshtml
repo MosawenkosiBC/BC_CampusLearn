@@ -41,6 +41,12 @@
             </div>
         </header>
 
+        @if (!string.IsNullOrWhiteSpace(Model.SubmissionMessage))
+        {
+            @await Html.PartialAsync("_CampusAlert",
+                new CampusAlertViewModel(Model.SubmissionMessage))
+        }
+
         <div class="orientation-introduction">
             <h2>What is peer tutoring?</h2>
             <p>
@@ -280,36 +286,6 @@
             <button type="button"
                     class="application-status-confirm"
                     data-existing-application-close>
-                Close
-            </button>
-        </dialog>
-    }
-
-    @if (!string.IsNullOrWhiteSpace(Model.SubmissionMessage))
-    {
-        <dialog class="tutor-application-status-modal"
-                data-application-success
-                aria-labelledby="application-success-title"
-                aria-describedby="application-success-message">
-            <button type="button"
-                    class="application-status-close"
-                    data-application-success-close
-                    aria-label="Close submission confirmation">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-            </button>
-
-            <h2 id="application-success-title">
-                Application Submitted
-            </h2>
-            <p id="application-success-message">
-                @Model.SubmissionMessage
-            </p>
-
-            <button type="button"
-                    class="application-status-confirm"
-                    data-application-success-close>
                 Close
             </button>
         </dialog>

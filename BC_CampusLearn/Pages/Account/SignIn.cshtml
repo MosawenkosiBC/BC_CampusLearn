@@ -22,10 +22,10 @@
 
         @if (Model.IsDevelopmentAuthentication)
         {
-            <div class="login-development-notice" role="status">
-                Development authentication is active.
-                No real Microsoft account will be used.
-            </div>
+            @await Html.PartialAsync("_CampusAlert",
+                new CampusAlertViewModel(
+                    "Development authentication is active. No real Microsoft account will be used.",
+                    CampusAlertVariant.Info))
         }
 
         <div asp-validation-summary="ModelOnly"

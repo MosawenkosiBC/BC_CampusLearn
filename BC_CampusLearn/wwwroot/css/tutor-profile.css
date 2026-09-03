@@ -122,12 +122,6 @@
     outline: 0;
 }
 
-.tutor-profile-image-error {
-    color: #b51228 !important;
-    font-size: 0.78rem !important;
-    margin: -0.4rem 0 0.75rem !important;
-}
-
 .tutor-profile-identity h1 {
     color: #1e1e1e;
     font-size: 1.12rem;
@@ -889,14 +883,6 @@ a.tutor-profile-nav-link:focus-visible {
 .tutor-public-profile-actions button:focus-visible {
     background-color: #8f0043;
     border-color: #8f0043;
-}
-
-.tutor-profile-success {
-    background-color: rgba(74, 193, 193, 0.14);
-    border-left: 3px solid #4ac1c1;
-    color: #246f6f;
-    margin-bottom: 1.25rem;
-    padding: 0.8rem 1rem;
 }
 
 @media (max-width: 991.98px) {

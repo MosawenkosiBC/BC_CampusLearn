@@ -372,22 +372,6 @@
     margin: 0;
 }
 
-.dashboard-session-alert {
-    background-color: #edf9f3;
-    border: 1px solid #b8dfcc;
-    border-radius: 0.4rem;
-    color: #1d6748;
-    font-size: 16px;
-    margin-bottom: 1rem;
-    padding: 0.75rem 1rem;
-}
-
-.dashboard-session-alert.is-error {
-    background-color: #fff0f1;
-    border-color: #efbcc3;
-    color: #9d2432;
-}
-
 .dashboard-cancel-session-modal .modal-content {
     border: 0;
     border-radius: 0.65rem;
@@ -776,21 +760,6 @@
 
 @media (max-width: 575.98px) {
     .dashboard-resource-preview-grid { grid-template-columns: 1fr; }
-}
-
-.dashboard-subscription-alert {
-    margin-bottom: 1rem;
-    padding: .8rem 1rem;
-    border-radius: .45rem;
-    background: #edf9f3;
-    color: #1d6748;
-    font-size: .85rem;
-    font-weight: 500;
-}
-
-.dashboard-subscription-alert.is-error {
-    background: #fff0f1;
-    color: #9d2432;
 }
 
 .dashboard-subscribed-module-grid {
@@ -1415,7 +1384,6 @@
 .dashboard-page .dashboard-session-action-menu .dropdown-item,
 .dashboard-page .dashboard-resources-empty p,
 .dashboard-page .dashboard-resources-heading a,
-.dashboard-page .dashboard-subscription-alert,
 .dashboard-page .dashboard-resource-preview-grid .student-resource-topic,
 .dashboard-page .dashboard-resource-preview-grid .student-resource-summary {
     font-size: 16px;

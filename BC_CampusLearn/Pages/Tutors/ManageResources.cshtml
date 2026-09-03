@@ -29,11 +29,8 @@
 
     @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
     {
-        <div class="resource-alert" role="status">
-            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
-            <span>@Model.SuccessMessage</span>
-            <button type="button" aria-label="Dismiss message" data-alert-dismiss>&times;</button>
-        </div>
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(Model.SuccessMessage))
     }
 
     <section id="resource-editor"

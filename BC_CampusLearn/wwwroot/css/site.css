@@ -176,6 +176,35 @@ body {
   padding-top: 76px;
 }
 
+.campus-alert {
+  align-items: flex-start;
+  border: 0;
+  border-radius: 0.5rem;
+  display: flex;
+  font-size: 16px;
+  gap: 0.75rem;
+  line-height: 1.5;
+  margin: 1rem 0;
+  padding: 1rem 3.25rem 1rem 1rem;
+}
+
+.campus-alert-icon {
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  margin-top: 0.1rem;
+}
+
+.campus-alert-message {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.campus-alert .btn-close {
+  margin: 0;
+  padding: 1.15rem;
+}
+
 .campus-breadcrumbs {
   padding: 1rem 0 0.85rem;
   font-size: 16px;

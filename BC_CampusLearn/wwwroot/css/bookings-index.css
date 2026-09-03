@@ -46,10 +46,6 @@
     margin: 0;
 }
 
-.bookings-alert {
-    margin-bottom: 1.5rem;
-}
-
 .bookings-workspace {
     align-items: start;
     display: grid;

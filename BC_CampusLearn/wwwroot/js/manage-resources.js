@@ -163,10 +163,6 @@
             : "";
     });
 
-    document.querySelector("[data-alert-dismiss]")?.addEventListener("click", (event) => {
-        event.currentTarget.closest(".resource-alert")?.remove();
-    });
-
     document.querySelectorAll("[data-date-filter]").forEach((input) => {
         const updateDateState = () => {
             input.classList.toggle("has-value", Boolean(input.value));
