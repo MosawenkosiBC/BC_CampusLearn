@@ -292,8 +292,6 @@
             "[data-session-status-select]");
         const saveButton = statusControl.querySelector(
             "[data-session-status-save]");
-        const startForm = statusControl.querySelector(
-            "[data-session-start-form]");
         const declineForm = statusControl.querySelector(
             "[data-session-decline-form]");
 
@@ -313,9 +311,7 @@
                 return;
             }
 
-            if (action === "start") {
-                startForm?.requestSubmit();
-            } else if (action === "decline") {
+            if (action === "decline") {
                 declineForm?.requestSubmit();
             }
         });

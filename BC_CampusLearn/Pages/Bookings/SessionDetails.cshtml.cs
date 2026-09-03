@@ -47,6 +47,9 @@ public class SessionDetailsModel : PageModel
     [BindProperty]
     public StudentEvaluationInput EvaluationInput { get; set; } = new();
 
+    [BindProperty]
+    public string? CancellationReason { get; set; }
+
     [TempData]
     public string? SessionActionMessage { get; set; }
 
@@ -148,6 +151,27 @@ public class SessionDetailsModel : PageModel
         }
 
         return Redirect(session.MeetingLink);
+    }
+
+    public async Task<IActionResult> OnPostCancelAsync(
+        int bookingId,
+        CancellationToken cancellationToken)
+    {
+        CurrentUser student = _currentUserService.GetRequiredUser();
+        SessionLifecycleResult result =
+            await _lifecycleService.CancelByStudentAsync(
+                student.BcUserId,
+                student.ObjectId,
+                student.TenantId,
+                bookingId,
+                CancellationReason,
+                cancellationToken);
+
+        SessionActionError = !result.Succeeded;
+        SessionActionMessage = result.Succeeded
+            ? "Session cancelled."
+            : result.ErrorMessage;
+        return RedirectToPage(new { bookingId });
     }
 
     public async Task<IActionResult> OnPostReviewAsync(

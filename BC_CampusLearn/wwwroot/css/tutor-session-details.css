@@ -667,7 +667,8 @@
     }
 }
 
-@media (max-width: 767.98px) {
+/* Stack the page sections on tablet as well as mobile. */
+@media (max-width: 991.98px) {
     .tutor-session-details-page {
         font-size: 1rem;
         padding-left: 1rem !important;
@@ -1748,8 +1749,18 @@ body.tutor-evaluation-panel-open {
 }
 
 .session-countdown-join {
-    margin-top: 1.25rem;
+    margin: 0;
     width: min(100%, 210px);
+}
+
+.session-countdown-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 1.25rem;
+    width: 100%;
 }
 
 .session-countdown-join .session-join-button:not(:disabled):hover,
@@ -1873,7 +1884,7 @@ body.tutor-evaluation-panel-open {
     }
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 991.98px) {
     .session-status-card {
         margin-top: 0;
     }
@@ -2018,10 +2029,7 @@ body.tutor-evaluation-panel-open {
 
 .session-countdown-start {
     flex: 0 0 auto;
-    left: 0;
-    margin-top: 1.1rem;
-    position: absolute;
-    top: 0;
+    margin: 0;
 }
 
 .session-countdown-start button {
@@ -2197,9 +2205,6 @@ body.tutor-evaluation-panel-open {
         width: 3.75rem;
     }
 
-    .session-countdown-start {
-        margin-top: 0.65rem;
-    }
 }
 
 @media (max-width: 767.98px) {
@@ -2380,5 +2385,337 @@ body.tutor-evaluation-panel-open {
 
     .session-information-section .session-information-card {
         min-height: 0;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .tutor-session-details-page {
+        max-width: none;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    .manage-session-layout,
+    .session-information-section,
+    .session-information-section .session-information-card,
+    .session-top-sidebar {
+        max-width: none;
+        width: 100%;
+    }
+
+    .manage-session-heading {
+        align-items: center;
+        display: flex;
+        justify-content: center;
+        min-height: 2.75rem;
+        padding: 0 3.25rem;
+    }
+
+    .manage-session-review-action {
+        margin: 0;
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .manage-session-review-action button {
+        align-items: center;
+        border-radius: 50%;
+        display: inline-flex;
+        font-size: 1.65rem;
+        font-weight: 400;
+        height: 2.65rem;
+        justify-content: center;
+        line-height: 1;
+        min-height: 0;
+        padding: 0 0 0.12rem;
+        width: 2.65rem;
+    }
+
+    .review-action-label {
+        display: none;
+    }
+
+    .review-action-mobile-icon {
+        display: block;
+        height: 1.3rem;
+        width: 1.3rem;
+    }
+
+    .session-top-sidebar:has(> .completed-session-countdown) {
+        align-items: start;
+        column-gap: 0.75rem;
+        grid-template-areas:
+            "manage-heading countdown"
+            "manage-card countdown";
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: 0.7rem;
+    }
+
+    .session-top-sidebar:has(> .completed-session-countdown) > .manage-card-heading {
+        grid-area: manage-heading;
+    }
+
+    .session-top-sidebar:has(> .completed-session-countdown) > .session-status-card {
+        grid-area: manage-card;
+        width: 100%;
+    }
+
+    .session-top-sidebar:has(> .completed-session-countdown) > .completed-session-countdown {
+        grid-area: countdown;
+        margin-top: 0;
+        width: 100%;
+    }
+
+    .session-top-sidebar:has(> .completed-session-countdown) .session-countdown-card {
+        width: 100%;
+    }
+
+    .student-session-details-page .session-top-sidebar:has(> .student-meeting-panel) {
+        align-items: start;
+        column-gap: 0.75rem;
+        grid-template-areas:
+            "details-heading meeting"
+            "details-card meeting";
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: 0.7rem;
+    }
+
+    .student-session-details-page .session-top-sidebar:has(> .student-meeting-panel) > .manage-card-heading {
+        grid-area: details-heading;
+    }
+
+    .student-session-details-page .session-top-sidebar:has(> .student-meeting-panel) > .session-status-card {
+        grid-area: details-card;
+        width: 100%;
+    }
+
+    .student-session-details-page .session-top-sidebar:has(> .student-meeting-panel) > .student-meeting-panel {
+        align-self: stretch;
+        display: flex;
+        flex-direction: column;
+        grid-area: meeting;
+        margin-top: 0;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .student-session-details-page .student-meeting-panel .session-meeting-card {
+        flex: 1;
+        width: 100%;
+    }
+}
+
+/* Tutor and student session-details typography floors. */
+.tutor-session-details-page {
+    font-size: 16px;
+}
+
+.tutor-session-details-page .manage-session-heading h1 {
+    font-size: clamp(28px, 3vw, 34px) !important;
+}
+
+.tutor-session-details-page h2,
+.tutor-session-details-page h3 {
+    font-size: 18px !important;
+    overflow-wrap: anywhere;
+}
+
+.tutor-session-details-page .session-hero-title-row h2 {
+    font-size: 20px !important;
+}
+
+.tutor-session-details-page p,
+.tutor-session-details-page dt,
+.tutor-session-details-page dd,
+.tutor-session-details-page label,
+.tutor-session-details-page input,
+.tutor-session-details-page select,
+.tutor-session-details-page textarea,
+.tutor-session-details-page button,
+.tutor-session-details-page a {
+    font-size: 16px !important;
+}
+
+.tutor-session-details-page button {
+    white-space: normal;
+}
+
+.tutor-session-details-page input:not([type="hidden"]):not([type="radio"]):not([type="checkbox"]),
+.tutor-session-details-page select,
+.tutor-session-details-page textarea {
+    min-height: 44px;
+}
+
+.tutor-session-details-page .session-hero-identity > p,
+.tutor-session-details-page .session-chat-message p,
+.tutor-session-details-page .session-status-dates strong,
+.tutor-session-details-page .session-status-card > select,
+.tutor-session-details-page .session-status-card > input,
+.tutor-session-details-page .session-readonly-row input,
+.tutor-session-details-page .session-meeting-card > div > strong,
+.tutor-session-details-page .session-chat-closed {
+    font-size: 16px !important;
+}
+
+.tutor-session-details-page .session-status-warning,
+.meeting-link-modal .meeting-link-modal-error {
+    font-size: 16px !important;
+}
+
+.tutor-session-details-page .session-hero-meta span,
+.tutor-session-details-page .session-hero-meeting > span,
+.tutor-session-details-page .meeting-link-success,
+.tutor-session-details-page .session-no-attachments,
+.tutor-session-details-page .session-status-dates > div > span,
+.tutor-session-details-page .session-status-card > label,
+.tutor-session-details-page .session-meeting-card dt,
+.tutor-session-details-page .session-countdown-caption,
+.tutor-session-details-page .session-chat-error {
+    font-size: 14px !important;
+}
+
+.tutor-session-details-page .placeholder-label,
+.tutor-session-details-page .session-status-pill,
+.tutor-session-details-page .session-status-badge,
+.tutor-session-details-page .session-chat-date-separator,
+.tutor-session-details-page .session-chat-message-meta,
+.tutor-session-details-page .session-time-left,
+.tutor-session-details-page .session-clock small,
+.tutor-session-details-page .review-placeholder-steps span {
+    font-size: 12px !important;
+}
+
+.tutor-session-details-page .meeting-link-open,
+.tutor-session-details-page .session-time-left,
+.tutor-session-details-page .session-status-dates strong,
+.tutor-session-details-page .session-status-date-line,
+.tutor-session-details-page .session-status-secondary-actions button,
+.tutor-session-details-page .session-status-join,
+.tutor-session-details-page .session-join-button,
+.tutor-session-details-page .completed-session-review button,
+.tutor-session-details-page .session-chat-send-button {
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.tutor-session-details-page .meeting-link-open {
+    display: block;
+    font-size: 16px !important;
+    text-overflow: clip;
+}
+
+.tutor-session-details-page .session-status-date-line {
+    font-size: 16px !important;
+}
+
+.tutor-session-details-page .session-status-dates strong,
+.tutor-session-details-page .session-readonly-field input,
+.tutor-session-details-page .session-information-materials input {
+    min-height: 44px;
+}
+
+.tutor-session-details-page .session-chat-message {
+    max-width: min(calc(82% - 0.5rem), 42rem);
+}
+
+.tutor-session-details-page .session-status-badge {
+    flex-wrap: wrap;
+    max-width: calc(100% - 3.2rem);
+    text-align: center;
+}
+
+.meeting-link-modal h2,
+.meeting-link-modal h3 {
+    font-size: 18px !important;
+    overflow-wrap: anywhere;
+}
+
+.meeting-link-modal p,
+.meeting-link-modal label,
+.meeting-link-modal legend,
+.meeting-link-modal input,
+.meeting-link-modal select,
+.meeting-link-modal textarea,
+.meeting-link-modal button,
+.meeting-link-modal .evaluation-radio-group label,
+.meeting-link-modal .evaluation-sentiment-option > span {
+    font-size: 16px !important;
+}
+
+.meeting-link-modal input:not([type="hidden"]):not([type="radio"]):not([type="checkbox"]),
+.meeting-link-modal select,
+.meeting-link-modal textarea,
+.meeting-link-modal button:not(.btn-close) {
+    min-height: 44px;
+}
+
+.meeting-link-modal .modal-header p,
+.meeting-link-modal .evaluation-validation-error {
+    font-size: 14px !important;
+}
+
+.meeting-link-modal button,
+.meeting-link-modal label,
+.meeting-link-modal legend,
+.meeting-link-modal .evaluation-sentiment-option > span {
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.navbar .nav-link,
+.navbar .dropdown-item,
+.navbar .sign-in-button {
+    font-size: 16px;
+}
+
+.navigation-drawer-header h2 {
+    font-size: 18px;
+}
+
+.navigation-drawer-brand p {
+    font-size: 12px;
+}
+
+.navigation-drawer-link {
+    font-size: 16px;
+    min-height: 44px;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.message-notification-heading strong,
+.message-notification-sender,
+.message-notification-preview,
+.message-notification-empty {
+    font-size: 16px;
+}
+
+.message-notification-heading span,
+.message-notification-item time,
+.message-notification-count,
+body > footer small {
+    font-size: 12px;
+}
+
+.message-notification-count {
+    height: 1.35rem;
+    min-width: 1.35rem;
+}
+
+body > footer p,
+body > footer li,
+body > footer a {
+    font-size: 16px;
+}
+
+@media (max-width: 767.98px) {
+    .meeting-link-modal .evaluation-sentiment-group {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tutor-session-details-page .session-chat-message {
+        max-width: 88%;
     }
 }

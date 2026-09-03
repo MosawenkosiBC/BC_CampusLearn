@@ -1,4 +1,38 @@
 (() => {
+    document.querySelectorAll(".meeting-link-modal").forEach((modal) => {
+        if (modal.parentElement !== document.body) {
+            document.body.append(modal);
+        }
+    });
+
+    const statusControl = document.querySelector(
+        "[data-student-session-status-control]");
+    if (statusControl) {
+        const statusSelect = statusControl.querySelector(
+            "[data-student-session-status-select]");
+        const saveButton = statusControl.querySelector(
+            "[data-student-session-status-save]");
+        const cancelForm = statusControl.querySelector(
+            "[data-student-session-cancel-form]");
+
+        saveButton?.addEventListener("click", () => {
+            if (statusSelect?.value !== "cancel") {
+                return;
+            }
+
+            if (statusControl.dataset.cancellationReasonRequired === "true") {
+                const modalElement = document.getElementById(
+                    "student-cancel-session-modal");
+                if (modalElement && window.bootstrap) {
+                    bootstrap.Modal.getOrCreateInstance(modalElement).show();
+                }
+                return;
+            }
+
+            cancelForm?.requestSubmit();
+        });
+    }
+
     document.querySelectorAll("[data-session-information-toggle]")
         .forEach((toggle) => toggle.addEventListener("click", () => {
             const section = toggle.closest(".session-information-section");

@@ -274,7 +274,6 @@
                     }
                     else if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Confirmed)
                     {
-                        <option value="start" disabled="@(!Model.CanStartSession)">In progress</option>
                         <option value="cancel">Cancelled</option>
                     }
                 </select>
@@ -287,9 +286,6 @@
                     </button>
                 }
 
-                <form method="post" asp-page-handler="Start" data-session-start-form hidden>
-                    <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
-                </form>
                 <form method="post" asp-page-handler="Decline" data-session-decline-form hidden>
                     <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
                 </form>
@@ -333,6 +329,14 @@
                                     : "Session duration")
                         </p>
                         <div class="session-countdown-timer-row">
+                            <output class="session-clock" data-session-runtime-countdown>
+                                <span><strong><span data-session-hours>@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Completed ? "00" : "01")</span></strong><small>Hour</small></span>
+                                <span><strong><span data-session-minutes>@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Completed ? "00" : "05")</span></strong><small>minutes</small></span>
+                                <span><strong><span data-session-seconds>@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Completed ? "00" : "59")</span></strong><small>Seconds</small></span>
+                            </output>
+                        </div>
+
+                        <div class="session-countdown-actions">
                             <form method="post" asp-page-handler="Start" class="session-countdown-start">
                                 <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
                                 <button type="submit"
@@ -342,26 +346,22 @@
                                     <i class="bi bi-play-fill" aria-hidden="true"></i>
                                 </button>
                             </form>
-                            <output class="session-clock" data-session-runtime-countdown>
-                                <span><strong><span data-session-hours>@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Completed ? "00" : "01")</span></strong><small>Hour</small></span>
-                                <span><strong><span data-session-minutes>@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Completed ? "00" : "05")</span></strong><small>minutes</small></span>
-                                <span><strong><span data-session-seconds>@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Completed ? "00" : "59")</span></strong><small>Seconds</small></span>
-                            </output>
+
+                            @if (Model.Session.Status is BC_CampusLearn.Models.Entities.BookingStatus.Confirmed or
+                                 BC_CampusLearn.Models.Entities.BookingStatus.InProgress)
+                            {
+                                <form method="post" asp-page-handler="Join" class="session-countdown-join">
+                                    <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                                    <button type="submit"
+                                            class="session-join-button"
+                                            data-session-start-trigger
+                                            disabled="@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Confirmed && !Model.CanStartSession)">
+                                        <i class="bi bi-microsoft-teams" aria-hidden="true"></i>
+                                        Join Meeting
+                                    </button>
+                                </form>
+                            }
                         </div>
-                        @if (Model.Session.Status is BC_CampusLearn.Models.Entities.BookingStatus.Confirmed or
-                             BC_CampusLearn.Models.Entities.BookingStatus.InProgress)
-                        {
-                            <form method="post" asp-page-handler="Join" class="session-countdown-join">
-                                <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
-                                <button type="submit"
-                                        class="session-join-button"
-                                        data-session-start-trigger
-                                        disabled="@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Confirmed && !Model.CanStartSession)">
-                                    <i class="bi bi-microsoft-teams" aria-hidden="true"></i>
-                                    Join Meeting
-                                </button>
-                            </form>
-                        }
                     </div>
                 </section>
             }

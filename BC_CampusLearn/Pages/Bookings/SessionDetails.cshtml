@@ -204,7 +204,9 @@
             <header class="manage-card-heading">
                 <h2>Session Details</h2>
             </header>
-            <section class="manage-session-card session-status-card">
+            <section class="manage-session-card session-status-card"
+                     data-student-session-status-control
+                     data-cancellation-reason-required="@(Model.Session.Status == BookingStatus.Confirmed ? "true" : "false")">
                 <div class="session-status-dates">
                     <div>
                         <span>Date Booked</span>
@@ -222,10 +224,29 @@
                     </div>
                 </div>
 
-                <label for="session-current-status">Status</label>
-                <input id="session-current-status" type="text"
-                       value="@Model.Session.Status.ToDisplayText()"
-                       readonly />
+                <label for="student-session-status-action">Change Status</label>
+                <select id="student-session-status-action"
+                        data-student-session-status-select
+                        disabled="@(Model.Session.Status is not (BookingStatus.Pending or BookingStatus.Confirmed))">
+                    <option value="">@Model.Session.Status.ToDisplayText()</option>
+                    @if (Model.Session.Status is BookingStatus.Pending or BookingStatus.Confirmed)
+                    {
+                        <option value="cancel">Cancelled</option>
+                    }
+                </select>
+
+                @if (Model.Session.Status is BookingStatus.Pending or BookingStatus.Confirmed)
+                {
+                    <button type="button" class="session-status-save"
+                            data-student-session-status-save>
+                        Save
+                    </button>
+
+                    <form method="post" asp-page-handler="Cancel"
+                          data-student-session-cancel-form hidden>
+                        <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                    </form>
+                }
             </section>
 
             @if (!string.IsNullOrWhiteSpace(Model.LatestStatusReason))
@@ -396,6 +417,37 @@
         </div>
     </div>
 </main>
+
+@if (Model.Session.Status == BookingStatus.Confirmed)
+{
+    <div class="modal fade meeting-link-modal" id="student-cancel-session-modal" tabindex="-1"
+         aria-labelledby="student-cancel-session-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="Cancel">
+                    <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                    <div class="modal-header">
+                        <div>
+                            <h2 id="student-cancel-session-title">Cancel session</h2>
+                            <p>Tell @Model.TutorName why this confirmed session is being cancelled.</p>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label asp-for="CancellationReason">Reason</label>
+                        <textarea asp-for="CancellationReason" rows="4"
+                                  minlength="5" maxlength="1000" required></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="meeting-link-modal-cancel"
+                                data-bs-dismiss="modal">Keep session</button>
+                        <button type="submit" class="meeting-link-modal-save">Cancel session</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
 
 @if (Model.Session.Status == BookingStatus.Completed && Model.Session.StudentEvaluation is null)
 {
