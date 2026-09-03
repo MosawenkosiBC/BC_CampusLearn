@@ -41,7 +41,7 @@
         min-width: 175px;
         min-height: 56px;
         padding: 14px 28px;
-        font-size: 1.1rem;
+        font-size: 16px;
         font-weight: 600;
         display: inline-flex;
         align-items: center;
@@ -116,14 +116,14 @@
     }
 
     .hero-stat-item span {
-        font-size: .82rem;
+        font-size: 12px;
         line-height: 1.2;
         color: #4b5563;
     }
 
     .hero-stat-item strong {
         margin-top: 6px;
-        font-size: 1.2rem;
+        font-size: 20px;
         line-height: 1.1;
         font-weight: 800;
         color: #AD0151;
@@ -160,7 +160,7 @@
 }
 
     .benefits-section p {
-        font-size: 1.1rem;
+        font-size: 16px;
     }
 
     /* Fix icon alignment in benefits section */
@@ -192,7 +192,7 @@
 
     .getToKnow p {
         /*    width: 80%;*/
-        font-size: 1.1rem;
+        font-size: 16px;
     }
 
 .top-tutors {
@@ -294,7 +294,7 @@
 }
 
 .static-tutor-card h4 {
-    font-size: 1.05rem;
+    font-size: 18px;
     margin-bottom: 10px;
 }
 
@@ -310,11 +310,12 @@
 .static-tutor-program {
     font-weight: 600;
     color: #20242c;
+    font-size: 16px;
 }
 
 .static-tutor-meta {
     color: #667085;
-    font-size: .92rem !important;
+    font-size: 14px !important;
 }
 
 .img-frame-tutor {
@@ -634,7 +635,7 @@
         color: white;
         margin-top: 15px;
         max-width: 500px;
-        font-size: .95rem !important;
+        font-size: 16px !important;
     }
 
     .heading-responsive .btn {
@@ -668,12 +669,12 @@
     }
 
     .heading-responsive .hero-stat-item span {
-        font-size: .74rem;
+        font-size: 12px;
         color: #4b5563;
     }
 
     .heading-responsive .hero-stat-item strong {
-        font-size: 1.05rem;
+        font-size: 18px;
         color: #AD0151;
     }
 
@@ -703,5 +704,86 @@
 
     .review {
         width: 250px !important;
+    }
+}
+
+/* Homepage typography floor and responsive text-fit safeguards. */
+.benefits-section > h2,
+.mobile-accordion > h2,
+.getToKnow > h2,
+.student-review > h2 {
+    font-size: clamp(24px, 3vw, 32px);
+}
+
+.mobile-accordion .accordion-button strong,
+.student-review h4 {
+    font-size: 18px;
+}
+
+.mobile-accordion .accordion-body,
+.student-review p,
+.getToKnow .btn,
+.navbar .nav-link,
+.navbar .dropdown-item,
+.navbar .sign-in-button {
+    font-size: 16px;
+}
+
+.message-notification-heading strong,
+.message-notification-sender,
+.message-notification-preview,
+.message-notification-empty {
+    font-size: 16px;
+}
+
+.message-notification-heading span,
+.message-notification-item time,
+.message-notification-count,
+footer small {
+    font-size: 12px;
+}
+
+.message-notification-count {
+    height: 1.35rem;
+    min-width: 1.35rem;
+}
+
+footer p,
+footer li,
+footer a {
+    font-size: 16px;
+}
+
+.hero-cta-group .btn,
+.getToKnow .btn,
+.mobile-accordion .accordion-button {
+    min-height: 44px;
+    white-space: normal;
+}
+
+.benefit-text,
+.mobile-accordion .accordion-button,
+.mobile-accordion .accordion-body,
+.static-tutor-card h4,
+.static-tutor-card p {
+    overflow-wrap: anywhere;
+}
+
+@media only screen and (max-width: 576px) {
+    .mobile-accordion .accordion-button {
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .mobile-accordion strong {
+        margin-left: 0;
+    }
+
+    .mobile-accordion .accordion-body {
+        padding: 16px;
+    }
+
+    .static-tutor-card {
+        padding-bottom: 28px;
     }
 }
