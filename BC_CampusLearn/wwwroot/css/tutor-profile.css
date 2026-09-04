@@ -177,70 +177,87 @@ a.tutor-profile-nav-link:focus-visible {
     color: #81003c;
 }
 
-.tutor-deregistration-button {
-    align-items: center;
-    background-color: #b4232e;
-    border: 1px solid #b4232e;
-    border-radius: 0.35rem;
-    color: #fff;
-    display: flex;
-    font-size: 0.78rem;
-    font-weight: 700;
-    justify-content: center;
-    min-height: 2.45rem;
-    padding: 0.55rem 0.9rem;
-    text-align: center;
-    text-decoration: none;
-    width: auto;
-}
-
-.tutor-deregistration-button:hover,
-.tutor-deregistration-button:focus-visible {
-    background-color: #911b24;
-    border-color: #911b24;
-    color: #fff;
-}
-
-.tutor-deregistration-pending {
-    background-color: #fff0f1;
-    border-radius: 999px;
-    color: #9e1c27;
-    display: inline-block;
-    font-size: 0.72rem;
-    font-weight: 700;
-    padding: 0.42rem 0.7rem;
-    text-align: center;
-    width: auto;
-}
-
-.tutor-danger-zone {
+.tutor-support-panel {
     background-color: #fff;
-    border: 1px solid #dc3545;
+    border: 1px solid #ececef;
     border-radius: 0.4rem;
-    display: block;
+    box-shadow: var(--campus-card-shadow);
     margin-top: 3rem;
-    padding: 1.5rem 2rem;
+    padding: 2rem;
 }
 
-.tutor-danger-zone h3 {
-    color: #b4232e;
-    font-size: 0.95rem;
+.tutor-support-heading {
+    display: block;
+}
+
+.tutor-support-panel h3 {
+    color: #000;
+    font-size: 1.15rem;
     font-weight: 700;
     margin: 0;
 }
 
-.tutor-danger-zone p {
-    color: #6e5558;
-    font-size: 0.8rem;
+.tutor-support-panel p {
+    color: #526363;
+    font-size: 0.95rem;
+    line-height: 1.55;
     margin: 0.35rem 0 0;
 }
 
-.tutor-danger-zone > .tutor-deregistration-button,
-.tutor-danger-zone > .tutor-deregistration-pending {
+.tutor-support-details {
     display: flex;
-    margin-left: auto;
-    margin-top: 1.35rem;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+}
+
+.tutor-support-contact h4,
+.tutor-support-meta dt {
+    color: #000;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin: 0 0 0.45rem;
+}
+
+.tutor-support-contact {
+    min-width: 0;
+}
+
+.tutor-support-emails {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.5rem;
+}
+
+.tutor-support-emails a {
+    color: #ad0151;
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+    padding: 0.16rem 0;
     width: fit-content;
+}
+
+.tutor-support-emails a:hover,
+.tutor-support-emails a:focus-visible {
+    color: #81003c;
+}
+
+.tutor-support-meta {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+}
+
+.tutor-support-meta div {
+    margin: 0;
+}
+
+.tutor-support-meta dd {
+    color: #526363;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    margin: 0;
 }
 
 .tutor-personal-details > h2,
@@ -682,8 +699,7 @@ a.tutor-profile-nav-link:focus-visible {
 }
 
 .tutor-modal-cancel,
-.tutor-modal-primary,
-.tutor-modal-danger {
+.tutor-modal-primary {
     border-radius: 0.35rem;
     font-size: 0.85rem;
     font-weight: 700;
@@ -701,52 +717,6 @@ a.tutor-profile-nav-link:focus-visible {
     background-color: #ad0151;
     border: 1px solid #ad0151;
     color: #fff;
-}
-
-.tutor-modal-danger {
-    background-color: #b4232e;
-    border: 1px solid #b4232e;
-    color: #fff;
-}
-
-.tutor-danger-confirmation {
-    background-color: #fff6f6;
-    border: 1px solid #efc6c9;
-    border-radius: 0.4rem;
-    padding: 1rem;
-}
-
-.tutor-danger-confirmation p {
-    color: #4a2b2e;
-    font-size: 0.82rem;
-    margin: 0 0 0.65rem;
-}
-
-.tutor-danger-confirmation strong {
-    color: #9e1c27;
-}
-
-.tutor-danger-confirmation input {
-    background: #fff;
-    border: 1px solid #c9cdd2;
-    border-radius: 0.3rem;
-    font: inherit;
-    padding: 0.7rem 0.8rem;
-    width: 100%;
-}
-
-.tutor-danger-confirmation > span {
-    color: #b51228;
-    display: block;
-    font-size: 0.76rem;
-    margin-top: 0.35rem;
-}
-
-.tutor-danger-confirmation small {
-    color: #7a6265;
-    display: block;
-    font-size: 0.7rem;
-    margin-top: 0.35rem;
 }
 
 .tutor-profile-field > span,
@@ -957,8 +927,8 @@ a.tutor-profile-nav-link:focus-visible {
         box-shadow: none;
     }
 
-    .tutor-personal-details > .tutor-danger-zone,
-    .tutor-public-profile > .tutor-danger-zone {
+    .tutor-personal-details > .tutor-support-panel,
+    .tutor-public-profile > .tutor-support-panel {
         margin: 1.5rem 1.25rem 1.25rem;
         max-width: calc(100% - 2.5rem);
         padding: 1.25rem;
@@ -969,17 +939,11 @@ a.tutor-profile-nav-link:focus-visible {
         padding: 1.25rem;
     }
 
-    .tutor-statistics-content > .tutor-danger-zone {
+    .tutor-statistics-content > .tutor-support-panel {
         margin: 1.5rem 0 0;
         max-width: 100%;
         padding: 1.25rem;
         width: auto;
-    }
-
-    .tutor-danger-zone > .tutor-deregistration-button,
-    .tutor-danger-zone > .tutor-deregistration-pending {
-        margin-left: 0;
-        width: 100%;
     }
 
     .tutor-profile-identity {
@@ -1200,6 +1164,10 @@ a.tutor-profile-nav-link:focus-visible {
 }
 
 @media (max-width: 575.98px) {
+    .tutor-support-meta {
+        grid-template-columns: 1fr;
+    }
+
     .tutor-profile-page {
         gap: 1.5rem;
         margin-inline: auto;

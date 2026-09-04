@@ -10,8 +10,6 @@ namespace BC_CampusLearn.Pages.Tutors;
 
 public class StatisticsOverviewModel : PageModel
 {
-    public const string DeregistrationConfirmationPhrase = "DEREGISTER MY TUTOR ACCOUNT";
-
     private static readonly IReadOnlyDictionary<string, int?> RangeMonths =
         new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -34,16 +32,6 @@ public class StatisticsOverviewModel : PageModel
 
     [BindProperty(SupportsGet = true)]
     public string Range { get; set; } = "6m";
-
-    [BindProperty(SupportsGet = true)]
-    public bool OpenDeregistration { get; set; }
-
-    [BindProperty]
-    public TutorDeregistrationRequestInput DeregistrationInput { get; set; } = new();
-
-    public bool OpenDeregistrationModal { get; private set; }
-
-    public bool HasPendingDeregistrationRequest { get; private set; }
 
     public string DisplayName { get; private set; } = string.Empty;
 
@@ -92,15 +80,6 @@ public class StatisticsOverviewModel : PageModel
             tutor.ProfileImagePath,
             currentUser.DisplayName);
 
-        HasPendingDeregistrationRequest = await _context.TutorDeregistrationRequests
-            .AsNoTracking()
-            .AnyAsync(request => request.TutorId == tutor.TutorId &&
-                request.Status == TutorAccountRequestStatus.Pending,
-                cancellationToken);
-
-        OpenDeregistrationModal = OpenDeregistration &&
-            !HasPendingDeregistrationRequest;
-
         DateTimeOffset localNow = DateTimeOffset.Now;
         DateTimeOffset currentMonth = new(
             localNow.Year,
@@ -147,60 +126,6 @@ public class StatisticsOverviewModel : PageModel
             currentMonth);
 
         return Page();
-    }
-
-    public async Task<IActionResult> OnPostRequestDeregistrationAsync(
-        CancellationToken cancellationToken)
-    {
-        OpenDeregistrationModal = true;
-
-        if (!string.Equals(
-            DeregistrationInput.ConfirmationText?.Trim(),
-            DeregistrationConfirmationPhrase,
-            StringComparison.Ordinal))
-        {
-            ModelState.AddModelError(
-                "DeregistrationInput.ConfirmationText",
-                $"Type {DeregistrationConfirmationPhrase} exactly as shown.");
-        }
-
-        CurrentUser currentUser = _currentUserService.GetRequiredUser();
-        int? tutorId = await _context.Tutors
-            .Where(item => item.BcUserId == currentUser.BcUserId)
-            .Select(item => (int?)item.TutorId)
-            .SingleOrDefaultAsync(cancellationToken);
-        if (!tutorId.HasValue)
-        {
-            return Forbid();
-        }
-
-        bool alreadyPending = await _context.TutorDeregistrationRequests
-            .AnyAsync(request => request.TutorId == tutorId.Value &&
-                request.Status == TutorAccountRequestStatus.Pending,
-                cancellationToken);
-        if (alreadyPending)
-        {
-            ModelState.AddModelError(
-                string.Empty,
-                "You already have a tutor deregistration request under review.");
-        }
-
-        if (!ModelState.IsValid)
-        {
-            return await OnGetAsync(cancellationToken);
-        }
-
-        _context.TutorDeregistrationRequests.Add(new TutorDeregistrationRequest
-        {
-            TutorId = tutorId.Value,
-            Reason = DeregistrationInput.Reason!.Trim(),
-            Status = TutorAccountRequestStatus.Pending,
-            SubmittedAt = DateTime.UtcNow
-        });
-        await _context.SaveChangesAsync(cancellationToken);
-
-        TempData["DeregistrationRequestSaved"] = true;
-        return RedirectToPage(new { Range });
     }
 
     private static TutorStatisticsViewModel BuildStatistics(

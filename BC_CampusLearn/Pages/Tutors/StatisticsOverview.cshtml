@@ -38,13 +38,6 @@
                 imageError,
                 CampusAlertVariant.Danger))
     }
-    @if (TempData["DeregistrationRequestSaved"] is true)
-    {
-        @await Html.PartialAsync("_CampusAlert",
-            new CampusAlertViewModel(
-                "Your tutor deregistration request has been submitted for review."))
-    }
-
     <div class="tutor-profile-mobile-card">
     <aside class="tutor-profile-card" aria-label="Tutor account navigation">
         <div class="tutor-profile-identity">
@@ -310,80 +303,10 @@
         </div>
 
 
-        <section class="tutor-danger-zone" aria-labelledby="statistics-danger-zone-title">
-            <div>
-                <h3 id="statistics-danger-zone-title">Danger Zone</h3>
-                <p>Submit a request to permanently leave the tutor programme.</p>
-            </div>
-            @if (Model.HasPendingDeregistrationRequest)
-            {
-                <span class="tutor-deregistration-pending">Request under review</span>
-            }
-            else
-            {
-                <button type="button"
-                        class="tutor-deregistration-button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#tutor-deregistration-modal">
-                    Request Tutor Deregistration
-                </button>
-            }
-        </section>
+        <partial name="_TutorSupportPanel" />
     </div>
     </div>
 </section>
-
-<div class="modal fade tutor-account-modal tutor-danger-modal"
-     id="tutor-deregistration-modal"
-     tabindex="-1"
-     aria-labelledby="tutor-deregistration-modal-title"
-     aria-hidden="true"
-     data-open-on-load="@Model.OpenDeregistrationModal.ToString().ToLowerInvariant()">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form method="post" asp-page-handler="RequestDeregistration">
-                <input type="hidden" asp-for="Range" />
-                <div class="modal-header">
-                    <div>
-                        <h2 class="modal-title" id="tutor-deregistration-modal-title">Request Tutor Deregistration</h2>
-                        <p>This request will be sent for review before your tutor access is removed.</p>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div asp-validation-summary="ModelOnly" class="tutor-profile-validation"></div>
-                    <div class="tutor-profile-field">
-                        <label asp-for="DeregistrationInput.Reason"></label>
-                        <textarea asp-for="DeregistrationInput.Reason"
-                                  rows="5"
-                                  maxlength="1000"
-                                  placeholder="Explain why you want to leave the tutor programme."></textarea>
-                        <span asp-validation-for="DeregistrationInput.Reason"></span>
-                    </div>
-                    <div class="tutor-danger-confirmation">
-                        <p>
-                            To confirm, type
-                            <strong>@StatisticsOverviewModel.DeregistrationConfirmationPhrase</strong>
-                            below.
-                        </p>
-                        <input asp-for="DeregistrationInput.ConfirmationText"
-                               autocomplete="off"
-                               spellcheck="false"
-                               aria-describedby="deregistration-confirmation-help" />
-                        <span asp-validation-for="DeregistrationInput.ConfirmationText"></span>
-                        <small id="deregistration-confirmation-help">
-                            The phrase is case-sensitive.
-                        </small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="tutor-modal-cancel" data-bs-dismiss="modal">Keep tutoring</button>
-                    <button type="submit" class="tutor-modal-danger">Submit deregistration request</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
