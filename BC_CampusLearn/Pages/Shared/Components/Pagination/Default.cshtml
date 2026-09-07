@@ -1,0 +1,26 @@
+@model BC_CampusLearn.Models.ViewModels.PaginationViewModel
+
+<nav class="campus-pagination"
+     aria-label="@Model.AriaLabel"
+     data-pagination
+     data-pagination-target="@Model.TargetId"
+     data-pagination-mobile-page-size="@Model.MobilePageSize"
+     data-pagination-default-page-size="@Model.DefaultPageSize"
+     hidden>
+    <button type="button"
+            class="campus-pagination__direction"
+            aria-label="Previous page"
+            data-pagination-previous>
+        <span aria-hidden="true"></span>
+    </button>
+    <span class="campus-pagination__pages" data-pagination-pages></span>
+    <button type="button"
+            class="campus-pagination__direction"
+            aria-label="Next page"
+            data-pagination-next>
+        <span aria-hidden="true"></span>
+    </button>
+    <span class="visually-hidden"
+          aria-live="polite"
+          data-pagination-status></span>
+</nav>

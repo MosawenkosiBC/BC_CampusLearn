@@ -1,0 +1,101 @@
+.campus-pagination {
+    align-items: center;
+    border-top: 1px solid #edf0f2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    padding: 1rem;
+}
+
+.campus-pagination[hidden],
+[data-pagination-row][hidden] {
+    display: none !important;
+}
+
+.campus-pagination__pages {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: center;
+}
+
+.campus-pagination__direction,
+.campus-pagination__page {
+    align-items: center;
+    background-color: #f8f9fa;
+    border: 1px solid #e3e7eb;
+    border-radius: 0.4rem;
+    color: #343a43;
+    display: inline-flex;
+    font-size: 16px;
+    font-weight: 600;
+    height: 44px;
+    justify-content: center;
+    min-width: 44px;
+    padding: 0.45rem 0.7rem;
+}
+
+.campus-pagination__direction {
+    padding: 0;
+}
+
+.campus-pagination__direction:hover:not(:disabled),
+.campus-pagination__direction:focus-visible,
+.campus-pagination__page:hover,
+.campus-pagination__page:focus-visible {
+    background-color: #dee2e6;
+    color: #212529;
+    outline: none;
+}
+
+.campus-pagination__page.is-current,
+.campus-pagination__page.is-current:hover,
+.campus-pagination__page.is-current:focus-visible {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+.campus-pagination__direction:focus-visible,
+.campus-pagination__page:focus-visible {
+    box-shadow: 0 0 0 3px rgba(74, 193, 193, 0.35);
+}
+
+.campus-pagination__direction:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.campus-pagination__direction > span {
+    align-items: center;
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    width: 100%;
+}
+
+.campus-pagination__direction > span::before {
+    border-right: 2px solid currentColor;
+    border-top: 2px solid currentColor;
+    content: "";
+    display: block;
+    height: 8px;
+    width: 8px;
+}
+
+.campus-pagination__direction[data-pagination-previous] > span::before {
+    transform: rotate(-135deg);
+}
+
+.campus-pagination__direction[data-pagination-next] > span::before {
+    transform: rotate(45deg);
+}
+
+.campus-pagination__ellipsis {
+    align-items: center;
+    color: #68707b;
+    display: inline-flex;
+    font-size: 16px;
+    justify-content: center;
+    min-width: 1.5rem;
+}

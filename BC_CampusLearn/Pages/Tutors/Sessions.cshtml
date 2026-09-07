@@ -18,6 +18,9 @@
     <link rel="stylesheet"
           href="~/css/bookings-index.css"
           asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/components/pagination.css"
+          asp-append-version="true" />
 }
 
 @await Html.PartialAsync(
@@ -153,7 +156,8 @@
                 {
                     <div class="tutor-sessions">
                         <div class="tutor-sessions-table-wrap">
-                            <table class="tutor-sessions-table bookings-table">
+                            <table id="tutor-sessions-table"
+                                   class="tutor-sessions-table bookings-table">
                                 <thead>
                                     <tr>
                                         <th scope="col">
@@ -236,7 +240,7 @@
                                                 .ToString()
                                                 .ToLowerInvariant();
 
-                                            <tr>
+                                            <tr data-pagination-row>
                                                 <td data-label="Student Name">
                                                     @session.StudentName
                                                 </td>
@@ -280,7 +284,7 @@
                                                             <a asp-page="/Tutors/SessionDetails"
                                                                asp-route-bookingId="@session.BookingId"
                                                                class="dropdown-item">
-                                                                View session
+                                                                Session Details
                                                             </a>
                                                         </div>
                                                     </div>
@@ -291,6 +295,15 @@
                                 </tbody>
                             </table>
                         </div>
+                        @await Component.InvokeAsync(
+                            "Pagination",
+                            new
+                            {
+                                targetId = "tutor-sessions-table",
+                                mobilePageSize = 7,
+                                defaultPageSize = 11,
+                                ariaLabel = "Tutor session table pages"
+                            })
                     </div>
                 }
             </section>
@@ -302,5 +315,7 @@
     <script src="~/js/components/navigation-drawer.js"
             asp-append-version="true"></script>
     <script src="~/js/tutors.js"
+            asp-append-version="true"></script>
+    <script src="~/js/components/pagination.js"
             asp-append-version="true"></script>
 }
