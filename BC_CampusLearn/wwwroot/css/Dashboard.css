@@ -1445,5 +1445,53 @@
 
 .dashboard-subscriptions-panel .dashboard-subscription-module h3,
 .dashboard-subscriptions-panel .dashboard-subscriptions-empty h3 {
-    font-size: 16px;
+    font-size: 18px;
+}
+
+/* Keep the side panel legible at every viewport size.  These overrides are
+   intentionally scoped to the panel so dashboard cards retain their layout. */
+.dashboard-subscriptions-panel .dashboard-subscription-trigger > span,
+.dashboard-subscriptions-panel .dashboard-subscription-option strong,
+.dashboard-subscriptions-panel .dashboard-subscription-option span,
+.dashboard-subscriptions-panel .dashboard-subscription-module h3 {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.dashboard-subscriptions-panel .dashboard-subscription-trigger {
+    align-items: flex-start;
+    min-height: 52px;
+    padding: .75rem .9rem;
+}
+
+.dashboard-subscriptions-panel .dashboard-subscription-option {
+    align-items: start;
+    min-height: 52px;
+    padding: .7rem;
+}
+
+.dashboard-subscriptions-panel .dashboard-subscription-selection-form button {
+    min-height: 44px;
+    padding: .6rem .9rem;
+}
+
+@media (max-width: 575.98px) {
+    .dashboard-subscriptions-panel .offcanvas-header {
+        padding: 1.25rem 1rem 1rem;
+    }
+
+    .dashboard-subscriptions-panel .offcanvas-body {
+        padding: 1rem;
+    }
+
+    .dashboard-subscriptions-panel .dashboard-subscription-option {
+        grid-template-columns: minmax(0, 1fr);
+        gap: .2rem;
+    }
+
+    .dashboard-subscriptions-panel .dashboard-subscription-selection-form button {
+        width: 100%;
+    }
 }

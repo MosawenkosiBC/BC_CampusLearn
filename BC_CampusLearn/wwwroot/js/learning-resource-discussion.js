@@ -8,6 +8,9 @@
         const replyingName = form.querySelector("[data-comment-replying-name]");
         const cancelReply = form.querySelector("[data-comment-reply-cancel]");
         const validation = form.querySelector("[data-comment-validation]");
+        const emojiControl = form.querySelector(".resource-comment-emoji-control");
+        const emojiToggle = form.querySelector("[data-comment-emoji-toggle]");
+        const emojiPicker = form.querySelector("[data-comment-emoji-picker]");
 
         const clearValidation = () => {
             if (!validation) return;
@@ -34,6 +37,42 @@
             if (replying) replying.hidden = true;
             if (replyingName) replyingName.textContent = "";
         };
+
+        const closeEmojiPicker = () => {
+            if (!emojiPicker || !emojiToggle) return;
+            emojiPicker.hidden = true;
+            emojiToggle.setAttribute("aria-expanded", "false");
+        };
+
+        emojiToggle?.addEventListener("click", () => {
+            const willOpen = emojiPicker.hidden;
+            emojiPicker.hidden = !willOpen;
+            emojiToggle.setAttribute("aria-expanded", String(willOpen));
+        });
+
+        emojiPicker?.querySelectorAll("[data-comment-emoji]")
+            .forEach((button) => button.addEventListener("click", () => {
+                if (!text) return;
+
+                const emoji = button.dataset.commentEmoji || "";
+                const start = text.selectionStart ?? text.value.length;
+                const end = text.selectionEnd ?? start;
+                const nextLength = text.value.length - (end - start) + emoji.length;
+                if (nextLength > 2000) return;
+
+                text.setRangeText(emoji, start, end, "end");
+                text.dispatchEvent(new Event("input", { bubbles: true }));
+                text.focus();
+                closeEmojiPicker();
+            }));
+
+        document.addEventListener("click", (event) => {
+            if (!emojiControl?.contains(event.target)) closeEmojiPicker();
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") closeEmojiPicker();
+        });
 
         document.querySelectorAll("[data-comment-reply]").forEach((button) => {
             button.addEventListener("click", () => {

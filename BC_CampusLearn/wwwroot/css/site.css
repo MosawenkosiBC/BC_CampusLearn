@@ -212,14 +212,15 @@ body {
 
 .campus-breadcrumbs-list {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
+  row-gap: 0.35rem;
   gap: 0;
   margin: 0;
   padding: 0;
   color: #6c757d;
   list-style: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .campus-breadcrumbs-item {
@@ -262,9 +263,10 @@ body {
 .campus-breadcrumbs-item a,
 .campus-breadcrumbs-item span {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .campus-breadcrumbs-item.is-current span {

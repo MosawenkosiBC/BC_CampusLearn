@@ -48,8 +48,7 @@
     animation: learning-resource-rise 480ms 90ms ease-out backwards;
 }
 
-.student-resources-page::before,
-.student-resource-reader-page::before {
+.learning-resources-content-background::before {
     position: absolute;
     inset: 0 auto 0 50%;
     z-index: -1;
@@ -63,6 +62,11 @@
     background-position: center top;
     background-repeat: repeat;
     background-size: auto, 890px 360px;
+}
+
+.learning-resources-content-background {
+    position: relative;
+    isolation: isolate;
 }
 
 .student-resources-header {
@@ -285,8 +289,8 @@
 
 .student-resources-page .student-resource-card {
     min-width: 0;
-    min-height: 165px;
-    padding: 1rem;
+    min-height: 185px;
+    padding: 1.35rem;
     transition: box-shadow 180ms ease, transform 180ms ease;
 }
 
@@ -294,7 +298,7 @@
     box-shadow:
         0 .9rem 2rem rgba(22, 24, 29, .13),
         0 .15rem .45rem rgba(22, 24, 29, .06);
-    transform: translateY(-.15rem);
+    transform: translateY(-.18rem);
 }
 
 .student-resource-module {
@@ -310,7 +314,7 @@
     margin: 0 0 .35rem;
     overflow: hidden;
     color: #222;
-    font-size: 1.12rem;
+    font-size: 18px;
     font-weight: 600;
     line-height: 1.3;
     -webkit-box-orient: vertical;
@@ -322,7 +326,7 @@
     margin: 0;
     overflow: hidden;
     color: #292d32;
-    font-size: .9rem;
+    font-size: 16px;
     font-weight: 400;
     line-height: 1.45;
     -webkit-box-orient: vertical;
@@ -334,7 +338,7 @@
     margin: 0;
     overflow: hidden;
     color: #5f6670;
-    font-size: .88rem;
+    font-size: 16px;
     line-height: 1.5;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
@@ -348,7 +352,7 @@
     margin-top: auto;
     padding-top: 1rem;
     color: #707680;
-    font-size: .88rem;
+    font-size: 12px;
     line-height: 1.3;
 }
 
@@ -376,7 +380,7 @@
 .student-resource-meta small {
     flex: 0 0 auto;
     color: #747980;
-    font-size: .84rem;
+    font-size: 12px;
     white-space: nowrap;
 }
 .student-resource-author-icon {
@@ -400,13 +404,15 @@
 .student-resource-learn-more {
     align-self: flex-start;
     margin-top: .8rem;
-    padding: .52rem .85rem;
+    min-width: 6rem;
+    padding: .52rem 1.25rem;
     border-radius: .35rem;
     background: #f0f1f2;
     color: #30343a;
-    font-size: .82rem;
+    font-size: 16px;
     font-weight: 650;
     letter-spacing: .02em;
+    text-align: center;
     text-decoration: none;
 }
 
@@ -443,15 +449,15 @@
     display: grid;
     position: relative;
     z-index: 2;
-    width: 2rem;
-    height: 2rem;
+    width: 2.75rem;
+    height: 2.75rem;
     place-items: center;
     padding: 0;
     border: 0;
     border-radius: .3rem;
     background: transparent;
     color: #222;
-    font-size: 1rem;
+    font-size: 1.5rem;
 }
 
 .student-resource-bookmark:hover,
@@ -578,12 +584,27 @@
 
 .student-resource-reader-meta {
     display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: 1rem;
     gap: .35rem;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid #eceef0;
     color: #1f2226;
     font-size: .84rem;
+}
+
+.student-resource-reader-details {
+    display: grid;
+    grid-column: 1;
+    grid-row: 1;
+    gap: .35rem;
+    min-width: 0;
+}
+
+.student-resource-reader-meta > .student-resource-meta-row {
+    grid-column: 1;
 }
 
 .student-resource-meta-row {
@@ -625,13 +646,16 @@
 
 .student-resource-reader-bookmark-row {
     display: flex;
+    grid-column: 2;
+    grid-row: 1 / span 2;
     align-items: center;
+    justify-content: flex-end;
     min-height: 2rem;
-    margin-top: .25rem;
+    margin-top: 0;
 }
 
 .student-resource-reader-bookmark {
-    margin-left: -.5rem;
+    margin: -.4rem 0 0;
 }
 
 .student-resource-content .ql-container.ql-bubble {
@@ -1041,13 +1065,82 @@
 
 .resource-comment-composer {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: end;
     gap: .5rem;
     padding: .3rem;
     border: 1px solid #e5e7ea;
     border-radius: 1rem;
     background: #fff;
+}
+
+.resource-comment-emoji-control {
+    position: relative;
+    display: inline-flex;
+    align-self: end;
+}
+
+.resource-comment-emoji-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #555a60;
+}
+
+.resource-comment-emoji-toggle:hover,
+.resource-comment-emoji-toggle:focus-visible {
+    background: #f1f2f4;
+    color: #ad0151;
+    outline: none;
+}
+
+.resource-comment-emoji-toggle svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.resource-comment-emoji-picker {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + .55rem);
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(6, 2.15rem);
+    gap: .2rem;
+    padding: .45rem;
+    border: 1px solid #e3e5e8;
+    border-radius: .85rem;
+    background: #fff;
+    box-shadow: 0 .65rem 1.5rem rgba(0, 0, 0, .14);
+}
+
+.resource-comment-emoji-picker[hidden] {
+    display: none;
+}
+
+.resource-comment-emoji-picker button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.15rem;
+    height: 2.15rem;
+    padding: 0;
+    border: 0;
+    border-radius: .45rem;
+    background: transparent;
+    font-size: 1.15rem;
+}
+
+.resource-comment-emoji-picker button:hover,
+.resource-comment-emoji-picker button:focus-visible {
+    background: #f1f2f4;
+    outline: none;
 }
 
 .resource-comment-form textarea {
@@ -1473,4 +1566,218 @@
     .resource-comment.is-new-comment { animation: none; }
     .student-resource-filters,
     .student-resource-filter-backdrop { transition: none; }
+}
+
+/* Learning Resources listing typography. Keep these page-scoped overrides after
+   responsive rules so the same readable sizes apply at every viewport width. */
+.student-resources-page .student-resources-header h1 {
+    font-size: 32px;
+}
+
+.student-resources-page .student-resources-header p,
+.student-resources-page .student-resources-back,
+.student-resources-page .student-resource-filters-heading button,
+.student-resources-page .student-resource-filters form > label:not(.student-resource-bookmarked-filter),
+.student-resources-page .student-resource-filter-input input,
+.student-resources-page .student-resource-bookmarked-filter,
+.student-resources-page .student-resource-apply-filters,
+.student-resources-page .student-resource-results-count,
+.student-resources-page .student-resource-mobile-filter-trigger,
+.student-resources-page .student-resource-learn-more,
+.student-resources-page .student-resources-filtered-empty p,
+.student-resources-page .student-resources-filtered-empty button,
+.student-resources-page .student-resources-empty p,
+.student-resources-page .student-resources-empty a {
+    font-size: 16px;
+}
+
+.student-resources-page .student-resource-filters-heading h2 {
+    font-size: 22px;
+}
+
+.student-resources-page .student-resource-card h2,
+.student-resources-page .student-resources-filtered-empty h2,
+.student-resources-page .student-resources-empty h2 {
+    font-size: 18px;
+}
+
+.student-resources-page .student-resource-topic,
+.student-resources-page .student-resource-summary {
+    font-size: 16px;
+}
+
+.student-resources-page .student-resource-module,
+.student-resources-page .student-resource-meta,
+.student-resources-page .student-resource-meta small {
+    font-size: 12px;
+}
+
+.student-resources-page .student-resources-layout {
+    grid-template-columns: 280px minmax(0, 1fr);
+}
+
+.student-resources-page .student-resource-card {
+    height: auto;
+    min-height: 185px;
+}
+
+.student-resources-page .student-resource-card h2,
+.student-resources-page .student-resource-topic,
+.student-resources-page .student-resource-summary {
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+    overflow-wrap: anywhere;
+}
+
+.student-resources-page .student-resource-meta {
+    flex-wrap: wrap;
+}
+
+.student-resources-page .student-resource-tutor-link,
+.student-resources-page .student-resource-meta small {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 767.98px) {
+    .student-resources-page .student-resources-header h1 {
+        font-size: 26px;
+    }
+
+    .student-resources-page .student-resources-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .student-resources-page .student-resource-card {
+        padding: 1.2rem;
+    }
+}
+
+/* Learning Resource reader typography. These come after the responsive rules
+   so the reader's type scale never reduces below its accessible minimums. */
+.student-resource-reader-page .student-resource-reader-heading h1 {
+    font-size: clamp(26px, 3vw, 34px);
+}
+
+.student-resource-reader-page .resource-discussion-count,
+.student-resource-reader-page .resource-discussion-status,
+.student-resource-reader-page .resource-comment-avatar > span,
+.student-resource-reader-page .resource-comment-body time,
+.student-resource-reader-page .resource-comment-edited,
+.student-resource-reader-page .resource-comment-pinned,
+.student-resource-reader-page .resource-comment-validation,
+.student-resource-reader-page .resource-comment-form footer > span,
+.student-resource-reader-page .resource-comment-replying {
+    font-size: 12px;
+}
+
+.student-resource-reader-page .student-resource-content .ql-container.ql-bubble,
+.student-resource-reader-page .student-resource-content.is-plain-text,
+.student-resource-reader-page .student-resource-reader-meta,
+.student-resource-reader-page .student-resource-published,
+.student-resource-reader-page .student-resource-further-reading a,
+.student-resource-reader-page .resource-discussion-heading p,
+.student-resource-reader-page .resource-discussion-alert,
+.student-resource-reader-page .resource-discussion-empty p,
+.student-resource-reader-page .resource-comment-body > header > strong,
+.student-resource-reader-page .resource-comment-body > p,
+.student-resource-reader-page .resource-comment-action,
+.student-resource-reader-page .resource-comment-edit-form textarea,
+.student-resource-reader-page .resource-comment-edit-form button,
+.student-resource-reader-page .resource-comment-view-replies,
+.student-resource-reader-page .resource-comment-form textarea,
+.student-resource-reader-page .resource-comment-composer > button,
+.student-resource-reader-page .resource-comment-replying button,
+.student-resource-reader-page .resource-discussion-closed {
+    font-size: 16px;
+}
+
+.student-resource-reader-page .student-resource-content .ql-editor,
+.student-resource-reader-page .student-resource-content .ql-editor * {
+    font-size: 16px;
+}
+
+.student-resource-reader-page .student-resource-further-reading h2,
+.student-resource-reader-page .resource-discussion-heading h2,
+.student-resource-reader-page .resource-discussion-empty h3 {
+    font-size: 18px;
+}
+
+.student-resource-reader-page .student-resource-content .ql-editor h1 {
+    font-size: 28px;
+}
+
+.student-resource-reader-page .student-resource-content .ql-editor h2 {
+    font-size: 22px;
+}
+
+.student-resource-reader-page .student-resource-content .ql-editor h3 {
+    font-size: 20px;
+}
+
+.student-resource-reader-page .student-resource-content .ql-editor h4,
+.student-resource-reader-page .student-resource-content .ql-editor h5,
+.student-resource-reader-page .student-resource-content .ql-editor h6 {
+    font-size: 18px;
+}
+
+.student-resource-reader-page .student-resource-meta-row,
+.student-resource-reader-page .student-resource-meta-byline,
+.student-resource-reader-page .resource-comment-replying {
+    flex-wrap: wrap;
+}
+
+.student-resource-reader-page .student-resource-reader-meta a,
+.student-resource-reader-page .student-resource-further-reading a {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.student-resource-reader-page .student-resource-further-reading a {
+    align-items: flex-start;
+    min-height: 48px;
+    padding: .7rem .85rem;
+}
+
+.student-resource-reader-page .resource-discussion-status,
+.student-resource-reader-page .resource-comment-composer > button {
+    white-space: normal;
+}
+
+.student-resource-reader-page .resource-comment-action,
+.student-resource-reader-page .resource-comment-edit-form button,
+.student-resource-reader-page .resource-comment-view-replies,
+.student-resource-reader-page .resource-comment-composer > button {
+    min-height: 40px;
+    padding: .45rem .7rem;
+}
+
+.resource-comment-delete-modal .modal-title {
+    font-size: 18px;
+}
+
+.resource-comment-delete-modal .modal-body p,
+.resource-comment-delete-modal .resource-comment-modal-cancel,
+.resource-comment-delete-modal .resource-comment-modal-delete {
+    font-size: 16px;
+}
+
+.resource-comment-delete-modal .resource-comment-modal-cancel,
+.resource-comment-delete-modal .resource-comment-modal-delete {
+    min-height: 44px;
+}
+
+@media (max-width: 767.98px) {
+    .student-resource-reader-page .student-resource-reader {
+        padding: 1.25rem;
+    }
+
+    .student-resource-reader-page .resource-discussion {
+        padding: 1.25rem;
+    }
 }

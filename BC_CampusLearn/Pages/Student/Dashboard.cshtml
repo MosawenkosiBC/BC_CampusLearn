@@ -628,13 +628,12 @@
                             <div data-module-subscription-control>
                                 <div class="dashboard-subscription-picker"
                                      data-module-subscription-picker>
-                                    <label id="unsubscribe-module-label">Choose a subscribed module</label>
                                     <button type="button" class="dashboard-subscription-trigger"
                                             data-module-subscription-trigger
-                                            aria-labelledby="unsubscribe-module-label unsubscribe-module-value"
+                                            aria-label="Select a module to unsubscribe"
                                             aria-expanded="false" aria-controls="unsubscribe-module-panel">
                                         <span id="unsubscribe-module-value"
-                                              data-module-subscription-value>Select a subscribed module</span>
+                                              data-module-subscription-value>Select a module to unsubscribe</span>
                                         <svg viewBox="0 0 16 16" aria-hidden="true">
                                             <path d="m4 6 4 4 4-4" fill="none" stroke="currentColor"
                                                   stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" />
@@ -651,7 +650,7 @@
                                                    placeholder="Search subscribed modules" autocomplete="off" />
                                         </div>
                                         <div class="dashboard-subscription-options" role="listbox"
-                                             aria-labelledby="unsubscribe-module-label">
+                                             aria-label="Subscribed modules">
                                             @foreach (var module in Model.SubscribedResourceModules)
                                             {
                                                 <button type="button" class="dashboard-subscription-option"
