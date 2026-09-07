@@ -238,6 +238,36 @@
                     </p>
                 </header>
 
+                <div class="booking-field booking-field--wide">
+                <label asp-for="Input.Summary">
+                    Session summary
+                    <span class="required-indicator"
+                              aria-hidden="true">*</span>
+                </label>
+                <textarea asp-for="Input.Summary"
+                          rows="4"
+                          placeholder="Explain what you need help with so your tutor can prepare for the session."
+                          data-booking-summary
+                          data-min-length="75"
+                          data-max-length="1000"
+                          aria-required="true"
+                          aria-describedby="booking-summary-counter"></textarea>
+                <span id="booking-summary-counter"
+                      class="booking-summary-counter"
+                      data-booking-summary-counter
+                      aria-live="polite">
+                    1,000 characters remaining
+                </span>
+                <span asp-validation-for="Input.Summary"
+                      class="text-danger"></span>
+                </div>
+
+                <header class="booking-attachment-heading">
+                    <h3>
+                        Optional links and documents to help your tutor prepare
+                    </h3>
+                </header>
+
                 <div class="booking-field-grid booking-attachment-fields">
                 <div class="booking-field booking-links-field"
                      data-booking-links>
@@ -378,34 +408,6 @@
                        data-booking-document-feedback
                        aria-live="polite"></p>
                 </div>
-                </div>
-
-                <div class="booking-field booking-field--wide">
-                <label asp-for="Input.Summary">
-                    Session summary
-                    <span class="required-indicator"
-                              aria-hidden="true">*</span>
-                </label>
-                <p id="booking-summary-help"
-                   class="booking-field-help">
-                    Explain what you need help with so your tutor can prepare
-                    for the session.
-                </p>
-                <textarea asp-for="Input.Summary"
-                          rows="4"
-                          data-booking-summary
-                          data-min-length="75"
-                          data-max-length="1000"
-                          aria-required="true"
-                          aria-describedby="booking-summary-help booking-summary-counter"></textarea>
-                <span id="booking-summary-counter"
-                      class="booking-summary-counter"
-                      data-booking-summary-counter
-                      aria-live="polite">
-                    1,000 characters remaining
-                </span>
-                <span asp-validation-for="Input.Summary"
-                      class="text-danger"></span>
                 </div>
 
                 <div class="booking-form-footer">

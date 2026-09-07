@@ -7,7 +7,8 @@
 
     const tabs = [...root.querySelectorAll("[data-profile-tab]")];
     const panels = [...root.querySelectorAll("[data-profile-panel]")];
-    const mobileProfileLayout = window.matchMedia("(max-width: 575.98px)");
+    const compactProfileLayout = window.matchMedia("(max-width: 991.98px)");
+    const mobileBookingLayout = window.matchMedia("(max-width: 575.98px)");
 
     function setActiveProfileTab(activeTab) {
         tabs.forEach((item) => {
@@ -38,14 +39,21 @@
 
     tabs.forEach((tab) => {
         tab.addEventListener("click", () => {
-            const shouldCollapse = mobileProfileLayout.matches &&
+            const shouldCollapse = compactProfileLayout.matches &&
                 tab.classList.contains("is-active");
             setActiveProfileTab(shouldCollapse ? null : tab);
         });
     });
 
-    syncProfileLayout(mobileProfileLayout);
-    mobileProfileLayout.addEventListener("change", syncProfileLayout);
+    syncProfileLayout(compactProfileLayout);
+    compactProfileLayout.addEventListener("change", syncProfileLayout);
+
+    const readOnlyAvailabilityCalendar = root.querySelector(
+        "[data-read-only-availability-calendar]");
+    if (readOnlyAvailabilityCalendar) {
+        initializeReadOnlyAvailabilityCalendar(readOnlyAvailabilityCalendar);
+        return;
+    }
 
     const monthLabel = root.querySelector("[data-calendar-month]");
     const yearLabel = root.querySelector("[data-calendar-year]");
@@ -508,7 +516,7 @@
         const reducedMotion = window.matchMedia(
             "(prefers-reduced-motion: reduce)").matches;
 
-        if (reducedMotion || !mobileProfileLayout.matches) {
+        if (reducedMotion || !mobileBookingLayout.matches) {
             finishClose();
             return;
         }
@@ -566,7 +574,7 @@
         }
     });
 
-    mobileProfileLayout.addEventListener("change", (event) => {
+    mobileBookingLayout.addEventListener("change", (event) => {
         if (!event.matches) {
             closeTermsModal(false);
         }
@@ -580,7 +588,7 @@
             return;
         }
 
-        if (mobileProfileLayout.matches && termsModal) {
+        if (mobileBookingLayout.matches && termsModal) {
             openTermsModal();
             return;
         }
@@ -610,6 +618,168 @@
             date.getFullYear(),
             date.getMonth(),
             date.getDate());
+    }
+
+    function initializeReadOnlyAvailabilityCalendar(calendar) {
+        const monthOutput = calendar.querySelector(
+            "[data-read-only-calendar-month]");
+        const yearOutput = calendar.querySelector(
+            "[data-read-only-calendar-year]");
+        const previousButton = calendar.querySelector(
+            "[data-read-only-calendar-previous]");
+        const nextButton = calendar.querySelector(
+            "[data-read-only-calendar-next]");
+        const calendarGrid = calendar.querySelector(
+            "[data-read-only-calendar-grid]");
+        const timesHeading = calendar.querySelector(
+            "[data-read-only-times-heading]");
+        const timeOptions = calendar.querySelector(
+            "[data-read-only-time-options]");
+
+        if (!monthOutput || !yearOutput || !previousButton ||
+            !nextButton || !calendarGrid || !timesHeading || !timeOptions) {
+            return;
+        }
+
+        const availability = [
+            ...calendar.querySelectorAll(
+                "[data-read-only-availability-data] [data-slot-time]")
+        ].map((item) => ({
+            date: new Date(item.dataset.slotTime),
+            isBooked: item.dataset.slotBooked === "true"
+        })).filter((slot) => !slot.isBooked)
+            .sort((left, right) => left.date - right.date);
+        const availableDates = new Set(
+            availability.map((slot) => toDateKey(slot.date)));
+        const monthNames = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November",
+            "December"
+        ];
+        const today = startOfDay(new Date());
+        const firstVisibleMonth = new Date(
+            today.getFullYear(), today.getMonth(), 1);
+        const finalVisibleMonth = new Date(
+            today.getFullYear(), today.getMonth() + 12, 1);
+        let visibleMonth = today.getMonth();
+        let visibleYear = today.getFullYear();
+        let selectedDateKey = null;
+
+        const renderTimes = () => {
+            timeOptions.replaceChildren();
+            const matchingSlots = availability.filter((slot) =>
+                toDateKey(slot.date) === selectedDateKey);
+
+            if (!selectedDateKey || matchingSlots.length === 0) {
+                timesHeading.textContent = "Available times";
+                const empty = document.createElement("p");
+                empty.className = "slot-empty";
+                empty.textContent = selectedDateKey
+                    ? "No times are available for this date."
+                    : "Select an available date to view times.";
+                timeOptions.append(empty);
+                return;
+            }
+
+            const selectedDate = matchingSlots[0].date;
+            timesHeading.textContent = `Available times for ${
+                selectedDate.toLocaleDateString(undefined, {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric"
+                })}`;
+
+            matchingSlots.forEach((slot) => {
+                const time = document.createElement("span");
+                const end = new Date(slot.date.getTime() + 60 * 60 * 1000);
+                time.className = "slot-option self-availability-time";
+                time.textContent = `${formatTime(slot.date)} – ${formatTime(end)}`;
+                timeOptions.append(time);
+            });
+        };
+
+        const render = () => {
+            calendarGrid.replaceChildren();
+            monthOutput.textContent = monthNames[visibleMonth];
+            yearOutput.textContent = String(visibleYear);
+
+            const displayedMonth = new Date(
+                visibleYear, visibleMonth, 1);
+            previousButton.disabled =
+                displayedMonth.getTime() === firstVisibleMonth.getTime();
+            nextButton.disabled =
+                displayedMonth.getTime() === finalVisibleMonth.getTime();
+
+            const mondayOffset =
+                (displayedMonth.getDay() + 6) % 7;
+            const gridStart = new Date(
+                visibleYear, visibleMonth, 1 - mondayOffset);
+
+            for (let index = 0; index < 42; index += 1) {
+                const date = new Date(gridStart);
+                date.setDate(gridStart.getDate() + index);
+                const dateKey = toDateKey(date);
+                const hasAvailability = availableDates.has(dateKey);
+                const isDisplayedMonth = date.getMonth() === visibleMonth;
+                const isSelectable = isDisplayedMonth &&
+                    startOfDay(date) >= today && hasAvailability;
+                const day = document.createElement("button");
+                const dayNumber = document.createElement("span");
+
+                day.type = "button";
+                day.disabled = !isSelectable;
+                day.className = "calendar-day";
+                day.classList.toggle(
+                    "is-outside",
+                    !isDisplayedMonth);
+                day.classList.toggle(
+                    "is-weekend",
+                    date.getDay() === 0 || date.getDay() === 6);
+                day.classList.toggle("has-slots", hasAvailability);
+                day.classList.toggle(
+                    "is-selected",
+                    dateKey === selectedDateKey);
+                day.setAttribute(
+                    "aria-pressed",
+                    String(dateKey === selectedDateKey));
+                day.setAttribute(
+                    "aria-label",
+                    `${date.toLocaleDateString(undefined, {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric"
+                    })}${hasAvailability ? ", availability available" : ""}`);
+                dayNumber.textContent = String(date.getDate());
+                day.append(dayNumber);
+                if (isSelectable) {
+                    day.addEventListener("click", () => {
+                        selectedDateKey = dateKey;
+                        render();
+                        renderTimes();
+                    });
+                }
+                calendarGrid.append(day);
+            }
+        };
+
+        const moveMonth = (offset) => {
+            const target = new Date(
+                visibleYear, visibleMonth + offset, 1);
+            if (target < firstVisibleMonth || target > finalVisibleMonth) {
+                return;
+            }
+            visibleYear = target.getFullYear();
+            visibleMonth = target.getMonth();
+            selectedDateKey = null;
+            render();
+            renderTimes();
+        };
+
+        previousButton.addEventListener("click", () => moveMonth(-1));
+        nextButton.addEventListener("click", () => moveMonth(1));
+        render();
+        renderTimes();
     }
 
     renderCalendar();

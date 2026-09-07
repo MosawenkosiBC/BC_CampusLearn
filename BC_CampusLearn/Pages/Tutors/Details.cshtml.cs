@@ -1,3 +1,4 @@
+using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Tutors;
 using Microsoft.AspNetCore.Authorization;
@@ -13,14 +14,20 @@ public class DetailsModel : PageModel
         "MobileBookingTermsAcceptance";
 
     private readonly ITutorService _tutorService;
+    private readonly ICurrentUserService _currentUserService;
 
-    public DetailsModel(ITutorService tutorService)
+    public DetailsModel(
+        ITutorService tutorService,
+        ICurrentUserService currentUserService)
     {
         _tutorService = tutorService;
+        _currentUserService = currentUserService;
     }
 
     public TutorDetailsViewModel Tutor { get; private set; }
         = null!;
+
+    public bool IsViewingOwnTutorProfile { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(
         int id,
@@ -37,6 +44,9 @@ public class DetailsModel : PageModel
         }
 
         Tutor = tutor;
+        IsViewingOwnTutorProfile =
+            tutor.TutorBcUserId ==
+            _currentUserService.GetRequiredUser().BcUserId;
 
         return Page();
     }
@@ -55,6 +65,14 @@ public class DetailsModel : PageModel
         if (tutor is null)
         {
             return NotFound();
+        }
+
+        if (tutor.TutorBcUserId ==
+            _currentUserService.GetRequiredUser().BcUserId)
+        {
+            TempData["ErrorMessage"] =
+                "You cannot book a tutoring session with yourself.";
+            return RedirectToPage(new { id });
         }
 
         bool validModule = tutor.Modules.Any(module =>

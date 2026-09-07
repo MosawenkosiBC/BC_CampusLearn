@@ -19,7 +19,12 @@
   font-family: var(--campus-font-family);
 }
 
-.tutor-details-page::before {
+.tutor-directory-content-background {
+  isolation: isolate;
+  position: relative;
+}
+
+.tutor-directory-content-background::before {
   background:
     linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.92)),
     url("/Media/common/backgroundNew.jpg") center top / 890px 360px repeat;
@@ -263,6 +268,99 @@
   grid-template-columns: 1fr;
   min-height: 500px;
   overflow: hidden;
+}
+
+.self-booking-notice {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #ededf0;
+  border-radius: 0.8rem;
+  box-shadow: 0 0.75rem 2rem rgba(27, 31, 38, 0.08);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 18rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.self-availability-calendar {
+  max-width: 480px;
+  width: 100%;
+}
+
+.self-availability-calendar .calendar-controls {
+  margin: 0 auto 0.8rem;
+  max-width: 350px;
+}
+
+.self-availability-calendar .calendar-day {
+  cursor: default;
+}
+
+.self-availability-calendar .calendar-day.has-slots:not(:disabled) {
+  cursor: pointer;
+}
+
+.self-booking-message {
+  color: var(--details-muted);
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0 0 1.5rem;
+  max-width: 38rem;
+}
+
+.self-availability-times {
+  margin-top: 1.25rem;
+  text-align: left;
+}
+
+.self-availability-times .slot-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.self-availability-times .slot-empty {
+  grid-column: 1 / -1;
+}
+
+.self-availability-times h3 {
+  color: #393c42;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 0.65rem;
+}
+
+.self-availability-time {
+  align-items: center;
+  cursor: default;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  text-align: center;
+}
+
+.self-availability-time:hover {
+  background: #fff;
+  color: #4e5055;
+}
+
+.self-booking-notice a {
+  background: var(--details-accent);
+  border-radius: 0.5rem;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  min-height: 44px;
+  padding: 0.7rem 1rem;
+  text-decoration: none;
+}
+
+.self-booking-notice a:hover,
+.self-booking-notice a:focus-visible {
+  background: var(--details-accent-dark);
+  color: #fff;
 }
 
 .module-selector {
@@ -932,25 +1030,104 @@
 
   .tutor-profile-panel {
     align-items: start;
+    background-color: #fff;
+    background-image:
+      radial-gradient(
+        circle 1.15rem at 7% 11%,
+        rgba(74, 193, 193, 0.1) 0 98%,
+        transparent 100%),
+      radial-gradient(
+        circle 0.65rem at 96% 27%,
+        rgba(191, 0, 80, 0.08) 0 98%,
+        transparent 100%),
+      radial-gradient(
+        circle 0.45rem at 4% 67%,
+        rgba(74, 193, 193, 0.09) 0 98%,
+        transparent 100%),
+      radial-gradient(
+        circle 1.65rem at 93% 91%,
+        rgba(191, 0, 80, 0.065) 0 98%,
+        transparent 100%),
+      radial-gradient(
+        circle 0.8rem at 47% 98%,
+        rgba(74, 193, 193, 0.08) 0 98%,
+        transparent 100%);
+    border: 0;
+    border-radius: 0.25rem;
+    box-shadow: var(--campus-card-shadow);
     gap: 1.25rem 2rem;
     grid-template-columns: minmax(180px, 0.72fr) minmax(0, 1.28fr);
+    padding: 1.4rem;
+    position: relative;
+  }
+
+  .tutor-profile-panel::before,
+  .tutor-profile-panel::after {
+    content: "";
+    height: 2.75rem;
+    pointer-events: none;
+    position: absolute;
+    width: 2.75rem;
+  }
+
+  .tutor-profile-panel::before {
+    border-radius: 0 0.45rem 0 0;
+    border-right: 2px solid var(--details-accent);
+    border-top: 2px solid var(--details-accent);
+    right: 0.5rem;
+    top: 0.5rem;
+  }
+
+  .tutor-profile-panel::after {
+    border-bottom: 2px solid var(--details-accent);
+    border-left: 2px solid var(--details-accent);
+    border-radius: 0 0 0 0.45rem;
+    bottom: 0.5rem;
+    left: 0.5rem;
   }
 
   .tutor-profile-image {
+    align-self: start;
     border-radius: 0.75rem;
     height: 260px;
+    transform: translateY(-0.35rem);
     width: 100%;
   }
 
   .profile-tabs {
     align-self: start;
+    display: flex;
+    flex-direction: column;
     margin-top: 0;
+    padding-top: 2rem;
     width: 100%;
   }
 
+  .profile-accordion-item {
+    display: block;
+  }
+
   .profile-tab {
+    border-bottom-color: #e5e5e8;
+    color: #303036;
+    cursor: pointer;
     font-size: 0.86rem;
+    font-weight: 500;
+    min-height: 44px;
     padding-inline: 0.25rem;
+    text-align: left;
+    width: 100%;
+  }
+
+  .profile-tab::after {
+    background: var(--details-accent);
+    left: 0.25rem;
+    right: auto;
+    width: 2.25rem;
+  }
+
+  .profile-tab.is-active {
+    color: var(--details-accent);
   }
 
   .profile-tab-content {
@@ -1072,7 +1249,7 @@
     padding: 1.75rem 0 4.5rem;
   }
 
-  .tutor-details-page::before {
+  .tutor-directory-content-background::before {
     background-color: #fff;
     background-image:
       linear-gradient(
@@ -1772,4 +1949,97 @@
   .mobile-booking-terms-dialog {
     animation: none;
   }
+}
+
+/* Tutor details typography floors and responsive text fit. */
+.tutor-details-page {
+  font-size: 16px;
+}
+
+.tutor-details-page button,
+.tutor-details-page input,
+.tutor-details-page select,
+.tutor-details-page textarea {
+  font-size: 16px;
+}
+
+.tutor-details-page .profile-tab,
+.tutor-details-page .profile-tab-content,
+.tutor-details-page .session-picker-header p,
+.tutor-details-page .module-search-trigger,
+.tutor-details-page .module-select-mobile,
+.tutor-details-page .module-search-field input,
+.tutor-details-page .module-search-option,
+.tutor-details-page .module-search-option strong,
+.tutor-details-page .module-search-option span,
+.tutor-details-page .module-filter-desktop input,
+.tutor-details-page .module-option,
+.tutor-details-page .calendar-period,
+.tutor-details-page .calendar-day,
+.tutor-details-page .slot-option,
+.tutor-details-page .selection-summary [data-selection-module],
+.tutor-details-page .selection-summary [data-selection-time],
+.tutor-details-page .save-session,
+.tutor-details-page .no-availability p {
+  font-size: 16px;
+}
+
+.tutor-details-page .module-selector > h3,
+.tutor-details-page .booking-selection-step,
+.tutor-details-page .slot-picker h3,
+.tutor-details-page .slot-picker h3.booking-selection-step,
+.tutor-details-page .selection-summary h3 {
+  font-size: 18px;
+}
+
+.tutor-details-page .tutor-social-links strong {
+  font-size: 16px;
+}
+
+.tutor-details-page .tutor-social-links span,
+.tutor-details-page .module-search-empty,
+.tutor-details-page .module-filter-empty,
+.tutor-details-page .calendar-weekdays,
+.tutor-details-page .slot-empty {
+  font-size: 12px;
+}
+
+.tutor-details-page .module-filter-desktop input,
+.tutor-details-page .slot-option {
+  min-height: 44px;
+}
+
+.tutor-details-page .module-search-trigger > span {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.tutor-details-page .tutor-details-intro h1,
+.tutor-details-page .tutor-profile-intro h1,
+.tutor-details-page .profile-tab,
+.tutor-details-page .profile-tab-content,
+.tutor-details-page .tutor-social-links span,
+.tutor-details-page .session-picker-header h2,
+.tutor-details-page .session-picker-header p,
+.tutor-details-page .booking-selection-step,
+.tutor-details-page .module-search-trigger > span,
+.tutor-details-page .module-search-option,
+.tutor-details-page .module-option,
+.tutor-details-page .selection-summary,
+.tutor-details-page .no-availability,
+.mobile-booking-terms-modal h2,
+.mobile-booking-terms-body,
+.mobile-booking-terms-actions button {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.mobile-booking-terms-header h2 {
+  font-size: 18px;
+}
+
+.mobile-booking-terms-body,
+.mobile-booking-terms-actions button {
+  font-size: 16px;
 }

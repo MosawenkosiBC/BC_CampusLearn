@@ -7,10 +7,16 @@
   color: var(--tutor-ink);
   isolation: isolate;
   position: relative;
+  font-size: 16px;
   z-index: 1;
 }
 
-.tutors-page::before {
+.tutor-directory-content-background {
+  isolation: isolate;
+  position: relative;
+}
+
+.tutor-directory-content-background::before {
   background-color: #fff;
   background-image:
     linear-gradient(
@@ -75,7 +81,7 @@
 
 .filter-heading a {
   color: var(--tutor-accent);
-  font-size: 0.88rem;
+  font-size: 16px;
   font-weight: 500;
   text-decoration: none;
 }
@@ -99,7 +105,7 @@
   width: auto;
   margin-bottom: 0.6rem;
   color: #333;
-  font-size: 0.9rem;
+  font-size: 16px;
   font-weight: 500;
 }
 
@@ -110,14 +116,14 @@
 .filter-search input,
 .filter-group select {
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0.55rem 2.1rem 0.55rem 0.75rem;
   border: 0;
   border-radius: 0.35rem;
   outline: 0;
   background: #f8f8f8;
   color: #333;
-  font-size: 0.9rem;
+  font-size: 16px;
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -154,7 +160,7 @@
   align-items: center;
   margin-bottom: 0.6rem;
   color: #555;
-  font-size: 0.88rem;
+  font-size: 16px;
   cursor: pointer;
 }
 
@@ -312,15 +318,15 @@
   flex-direction: column;
   gap: 0.5rem;
   align-items: center;
-  min-height: 165px;
-  padding: 0.75rem;
+  min-height: 185px;
+  padding: 1rem;
   text-align: center;
 }
 
 .tutor-card-body h2 {
   margin: 0;
   font-family: var(--campus-font-family);
-  font-size: 1.05rem;
+  font-size: 18px;
   font-weight: 600;
 }
 
@@ -329,13 +335,13 @@
   flex-direction: column;
   gap: 0.15rem;
   align-items: center;
-  min-height: 3rem;
+  min-height: 4.25rem;
 }
 
 .tutor-programme {
   margin: 0;
   color: #3f3f3f;
-  font-size: 0.92rem;
+  font-size: 16px;
   font-weight: 500;
   line-height: 1.3;
 }
@@ -384,13 +390,13 @@
 
 .empty-tutors h2 {
   margin: 0.5rem 0;
-  font-size: 1.1rem;
+  font-size: 18px;
 }
 
 .empty-tutors p {
   margin: 0 0 1rem;
   color: var(--tutor-muted);
-  font-size: 0.8rem;
+  font-size: 16px;
 }
 
 .empty-tutors a {
@@ -405,13 +411,31 @@
   text-decoration: none;
 }
 
+.tutors-intro h1,
+.filter-heading h2,
+.filter-heading a,
+.filter-group > label,
+.filter-group legend,
+.results-count,
+.campus-select,
+.tutor-card-body h2,
+.tutor-programme,
+.tutor-year,
+.module-tags span,
+.empty-tutors h2,
+.empty-tutors p,
+.empty-tutors a {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 @media (max-width: 1199.98px) {
   .tutor-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 991.98px) {
   .tutors-page {
     padding-top: 1.25rem;
   }
@@ -497,7 +521,7 @@
     0 0.3rem 0.8rem rgba(30, 32, 38, 0.05);
 }
 
-.tutors-page::before {
+.tutor-directory-content-background::before {
   background-image:
     linear-gradient(
       rgba(255, 255, 255, 0.88),
@@ -826,7 +850,7 @@
   display: none;
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 991.98px) {
   body.tutor-filter-open {
     overflow: hidden;
   }

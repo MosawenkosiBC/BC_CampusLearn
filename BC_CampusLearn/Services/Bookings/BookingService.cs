@@ -58,6 +58,8 @@ public class BookingService : IBookingService
 
                     TutorId = slot.TutorId,
 
+                    TutorBcUserId = slot.Tutor.BcUserId,
+
                     TutorName = string.IsNullOrWhiteSpace(
                         slot.Tutor.BcUser.DisplayName)
                         ? slot.Tutor.BcUser.PersonnelNumber
@@ -109,6 +111,12 @@ public class BookingService : IBookingService
         {
             return BookingCreationResult.Failure(
                 "The selected availability slot does not exist.");
+        }
+
+        if (slot.Tutor.BcUserId == student.BcUserId)
+        {
+            return BookingCreationResult.Failure(
+                "You cannot book a tutoring session with yourself.");
         }
 
         if (slot.AvailableTime <= DateTimeOffset.UtcNow)

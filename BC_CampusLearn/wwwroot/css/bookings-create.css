@@ -174,13 +174,6 @@
     margin-bottom: 0.35rem;
 }
 
-.booking-field-help {
-    color: #6b6b6b;
-    font-size: 0.76rem;
-    line-height: 1.4;
-    margin: -0.1rem 0 0.55rem;
-}
-
 .required-indicator {
     color: #c40000;
     font-weight: 700;
@@ -226,6 +219,18 @@
 .booking-attachment-fields {
     align-items: start;
     margin-top: 1rem;
+}
+
+.booking-attachment-heading {
+    margin-top: 1.5rem;
+}
+
+.booking-attachment-heading h3 {
+    color: #333;
+    font-size: 16px;
+    font-weight: 400;
+    margin: 0;
+    overflow-wrap: anywhere;
 }
 
 .booking-link-entry,
@@ -1101,5 +1106,98 @@ a.booking-added-item-label:focus-visible {
 @media (prefers-reduced-motion: reduce) {
     .booking-mobile-progress::after {
         transition: none;
+    }
+}
+
+/* Booking creation typography floors and responsive text fit. */
+.booking-create-page {
+    font-size: 16px;
+}
+
+.booking-create-page .booking-create-title {
+    font-size: clamp(28px, 3vw, 36px);
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.booking-create-page .booking-terms h2,
+.booking-create-page .booking-form-heading h2,
+.booking-create-page .booking-stage-header h2,
+.booking-create-page .booking-confirm-heading h3 {
+    font-size: 18px;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.booking-create-page button,
+.booking-create-page input,
+.booking-create-page select,
+.booking-create-page textarea,
+.booking-create-page .booking-terms ul,
+.booking-create-page .booking-terms p,
+.booking-create-page .booking-terms a,
+.booking-create-page .booking-form-heading p,
+.booking-create-page .booking-stage-header p,
+.booking-create-page .booking-field label,
+.booking-create-page .booking-field-label label,
+.booking-create-page .booking-added-item-label,
+.booking-create-page .booking-terms-agreement label,
+.booking-create-page .booking-confirm-summary dt,
+.booking-create-page .booking-confirm-summary dd {
+    font-size: 16px;
+}
+
+.booking-create-page .booking-document-select {
+    font-size: 16px !important;
+    height: auto;
+    min-height: 44px;
+}
+
+.booking-create-page .booking-mobile-step strong,
+.booking-create-page .booking-form-actions button,
+.booking-create-page .booking-mobile-stage-actions button {
+    font-size: 16px;
+}
+
+.booking-create-page .booking-field-label > span,
+.booking-create-page .booking-link-limit,
+.booking-create-page .booking-document-feedback,
+.booking-create-page .booking-field .text-danger,
+.booking-create-page .booking-summary-counter,
+.booking-create-page .booking-terms-agreement .text-danger,
+.booking-create-page .booking-mobile-step > span:first-child {
+    font-size: 12px;
+}
+
+.booking-create-page .booking-added-item-label,
+.booking-create-page .booking-document-select span {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+}
+
+.booking-create-page .booking-terms li,
+.booking-create-page .booking-terms p,
+.booking-create-page .booking-form-heading p,
+.booking-create-page .booking-stage-header p,
+.booking-create-page .booking-field label,
+.booking-create-page .booking-terms-agreement label,
+.booking-create-page .booking-mobile-step strong,
+.booking-create-page .booking-form-actions button,
+.booking-create-page .booking-mobile-stage-actions button,
+.booking-create-page .booking-confirm-summary dt,
+.booking-create-page .booking-confirm-summary dd {
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.booking-create-page .booking-form-footer {
+    margin-top: 2.75rem;
+}
+
+@media (max-width: 575.98px) {
+    .booking-create-page .booking-stage-header p {
+        display: none;
     }
 }

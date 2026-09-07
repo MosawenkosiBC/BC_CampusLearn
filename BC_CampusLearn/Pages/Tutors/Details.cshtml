@@ -25,6 +25,14 @@
         </h1>
     </header>
 
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(
+                errorMessage,
+                CampusAlertVariant.Danger))
+    }
+
     <div class="tutor-session-card"
          data-tutor-session>
         <section class="tutor-profile-panel"
@@ -170,16 +178,83 @@
 
         <section class="session-picker-panel"
                  aria-labelledby="session-picker-heading">
-            <header class="session-picker-header">
+            <header class="session-picker-header @(Model.IsViewingOwnTutorProfile ? "visually-hidden" : null)">
                 <h2 id="session-picker-heading">
-                    Choose A Session
+                    @(Model.IsViewingOwnTutorProfile
+                        ? "Tutor availability"
+                        : "Choose A Session")
                 </h2>
-                <p>
-                    Select an available date and time that works
-                    best for you.
-                </p>
+                @if (!Model.IsViewingOwnTutorProfile)
+                {
+                    <p>
+                        Select an available date and time that works best for you.
+                    </p>
+                }
             </header>
 
+            @if (Model.IsViewingOwnTutorProfile)
+            {
+                <div class="self-booking-notice">
+                    <p class="self-booking-message">
+                        You cannot book a session with yourself. You can view your available dates and times below.
+                    </p>
+                    <div class="self-availability-calendar"
+                         data-read-only-availability-calendar
+                         aria-label="Your available tutoring dates">
+                        <div class="calendar-controls">
+                            <button type="button"
+                                    data-read-only-calendar-previous
+                                    aria-label="Previous available month">
+                                ‹
+                            </button>
+                            <div class="calendar-period" aria-live="polite">
+                                <span data-read-only-calendar-month></span>
+                                <span data-read-only-calendar-year></span>
+                            </div>
+                            <button type="button"
+                                    data-read-only-calendar-next
+                                    aria-label="Next available month">
+                                ›
+                            </button>
+                        </div>
+
+                        <div class="calendar-weekdays" aria-hidden="true">
+                            <span>Mon</span>
+                            <span>Tue</span>
+                            <span>Wed</span>
+                            <span>Thu</span>
+                            <span>Fri</span>
+                            <span>Sat</span>
+                            <span>Sun</span>
+                        </div>
+
+                        <div class="calendar-grid"
+                             data-read-only-calendar-grid></div>
+
+                        <div class="self-availability-times"
+                             aria-live="polite">
+                            <h3 data-read-only-times-heading>Available times</h3>
+                            <div class="slot-options"
+                                 data-read-only-time-options>
+                                <p class="slot-empty">
+                                    Select an available date to view times.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div hidden data-read-only-availability-data>
+                            @foreach (var slot in Model.Tutor.AvailabilitySlots)
+                            {
+                                <span data-slot-time="@slot.AvailableTime.ToString("O")"
+                                      data-slot-booked="@slot.IsBooked.ToString().ToLowerInvariant()"></span>
+                            }
+                        </div>
+                    </div>
+                    <a asp-page="/Tutors/Index">Browse other tutors</a>
+                </div>
+            }
+            else
+            {
             <div class="session-picker-card">
                 <aside class="module-selector"
                        aria-labelledby="module-selector-heading">
@@ -414,6 +489,7 @@
                         </div>
                 </div>
             </div>
+            }
         </section>
     </div>
 </section>

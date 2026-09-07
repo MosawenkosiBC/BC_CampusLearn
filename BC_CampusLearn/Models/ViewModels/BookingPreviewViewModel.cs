@@ -6,6 +6,8 @@ public class BookingPreviewViewModel
 
     public int TutorId { get; set; }
 
+    public int TutorBcUserId { get; set; }
+
     public string TutorName { get; set; } = string.Empty;
 
     public List<BookingModuleOptionViewModel> Modules { get; set; } = new();

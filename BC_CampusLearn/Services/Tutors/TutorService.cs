@@ -106,6 +106,7 @@ public class TutorService : ITutorService
         return new TutorDetailsViewModel
         {
             TutorId = tutor.TutorId,
+            TutorBcUserId = tutor.BcUserId,
             DisplayName = string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName)
                 ? tutor.BcUser.PersonnelNumber
                 : tutor.BcUser.DisplayName,

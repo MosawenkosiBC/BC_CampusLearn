@@ -1,3 +1,4 @@
+using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Bookings;
 using Microsoft.AspNetCore.Authorization;
@@ -13,10 +14,14 @@ public class CreateModel : PageModel
         "MobileBookingTermsAcceptance";
 
     private readonly IBookingService _bookingService;
+    private readonly ICurrentUserService _currentUserService;
 
-    public CreateModel(IBookingService bookingService)
+    public CreateModel(
+        IBookingService bookingService,
+        ICurrentUserService currentUserService)
     {
         _bookingService = bookingService;
+        _currentUserService = currentUserService;
     }
 
     [BindProperty]
@@ -44,6 +49,16 @@ public class CreateModel : PageModel
         if (preview is null)
         {
             return NotFound();
+        }
+
+        if (preview.TutorBcUserId ==
+            _currentUserService.GetRequiredUser().BcUserId)
+        {
+            TempData["ErrorMessage"] =
+                "You cannot book a tutoring session with yourself.";
+            return RedirectToPage(
+                "/Tutors/Details",
+                new { id = preview.TutorId });
         }
 
         Preview = preview;
