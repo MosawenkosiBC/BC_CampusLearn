@@ -3,14 +3,17 @@
 
 @{
     ViewData["Title"] = "Statistics Overview";
-    string trendLabels = System.Text.Json.JsonSerializer.Serialize(
-        Model.Statistics.TrendLabels);
-    string trendValues = System.Text.Json.JsonSerializer.Serialize(
-        Model.Statistics.TrendValues);
-    string statusLabels = System.Text.Json.JsonSerializer.Serialize(
-        Model.Statistics.StatusBreakdown.Select(item => item.Label));
-    string statusValues = System.Text.Json.JsonSerializer.Serialize(
-        Model.Statistics.StatusBreakdown.Select(item => item.Count));
+    string moduleLabels = System.Text.Json.JsonSerializer.Serialize(
+        Model.Statistics.TopModules.Select(item => item.ModuleCode));
+    string moduleCompletedValues = System.Text.Json.JsonSerializer.Serialize(
+        Model.Statistics.TopModules.Select(item => item.SessionCount));
+    string averageStudentRating = Model.Statistics.AverageStudentReviewRating
+        .ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+    string studentRatingWidth = Math.Clamp(
+            Model.Statistics.AverageStudentReviewRating * 20m,
+            0m,
+            100m)
+        .ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
 }
 
 @section Styles {
@@ -130,16 +133,29 @@
                 <h2>Statistics Overview</h2>
                 <p>Performance based on your recorded tutoring sessions.</p>
             </div>
-            <form method="get" class="tutor-statistics-range">
-                <label for="statistics-range">Period</label>
-                <select id="statistics-range"
-                        asp-for="Range"
-                        onchange="this.form.submit()">
-                    <option value="3m">Last 3 months</option>
-                    <option value="6m">Last 6 months</option>
-                    <option value="12m">Last 12 months</option>
-                    <option value="all">All time</option>
-                </select>
+            <form method="get"
+                  class="tutor-statistics-range"
+                  data-statistics-period-form
+                  data-current-period="@Model.Range">
+                <div class="tutor-statistics-range-field">
+                    <label for="statistics-range">Period</label>
+                    <select id="statistics-range"
+                            asp-for="Range"
+                            data-statistics-period>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="custom">Customize dates</option>
+                    </select>
+                </div>
+                @if (Model.Range == "custom")
+                {
+                    <button type="button"
+                            class="tutor-statistics-edit-dates"
+                            data-statistics-edit-dates>
+                        Edit dates
+                    </button>
+                }
             </form>
         </header>
 
@@ -151,7 +167,6 @@
                 <div>
                     <p>Completed sessions</p>
                     <strong>@Model.Statistics.CompletedSessions</strong>
-                    <span>@Model.PeriodLabel</span>
                 </div>
             </article>
             <article class="tutor-stat-card-premium is-teal">
@@ -161,7 +176,6 @@
                 <div>
                     <p>Students helped</p>
                     <strong>@Model.Statistics.UniqueStudents</strong>
-                    <span>Unique students</span>
                 </div>
             </article>
             <article class="tutor-stat-card-premium is-charcoal">
@@ -171,7 +185,6 @@
                 <div>
                     <p>Tutoring hours</p>
                     <strong>@Model.Statistics.TutoringHours</strong>
-                    <span>Completed hours</span>
                 </div>
             </article>
             <article class="tutor-stat-card-premium is-green">
@@ -181,132 +194,120 @@
                 <div>
                     <p>Completion rate</p>
                     <strong>@Model.Statistics.CompletionRate.ToString("0.#")%</strong>
-                    <span>Completed vs cancelled</span>
                 </div>
             </article>
         </div>
 
         <div class="tutor-statistics-primary-grid">
-            <section class="tutor-statistics-panel tutor-statistics-trend-panel">
-                <div class="tutor-statistics-panel-heading">
-                    <div>
-                        <h3>Session trend</h3>
-                        <p>Completed sessions over time</p>
+            <div class="tutor-statistics-panel-group">
+                <h3 class="tutor-statistics-section-title">Top completed modules</h3>
+                <section class="tutor-statistics-panel tutor-statistics-trend-panel">
+                    <div class="tutor-statistics-chart-wrap">
+                        <canvas data-tutor-module-chart
+                                data-labels="@moduleLabels"
+                                data-completed-values="@moduleCompletedValues"
+                                aria-label="Completed sessions across the top five modules chart">
+                            Completed session counts across the top five modules.
+                        </canvas>
                     </div>
-                    <span class="tutor-statistics-period-badge">@Model.PeriodLabel</span>
-                </div>
-                <div class="tutor-statistics-chart-wrap">
-                    <canvas data-tutor-trend-chart
-                            data-labels="@trendLabels"
-                            data-values="@trendValues"
-                            aria-label="Completed sessions trend chart">
-                        Completed session counts by month.
-                    </canvas>
-                </div>
-            </section>
+                </section>
+            </div>
 
-            <section class="tutor-statistics-panel tutor-statistics-status-panel">
-                <div class="tutor-statistics-panel-heading">
-                    <div>
-                        <h3>Session status</h3>
-                        <p>Current booking distribution</p>
-                    </div>
-                </div>
-                <div class="tutor-statistics-doughnut-wrap">
-                    <canvas data-tutor-status-chart
-                            data-labels="@statusLabels"
-                            data-values="@statusValues"
-                            aria-label="Session status distribution chart">
-                        Session counts by booking status.
-                    </canvas>
-                    <div class="tutor-statistics-doughnut-total">
-                        <strong>@Model.Statistics.StatusBreakdown.Sum(item => item.Count)</strong>
-                        <span>Sessions</span>
-                    </div>
-                </div>
-                <div class="tutor-status-legend">
-                    @foreach (var status in Model.Statistics.StatusBreakdown)
-                    {
+            <div class="tutor-statistics-panel-group">
+                <h3 class="tutor-statistics-section-title">Session status</h3>
+                <section class="tutor-statistics-panel tutor-statistics-status-panel">
+                    <dl class="tutor-session-status-stats">
                         <div>
-                            <span class="tutor-status-dot is-@status.CssClass"></span>
-                            <span>@status.Label</span>
-                            <strong>@status.Count</strong>
+                            <dt>Total sessions completed</dt>
+                            <dd>@Model.Statistics.CompletedSessions</dd>
                         </div>
-                    }
-                </div>
-            </section>
+                        <div>
+                            <dt>Pending student review</dt>
+                            <dd>@Model.Statistics.PendingStudentReviews</dd>
+                        </div>
+                        <div>
+                            <dt>Pending tutor review</dt>
+                            <dd>@Model.Statistics.PendingTutorReviews</dd>
+                        </div>
+                        <div class="tutor-session-status-divider" role="presentation"></div>
+                        <div class="tutor-session-rating-row">
+                            <dt>Average student review rating</dt>
+                            <dd class="tutor-session-rating">
+                                <span class="tutor-session-rating-stars"
+                                      role="img"
+                                      aria-label="@averageStudentRating out of 5 stars"
+                                      style="--rating-width: @studentRatingWidth%">
+                                    <span aria-hidden="true">★★★★★</span>
+                                </span>
+                                <span class="tutor-session-rating-number">
+                                    <strong>@averageStudentRating</strong><span>/5</span>
+                                </span>
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
+            </div>
         </div>
-
-        <div class="tutor-statistics-secondary-grid">
-            <section class="tutor-statistics-panel tutor-statistics-modules-panel">
-                <div class="tutor-statistics-panel-heading">
-                    <div>
-                        <h3>Top modules</h3>
-                        <p>Completed sessions by module</p>
-                    </div>
-                </div>
-                @if (Model.Statistics.TopModules.Count == 0)
-                {
-                    <div class="tutor-statistics-empty">
-                        Completed sessions will reveal your top modules.
-                    </div>
-                }
-                else
-                {
-                    <div class="tutor-module-ranking">
-                        @for (int index = 0; index < Model.Statistics.TopModules.Count; index++)
-                        {
-                            var module = Model.Statistics.TopModules[index];
-                            <div class="tutor-module-row">
-                                <span class="tutor-module-position">@(index + 1)</span>
-                                <div class="tutor-module-detail">
-                                    <div>
-                                        <strong>@module.ModuleName</strong>
-                                        <span>@module.SessionCount @(module.SessionCount == 1 ? "session" : "sessions")</span>
-                                    </div>
-                                    <div class="tutor-module-progress" aria-hidden="true">
-                                        <span style="width: @module.PercentageOfTopModule.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)%"></span>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
-            </section>
-
-            <section class="tutor-statistics-panel tutor-statistics-insights-panel">
-                <div class="tutor-statistics-panel-heading">
-                    <div>
-                        <h3>Activity insights</h3>
-                        <p>Patterns from your bookings</p>
-                    </div>
-                </div>
-                <dl class="tutor-statistics-insights">
-                    <div>
-                        <dt>Most requested module</dt>
-                        <dd>@Model.Statistics.MostRequestedModule</dd>
-                    </div>
-                    <div>
-                        <dt>Busiest tutoring day</dt>
-                        <dd>@Model.Statistics.BusiestDay</dd>
-                    </div>
-                    <div>
-                        <dt>Average booking lead time</dt>
-                        <dd>@Model.Statistics.AverageBookingLeadTime</dd>
-                    </div>
-                    <div class="is-action-needed">
-                        <dt>Pending requests</dt>
-                        <dd>@Model.Statistics.PendingRequests</dd>
-                    </div>
-                </dl>
-            </section>
-        </div>
-
 
         <partial name="_TutorSupportPanel" />
     </div>
     </div>
 </section>
+
+<div class="modal fade tutor-account-modal"
+     id="statistics-custom-date-modal"
+     tabindex="-1"
+     aria-labelledby="statistics-custom-date-title"
+     aria-hidden="true"
+     data-open-on-load="@((!string.IsNullOrWhiteSpace(Model.DateRangeError)).ToString().ToLowerInvariant())">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="get" class="tutor-statistics-date-form">
+                <input type="hidden" name="Range" value="custom" />
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title" id="statistics-custom-date-title">
+                            Customize dates
+                        </h2>
+                        <p>Choose the period to include in your statistics.</p>
+                    </div>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="tutor-statistics-modal-dates">
+                        <label class="tutor-statistics-date-field">
+                            <span>From</span>
+                            <input asp-for="StartDate" type="date" required />
+                        </label>
+                        <label class="tutor-statistics-date-field">
+                            <span>To</span>
+                            <input asp-for="EndDate" type="date" required />
+                        </label>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(Model.DateRangeError))
+                    {
+                        <p class="tutor-statistics-range-error" role="alert">
+                            @Model.DateRangeError
+                        </p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="tutor-modal-cancel"
+                            data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="submit" class="tutor-modal-primary">
+                        Apply dates
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

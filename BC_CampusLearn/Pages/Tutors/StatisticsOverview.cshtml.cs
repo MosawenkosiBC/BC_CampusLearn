@@ -10,13 +10,13 @@ namespace BC_CampusLearn.Pages.Tutors;
 
 public class StatisticsOverviewModel : PageModel
 {
-    private static readonly IReadOnlyDictionary<string, int?> RangeMonths =
-        new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> SupportedRanges =
+        new(StringComparer.OrdinalIgnoreCase)
         {
-            ["3m"] = 3,
-            ["6m"] = 6,
-            ["12m"] = 12,
-            ["all"] = null
+            "daily",
+            "weekly",
+            "monthly",
+            "custom"
         };
 
     private readonly ApplicationDbContext _context;
@@ -31,7 +31,13 @@ public class StatisticsOverviewModel : PageModel
     }
 
     [BindProperty(SupportsGet = true)]
-    public string Range { get; set; } = "6m";
+    public string Range { get; set; } = "monthly";
+
+    [BindProperty(SupportsGet = true)]
+    public DateOnly? StartDate { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public DateOnly? EndDate { get; set; }
 
     public string DisplayName { get; private set; } = string.Empty;
 
@@ -43,16 +49,20 @@ public class StatisticsOverviewModel : PageModel
 
     public string PeriodLabel { get; private set; } = string.Empty;
 
+    public string? DateRangeError { get; private set; }
+
     public TutorStatisticsViewModel Statistics { get; private set; } = new();
 
     public async Task<IActionResult> OnGetAsync(
         CancellationToken cancellationToken)
     {
-        if (!RangeMonths.TryGetValue(Range, out int? monthCount))
+        if (!SupportedRanges.Contains(Range))
         {
-            Range = "6m";
-            monthCount = 6;
+            Range = "monthly";
         }
+
+        DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+        (DateOnly periodStart, DateOnly periodEnd) = ResolveDateRange(today);
 
         CurrentUser currentUser =
             _currentUserService.GetRequiredUser();
@@ -80,23 +90,6 @@ public class StatisticsOverviewModel : PageModel
             tutor.ProfileImagePath,
             currentUser.DisplayName);
 
-        DateTimeOffset localNow = DateTimeOffset.Now;
-        DateTimeOffset currentMonth = new(
-            localNow.Year,
-            localNow.Month,
-            1,
-            0,
-            0,
-            0,
-            localNow.Offset);
-        DateTimeOffset? periodStart = monthCount.HasValue
-            ? currentMonth.AddMonths(-(monthCount.Value - 1))
-            : null;
-
-        PeriodLabel = monthCount.HasValue
-            ? $"Last {monthCount.Value} months"
-            : "All time";
-
         List<StatisticsBookingRow> allBookings =
             await _context.Bookings
                 .AsNoTracking()
@@ -105,35 +98,33 @@ public class StatisticsOverviewModel : PageModel
                 {
                     StudentObjectId = booking.StudentObjectId,
                     StudentTenantId = booking.StudentTenantId,
-                    ModuleName = booking.ProgrammeModule.ModuleName,
+                    ModuleCode = booking.ProgrammeModule.ModuleCode,
                     Status = booking.Status,
-                    ScheduledStartTime = booking.ScheduledStartTime,
-                    DateBooked = booking.DateBooked
+                    HasStudentReview = booking.StudentEvaluation != null,
+                    StudentReviewRating = booking.StudentEvaluation == null
+                        ? null
+                        : booking.StudentEvaluation.ModeRating,
+                    HasTutorReview = booking.TutorEvaluation != null,
+                    ScheduledStartTime = booking.ScheduledStartTime
                 })
                 .ToListAsync(cancellationToken);
 
         List<StatisticsBookingRow> periodBookings = allBookings
             .Where(booking =>
-                !periodStart.HasValue ||
-                booking.ScheduledStartTime >= periodStart.Value)
+            {
+                DateOnly bookingDate = DateOnly.FromDateTime(
+                    booking.ScheduledStartTime.LocalDateTime);
+                return bookingDate >= periodStart && bookingDate <= periodEnd;
+            })
             .ToList();
 
-        Statistics = BuildStatistics(
-            allBookings,
-            periodBookings,
-            periodStart,
-            monthCount,
-            currentMonth);
+        Statistics = BuildStatistics(periodBookings);
 
         return Page();
     }
 
     private static TutorStatisticsViewModel BuildStatistics(
-        IReadOnlyCollection<StatisticsBookingRow> allBookings,
-        IReadOnlyCollection<StatisticsBookingRow> periodBookings,
-        DateTimeOffset? periodStart,
-        int? monthCount,
-        DateTimeOffset currentMonth)
+        IReadOnlyCollection<StatisticsBookingRow> periodBookings)
     {
         List<StatisticsBookingRow> completed = periodBookings
             .Where(booking => booking.Status == BookingStatus.Completed)
@@ -141,6 +132,10 @@ public class StatisticsOverviewModel : PageModel
         int cancelled = periodBookings.Count(booking =>
             booking.Status == BookingStatus.Cancelled);
         int concludedAcceptedSessions = completed.Count + cancelled;
+        List<byte> studentReviewRatings = completed
+            .Where(booking => booking.StudentReviewRating.HasValue)
+            .Select(booking => booking.StudentReviewRating!.Value)
+            .ToList();
 
         TutorStatisticsViewModel statistics = new()
         {
@@ -156,157 +151,69 @@ public class StatisticsOverviewModel : PageModel
                 : Math.Round(
                     completed.Count * 100m / concludedAcceptedSessions,
                     1),
-            PendingRequests = allBookings.Count(booking =>
-                booking.Status == BookingStatus.Pending)
+            PendingRequests = periodBookings.Count(booking =>
+                booking.Status == BookingStatus.Pending),
+            PendingStudentReviews = completed.Count(booking =>
+                !booking.HasStudentReview),
+            PendingTutorReviews = completed.Count(booking =>
+                !booking.HasTutorReview),
+            AverageStudentReviewRating = studentReviewRatings.Count == 0
+                ? 0
+                : Math.Round(studentReviewRatings.Average(value => (decimal)value), 1)
         };
 
-        int statusTotal = periodBookings.Count;
-        statistics.StatusBreakdown = new[]
-        {
-            (BookingStatus.Completed, "Completed", "completed"),
-            (BookingStatus.Confirmed, "Confirmed", "confirmed"),
-            (BookingStatus.Pending, "Pending", "pending"),
-            (BookingStatus.Cancelled, "Cancelled", "cancelled"),
-            (BookingStatus.Declined, "Declined", "declined")
-        }
-        .Select(item => new TutorStatusStatisticViewModel
-        {
-            Label = item.Item2,
-            CssClass = item.Item3,
-            Count = periodBookings.Count(booking =>
-                booking.Status == item.Item1),
-            Percentage = statusTotal == 0
-                ? 0
-                : Math.Round(
-                    periodBookings.Count(booking =>
-                        booking.Status == item.Item1) * 100m / statusTotal,
-                    1)
-        })
-        .ToList();
-
         var moduleCounts = completed
-            .GroupBy(booking => booking.ModuleName)
+            .GroupBy(booking => new
+            {
+                booking.ModuleCode
+            })
             .Select(group => new
             {
-                ModuleName = group.Key,
+                group.Key.ModuleCode,
                 Count = group.Count()
             })
             .OrderByDescending(item => item.Count)
-            .ThenBy(item => item.ModuleName)
+            .ThenBy(item => item.ModuleCode)
             .Take(5)
             .ToList();
-        int topModuleCount = moduleCounts.FirstOrDefault()?.Count ?? 0;
 
         statistics.TopModules = moduleCounts
             .Select(item => new TutorModuleStatisticViewModel
             {
-                ModuleName = item.ModuleName,
-                SessionCount = item.Count,
-                PercentageOfTopModule = topModuleCount == 0
-                    ? 0
-                    : Math.Round(item.Count * 100m / topModuleCount, 1)
+                ModuleCode = item.ModuleCode,
+                SessionCount = item.Count
             })
             .ToList();
-
-        statistics.MostRequestedModule = periodBookings
-            .Where(booking => booking.Status != BookingStatus.Declined)
-            .GroupBy(booking => booking.ModuleName)
-            .OrderByDescending(group => group.Count())
-            .ThenBy(group => group.Key)
-            .Select(group => group.Key)
-            .FirstOrDefault() ?? "No data yet";
-
-        statistics.BusiestDay = completed
-            .GroupBy(booking => booking.ScheduledStartTime.ToLocalTime().DayOfWeek)
-            .OrderByDescending(group => group.Count())
-            .ThenBy(group => group.Key)
-            .Select(group => group.Key.ToString())
-            .FirstOrDefault() ?? "No data yet";
-
-        List<double> leadTimes = periodBookings
-            .Where(booking =>
-                (booking.Status == BookingStatus.Confirmed ||
-                 booking.Status == BookingStatus.Completed) &&
-                booking.ScheduledStartTime > booking.DateBooked)
-            .Select(booking =>
-                (booking.ScheduledStartTime - booking.DateBooked).TotalDays)
-            .ToList();
-
-        statistics.AverageBookingLeadTime = leadTimes.Count == 0
-            ? "No data yet"
-            : FormatLeadTime(leadTimes.Average());
-
-        BuildTrend(
-            statistics,
-            completed,
-            periodStart,
-            monthCount,
-            currentMonth);
 
         return statistics;
     }
 
-    private static void BuildTrend(
-        TutorStatisticsViewModel statistics,
-        IReadOnlyCollection<StatisticsBookingRow> completed,
-        DateTimeOffset? periodStart,
-        int? monthCount,
-        DateTimeOffset currentMonth)
+    private (DateOnly Start, DateOnly End) ResolveDateRange(DateOnly today)
     {
-        DateTimeOffset trendStart;
-        int trendMonths;
-
-        if (monthCount.HasValue && periodStart.HasValue)
+        switch (Range.ToLowerInvariant())
         {
-            trendStart = periodStart.Value;
-            trendMonths = monthCount.Value;
+            case "daily":
+                PeriodLabel = "Today";
+                return (today, today);
+            case "weekly":
+                PeriodLabel = "Last 7 days";
+                return (today.AddDays(-6), today);
+            case "custom" when StartDate.HasValue && EndDate.HasValue &&
+                StartDate.Value <= EndDate.Value:
+                PeriodLabel = StartDate.Value == EndDate.Value
+                    ? StartDate.Value.ToString("dd MMM yyyy")
+                    : $"{StartDate.Value:dd MMM yyyy} – {EndDate.Value:dd MMM yyyy}";
+                return (StartDate.Value, EndDate.Value);
+            case "custom":
+                DateRangeError = StartDate.HasValue && EndDate.HasValue
+                    ? "The start date must be on or before the end date."
+                    : "Choose both a start date and an end date.";
+                PeriodLabel = "Last 30 days";
+                return (today.AddDays(-29), today);
+            default:
+                PeriodLabel = "Last 30 days";
+                return (today.AddDays(-29), today);
         }
-        else
-        {
-            DateTimeOffset? earliest = completed.Count == 0
-                ? null
-                : completed.Min(booking =>
-                    booking.ScheduledStartTime.ToLocalTime());
-            DateTimeOffset earliestMonth = earliest.HasValue
-                ? new DateTimeOffset(
-                    earliest.Value.Year,
-                    earliest.Value.Month,
-                    1,
-                    0,
-                    0,
-                    0,
-                    currentMonth.Offset)
-                : currentMonth;
-            trendStart = earliestMonth < currentMonth.AddMonths(-11)
-                ? currentMonth.AddMonths(-11)
-                : earliestMonth;
-            trendMonths =
-                ((currentMonth.Year - trendStart.Year) * 12) +
-                currentMonth.Month - trendStart.Month + 1;
-        }
-
-        for (int index = 0; index < trendMonths; index++)
-        {
-            DateTimeOffset month = trendStart.AddMonths(index);
-            statistics.TrendLabels.Add(month.ToString("MMM yyyy"));
-            statistics.TrendValues.Add(completed.Count(booking =>
-            {
-                DateTimeOffset local = booking.ScheduledStartTime.ToLocalTime();
-                return local.Year == month.Year && local.Month == month.Month;
-            }));
-        }
-    }
-
-    private static string FormatLeadTime(double days)
-    {
-        if (days < 1)
-        {
-            int hours = Math.Max(1, (int)Math.Round(days * 24));
-            return $"{hours} {(hours == 1 ? "hour" : "hours")}";
-        }
-
-        int roundedDays = Math.Max(1, (int)Math.Round(days));
-        return $"{roundedDays} {(roundedDays == 1 ? "day" : "days")}";
     }
 
     private void SetIdentity(
@@ -342,12 +249,17 @@ public class StatisticsOverviewModel : PageModel
 
         public string StudentTenantId { get; set; } = string.Empty;
 
-        public string ModuleName { get; set; } = string.Empty;
+        public string ModuleCode { get; set; } = string.Empty;
 
         public BookingStatus Status { get; set; }
 
+        public bool HasStudentReview { get; set; }
+
+        public byte? StudentReviewRating { get; set; }
+
+        public bool HasTutorReview { get; set; }
+
         public DateTimeOffset ScheduledStartTime { get; set; }
 
-        public DateTimeOffset DateBooked { get; set; }
     }
 }
