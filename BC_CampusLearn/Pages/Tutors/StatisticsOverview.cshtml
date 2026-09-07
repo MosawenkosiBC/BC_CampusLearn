@@ -21,6 +21,9 @@
           href="~/css/components/navigation-drawer.css"
           asp-append-version="true" />
     <link rel="stylesheet"
+          href="~/css/components/system-dropdown.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
           href="~/css/tutor-profile.css"
           asp-append-version="true" />
     <link rel="stylesheet"
@@ -101,7 +104,8 @@
                         <path d="M11 14.035A14 14 0 0 0 10 14c-5 0-8 2.5-8 5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2q0-.504-.16-1m3.849-9.066l-.623-.623a1.063 1.063 0 0 0-1.503 0l-3.349 3.35a3.2 3.2 0 0 0-.872 1.629L15 15l1.71-.342a3.2 3.2 0 0 0 1.63-.872l3.349-3.349a1.063 1.063 0 0 0 0-1.503" />
                     </g>
                 </svg>
-                <span>Personal Details</span>
+                <span class="tutor-profile-personal-label-full">Personal Details</span>
+                <span class="tutor-profile-personal-label-mobile">Details</span>
             </a>
             <a asp-page="/Tutors/PublicProfile" class="tutor-profile-nav-link">
                 <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" aria-hidden="true">
@@ -122,7 +126,8 @@
                     <path fill="currentColor"
                           d="M7 21H3v-8h4zm7 0h-4V3h4zm7-13v13h-4V8z" />
                 </svg>
-                <span>Statistics Overview</span>
+                <span class="tutor-profile-statistics-label-full">Statistics Overview</span>
+                <span class="tutor-profile-statistics-label-mobile">Statistics</span>
             </a>
         </nav>
     </aside>
@@ -141,6 +146,7 @@
                     <label for="statistics-range">Period</label>
                     <select id="statistics-range"
                             asp-for="Range"
+                            data-system-dropdown
                             data-statistics-period>
                         <option value="daily">Daily</option>
                         <option value="weekly">Weekly</option>
@@ -159,7 +165,8 @@
             </form>
         </header>
 
-        <div class="tutor-statistics-summary">
+        <div class="tutor-statistics-carousel" data-statistics-carousel>
+        <div class="tutor-statistics-summary" data-statistics-carousel-track>
             <article class="tutor-stat-card-premium is-magenta">
                 <span class="tutor-stat-card-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M8 2v3m8-3v3M4 9h16M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 9h3v3H8Z" /></svg>
@@ -197,6 +204,27 @@
                 </div>
             </article>
         </div>
+        <div class="tutor-statistics-carousel-controls">
+            <button type="button" data-statistics-carousel-previous
+                    aria-label="Show previous statistic">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+            </button>
+            <span class="tutor-statistics-carousel-position" aria-live="polite">
+                <span data-statistics-carousel-current>1</span>
+                <span aria-hidden="true">/</span>
+                <span data-statistics-carousel-total>4</span>
+                <span class="visually-hidden"> statistics</span>
+            </span>
+            <button type="button" data-statistics-carousel-next
+                    aria-label="Show next statistic">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m9 18 6-6-6-6" />
+                </svg>
+            </button>
+        </div>
+        </div>
 
         <div class="tutor-statistics-primary-grid">
             <div class="tutor-statistics-panel-group">
@@ -229,21 +257,33 @@
                             <dt>Pending tutor review</dt>
                             <dd>@Model.Statistics.PendingTutorReviews</dd>
                         </div>
-                        <div class="tutor-session-status-divider" role="presentation"></div>
-                        <div class="tutor-session-rating-row">
-                            <dt>Average student review rating</dt>
-                            <dd class="tutor-session-rating">
-                                <span class="tutor-session-rating-stars"
-                                      role="img"
-                                      aria-label="@averageStudentRating out of 5 stars"
-                                      style="--rating-width: @studentRatingWidth%">
-                                    <span aria-hidden="true">★★★★★</span>
-                                </span>
-                                <span class="tutor-session-rating-number">
-                                    <strong>@averageStudentRating</strong><span>/5</span>
-                                </span>
-                            </dd>
-                        </div>
+                        @if (Model.Statistics.StudentReviewCount >= 2)
+                        {
+                            <div class="tutor-session-status-divider" role="presentation"></div>
+                            <div class="tutor-session-rating-row">
+                                <dt>Average student review rating</dt>
+                                <dd class="tutor-session-rating">
+                                    <span class="tutor-session-rating-stars"
+                                          role="img"
+                                          aria-label="@averageStudentRating out of 5 stars"
+                                          style="--rating-width: @studentRatingWidth%">
+                                        <span aria-hidden="true">★★★★★</span>
+                                    </span>
+                                    <span class="tutor-session-rating-number">
+                                        <strong>@averageStudentRating</strong><span>/5</span>
+                                    </span>
+                                </dd>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="tutor-session-status-divider" role="presentation"></div>
+                            <div class="tutor-session-rating-row">
+                                <dd class="tutor-session-rating-unavailable">
+                                    Available after at least 2 student reviews
+                                </dd>
+                            </div>
+                        }
                     </dl>
                 </section>
             </div>
@@ -313,6 +353,8 @@
     <partial name="_ValidationScriptsPartial" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
     <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+    <script src="~/js/components/system-dropdown.js"
             asp-append-version="true"></script>
     <script src="~/js/tutor-statistics.js"
             asp-append-version="true"></script>

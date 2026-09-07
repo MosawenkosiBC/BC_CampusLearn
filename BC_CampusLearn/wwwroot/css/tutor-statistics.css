@@ -282,6 +282,14 @@
     gap: 0.35rem;
 }
 
+.tutor-session-rating-unavailable {
+    color: #626a75 !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    line-height: 1.45;
+    max-width: 18rem;
+}
+
 .tutor-session-rating-number {
     align-items: baseline;
     display: inline-flex;
@@ -479,4 +487,191 @@
     }
 
 }
-    justify-content: center;
+
+.tutor-statistics-range-field .system-dropdown {
+    min-width: 12rem;
+    width: auto;
+}
+
+.tutor-statistics-carousel {
+    display: contents;
+}
+
+.tutor-statistics-carousel-controls {
+    display: none;
+}
+
+/* Statistics tab typography floors and responsive fit. */
+.tutor-statistics-page .tutor-statistics-header h2,
+.tutor-statistics-page .tutor-statistics-section-title,
+.tutor-statistics-page .tutor-statistics-panel-heading h3,
+.tutor-account-modal .tutor-statistics-date-form .modal-title {
+    font-size: 18px;
+    overflow-wrap: anywhere;
+}
+
+.tutor-statistics-page .tutor-statistics-header p,
+.tutor-statistics-page .tutor-statistics-range label,
+.tutor-statistics-page .tutor-statistics-range select,
+.tutor-statistics-page .tutor-statistics-edit-dates,
+.tutor-statistics-page .tutor-stat-card-premium p,
+.tutor-statistics-page .tutor-session-status-stats dt,
+.tutor-statistics-page .tutor-session-status-stats dd,
+.tutor-statistics-page .tutor-module-detail strong,
+.tutor-statistics-page .tutor-statistics-insights dd,
+.tutor-statistics-page .tutor-statistics-empty,
+.tutor-account-modal .tutor-statistics-date-field span,
+.tutor-account-modal .tutor-statistics-date-field input {
+    font-size: 16px;
+}
+
+.tutor-statistics-page .tutor-statistics-panel-heading p,
+.tutor-statistics-page .tutor-module-position,
+.tutor-statistics-page .tutor-module-detail span,
+.tutor-statistics-page .tutor-statistics-insights dt,
+.tutor-account-modal .tutor-statistics-range-error {
+    font-size: 12px !important;
+}
+
+.tutor-statistics-page .tutor-stat-card-premium {
+    min-height: 8rem;
+    padding: 1.15rem;
+}
+
+.tutor-statistics-page .tutor-statistics-range select,
+.tutor-statistics-page .tutor-statistics-edit-dates,
+.tutor-account-modal .tutor-statistics-date-field input {
+    min-height: 44px;
+}
+
+.tutor-statistics-page .tutor-module-detail strong,
+.tutor-statistics-page .tutor-module-detail span,
+.tutor-statistics-page .tutor-statistics-insights dd,
+.tutor-statistics-page .tutor-stat-card-premium p {
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.tutor-statistics-page .tutor-module-detail > div:first-child {
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.tutor-statistics-page .tutor-module-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+}
+
+.tutor-statistics-page .tutor-module-position {
+    height: 2rem;
+    width: 2rem;
+}
+
+@media (max-width: 991.98px) {
+    .tutor-statistics-header p {
+        display: none;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .tutor-statistics-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .tutor-statistics-carousel {
+        display: block;
+        margin-bottom: 1.4rem;
+        min-width: 0;
+        order: -1;
+        width: 100%;
+    }
+
+    .tutor-statistics-carousel .tutor-statistics-summary {
+        display: flex;
+        gap: 0.75rem;
+        margin: 0;
+        overflow-x: auto;
+        padding: 0.15rem 0.1rem 0.75rem;
+        position: relative;
+        scroll-behavior: smooth;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+    }
+
+    .tutor-statistics-carousel .tutor-statistics-summary::-webkit-scrollbar {
+        display: none;
+    }
+
+    .tutor-statistics-carousel .tutor-stat-card-premium {
+        flex: 0 0 calc(100% - 0.2rem);
+        min-height: 8.5rem;
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+    }
+
+    .tutor-statistics-carousel-controls {
+        align-items: center;
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        padding-top: 0.15rem;
+    }
+
+    .tutor-statistics-carousel-controls button {
+        align-items: center;
+        background: #f3f5f7;
+        border: 0;
+        border-radius: 50%;
+        color: #343a40;
+        display: inline-flex;
+        height: 44px;
+        justify-content: center;
+        padding: 0;
+        width: 44px;
+    }
+
+    .tutor-statistics-carousel-controls button:hover,
+    .tutor-statistics-carousel-controls button:focus-visible {
+        background: #e8ebee;
+        outline: 2px solid #6c757d;
+        outline-offset: 2px;
+    }
+
+    .tutor-statistics-carousel-controls button:disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
+    }
+
+    .tutor-statistics-carousel-controls svg {
+        fill: none;
+        height: 1.15rem;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+        width: 1.15rem;
+    }
+
+    .tutor-statistics-carousel-position {
+        color: #626a75;
+        font-size: 12px;
+        font-weight: 600;
+        min-width: 2.5rem;
+        text-align: center;
+    }
+
+    .tutor-statistics-page .tutor-statistics-range-field {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .tutor-statistics-page .tutor-statistics-range-field .system-dropdown {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .tutor-statistics-page .tutor-statistics-range select,
+    .tutor-statistics-page .tutor-statistics-edit-dates {
+        width: 100%;
+    }
+}

@@ -34,7 +34,12 @@
     display: contents;
 }
 
-.tutor-profile-page::before {
+.profile-content-background {
+    isolation: isolate;
+    position: relative;
+}
+
+.profile-content-background::before {
     background:
         linear-gradient(
             rgba(255, 255, 255, 0.9),
@@ -170,6 +175,11 @@
     border-left-color: #ad0151;
     color: #ad0151;
     font-weight: 700;
+}
+
+.tutor-profile-personal-label-mobile,
+.tutor-profile-statistics-label-mobile {
+    display: none;
 }
 
 a.tutor-profile-nav-link:hover,
@@ -1229,4 +1239,126 @@ a.tutor-profile-nav-link:focus-visible {
         text-align: center;
     }
 
+}
+
+/* Manage Account typography floors across all responsive sizes. */
+.tutor-profile-page {
+    font-size: 16px;
+}
+
+.tutor-profile-page .tutor-manage-profile-title {
+    font-size: clamp(28px, 3vw, 36px);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.tutor-profile-page .tutor-profile-identity h1,
+.tutor-profile-page .tutor-personal-details > h2,
+.tutor-profile-page .tutor-public-profile > h2,
+.tutor-profile-page .tutor-support-panel h3,
+.tutor-profile-page .tutor-support-contact h4,
+.tutor-profile-page .tutor-support-meta dt,
+.tutor-account-modal .modal-title {
+    font-size: 18px;
+    overflow-wrap: anywhere;
+}
+
+.tutor-profile-page .tutor-profile-nav-link,
+.tutor-profile-page .tutor-support-panel p,
+.tutor-profile-page .tutor-support-emails a,
+.tutor-profile-page .tutor-support-meta dd,
+.tutor-profile-page .tutor-personal-details-grid dt,
+.tutor-profile-page .tutor-personal-details-grid dd,
+.tutor-profile-page .tutor-phone-form input,
+.tutor-profile-page .tutor-module-update-copy strong,
+.tutor-profile-page .tutor-profile-module,
+.tutor-profile-page .tutor-profile-empty-value,
+.tutor-profile-page .tutor-profile-field label,
+.tutor-profile-page .tutor-profile-field input,
+.tutor-profile-page .tutor-profile-field textarea,
+.tutor-profile-page .tutor-profile-field select,
+.tutor-profile-page .tutor-module-combobox-toggle,
+.tutor-profile-page .tutor-module-combobox-search input,
+.tutor-profile-page .tutor-module-combobox-option,
+.tutor-profile-page .tutor-profile-preference legend,
+.tutor-profile-page .tutor-profile-preference-options strong,
+.tutor-profile-page .tutor-public-profile-actions button,
+.tutor-account-modal .modal-header p,
+.tutor-account-modal .tutor-profile-field label,
+.tutor-account-modal .tutor-profile-field input,
+.tutor-account-modal .tutor-profile-field textarea,
+.tutor-account-modal .tutor-profile-field select,
+.tutor-account-modal .tutor-module-combobox-toggle,
+.tutor-account-modal .tutor-module-combobox-search input,
+.tutor-account-modal .tutor-module-combobox-option,
+.tutor-account-modal .tutor-modal-cancel,
+.tutor-account-modal .tutor-modal-primary {
+    font-size: 16px;
+}
+
+.tutor-profile-page .tutor-profile-identity p {
+    font-size: 14px;
+}
+
+.tutor-profile-page .tutor-phone-form > span,
+.tutor-profile-page .tutor-pending-module-requests strong,
+.tutor-profile-page .tutor-pending-module-requests span,
+.tutor-profile-page .tutor-profile-field > span,
+.tutor-profile-page .tutor-profile-preference > span,
+.tutor-profile-page .tutor-profile-validation,
+.tutor-profile-page .tutor-module-combobox-empty,
+.tutor-account-modal .tutor-profile-field > span,
+.tutor-account-modal .tutor-profile-validation,
+.tutor-account-modal .tutor-module-combobox-empty {
+    font-size: 12px;
+}
+
+.tutor-profile-page .tutor-profile-nav-link,
+.tutor-profile-page .tutor-module-update-action button,
+.tutor-profile-page .tutor-public-profile-actions button,
+.tutor-account-modal button,
+.tutor-account-modal input,
+.tutor-account-modal select,
+.tutor-profile-page input:not([type="hidden"]):not([type="radio"]):not([type="checkbox"]),
+.tutor-profile-page select {
+    min-height: 44px;
+}
+
+.tutor-profile-page .tutor-profile-nav-link,
+.tutor-profile-page .tutor-module-update-copy strong,
+.tutor-profile-page .tutor-profile-module,
+.tutor-profile-page .tutor-profile-empty-value,
+.tutor-profile-page .tutor-personal-details-grid dd,
+.tutor-account-modal label,
+.tutor-account-modal button {
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+@media (max-width: 767.98px) {
+    .tutor-profile-personal-label-full {
+        display: none;
+    }
+
+    .tutor-profile-statistics-label-full {
+        display: none;
+    }
+
+    .tutor-profile-personal-label-mobile,
+    .tutor-profile-statistics-label-mobile {
+        display: inline;
+    }
+
+    .tutor-profile-page .tutor-profile-nav-link {
+        flex: 1 1 33.333%;
+        min-width: 7rem;
+        padding-inline: 0.65rem;
+        white-space: normal;
+    }
+
+    .tutor-profile-page .tutor-personal-details-card,
+    .tutor-profile-page .tutor-public-profile-card,
+    .tutor-profile-page .tutor-statistics-content {
+        padding: 1.35rem;
+    }
 }

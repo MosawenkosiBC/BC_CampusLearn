@@ -157,7 +157,8 @@ public class StatisticsOverviewModel : PageModel
                 !booking.HasStudentReview),
             PendingTutorReviews = completed.Count(booking =>
                 !booking.HasTutorReview),
-            AverageStudentReviewRating = studentReviewRatings.Count == 0
+            StudentReviewCount = studentReviewRatings.Count,
+            AverageStudentReviewRating = studentReviewRatings.Count < 2
                 ? 0
                 : Math.Round(studentReviewRatings.Average(value => (decimal)value), 1)
         };

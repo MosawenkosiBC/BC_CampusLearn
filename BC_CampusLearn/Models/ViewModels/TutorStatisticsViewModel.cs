@@ -16,6 +16,8 @@ public class TutorStatisticsViewModel
 
     public int PendingTutorReviews { get; set; }
 
+    public int StudentReviewCount { get; set; }
+
     public decimal AverageStudentReviewRating { get; set; }
 
     public List<TutorModuleStatisticViewModel> TopModules { get; set; }

@@ -101,6 +101,17 @@
                 closeDropdown(dropdown, true);
             };
 
+            select.addEventListener("change", () => {
+                const selectedOption = select.selectedOptions[0];
+                value.textContent = selectedOption?.textContent ?? "Select";
+                optionButtons.forEach((optionButton) => {
+                    optionButton.setAttribute(
+                        "aria-selected",
+                        String(optionButton.dataset.systemDropdownOption ===
+                            select.value));
+                });
+            });
+
             optionButtons.forEach((button) => {
                 button.addEventListener("click", () => selectOption(button));
                 button.addEventListener("keydown", (event) => {

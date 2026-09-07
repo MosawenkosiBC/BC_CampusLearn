@@ -22,6 +22,16 @@
         layoutPagePath.Equals(
             "/Bookings/Index",
             StringComparison.OrdinalIgnoreCase);
+    bool hasManageAccountBackground =
+        layoutPagePath.Equals(
+            "/Tutors/Profile",
+            StringComparison.OrdinalIgnoreCase) ||
+        layoutPagePath.Equals(
+            "/Tutors/PublicProfile",
+            StringComparison.OrdinalIgnoreCase) ||
+        layoutPagePath.Equals(
+            "/Tutors/StatisticsOverview",
+            StringComparison.OrdinalIgnoreCase);
 }
 
 <!DOCTYPE html>
@@ -638,7 +648,7 @@
         </nav>
     </header>
 
-    <div class="container flex-grow-1 @(hasSessionDetailsBackground ? "session-details-content-background" : null) @(hasStudentDashboardBackground ? "dashboard-content-background" : null) @(hasAllSessionsBackground ? "bookings-content-background" : null)">
+    <div class="container flex-grow-1 @(hasSessionDetailsBackground ? "session-details-content-background" : null) @(hasStudentDashboardBackground ? "dashboard-content-background" : null) @(hasAllSessionsBackground ? "bookings-content-background" : null) @(hasManageAccountBackground ? "profile-content-background" : null)">
         <main role="main">
             <partial name="_Breadcrumbs" />
             @RenderBody()
