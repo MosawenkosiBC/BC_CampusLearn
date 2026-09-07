@@ -36,6 +36,9 @@ public class BookingConfiguration
         builder.Property(booking => booking.MeetingLink)
             .HasMaxLength(2048);
 
+        builder.Property(booking => booking.CancellationReason)
+            .HasMaxLength(1000);
+
         builder.Property(booking => booking.RowVersion)
             .IsRowVersion();
 

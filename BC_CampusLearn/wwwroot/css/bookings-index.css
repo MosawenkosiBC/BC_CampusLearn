@@ -110,10 +110,13 @@
 }
 
 .bookings-sort-link:hover,
-.bookings-sort-link:focus-visible,
-.bookings-sort-link.is-active {
+.bookings-sort-link:focus-visible {
     color: #bf0050;
     outline: none;
+}
+
+.bookings-sort-link.is-active {
+    color: #000;
 }
 
 .bookings-sort-arrows {
@@ -253,6 +256,67 @@
     background-color: rgba(74, 193, 193, 0.13);
     color: #137f83;
     outline: none;
+}
+
+.bookings-action-modal .modal-content {
+    border: 0;
+    border-radius: 0.65rem;
+}
+
+.bookings-action-modal .modal-header,
+.bookings-action-modal .modal-footer {
+    border-color: #eceff2;
+}
+
+.bookings-action-modal .modal-header h2 {
+    font-size: 18px;
+    margin: 0;
+}
+
+.bookings-action-modal .modal-header p {
+    color: #5d6269;
+    font-size: 16px;
+    margin: 0.4rem 0 0;
+}
+
+.bookings-action-modal .modal-body label,
+.bookings-action-modal .modal-body textarea,
+.bookings-action-modal .modal-body input,
+.bookings-action-modal .modal-footer button {
+    font-size: 16px;
+}
+
+.bookings-action-modal .modal-body label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.45rem;
+}
+
+.bookings-action-modal .modal-body textarea,
+.bookings-action-modal .modal-body input {
+    border: 1px solid #d9dee5;
+    border-radius: 0.45rem;
+    padding: 0.7rem;
+    width: 100%;
+}
+
+.bookings-action-modal .modal-body textarea {
+    min-height: 7rem;
+}
+
+.bookings-action-modal .modal-body input {
+    min-height: 44px;
+}
+
+.bookings-modal-primary {
+    background: #ad0151;
+    color: #fff;
+}
+
+.bookings-modal-primary:hover,
+.bookings-modal-primary:focus-visible {
+    background: #8e0043;
+    color: #fff;
 }
 
 @media (max-width: 1199.98px) {

@@ -26,6 +26,8 @@ public class Booking
 
     public string? MeetingLink { get; set; }
 
+    public string? CancellationReason { get; set; }
+
     public BookingStatus Status { get; set; }
 
     public SessionDuration Duration { get; set; }

@@ -8,6 +8,9 @@
     bool hasAttachedLinks = !string.IsNullOrWhiteSpace(Model.Session.MeetingLink) ||
         Model.Session.PreparationLinks.Count > 0;
     bool hasAttachedDocuments = Model.Session.Documents.Count > 0;
+    bool chatIsClosed = Model.Session.Status is
+        BC_CampusLearn.Models.Entities.BookingStatus.Cancelled or
+        BC_CampusLearn.Models.Entities.BookingStatus.Declined;
     string[] studentNameParts = Model.Session.StudentName.Split(
         ' ',
         StringSplitOptions.RemoveEmptyEntries);
@@ -89,16 +92,23 @@
             <section class="session-information-section is-mobile-collapsed" aria-labelledby="session-information-title">
                 <header class="manage-card-heading">
                     <h2 id="session-information-title">Session Information</h2>
-                    <button type="button" class="session-information-toggle"
-                            aria-expanded="false" aria-controls="session-information-panel"
-                            aria-label="Show session information" data-session-information-toggle>
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="m7 10 5 5 5-5" />
-                        </svg>
-                    </button>
                 </header>
 
-                <div class="manage-session-card session-information-card" id="session-information-panel">
+                <div class="manage-session-card session-information-card">
+                    <div class="session-information-summary">
+                        <div class="session-information-summary-person">
+                            <span>Student Name</span>
+                            <strong>@Model.Session.StudentName</strong>
+                        </div>
+                        <button type="button" class="session-information-toggle"
+                                aria-expanded="false" aria-controls="tutor-session-information-details"
+                                aria-label="Show all session information" data-session-information-toggle>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m7 10 5 5 5-5" />
+                            </svg>
+                        </button>
+                    </div>
+
                     <span class="session-status-badge status-@Model.Session.Status.ToString().ToLowerInvariant()">
                         <span>@Model.Session.Status.ToDisplayText()</span>
                         @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Confirmed)
@@ -112,10 +122,10 @@
                             </span>
                         }
                     </span>
-                    <div class="session-information-content">
+                    <div class="session-information-content" id="tutor-session-information-details">
                         <div class="session-information-main">
                             <div class="session-information-grid">
-                                <div class="session-readonly-field">
+                                <div class="session-readonly-field session-primary-person-field">
                                     <label for="session-student-name">Student Name</label>
                                     <input id="session-student-name"
                                            type="text"
@@ -265,6 +275,7 @@
 
                 <label for="session-status-action">Change Status</label>
                 <select id="session-status-action" data-session-status-select
+                        data-system-dropdown
                         disabled="@(Model.Session.Status is not (BC_CampusLearn.Models.Entities.BookingStatus.Pending or BC_CampusLearn.Models.Entities.BookingStatus.Confirmed))">
                     <option value="">@Model.Session.Status.ToDisplayText()</option>
                     @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending)
@@ -294,12 +305,18 @@
             @if (!string.IsNullOrWhiteSpace(Model.LatestStatusReason))
             {
                 <section class="session-status-reason">
-                    @if (!string.IsNullOrWhiteSpace(Model.LatestStatusReasonTitle))
-                    {
-                        <h2>@Model.LatestStatusReasonTitle</h2>
-                    }
                     <div class="session-status-warning @(Model.LatestStatusReasonIsUnreviewedWarning ? "is-unreviewed" : null)" role="alert">
-                        @Model.LatestStatusReason
+                        <span class="session-status-warning-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 7v6" />
+                                <path d="M12 17h.01" />
+                            </svg>
+                        </span>
+                        @if (!string.IsNullOrWhiteSpace(Model.LatestStatusReasonTitle))
+                        {
+                            <h2>@Model.LatestStatusReasonTitle</h2>
+                        }
+                        <p>@Model.LatestStatusReason</p>
                     </div>
                 </section>
             }
@@ -435,48 +452,55 @@
                         <span></span><span></span><span></span>
                     </div>
                 </div>
-                <form class="session-chat-form" data-session-chat-form>
-                    <label class="visually-hidden" for="session-chat-message">Message</label>
-                    <div class="session-chat-composer">
-                        <textarea id="session-chat-message"
-                                  rows="1"
-                                  maxlength="2000"
-                                  autocomplete="off"
-                                  placeholder="Write a message..."
-                                  data-session-chat-input></textarea>
-                        <span class="session-chat-emoji-control">
-                            <button type="button"
-                                    class="session-chat-emoji-toggle"
-                                    data-session-emoji-toggle
-                                    aria-expanded="false"
-                                    aria-controls="session-emoji-picker"
-                                    aria-label="Add emoji"
-                                    title="Add emoji">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M0 0h24v24H0z" fill="none" />
-                                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <path d="M8 15a5 5 0 0 0 4 2a5 5 0 0 0 4-2m-.375-6.613v.53m-7.25-.53v.53m.375-.167c0-.414-.168-.75-.375-.75S8 8.336 8 8.75s.168.75.375.75s.375-.336.375-.75m7.25 0c0-.414-.168-.75-.375-.75s-.375.336-.375.75s.168.75.375.75s.375-.336.375-.75" />
-                                    </g>
-                                </svg>
-                            </button>
-                            <span id="session-emoji-picker"
-                                  class="session-emoji-picker"
-                                  data-session-emoji-picker
-                                  aria-label="Choose an emoji"
-                                  hidden>
-                                @foreach (string emoji in new[] { "😀", "😂", "😊", "👍", "🙏", "👏", "🎉", "❤️", "🤔", "✅", "📚", "💡" })
-                                {
-                                    <button type="button" data-session-emoji="@emoji" aria-label="Add @emoji">@emoji</button>
-                                }
+                @if (chatIsClosed)
+                {
+                    <p class="session-chat-closed">Messaging is closed for this session.</p>
+                }
+                else
+                {
+                    <form class="session-chat-form" data-session-chat-form>
+                        <label class="visually-hidden" for="session-chat-message">Message</label>
+                        <div class="session-chat-composer">
+                            <textarea id="session-chat-message"
+                                      rows="1"
+                                      maxlength="2000"
+                                      autocomplete="off"
+                                      placeholder="Write a message..."
+                                      data-session-chat-input></textarea>
+                            <span class="session-chat-emoji-control">
+                                <button type="button"
+                                        class="session-chat-emoji-toggle"
+                                        data-session-emoji-toggle
+                                        aria-expanded="false"
+                                        aria-controls="session-emoji-picker"
+                                        aria-label="Add emoji"
+                                        title="Add emoji">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M0 0h24v24H0z" fill="none" />
+                                        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <path d="M8 15a5 5 0 0 0 4 2a5 5 0 0 0 4-2m-.375-6.613v.53m-7.25-.53v.53m.375-.167c0-.414-.168-.75-.375-.75S8 8.336 8 8.75s.168.75.375.75s.375-.336.375-.75m7.25 0c0-.414-.168-.75-.375-.75s-.375.336-.375.75s.168.75.375.75s.375-.336.375-.75" />
+                                        </g>
+                                    </svg>
+                                </button>
+                                <span id="session-emoji-picker"
+                                      class="session-emoji-picker"
+                                      data-session-emoji-picker
+                                      aria-label="Choose an emoji"
+                                      hidden>
+                                    @foreach (string emoji in new[] { "😀", "😂", "😊", "👍", "🙏", "👏", "🎉", "❤️", "🤔", "✅", "📚", "💡" })
+                                    {
+                                        <button type="button" data-session-emoji="@emoji" aria-label="Add @emoji">@emoji</button>
+                                    }
+                                </span>
                             </span>
-                        </span>
-                        <button type="submit" class="session-chat-send-button" aria-label="Send message">
-                            <i class="bi bi-arrow-up" aria-hidden="true"></i>
-                            <span>Send</span>
-                        </button>
-                    </div>
-                </form>
+                            <button type="submit" class="session-chat-send-button" aria-label="Send message">
+                                <i class="bi bi-arrow-up" aria-hidden="true"></i>
+                                <span>Send</span>
+                            </button>
+                        </div>
+                    </form>
+                }
                 <p class="session-chat-error" data-session-chat-error role="alert" hidden></p>
             </section>
         </div>
@@ -649,6 +673,7 @@
 
 @section Scripts {
     <script src="~/js/components/navigation-drawer.js" asp-append-version="true"></script>
+    <script src="~/js/components/system-dropdown.js" asp-append-version="true"></script>
     <script src="~/js/tutor-session-details.js" asp-append-version="true"></script>
     @if (Model.MeetingLinkError)
     {

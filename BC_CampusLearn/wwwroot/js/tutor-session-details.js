@@ -19,8 +19,8 @@
                 toggle.setAttribute(
                     "aria-label",
                     isCollapsed
-                        ? "Show session information"
-                        : "Hide session information");
+                        ? "Show all session information"
+                        : "Show less session information");
             });
         });
 
@@ -560,7 +560,7 @@
         }
     };
 
-    form.addEventListener("submit", async (event) => {
+    form?.addEventListener("submit", async (event) => {
         event.preventDefault();
         const text = input.value.trim();
         if (!text) {

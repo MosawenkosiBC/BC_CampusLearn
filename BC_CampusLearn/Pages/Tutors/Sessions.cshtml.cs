@@ -55,6 +55,12 @@ public class SessionsModel : PageModel
     public IReadOnlyList<TutorSessionListItemViewModel> Sessions
     { get; private set; } = Array.Empty<TutorSessionListItemViewModel>();
 
+    [TempData]
+    public string? SuccessMessage { get; set; }
+
+    [TempData]
+    public string? ErrorMessage { get; set; }
+
     public IEnumerable<SelectListItem> StatusOptions =>
         Enum.GetValues<BookingStatus>()
             .Select(status => new SelectListItem(
@@ -219,6 +225,44 @@ public class SessionsModel : PageModel
 
         Sessions = sessions;
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostConfirmAsync(
+        int bookingId,
+        string? meetingLink,
+        CancellationToken cancellationToken)
+    {
+        CurrentUser currentUser = _currentUserService.GetRequiredUser();
+        int? tutorId = await _context.Tutors
+            .AsNoTracking()
+            .Where(tutor =>
+                tutor.BcUserId == currentUser.BcUserId &&
+                tutor.IsActive)
+            .Select(tutor => (int?)tutor.TutorId)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (!tutorId.HasValue)
+        {
+            return Forbid();
+        }
+
+        SessionLifecycleResult result = await _lifecycleService.ConfirmAsync(
+            tutorId.Value,
+            currentUser.BcUserId,
+            bookingId,
+            meetingLink,
+            cancellationToken);
+
+        if (result.Succeeded)
+        {
+            SuccessMessage = "Session confirmed and meeting link saved.";
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
+
+        return RedirectToPage();
     }
 
     private static void AddRouteValue(

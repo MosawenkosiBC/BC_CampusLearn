@@ -12,6 +12,8 @@ public class SessionLifecycleService : ISessionLifecycleService
         "The booking time passed before you responded. Please ensure that you only make times available when you can review and accept booking requests.";
     public const string NotStartedReasonCode =
         "TutorDidNotStartSession";
+    public const string NotStartedCancellationReason =
+        "The session was cancelled because the tutor did not start it within the allowed time.";
     public const string NotStartedWarningMessage =
         "You accepted this booking but did not start the session. The administrator has been notified, and repeated incidents may result in disciplinary action.";
     public const string TutorDeclinedReasonCode = "TutorDeclined";
@@ -72,7 +74,7 @@ public class SessionLifecycleService : ISessionLifecycleService
                     BookingStatus.Cancelled,
                     now,
                     NotStartedReasonCode,
-                    NotStartedWarningMessage);
+                    NotStartedCancellationReason);
             }
             else if (automaticStatus == BookingStatus.Completed)
             {
@@ -178,6 +180,10 @@ public class SessionLifecycleService : ISessionLifecycleService
             ? BookingStatus.Declined
             : BookingStatus.Cancelled;
         booking.Status = newStatus;
+        if (newStatus == BookingStatus.Cancelled)
+        {
+            booking.CancellationReason = actionReason;
+        }
         booking.StatusHistory.Add(new BookingStatusHistory
         {
             PreviousStatus = previousStatus,
@@ -361,6 +367,12 @@ public class SessionLifecycleService : ISessionLifecycleService
     {
         BookingStatus previousStatus = booking.Status;
         booking.Status = newStatus;
+        if (newStatus == BookingStatus.Cancelled)
+        {
+            booking.CancellationReason = string.IsNullOrWhiteSpace(reason)
+                ? null
+                : reason.Trim();
+        }
         booking.StatusHistory.Add(new BookingStatusHistory
         {
             PreviousStatus = previousStatus,

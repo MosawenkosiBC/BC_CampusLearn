@@ -31,6 +31,20 @@
         <h1>All Sessions</h1>
     </header>
 
+    @if (TempData["SuccessMessage"] is string message)
+    {
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(message))
+    }
+
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(
+                errorMessage,
+                CampusAlertVariant.Danger))
+    }
+
     <div class="bookings-workspace">
         <aside id="tutor-session-filter-panel"
                class="tutor-filters bookings-filters"
@@ -286,6 +300,16 @@
                                                                class="dropdown-item">
                                                                 Session Details
                                                             </a>
+                                                            @if (session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending)
+                                                            {
+                                                                <button type="button"
+                                                                        class="dropdown-item"
+                                                                        data-tutor-confirm-session
+                                                                        data-booking-id="@session.BookingId"
+                                                                        data-student-name="@session.StudentName">
+                                                                    Confirm session
+                                                                </button>
+                                                            }
                                                         </div>
                                                     </div>
                                                 </td>
@@ -311,11 +335,48 @@
     </div>
 </main>
 
+<div class="modal fade bookings-action-modal" id="tutor-confirm-session-modal"
+     tabindex="-1" aria-labelledby="tutor-confirm-session-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Confirm" data-tutor-confirm-form>
+                <input type="hidden" name="bookingId" data-tutor-confirm-booking-id />
+                <div class="modal-header">
+                    <div>
+                        <h2 id="tutor-confirm-session-title">Confirm session</h2>
+                        <p data-tutor-confirm-description>
+                            Add the meeting link the student will use to join.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="tutor-confirm-meeting-link">Meeting link</label>
+                    <input id="tutor-confirm-meeting-link" name="meetingLink"
+                           type="url" maxlength="2048"
+                           placeholder="https://teams.microsoft.com/..."
+                           autocomplete="url" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light"
+                            data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn bookings-modal-primary">
+                        Confirm session
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="~/js/components/navigation-drawer.js"
             asp-append-version="true"></script>
     <script src="~/js/tutors.js"
             asp-append-version="true"></script>
     <script src="~/js/components/pagination.js"
+            asp-append-version="true"></script>
+    <script src="~/js/tutor-sessions.js"
             asp-append-version="true"></script>
 }

@@ -38,6 +38,14 @@
             new CampusAlertViewModel(message))
     }
 
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(
+                errorMessage,
+                CampusAlertVariant.Danger))
+    }
+
     <div class="bookings-workspace">
         <aside id="booking-filter-panel"
                class="tutor-filters bookings-filters"
@@ -325,7 +333,11 @@
                                                         booking.Status == BookingStatus.Confirmed)
                                                     {
                                                         <button type="button"
-                                                                class="dropdown-item">
+                                                                class="dropdown-item"
+                                                                data-booking-cancel
+                                                                data-booking-id="@booking.BookingId"
+                                                                data-tutor-name="@booking.TutorName"
+                                                                data-reason-required="@(booking.Status == BookingStatus.Confirmed ? "true" : "false")">
                                                             Cancel session
                                                         </button>
                                                     }
@@ -354,11 +366,48 @@
     </div>
 </main>
 
+<div class="modal fade bookings-action-modal" id="bookings-cancel-session-modal"
+     tabindex="-1" aria-labelledby="bookings-cancel-session-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Cancel" data-bookings-cancel-form>
+                <input type="hidden" name="bookingId" data-bookings-cancel-id />
+                <div class="modal-header">
+                    <div>
+                        <h2 id="bookings-cancel-session-title">Cancel session</h2>
+                        <p data-bookings-cancel-description>
+                            Please provide a reason for cancelling this confirmed session.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="bookings-cancellation-reason">Reason</label>
+                    <textarea id="bookings-cancellation-reason"
+                              name="cancellationReason"
+                              rows="4" minlength="5" maxlength="1000"
+                              required data-bookings-cancel-reason></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light"
+                            data-bs-dismiss="modal">Keep session</button>
+                    <button type="submit" class="btn bookings-modal-primary">
+                        Cancel session
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="~/js/components/navigation-drawer.js"
             asp-append-version="true"></script>
     <script src="~/js/tutors.js"
             asp-append-version="true"></script>
     <script src="~/js/components/pagination.js"
+            asp-append-version="true"></script>
+    <script src="~/js/bookings-index.js"
             asp-append-version="true"></script>
 }

@@ -86,24 +86,31 @@
             <section class="session-information-section is-mobile-collapsed" aria-labelledby="session-information-title">
                 <header class="manage-card-heading">
                     <h2 id="session-information-title">Session Information</h2>
-                    <button type="button" class="session-information-toggle"
-                            aria-expanded="false" aria-controls="session-information-panel"
-                            aria-label="Show session information" data-session-information-toggle>
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="m7 10 5 5 5-5" />
-                        </svg>
-                    </button>
                 </header>
 
-                <div class="manage-session-card session-information-card" id="session-information-panel">
+                <div class="manage-session-card session-information-card">
+                    <div class="session-information-summary">
+                        <div class="session-information-summary-person">
+                            <span>Tutor Name</span>
+                            <strong>@Model.TutorName</strong>
+                        </div>
+                        <button type="button" class="session-information-toggle"
+                                aria-expanded="false" aria-controls="student-session-information-details"
+                                aria-label="Show all session information" data-session-information-toggle>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m7 10 5 5 5-5" />
+                            </svg>
+                        </button>
+                    </div>
+
                     <span class="session-status-badge status-@Model.Session.Status.ToString().ToLowerInvariant()">
                         @Model.Session.Status.ToDisplayText()
                     </span>
 
-                    <div class="session-information-content">
+                    <div class="session-information-content" id="student-session-information-details">
                         <div class="session-information-main">
                             <div class="session-information-grid">
-                                <div class="session-readonly-field">
+                                <div class="session-readonly-field session-primary-person-field">
                                     <label for="session-tutor-name">Tutor Name</label>
                                     <input id="session-tutor-name" type="text" value="@Model.TutorName" readonly />
                                 </div>
@@ -226,6 +233,7 @@
 
                 <label for="student-session-status-action">Change Status</label>
                 <select id="student-session-status-action"
+                        data-system-dropdown
                         data-student-session-status-select
                         disabled="@(Model.Session.Status is not (BookingStatus.Pending or BookingStatus.Confirmed))">
                     <option value="">@Model.Session.Status.ToDisplayText()</option>
@@ -252,12 +260,18 @@
             @if (!string.IsNullOrWhiteSpace(Model.LatestStatusReason))
             {
                 <section class="session-status-reason">
-                    @if (!string.IsNullOrWhiteSpace(Model.LatestStatusReasonTitle))
-                    {
-                        <h2>@Model.LatestStatusReasonTitle</h2>
-                    }
                     <div class="session-status-warning" role="status">
-                        @Model.LatestStatusReason
+                        <span class="session-status-warning-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 7v6" />
+                                <path d="M12 17h.01" />
+                            </svg>
+                        </span>
+                        @if (!string.IsNullOrWhiteSpace(Model.LatestStatusReasonTitle))
+                        {
+                            <h2>@Model.LatestStatusReasonTitle</h2>
+                        }
+                        <p>@Model.LatestStatusReason</p>
                     </div>
                 </section>
             }
@@ -623,5 +637,6 @@
 
 @section Scripts {
     <script src="~/js/components/navigation-drawer.js" asp-append-version="true"></script>
+    <script src="~/js/components/system-dropdown.js" asp-append-version="true"></script>
     <script src="~/js/student-session-details.js" asp-append-version="true"></script>
 }

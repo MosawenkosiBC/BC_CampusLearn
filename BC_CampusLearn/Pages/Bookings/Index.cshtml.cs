@@ -55,6 +55,12 @@ public class IndexModel : PageModel
     public IReadOnlyList<BookingListItemViewModel> Bookings
     { get; private set; } = new List<BookingListItemViewModel>();
 
+    [TempData]
+    public string? SuccessMessage { get; set; }
+
+    [TempData]
+    public string? ErrorMessage { get; set; }
+
     public IEnumerable<SelectListItem> StatusOptions =>
         Enum.GetValues<BookingStatus>()
             .Select(status => new SelectListItem(
@@ -197,5 +203,32 @@ public class IndexModel : PageModel
         };
 
         Bookings = bookings;
+    }
+
+    public async Task<IActionResult> OnPostCancelAsync(
+        int bookingId,
+        string? cancellationReason,
+        CancellationToken cancellationToken)
+    {
+        CurrentUser student = _currentUserService.GetRequiredUser();
+        SessionLifecycleResult result =
+            await _lifecycleService.CancelByStudentAsync(
+                student.BcUserId,
+                student.ObjectId,
+                student.TenantId,
+                bookingId,
+                cancellationReason,
+                cancellationToken);
+
+        if (result.Succeeded)
+        {
+            SuccessMessage = "Session cancelled.";
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
+
+        return RedirectToPage();
     }
 }

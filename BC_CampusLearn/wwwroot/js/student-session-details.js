@@ -40,8 +40,8 @@
             const collapsed = section.classList.toggle("is-mobile-collapsed");
             toggle.setAttribute("aria-expanded", String(!collapsed));
             toggle.setAttribute("aria-label", collapsed
-                ? "Show session information"
-                : "Hide session information");
+                ? "Show all session information"
+                : "Show less session information");
         }));
 
     const evaluationPanel = document.getElementById("review-session-modal");

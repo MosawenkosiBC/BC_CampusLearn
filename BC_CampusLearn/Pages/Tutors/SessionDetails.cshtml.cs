@@ -120,26 +120,50 @@ public class SessionDetailsModel : PageModel
                 SessionSchedulingRules.EarlyStartWindow) &&
             now < session.ScheduledStartTime.Add(
                 SessionSchedulingRules.LateStartWindow);
-        BookingStatusHistory? latestStatusReason = session.StatusHistory
-            .OrderByDescending(item => item.ChangedAt)
-            .FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Reason));
-        LatestStatusReasonIsUnreviewedWarning =
-            latestStatusReason?.ReasonCode == SessionLifecycleService.UnreviewedReasonCode;
-        LatestStatusReason = LatestStatusReasonIsUnreviewedWarning
-            ? SessionLifecycleService.UnreviewedWarningMessage
-            : latestStatusReason?.ReasonCode switch
+        if (session.Status is BookingStatus.Cancelled or
+            BookingStatus.Declined)
         {
-            SessionLifecycleService.NotStartedReasonCode =>
-                SessionLifecycleService.NotStartedWarningMessage,
-            _ => latestStatusReason?.Reason
-        };
-        LatestStatusReasonTitle = latestStatusReason?.ReasonCode switch
-        {
-            SessionLifecycleService.TutorDeclinedReasonCode => "Decline Reason",
-            SessionLifecycleService.TutorCancelledReasonCode => "Cancel Reason",
-            SessionLifecycleService.StudentCancelledReasonCode => "Cancel Reason",
-            _ => null
-        };
+            BookingStatusHistory? latestStatusReason = session.StatusHistory
+                .OrderByDescending(item => item.ChangedAt)
+                .FirstOrDefault(item =>
+                    item.NewStatus is BookingStatus.Cancelled or
+                        BookingStatus.Declined);
+            LatestStatusReasonIsUnreviewedWarning =
+                latestStatusReason?.ReasonCode ==
+                    SessionLifecycleService.UnreviewedReasonCode;
+            LatestStatusReason = LatestStatusReasonIsUnreviewedWarning
+                ? SessionLifecycleService.UnreviewedWarningMessage
+                : latestStatusReason?.ReasonCode switch
+            {
+                SessionLifecycleService.NotStartedReasonCode =>
+                    SessionLifecycleService.NotStartedWarningMessage,
+                _ when latestStatusReason?.NewStatus ==
+                    BookingStatus.Cancelled =>
+                    session.CancellationReason ??
+                        latestStatusReason!.Reason ??
+                        "No cancellation reason was provided.",
+                _ => latestStatusReason?.Reason ??
+                    "No decline reason was provided."
+            };
+            LatestStatusReasonTitle = latestStatusReason?.ReasonCode switch
+            {
+                SessionLifecycleService.TutorDeclinedReasonCode =>
+                    "Declined by Tutor",
+                SessionLifecycleService.TutorCancelledReasonCode =>
+                    "Cancelled by Tutor",
+                SessionLifecycleService.StudentCancelledReasonCode =>
+                    "Cancelled by Student",
+                SessionLifecycleService.UnreviewedReasonCode =>
+                    "Declined by System",
+                SessionLifecycleService.NotStartedReasonCode =>
+                    "Cancelled by System",
+                _ when latestStatusReason?.ChangedBySystem == true =>
+                    $"{latestStatusReason!.NewStatus.ToDisplayText()} by System",
+                _ => session.Status == BookingStatus.Cancelled
+                    ? "Session Cancelled"
+                    : "Session Declined"
+            };
+        }
         return Page();
     }
 

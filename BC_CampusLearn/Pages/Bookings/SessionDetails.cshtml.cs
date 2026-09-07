@@ -98,24 +98,45 @@ public class SessionDetailsModel : PageModel
         TutorProfileImagePath =
             session.TutorCourseModule.Tutor.ProfileImagePath;
 
-        BookingStatusHistory? latestReason = session.StatusHistory
-            .OrderByDescending(item => item.ChangedAt)
-            .FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Reason));
-        LatestStatusReason = latestReason?.ReasonCode switch
+        if (session.Status is BookingStatus.Cancelled or
+            BookingStatus.Declined)
         {
-            SessionLifecycleService.UnreviewedReasonCode =>
-                "The booking expired because the tutor did not respond before the scheduled time.",
-            SessionLifecycleService.NotStartedReasonCode =>
-                "The session was cancelled because the tutor did not start it within the allowed time.",
-            _ => latestReason?.Reason
-        };
-        LatestStatusReasonTitle = latestReason?.ReasonCode switch
-        {
-            SessionLifecycleService.TutorDeclinedReasonCode => "Decline Reason",
-            SessionLifecycleService.TutorCancelledReasonCode => "Cancel Reason",
-            SessionLifecycleService.StudentCancelledReasonCode => "Cancel Reason",
-            _ => null
-        };
+            BookingStatusHistory? latestReason = session.StatusHistory
+                .OrderByDescending(item => item.ChangedAt)
+                .FirstOrDefault(item =>
+                    item.NewStatus is BookingStatus.Cancelled or
+                        BookingStatus.Declined);
+            LatestStatusReason = latestReason?.ReasonCode switch
+            {
+                SessionLifecycleService.UnreviewedReasonCode =>
+                    "The booking expired because the tutor did not respond before the scheduled time.",
+                SessionLifecycleService.NotStartedReasonCode =>
+                    SessionLifecycleService.NotStartedCancellationReason,
+                _ when latestReason?.NewStatus == BookingStatus.Cancelled =>
+                    session.CancellationReason ?? latestReason!.Reason ??
+                        "No cancellation reason was provided.",
+                _ => latestReason?.Reason ??
+                    "No decline reason was provided."
+            };
+            LatestStatusReasonTitle = latestReason?.ReasonCode switch
+            {
+                SessionLifecycleService.TutorDeclinedReasonCode =>
+                    "Declined by Tutor",
+                SessionLifecycleService.TutorCancelledReasonCode =>
+                    "Cancelled by Tutor",
+                SessionLifecycleService.StudentCancelledReasonCode =>
+                    "Cancelled by Student",
+                SessionLifecycleService.UnreviewedReasonCode =>
+                    "Declined by System",
+                SessionLifecycleService.NotStartedReasonCode =>
+                    "Cancelled by System",
+                _ when latestReason?.ChangedBySystem == true =>
+                    $"{latestReason!.NewStatus.ToDisplayText()} by System",
+                _ => session.Status == BookingStatus.Cancelled
+                    ? "Session Cancelled"
+                    : "Session Declined"
+            };
+        }
 
         return Page();
     }

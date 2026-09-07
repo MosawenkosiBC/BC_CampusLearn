@@ -64,6 +64,33 @@ public class SessionLifecycleServiceTests
     }
 
     [Fact]
+    public async Task ProcessDueTransitions_StoresSystemCancellationReason()
+    {
+        DateTimeOffset now =
+            new(2026, 8, 31, 10, 15, 0, TimeSpan.Zero);
+        await using ApplicationDbContext context = CreateContext();
+        Booking booking = CreateBooking(now.AddMinutes(-15));
+        booking.Status = BookingStatus.Confirmed;
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var service = new SessionLifecycleService(
+            context,
+            new TestTimeProvider(now));
+
+        await service.ProcessDueTransitionsAsync();
+
+        Assert.Equal(BookingStatus.Cancelled, booking.Status);
+        Assert.Equal(
+            SessionLifecycleService.NotStartedCancellationReason,
+            booking.CancellationReason);
+        BookingStatusHistory history = Assert.Single(booking.StatusHistory);
+        Assert.Equal(
+            SessionLifecycleService.NotStartedReasonCode,
+            history.ReasonCode);
+        Assert.True(history.ChangedBySystem);
+    }
+
+    [Fact]
     public async Task Decline_PendingBooking_DoesNotRequireAReason()
     {
         DateTimeOffset now = new(2026, 8, 31, 10, 0, 0, TimeSpan.Zero);
@@ -121,6 +148,9 @@ public class SessionLifecycleServiceTests
         BookingStatusHistory history = Assert.Single(booking.StatusHistory);
         Assert.Equal(SessionLifecycleService.TutorCancelledReasonCode, history.ReasonCode);
         Assert.Equal("Tutor is no longer available.", history.Reason);
+        Assert.Equal(
+            "Tutor is no longer available.",
+            booking.CancellationReason);
     }
 
     [Fact]
@@ -149,6 +179,7 @@ public class SessionLifecycleServiceTests
             SessionLifecycleService.StudentCancelledReasonCode,
             history.ReasonCode);
         Assert.Null(history.Reason);
+        Assert.Null(booking.CancellationReason);
     }
 
     [Fact]
@@ -182,6 +213,9 @@ public class SessionLifecycleServiceTests
         Assert.Equal(BookingStatus.Cancelled, booking.Status);
         BookingStatusHistory history = Assert.Single(booking.StatusHistory);
         Assert.Equal("I can no longer attend the session.", history.Reason);
+        Assert.Equal(
+            "I can no longer attend the session.",
+            booking.CancellationReason);
     }
 
     [Fact]
