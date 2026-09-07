@@ -235,17 +235,7 @@
 
         </section>
 
-        <section class="tutor-danger-zone" aria-labelledby="profile-danger-zone-title">
-            <div>
-                <h3 id="profile-danger-zone-title">Danger Zone</h3>
-                <p>Submit a request to permanently leave the tutor programme.</p>
-            </div>
-            <a asp-page="/Tutors/StatisticsOverview"
-               asp-route-openDeregistration="true"
-               class="tutor-deregistration-button">
-                Request Tutor Deregistration
-            </a>
-        </section>
+        <partial name="_TutorSupportPanel" />
     </div>
     </div>
 </section>

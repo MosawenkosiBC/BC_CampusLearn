@@ -1,6 +1,36 @@
 (() => {
     "use strict";
 
+    const periodForm = document.querySelector("[data-statistics-period-form]");
+
+    if (periodForm) {
+        const periodSelect = periodForm.querySelector("[data-statistics-period]");
+        const editDatesButton = periodForm.querySelector("[data-statistics-edit-dates]");
+        const customDateModal = document.querySelector("#statistics-custom-date-modal");
+        const currentPeriod = periodForm.dataset.currentPeriod;
+
+        const openCustomDateModal = () => {
+            if (customDateModal && window.bootstrap) {
+                window.bootstrap.Modal.getOrCreateInstance(customDateModal).show();
+            }
+        };
+
+        periodSelect.addEventListener("change", () => {
+            if (periodSelect.value === "custom") {
+                openCustomDateModal();
+                return;
+            }
+
+            periodForm.requestSubmit();
+        });
+
+        editDatesButton?.addEventListener("click", openCustomDateModal);
+
+        customDateModal?.addEventListener("hidden.bs.modal", () => {
+            periodSelect.value = currentPeriod;
+        });
+    }
+
     if (typeof window.Chart === "undefined") {
         return;
     }
@@ -13,29 +43,35 @@
         }
     };
 
-    const trendCanvas = document.querySelector("[data-tutor-trend-chart]");
+    const moduleCanvas = document.querySelector("[data-tutor-module-chart]");
 
-    if (trendCanvas) {
-        const labels = parseValues(trendCanvas, "labels");
-        const values = parseValues(trendCanvas, "values");
+    if (moduleCanvas) {
+        const labels = parseValues(moduleCanvas, "labels");
+        const completedValues = parseValues(moduleCanvas, "completedValues");
+        const availabilityColors = [
+            "#ad0151",
+            "#4ac1c1",
+            "#713b72",
+            "#35658a",
+            "#6f6f6f"
+        ];
 
-        new window.Chart(trendCanvas, {
-            type: "line",
+        new window.Chart(moduleCanvas, {
+            type: "bar",
             data: {
                 labels,
-                datasets: [{
-                    data: values,
-                    borderColor: "#ad0151",
-                    backgroundColor: "rgba(173, 1, 81, 0.08)",
-                    borderWidth: 2.25,
-                    pointBackgroundColor: "#ffffff",
-                    pointBorderColor: "#ad0151",
-                    pointBorderWidth: 2,
-                    pointRadius: 3.5,
-                    pointHoverRadius: 5,
-                    tension: 0.35,
-                    fill: true
-                }]
+                datasets: [
+                    {
+                        label: "Sessions completed",
+                        data: completedValues,
+                        backgroundColor: availabilityColors.slice(0, labels.length),
+                        borderWidth: 0,
+                        borderRadius: 4,
+                        categoryPercentage: 0.9,
+                        barPercentage: 0.92,
+                        maxBarThickness: 64
+                    }
+                ]
             },
             options: {
                 responsive: true,
@@ -47,11 +83,10 @@
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        displayColors: false,
                         callbacks: {
                             label: (context) => {
                                 const count = context.parsed.y;
-                                return `${count} ${count === 1 ? "session" : "sessions"}`;
+                                return `${count} ${count === 1 ? "session" : "sessions"} completed`;
                             }
                         }
                     }
@@ -59,6 +94,12 @@
                 scales: {
                     x: {
                         grid: { display: false },
+                        title: {
+                            display: true,
+                            text: "Module",
+                            color: "#535a65",
+                            font: { size: 11, weight: "600" }
+                        },
                         ticks: {
                             color: "#858b94",
                             font: { size: 10 },
@@ -68,6 +109,12 @@
                     },
                     y: {
                         beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: "Number of sessions completed",
+                            color: "#535a65",
+                            font: { size: 11, weight: "600" }
+                        },
                         ticks: {
                             color: "#858b94",
                             font: { size: 10 },
@@ -82,35 +129,4 @@
         });
     }
 
-    const statusCanvas = document.querySelector("[data-tutor-status-chart]");
-
-    if (statusCanvas) {
-        const labels = parseValues(statusCanvas, "labels");
-        const values = parseValues(statusCanvas, "values");
-        const hasData = values.some((value) => value > 0);
-
-        new window.Chart(statusCanvas, {
-            type: "doughnut",
-            data: {
-                labels: hasData ? labels : ["No sessions"],
-                datasets: [{
-                    data: hasData ? values : [1],
-                    backgroundColor: hasData
-                        ? ["#4aa665", "#ad0151", "#4ac1c1", "#e07a89", "#9a9fa7"]
-                        : ["#eceef1"],
-                    borderWidth: 0,
-                    hoverOffset: hasData ? 4 : 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: "72%",
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { enabled: hasData }
-                }
-            }
-        });
-    }
 })();

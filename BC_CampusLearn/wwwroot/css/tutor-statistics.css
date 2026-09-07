@@ -25,16 +25,26 @@
 .tutor-statistics-range {
     align-items: center;
     display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    justify-content: flex-end;
+}
+
+.tutor-statistics-range-field {
+    align-items: center;
+    display: flex;
     gap: 0.65rem;
 }
 
-.tutor-statistics-range label {
+.tutor-statistics-range label,
+.tutor-statistics-date-field span {
     color: #626a75;
     font-size: 0.8rem;
     font-weight: 600;
 }
 
-.tutor-statistics-range select {
+.tutor-statistics-range select,
+.tutor-statistics-date-field input {
     background-color: #fff;
     border: 1px solid #dfe2e6;
     border-radius: 0.35rem;
@@ -42,6 +52,47 @@
     font-size: 0.82rem;
     min-height: 2.4rem;
     padding: 0.45rem 2rem 0.45rem 0.75rem;
+}
+
+.tutor-statistics-date-field {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.tutor-statistics-date-field input {
+    padding-right: 0.65rem;
+}
+
+.tutor-statistics-edit-dates {
+    background-color: #fff;
+    border: 1px solid #d8a4bd;
+    border-radius: 0.35rem;
+    color: #ad0151;
+    font-size: 0.8rem;
+    font-weight: 700;
+    min-height: 2.4rem;
+    padding: 0.45rem 0.9rem;
+}
+
+.tutor-statistics-edit-dates:hover,
+.tutor-statistics-edit-dates:focus-visible {
+    background-color: #f9edf3;
+}
+
+.tutor-statistics-modal-dates {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tutor-statistics-modal-dates input {
+    width: 100%;
+}
+
+.tutor-statistics-range-error {
+    color: #b51228;
+    font-size: 0.75rem !important;
+    margin: 0.75rem 0 0 !important;
 }
 
 .tutor-statistics-summary {
@@ -83,8 +134,7 @@
 
 .tutor-stat-card-icon {
     align-items: center;
-    background-color: color-mix(in srgb, currentColor 11%, white);
-    border-radius: 0.45rem;
+    background-color: transparent;
     display: flex;
     flex: 0 0 2.7rem;
     height: 2.7rem;
@@ -93,12 +143,12 @@
 
 .tutor-stat-card-icon svg {
     fill: none;
-    height: 1.35rem;
+    height: 2rem;
     stroke: currentColor;
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-width: 1.7;
-    width: 1.35rem;
+    width: 2rem;
 }
 
 .tutor-stat-card-premium div {
@@ -106,8 +156,8 @@
 }
 
 .tutor-stat-card-premium p {
-    color: #535a65;
-    font-size: 0.72rem;
+    color: #000;
+    font-size: 0.9rem;
     font-weight: 600;
     margin: 0 0 0.25rem;
 }
@@ -117,13 +167,6 @@
     display: block;
     font-size: 1.65rem;
     line-height: 1.1;
-}
-
-.tutor-stat-card-premium div > span {
-    color: #90959d;
-    display: block;
-    font-size: 0.64rem;
-    margin-top: 0.35rem;
 }
 
 .tutor-statistics-primary-grid,
@@ -150,6 +193,23 @@
     padding: 1.2rem;
 }
 
+.tutor-statistics-panel-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.tutor-statistics-panel-group > .tutor-statistics-panel {
+    flex: 1;
+}
+
+.tutor-statistics-section-title {
+    color: #000;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 0.65rem;
+}
+
 .tutor-statistics-panel-heading {
     align-items: flex-start;
     display: flex;
@@ -170,93 +230,86 @@
     margin: 0.18rem 0 0;
 }
 
-.tutor-statistics-period-badge {
-    background-color: rgba(173, 1, 81, 0.07);
-    border-radius: 999px;
-    color: #ad0151;
-    font-size: 0.64rem;
-    font-weight: 600;
-    padding: 0.28rem 0.55rem;
-}
-
 .tutor-statistics-chart-wrap {
     height: 14rem;
     position: relative;
 }
 
-.tutor-statistics-doughnut-wrap {
-    height: 10.5rem;
-    margin: 0 auto 0.75rem;
-    max-width: 10.5rem;
-    position: relative;
+.tutor-session-status-stats {
+    display: grid;
+    gap: 0;
+    margin: 0;
 }
 
-.tutor-statistics-doughnut-total {
+.tutor-session-status-stats > div:not(.tutor-session-status-divider) {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    min-height: 2.35rem;
+    padding: 0.35rem 0;
+}
+
+.tutor-session-status-stats dt {
+    color: #535a65;
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+
+.tutor-session-status-stats dd {
+    color: #111;
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.tutor-session-status-divider {
+    border-top: 1px solid #e3e5e8;
+    margin: 0.6rem 0;
+}
+
+.tutor-session-status-stats > .tutor-session-rating-row {
+    align-items: center;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding-top: 0.45rem;
+    text-align: center;
+}
+
+.tutor-session-rating {
     align-items: center;
     display: flex;
     flex-direction: column;
-    inset: 0;
-    justify-content: center;
-    pointer-events: none;
-    position: absolute;
+    gap: 0.35rem;
 }
 
-.tutor-statistics-doughnut-total strong {
-    color: #1c2026;
-    font-size: 1.35rem;
+.tutor-session-rating-number {
+    align-items: baseline;
+    display: inline-flex;
+}
+
+.tutor-session-rating-number strong {
+    color: #111;
+    font-size: 1.25rem;
+}
+
+.tutor-session-rating-number > span {
+    color: #111;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.tutor-session-rating-stars {
+    background: linear-gradient(
+        90deg,
+        #f2a93b var(--rating-width),
+        #dfe2e6 var(--rating-width));
+    background-clip: text;
+    color: transparent;
+    display: inline-block;
+    font-size: 1.65rem;
+    letter-spacing: 0.1rem;
     line-height: 1;
-}
-
-.tutor-statistics-doughnut-total span {
-    color: #8b9199;
-    font-size: 0.62rem;
-    margin-top: 0.25rem;
-}
-
-.tutor-status-legend {
-    display: grid;
-    gap: 0.45rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.tutor-status-legend > div {
-    align-items: center;
-    color: #626974;
-    display: grid;
-    font-size: 0.66rem;
-    gap: 0.38rem;
-    grid-template-columns: auto 1fr auto;
-}
-
-.tutor-status-legend strong {
-    color: #282d34;
-    font-size: 0.68rem;
-}
-
-.tutor-status-dot {
-    border-radius: 50%;
-    height: 0.48rem;
-    width: 0.48rem;
-}
-
-.tutor-status-dot.is-completed {
-    background-color: #4aa665;
-}
-
-.tutor-status-dot.is-confirmed {
-    background-color: #ad0151;
-}
-
-.tutor-status-dot.is-pending {
-    background-color: #4ac1c1;
-}
-
-.tutor-status-dot.is-cancelled {
-    background-color: #e07a89;
-}
-
-.tutor-status-dot.is-declined {
-    background-color: #9a9fa7;
+    -webkit-background-clip: text;
 }
 
 .tutor-module-ranking {
@@ -383,16 +436,26 @@
     }
 
     .tutor-statistics-range {
-        justify-content: space-between;
+        align-items: stretch;
+        justify-content: flex-start;
         width: 100%;
     }
 
-    .tutor-statistics-range select {
+    .tutor-statistics-range-field {
+        width: 100%;
+    }
+
+    .tutor-statistics-range-field select {
         flex: 1;
     }
+
 }
 
 @media (max-width: 575.98px) {
+    .tutor-statistics-modal-dates {
+        grid-template-columns: 1fr;
+    }
+
     .tutor-statistics-content,
     .tutor-statistics-summary,
     .tutor-statistics-primary-grid,
@@ -411,8 +474,7 @@
         grid-template-columns: 1fr;
     }
 
-    .tutor-statistics-insights,
-    .tutor-status-legend {
+    .tutor-statistics-insights {
         grid-template-columns: 1fr;
     }
 
