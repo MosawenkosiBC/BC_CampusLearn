@@ -3,6 +3,13 @@
         "[data-navigation-drawer]");
 
     drawerComponents.forEach((component) => {
+        // Pages render the drawer inside content wrappers that may create their
+        // own stacking contexts. Move it to the body so its fixed backdrop and
+        // panel can layer above the fixed site header.
+        if (component.parentElement !== document.body) {
+            document.body.append(component);
+        }
+
         const openButton = component.querySelector("[data-drawer-open]");
         const closeButton = component.querySelector("[data-drawer-close]");
         const backdrop = component.querySelector("[data-drawer-backdrop]");
