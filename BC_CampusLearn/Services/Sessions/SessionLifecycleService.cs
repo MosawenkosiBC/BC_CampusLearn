@@ -161,8 +161,14 @@ public class SessionLifecycleService : ISessionLifecycleService
         }
 
         string actionReason = reason?.Trim() ?? string.Empty;
+        if (actionReason.Length > 1000)
+        {
+            return SessionLifecycleResult.Failure(
+                "Provide a reason of up to 1000 characters.");
+        }
+
         if (booking.Status == BookingStatus.Confirmed &&
-            (actionReason.Length < 5 || actionReason.Length > 1000))
+            actionReason.Length < 5)
         {
             return SessionLifecycleResult.Failure(
                 "Provide a cancellation reason between 5 and 1000 characters.");
@@ -191,9 +197,9 @@ public class SessionLifecycleService : ISessionLifecycleService
             ReasonCode = previousStatus == BookingStatus.Pending
                 ? TutorDeclinedReasonCode
                 : TutorCancelledReasonCode,
-            Reason = previousStatus == BookingStatus.Confirmed
-                ? actionReason
-                : null,
+            Reason = string.IsNullOrWhiteSpace(actionReason)
+                ? null
+                : actionReason,
             ChangedByBcUserId = changedByBcUserId,
             ChangedAt = now,
             AvailabilityReopened = availabilityReopened

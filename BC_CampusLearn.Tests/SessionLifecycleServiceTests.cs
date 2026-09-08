@@ -117,6 +117,34 @@ public class SessionLifecycleServiceTests
     }
 
     [Fact]
+    public async Task Decline_PendingBooking_StoresOptionalReason()
+    {
+        DateTimeOffset now = new(2026, 8, 31, 10, 0, 0, TimeSpan.Zero);
+        await using ApplicationDbContext context = CreateContext();
+        Booking booking = CreateBooking(now.AddHours(1));
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var service = new SessionLifecycleService(
+            context,
+            new TestTimeProvider(now));
+
+        SessionLifecycleResult result = await service.DeclineAsync(
+            booking.TutorId,
+            8,
+            booking.BookingId,
+            "Schedule conflict.",
+            reopenAvailability: false);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(BookingStatus.Declined, booking.Status);
+        BookingStatusHistory history = Assert.Single(booking.StatusHistory);
+        Assert.Equal(
+            SessionLifecycleService.TutorDeclinedReasonCode,
+            history.ReasonCode);
+        Assert.Equal("Schedule conflict.", history.Reason);
+    }
+
+    [Fact]
     public async Task Decline_ConfirmedBooking_CancelsAndRequiresAReason()
     {
         DateTimeOffset now = new(2026, 8, 31, 10, 0, 0, TimeSpan.Zero);

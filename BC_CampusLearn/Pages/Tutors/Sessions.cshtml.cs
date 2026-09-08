@@ -265,6 +265,67 @@ public class SessionsModel : PageModel
         return RedirectToPage();
     }
 
+    public async Task<IActionResult> OnPostDeclineAsync(
+        int bookingId,
+        string? declineReasonOption,
+        string? customDeclineReason,
+        CancellationToken cancellationToken)
+    {
+        CurrentUser currentUser = _currentUserService.GetRequiredUser();
+        int? tutorId = await _context.Tutors
+            .AsNoTracking()
+            .Where(tutor =>
+                tutor.BcUserId == currentUser.BcUserId &&
+                tutor.IsActive)
+            .Select(tutor => (int?)tutor.TutorId)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (!tutorId.HasValue)
+        {
+            return Forbid();
+        }
+
+        string? declineReason = declineReasonOption switch
+        {
+            "schedule-conflict" => "Schedule conflict.",
+            "unable-to-accommodate" =>
+                "Unable to accommodate the requested session.",
+            "other" when !string.IsNullOrWhiteSpace(customDeclineReason) =>
+                customDeclineReason.Trim(),
+            "none" => null,
+            _ => string.Empty
+        };
+
+        if (declineReason == string.Empty ||
+            declineReason?.Length > 1000)
+        {
+            ErrorMessage = declineReasonOption == "other"
+                ? "Enter a custom decline reason of up to 1000 characters."
+                : "Choose a valid decline reason.";
+            return RedirectToPage();
+        }
+
+        SessionLifecycleResult result =
+            await _lifecycleService.DeclineAsync(
+                tutorId.Value,
+                currentUser.BcUserId,
+                bookingId,
+                declineReason,
+                reopenAvailability: false,
+                cancellationToken);
+
+        if (result.Succeeded)
+        {
+            SuccessMessage = "Booking declined.";
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
+
+        return RedirectToPage();
+    }
+
     private static void AddRouteValue(
         IDictionary<string, string> routeData,
         string key,

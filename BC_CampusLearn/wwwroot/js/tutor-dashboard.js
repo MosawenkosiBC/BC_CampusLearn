@@ -439,11 +439,9 @@
                 dayHeaderContent: (argument) => {
                     const wrapper = document.createElement("span");
                     const weekday = document.createElement("strong");
-                    weekday.textContent = argument.isToday
-                        ? "Today"
-                        : formatDate(
-                            argument.date,
-                            { weekday: "short" });
+                    weekday.textContent = formatDate(
+                        argument.date,
+                        { weekday: "short" });
                     wrapper.append(weekday);
 
                     if (argument.view.type !== "dayGridMonth") {

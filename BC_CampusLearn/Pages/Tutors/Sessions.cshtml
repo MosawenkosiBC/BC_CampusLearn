@@ -309,6 +309,13 @@
                                                                         data-student-name="@session.StudentName">
                                                                     Confirm session
                                                                 </button>
+                                                                <button type="button"
+                                                                        class="dropdown-item"
+                                                                        data-tutor-decline-booking
+                                                                        data-booking-id="@session.BookingId"
+                                                                        data-student-name="@session.StudentName">
+                                                                    Decline booking
+                                                                </button>
                                                             }
                                                         </div>
                                                     </div>
@@ -335,6 +342,7 @@
     </div>
 </main>
 
+@section Modals {
 <div class="modal fade bookings-action-modal" id="tutor-confirm-session-modal"
      tabindex="-1" aria-labelledby="tutor-confirm-session-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -369,6 +377,62 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade bookings-action-modal" id="tutor-decline-booking-modal"
+     tabindex="-1" aria-label="Decline booking" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Decline" data-tutor-decline-form>
+                <input type="hidden" name="bookingId" data-tutor-decline-booking-id />
+                <div class="modal-header">
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <fieldset class="tutor-decline-options">
+                        <legend>Why are you declining?</legend>
+                        <label class="tutor-decline-option">
+                            <input type="radio" name="declineReasonOption"
+                                   value="schedule-conflict" required />
+                            <span>Schedule conflict</span>
+                        </label>
+                        <label class="tutor-decline-option">
+                            <input type="radio" name="declineReasonOption"
+                                   value="unable-to-accommodate" />
+                            <span>Unable to accommodate the requested session</span>
+                        </label>
+                        <label class="tutor-decline-option">
+                            <input type="radio" name="declineReasonOption"
+                                   value="none" />
+                            <span>Prefer not to provide a reason</span>
+                        </label>
+                        <label class="tutor-decline-option">
+                            <input type="radio" name="declineReasonOption"
+                                   value="other" data-tutor-decline-other />
+                            <span>Other</span>
+                        </label>
+                    </fieldset>
+
+                    <div class="tutor-decline-custom" data-tutor-decline-custom hidden>
+                        <label for="sessions-custom-decline-reason">Custom reason</label>
+                        <textarea id="sessions-custom-decline-reason"
+                                  name="customDeclineReason"
+                                  rows="4" maxlength="1000"
+                                  data-tutor-decline-custom-reason></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light"
+                            data-bs-dismiss="modal">Keep booking</button>
+                    <button type="submit" class="btn bookings-modal-primary">
+                        Decline booking
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+}
 
 @section Scripts {
     <script src="~/js/components/navigation-drawer.js"

@@ -31,7 +31,7 @@ public class TutorDashboardModel : PageModel
 
     public int OpenSlotCount { get; private set; }
 
-    public int TotalSessionCount { get; private set; }
+    public int CompletedSessionCount { get; private set; }
 
     public TutorNextSessionViewModel? NextSession
     { get; private set; }
@@ -109,14 +109,14 @@ public class TutorDashboardModel : PageModel
                 Upcoming = bookings.Count(booking =>
                     booking.Status == BookingStatus.Confirmed ||
                     booking.Status == BookingStatus.InProgress),
-                Total = bookings.Count(booking =>
+                Completed = bookings.Count(booking =>
                     booking.Status == BookingStatus.Completed)
             })
             .SingleOrDefaultAsync(cancellationToken);
 
         PendingSessionCount = bookingCounts?.Pending ?? 0;
         UpcomingSessionCount = bookingCounts?.Upcoming ?? 0;
-        TotalSessionCount = bookingCounts?.Total ?? 0;
+        CompletedSessionCount = bookingCounts?.Completed ?? 0;
 
         OpenSlotCount = await _context.TutorAvailabilities
             .AsNoTracking()
@@ -228,6 +228,135 @@ public class TutorDashboardModel : PageModel
             .ToList();
 
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostConfirmAsync(
+        int bookingId,
+        string? meetingLink,
+        CancellationToken cancellationToken)
+    {
+        CurrentUser currentUser =
+            _currentUserService.GetRequiredUser();
+        int? tutorId =
+            await GetCurrentTutorIdAsync(cancellationToken);
+
+        if (!tutorId.HasValue)
+        {
+            return Forbid();
+        }
+
+        SessionLifecycleResult result =
+            await _lifecycleService.ConfirmAsync(
+                tutorId.Value,
+                currentUser.BcUserId,
+                bookingId,
+                meetingLink,
+                cancellationToken);
+
+        if (result.Succeeded)
+        {
+            TempData["SuccessMessage"] =
+                "Session confirmed and meeting link saved.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.ErrorMessage;
+        }
+
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostCancelAsync(
+        int bookingId,
+        string? cancellationReason,
+        CancellationToken cancellationToken)
+    {
+        CurrentUser currentUser =
+            _currentUserService.GetRequiredUser();
+        int? tutorId =
+            await GetCurrentTutorIdAsync(cancellationToken);
+
+        if (!tutorId.HasValue)
+        {
+            return Forbid();
+        }
+
+        SessionLifecycleResult result =
+            await _lifecycleService.DeclineAsync(
+                tutorId.Value,
+                currentUser.BcUserId,
+                bookingId,
+                cancellationReason,
+                reopenAvailability: false,
+                cancellationToken);
+
+        if (result.Succeeded)
+        {
+            TempData["SuccessMessage"] = "Session cancelled.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.ErrorMessage;
+        }
+
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDeclineAsync(
+        int bookingId,
+        string? declineReasonOption,
+        string? customDeclineReason,
+        CancellationToken cancellationToken)
+    {
+        CurrentUser currentUser =
+            _currentUserService.GetRequiredUser();
+        int? tutorId =
+            await GetCurrentTutorIdAsync(cancellationToken);
+
+        if (!tutorId.HasValue)
+        {
+            return Forbid();
+        }
+
+        string? declineReason = declineReasonOption switch
+        {
+            "schedule-conflict" => "Schedule conflict.",
+            "unable-to-accommodate" =>
+                "Unable to accommodate the requested session.",
+            "other" when !string.IsNullOrWhiteSpace(customDeclineReason) =>
+                customDeclineReason.Trim(),
+            "none" => null,
+            _ => string.Empty
+        };
+
+        if (declineReason == string.Empty ||
+            declineReason?.Length > 1000)
+        {
+            TempData["ErrorMessage"] = declineReasonOption == "other"
+                ? "Enter a custom decline reason of up to 1000 characters."
+                : "Choose a valid decline reason.";
+            return RedirectToPage();
+        }
+
+        SessionLifecycleResult result =
+            await _lifecycleService.DeclineAsync(
+                tutorId.Value,
+                currentUser.BcUserId,
+                bookingId,
+                declineReason,
+                reopenAvailability: false,
+                cancellationToken);
+
+        if (result.Succeeded)
+        {
+            TempData["SuccessMessage"] = "Booking declined.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.ErrorMessage;
+        }
+
+        return RedirectToPage();
     }
 
     public async Task<IActionResult> OnPostUpdateBookingStatusAsync(
