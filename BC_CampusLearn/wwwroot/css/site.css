@@ -286,7 +286,7 @@ body {
 
   .campus-breadcrumbs {
     padding: 0.8rem 0 0.7rem;
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .campus-breadcrumbs-item + .campus-breadcrumbs-item::before {
