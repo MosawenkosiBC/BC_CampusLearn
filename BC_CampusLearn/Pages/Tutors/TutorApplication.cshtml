@@ -4,6 +4,7 @@
 
 @{
     ViewData["Title"] = "Tutor Application";
+    ViewData["BreadcrumbsInHeroOnMobile"] = true;
 }
 
 @section Styles {
@@ -23,6 +24,10 @@
              data-application-intro
              aria-labelledby="peer-tutoring-title">
         <header class="tutor-orientation-hero">
+            <div class="orientation-mobile-breadcrumbs">
+                <partial name="_Breadcrumbs" />
+            </div>
+
             <div class="orientation-hero-copy">
                 <h1 id="peer-tutoring-title">Peer-tutoring Applications</h1>
                 <p class="orientation-summary">
@@ -309,6 +314,10 @@
          data-initial-step="@Model.InitialStep"
          tabindex="-1"
          hidden>
+    <div class="tutor-application-flow-breadcrumbs">
+        <partial name="_Breadcrumbs" />
+    </div>
+
     <header class="tutor-application-heading">
         <h1>Apply To Become a Tutor</h1>
     </header>
@@ -323,21 +332,24 @@
                     <span class="stage-number">1</span>
                     <span class="stage-copy">
                         <strong>Details</strong>
-                        <small>Student information</small>
                     </span>
                 </li>
                 <li data-application-stage="2">
                     <span class="stage-number">2</span>
                     <span class="stage-copy">
-                        <strong>Tutoring Profile</strong>
-                        <small>Your expertise</small>
+                        <strong>
+                            <span class="stage-label-full">Tutoring Profile</span>
+                            <span class="stage-label-mobile">Profile</span>
+                        </strong>
                     </span>
                 </li>
                 <li data-application-stage="3">
                     <span class="stage-number">3</span>
                     <span class="stage-copy">
-                        <strong>Modules &amp; Documents</strong>
-                        <small>Final preferences</small>
+                        <strong>
+                            <span class="stage-label-full">Modules &amp; Documents</span>
+                            <span class="stage-label-mobile">Documents</span>
+                        </strong>
                     </span>
                 </li>
             </ol>
@@ -348,9 +360,6 @@
             <div data-application-step="1">
             <header class="tutor-application-card-heading">
                 <h2 id="application-stage-title" tabindex="-1">1. Details</h2>
-                <p>
-                    Let’s start with your academic and student information.
-                </p>
             </header>
 
             <form class="tutor-application-form" novalidate>
@@ -453,10 +462,6 @@
                     <h2 id="application-profile-title" tabindex="-1">
                         2. Tutoring Profile
                     </h2>
-                    <p>
-                        Help us understand your motivation, experience, and
-                        approach to supporting students.
-                    </p>
                 </header>
 
                 <form class="tutor-application-form" novalidate>
@@ -520,6 +525,11 @@
 
                         <div class="tutor-application-field">
                             <label asp-for="ProfileInput.DemonstrationVideoUrl" data-required></label>
+                            <small id="demonstration-video-help"
+                                   class="tutor-field-help">
+                                Add a link to a video of you tutoring or
+                                explaining a concept.
+                            </small>
                             <div class="tutor-link-input-wrap">
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      viewBox="0 0 24 24"
@@ -534,12 +544,9 @@
                                 <input asp-for="ProfileInput.DemonstrationVideoUrl"
                                        type="url"
                                        maxlength="500"
+                                       aria-describedby="demonstration-video-help"
                                        required />
                             </div>
-                            <small>
-                                Add your Microsoft Teams or Canva
-                                demonstration link.
-                            </small>
                             <span asp-validation-for="ProfileInput.DemonstrationVideoUrl"></span>
                         </div>
 
@@ -583,10 +590,6 @@
                     <h2 id="application-documents-title" tabindex="-1">
                         3. Modules &amp; Documents
                     </h2>
-                    <p>
-                        Confirm your tutoring preference and complete the
-                        final application requirements.
-                    </p>
                 </header>
 
                 <form id="tutor-application-submit-form"
@@ -610,13 +613,20 @@
                         <div class="tutor-application-field tutor-document-field">
                             <div class="tutor-document-heading">
                                 <label>Documents</label>
-                                <span>2 documents</span>
                             </div>
+                            <p id="tutor-document-help"
+                               class="tutor-document-help">
+                                Upload your academic transcript so Student
+                                Support can verify your results. You may also
+                                add a relevant certificate to strengthen your
+                                application.
+                            </p>
                             <div class="tutor-document-options">
                                 <div class="tutor-document-picker">
                                     <input asp-for="FinalInput.Transcript"
                                            type="file"
                                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                                           aria-describedby="tutor-document-help"
                                            required
                                            data-tutor-document-input />
                                     <label asp-for="FinalInput.Transcript"
@@ -635,6 +645,7 @@
                                     <input asp-for="FinalInput.AdditionalCertificate"
                                            type="file"
                                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                                           aria-describedby="tutor-document-help"
                                            data-tutor-document-input />
                                     <label asp-for="FinalInput.AdditionalCertificate"
                                            class="tutor-document-select">

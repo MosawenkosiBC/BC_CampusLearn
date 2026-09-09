@@ -99,7 +99,7 @@
     form?.addEventListener("submit", (event) => {
         event.preventDefault();
         applyFilters();
-        if (window.matchMedia("(max-width: 767.98px)").matches) {
+        if (window.matchMedia("(max-width: 991.98px)").matches) {
             browser.querySelector("[data-filter-close]")?.click();
         }
     });

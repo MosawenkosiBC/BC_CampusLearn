@@ -663,7 +663,8 @@
     </header>
 
     <div class="container flex-grow-1 @(hasSessionDetailsBackground ? "session-details-content-background" : null) @(hasStudentDashboardBackground ? "dashboard-content-background" : null) @(hasAllSessionsBackground ? "bookings-content-background" : null) @(hasManageAccountBackground ? "profile-content-background" : null) @(hasLearningResourcesBackground ? "learning-resources-content-background" : null) @(hasTutorDirectoryBackground ? "tutor-directory-content-background" : null)">
-        <main role="main">
+        <main role="main"
+              class="@(ViewData["BreadcrumbsInHeroOnMobile"] is true ? "has-mobile-hero-breadcrumbs" : null)">
             <partial name="_Breadcrumbs" />
             @RenderBody()
         </main>

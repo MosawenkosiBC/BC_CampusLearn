@@ -45,6 +45,20 @@
     position: relative;
 }
 
+.orientation-mobile-breadcrumbs {
+    display: none;
+}
+
+.tutor-orientation-hero .campus-breadcrumbs-item a,
+.tutor-orientation-hero .campus-breadcrumbs-item.is-current {
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.tutor-orientation-hero .campus-breadcrumbs-item +
+    .campus-breadcrumbs-item::before {
+    color: rgba(255, 255, 255, 0.62);
+}
+
 .orientation-hero-copy {
     max-width: 58%;
     position: relative;
@@ -165,7 +179,7 @@
 }
 
 .orientation-section {
-    border-bottom: 1px solid #e7eaed;
+    border-bottom: 0;
     padding: 2.75rem 0;
 }
 
@@ -221,7 +235,7 @@
 
 .orientation-process li {
     background-color: #f7f9fa;
-    border: 1px solid #e4e9ec;
+    border: 0;
     border-radius: 0.55rem;
     padding: 1.2rem;
 }
@@ -302,7 +316,7 @@
 }
 
 .orientation-benefits article {
-    border: 1px solid #e3e7ea;
+    border: 0;
     border-radius: 0.55rem;
     padding: 1.25rem;
 }
@@ -541,7 +555,12 @@
 
 .tutor-application-flow {
     isolation: isolate;
+    margin-top: -1rem;
     position: relative;
+}
+
+.tutor-application-flow-breadcrumbs {
+    display: none;
 }
 
 .tutor-application-flow::before {
@@ -620,7 +639,7 @@
 
 .tutor-application-stages li {
     align-items: center;
-    color: #222a31;
+    color: #75808a;
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
@@ -642,15 +661,20 @@
 .stage-number {
     align-items: center;
     aspect-ratio: 1;
-    background-color: transparent;
-    border: 1px solid #aeb6bd;
+    background-color: #e2e3e7;
+    background-image: linear-gradient(
+        145deg,
+        #f5f5f7 0%,
+        #e2e3e7 100%
+    );
+    border: 0;
     border-radius: 50%;
     box-sizing: border-box;
-    color: #27333d;
+    color: #4f5259;
     display: inline-flex;
     flex: 0 0 2.25rem;
-    font-size: 0.95rem;
-    font-weight: 700;
+    font-size: 0.9rem;
+    font-weight: 750;
     height: 2.25rem;
     justify-content: center;
     min-width: 2.25rem;
@@ -660,20 +684,34 @@
 }
 
 .tutor-application-stages li.is-active .stage-number {
-    background-color: transparent;
-    border-color: #ad0151;
-    color: #ad0151;
+    background-color: #e2e3e7;
+    background-image: linear-gradient(
+        145deg,
+        #f5f5f7 0%,
+        #e2e3e7 100%
+    );
+    border: 0;
+    color: #4f5259;
 }
 
 .tutor-application-stages li.is-complete .stage-number {
-    background-color: #4ac1c1;
-    border-color: #4ac1c1;
-    color: #fff;
+    background-color: #e2e3e7;
+    background-image: linear-gradient(
+        145deg,
+        #f5f5f7 0%,
+        #e2e3e7 100%
+    );
+    border: 0;
+    color: #4f5259;
+}
+
+.tutor-application-stages li.is-active {
+    color: #222a31;
 }
 
 .tutor-application-stages li.is-complete::after {
     background-color: transparent;
-    border-top-color: #4ac1c1;
+    border-top-color: #8f9399;
     border-top-style: solid;
 }
 
@@ -689,6 +727,10 @@
 .stage-copy strong {
     font-size: 0.95rem;
     font-weight: 650;
+}
+
+.stage-label-mobile {
+    display: none;
 }
 
 .stage-copy small {
@@ -821,6 +863,10 @@
     width: 100%;
 }
 
+.tutor-application-field .tutor-field-help {
+    margin: -0.05rem 0 0.5rem;
+}
+
 .tutor-application-field .tutor-character-counter {
     align-self: stretch;
     color: #000;
@@ -875,6 +921,13 @@
     display: grid;
     gap: 0.55rem;
     margin-top: 0.35rem;
+}
+
+.tutor-document-help {
+    color: #75808a;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    margin: 0.45rem 0 0.8rem;
 }
 
 .tutor-document-picker {
@@ -966,7 +1019,7 @@
     align-items: center;
     background-color: #fff;
     border: 1px solid #d7d7dc;
-    border-radius: 0.6rem;
+    border-radius: 0.5rem;
     color: #27272c;
     display: flex;
     font-size: 0.85rem;
@@ -994,7 +1047,7 @@
 }
 
 .tutor-module-trigger[aria-expanded="true"] {
-    border-color: #4ac1c1;
+    border-color: #d7d7dc;
 }
 
 .tutor-module-trigger[aria-expanded="true"] svg {
@@ -1132,9 +1185,9 @@
 .tutor-selected-module {
     align-items: center;
     background-color: #f0f2f4;
-    border: 1px solid #d9dee2;
+    border: 0;
     border-radius: 0.35rem;
-    color: #263746;
+    color: #111;
     display: grid;
     gap: 0.75rem;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -1149,13 +1202,13 @@
 }
 
 .tutor-selected-module-copy strong {
-    color: #ad0151;
+    color: #111;
     font-size: 0.72rem;
     font-weight: 700;
 }
 
 .tutor-application-field .tutor-selected-module-copy span {
-    color: #4f5d68;
+    color: #111;
     font-size: 0.74rem;
     line-height: 1.3;
     margin: 0;
@@ -1300,48 +1353,61 @@
     }
 
     .orientation-hero-copy {
-        max-width: 78%;
+        align-self: center;
+        max-width: 100%;
+        padding-bottom: 0;
+        text-align: center;
+        transform: translateY(-5rem);
+        width: 100%;
     }
 
     .orientation-hero-art {
-        opacity: 0.38;
-        width: 75%;
+        opacity: 0.92;
+        width: 78%;
     }
 
     .orientation-students {
-        max-height: 78%;
-        right: -26%;
-        width: 34rem;
+        filter: contrast(1.03) saturate(0.92);
+        max-height: 70%;
+        right: -15%;
+        width: 32rem;
     }
 
     .orientation-tech-magenta {
-        right: -7rem;
-        top: -7rem;
-        width: 16rem;
+        opacity: 0.58;
+        right: -6rem;
+        top: -6rem;
+        width: 15rem;
     }
 
     .orientation-tech-blue {
-        bottom: -8rem;
-        right: 9rem;
-        width: 14rem;
+        bottom: -7rem;
+        opacity: 0.52;
+        right: 7rem;
+        width: 13rem;
     }
 
     .tutor-orientation-hero {
         background:
             linear-gradient(
-                90deg,
-                rgba(31, 42, 51, 0.82) 0%,
-                rgba(39, 51, 61, 0.68) 52%,
-                rgba(39, 51, 61, 0.46) 100%),
+                105deg,
+                rgba(24, 35, 44, 0.78) 0%,
+                rgba(31, 44, 54, 0.62) 48%,
+                rgba(39, 51, 61, 0.25) 100%),
             url("/Media/tutorApplication/background-image.avif");
         background-position: center;
         background-repeat: no-repeat;
         background-size: cover;
-        min-height: 15rem;
-        padding: 2rem 1.5rem;
+        min-height: 18rem;
+        padding: 4.75rem 1.25rem 1.75rem;
     }
 
     .tutor-orientation-hero h1 {
+        font-size: clamp(1.9rem, 8vw, 2.3rem);
+        font-weight: 600;
+        letter-spacing: -0.025em;
+        line-height: 1.08;
+        text-shadow: 0 2px 14px rgba(0, 0, 0, 0.38);
         white-space: normal;
     }
 
@@ -1450,6 +1516,14 @@
         font-size: 0.78rem;
     }
 
+    .stage-label-full {
+        display: none;
+    }
+
+    .stage-label-mobile {
+        display: inline;
+    }
+
     .stage-copy small {
         display: none;
     }
@@ -1495,6 +1569,10 @@
 }
 
 @media (min-width: 768px) and (max-width: 1099.98px) {
+    .stage-copy small {
+        display: none;
+    }
+
     .orientation-hero-copy {
         max-width: 60%;
     }
@@ -1522,5 +1600,319 @@
         animation: none;
         opacity: 1;
         transform: none;
+    }
+}
+
+/* Accessible typography floors. Keep these rules after every responsive block
+   so tablet and mobile layouts cannot reduce readable text below the minimums. */
+.tutor-application-page {
+    font-size: 16px;
+}
+
+.tutor-application-page button,
+.tutor-application-page input,
+.tutor-application-page select,
+.tutor-application-page textarea {
+    font-size: 16px;
+}
+
+.tutor-orientation-hero h1 {
+    font-size: clamp(28px, calc(22px + 1.5vw), 40px);
+    font-weight: 650;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.orientation-summary,
+.orientation-introduction p,
+.orientation-process p,
+.orientation-notes p,
+.orientation-requirements li,
+.orientation-benefits p,
+.orientation-agreement p,
+.tutor-application-status-modal p,
+.tutor-application-validation-summary,
+.tutor-application-card-heading p,
+.tutor-application-field label,
+.tutor-application-field input,
+.tutor-application-field select,
+.tutor-application-field textarea,
+.tutor-application-field input::placeholder,
+.tutor-application-field textarea::placeholder,
+.tutor-application-field .tutor-document-select span,
+.tutor-application-field .tutor-module-trigger > span,
+.tutor-module-trigger,
+.tutor-module-search-field input,
+.tutor-module-option strong,
+.tutor-application-field .tutor-selected-module-copy span,
+.orientation-agree-button,
+.application-status-confirm,
+.tutor-application-next,
+.tutor-application-back {
+    font-size: 16px;
+}
+
+.orientation-introduction h2,
+.orientation-agreement h2,
+.orientation-section-heading h2,
+.orientation-process strong,
+.orientation-benefits h3,
+.tutor-application-status-modal h2,
+.tutor-application-card-heading h2 {
+    font-size: 18px;
+}
+
+.orientation-introduction h2,
+.orientation-agreement h2,
+.orientation-section-heading h2,
+.orientation-process strong,
+.orientation-benefits h3 {
+    font-weight: 600;
+}
+
+.tutor-application-heading h1 {
+    font-size: clamp(28px, calc(22px + 1.5vw), 40px);
+}
+
+.orientation-eyebrow,
+.orientation-duration,
+.orientation-section-heading p,
+.orientation-benefits article > span,
+.tutor-application-heading p,
+.stage-copy small,
+.tutor-application-field span,
+.tutor-application-field small,
+.tutor-application-field .tutor-character-counter,
+.tutor-application-field .tutor-document-heading span,
+.tutor-application-field .tutor-module-heading span,
+.tutor-module-help,
+.tutor-application-field .tutor-module-option span,
+.tutor-module-status,
+.tutor-selected-module-copy strong,
+.tutor-module-feedback {
+    font-size: 12px;
+}
+
+.orientation-section-heading > span {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.orientation-introduction {
+    padding-bottom: 3rem;
+    padding-top: 3rem;
+}
+
+.orientation-introduction p + p {
+    margin-top: 1rem;
+}
+
+.orientation-section {
+    padding-bottom: 3.25rem;
+    padding-top: 3.25rem;
+}
+
+.orientation-section-heading {
+    margin-bottom: 2rem;
+}
+
+.orientation-process,
+.orientation-benefits {
+    gap: 1.5rem;
+}
+
+.orientation-notes {
+    gap: 1rem;
+    margin-top: 1.75rem;
+    padding: 1.25rem 1.5rem;
+}
+
+.orientation-requirements {
+    gap: 1.25rem 2.5rem;
+}
+
+.orientation-requirements ul {
+    gap: 1rem;
+}
+
+.orientation-agreement {
+    gap: 1.5rem;
+    padding-bottom: 3rem;
+    padding-top: 3.25rem;
+}
+
+.orientation-agree-button {
+    font-weight: 600;
+}
+
+.stage-number {
+    font-size: 12px;
+}
+
+.stage-copy strong {
+    font-size: 16px;
+}
+
+.orientation-process li,
+.orientation-benefits article {
+    min-height: 12rem;
+    padding: 1.5rem;
+}
+
+.tutor-application-field input,
+.tutor-application-field select,
+.tutor-document-select,
+.tutor-module-search-field input {
+    min-height: 48px;
+}
+
+.tutor-module-trigger,
+.tutor-module-option {
+    min-height: 52px;
+}
+
+.orientation-section-heading h2,
+.orientation-process strong,
+.orientation-process p,
+.orientation-notes p,
+.orientation-requirements li,
+.orientation-benefits h3,
+.orientation-benefits p,
+.orientation-agreement p,
+.stage-copy strong,
+.stage-copy small,
+.tutor-application-card-heading h2,
+.tutor-application-card-heading p,
+.tutor-application-field label,
+.tutor-application-field small,
+.tutor-document-heading,
+.tutor-module-heading,
+.tutor-module-trigger > span,
+.tutor-module-option strong,
+.tutor-application-field .tutor-module-option span,
+.tutor-selected-module-copy strong,
+.tutor-application-field .tutor-selected-module-copy span,
+.tutor-module-feedback,
+.tutor-application-next,
+.tutor-application-back {
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.tutor-document-heading,
+.tutor-module-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.tutor-application-field .tutor-document-select span,
+.tutor-module-trigger > span,
+.tutor-application-field .tutor-selected-module-copy span {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+}
+
+.tutor-selected-module {
+    align-items: start;
+    padding: 0.75rem;
+}
+
+@media (max-width: 1099.98px) {
+    .orientation-process li,
+    .orientation-benefits article {
+        min-height: 0;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .orientation-introduction,
+    .orientation-section,
+    .orientation-agreement {
+        margin-left: 1.25rem;
+        margin-right: 1.25rem;
+    }
+
+    main.has-mobile-hero-breadcrumbs > .campus-breadcrumbs {
+        display: none;
+    }
+
+    .orientation-mobile-breadcrumbs {
+        display: block;
+        left: 1.25rem;
+        position: absolute;
+        top: 1.1rem;
+        z-index: 5;
+    }
+
+    .orientation-mobile-breadcrumbs .campus-breadcrumbs {
+        font-size: 13px;
+        max-width: calc(100vw - 2.5rem);
+        padding: 0;
+        text-shadow: 0 1px 5px rgba(0, 0, 0, 0.32);
+    }
+
+    .tutor-application-flow-breadcrumbs {
+        display: block;
+        margin-bottom: 1.5rem;
+    }
+
+    .tutor-application-flow-breadcrumbs .campus-breadcrumbs {
+        font-size: 14px;
+        padding: 0.8rem 0 0.7rem;
+    }
+
+    .tutor-application-flow {
+        margin-top: -1.75rem;
+    }
+
+    .orientation-summary {
+        display: none;
+    }
+
+    .orientation-section-heading {
+        gap: 0.75rem;
+        min-height: 3.5rem;
+        padding-bottom: 0.5rem;
+        padding-top: 0.5rem;
+    }
+
+    .orientation-introduction {
+        padding-bottom: 2.75rem;
+        padding-top: 2.25rem;
+    }
+
+    .orientation-section {
+        padding: 0;
+    }
+
+    .orientation-accordion-panel {
+        padding-bottom: 2rem;
+    }
+
+    .orientation-process,
+    .orientation-benefits,
+    .orientation-requirements {
+        gap: 1.25rem;
+    }
+
+    .orientation-notes {
+        margin-top: 1.5rem;
+        padding: 1.25rem 0;
+    }
+
+    .orientation-agreement {
+        gap: 1.25rem;
+        margin-top: 0.5rem;
+        padding-bottom: 2rem;
+        padding-top: 1.5rem;
+    }
+
+    .tutor-application-stages ol {
+        gap: 0.5rem;
+    }
+
+    .tutor-application-card {
+        padding: 1.5rem 1.25rem 1.9rem;
     }
 }
