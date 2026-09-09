@@ -613,6 +613,7 @@
         font-size: 16px;
         grid-area: location;
         overflow: hidden;
+        padding-right: 3.5rem;
         padding-top: 0.25rem;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -628,9 +629,11 @@
     }
 
     .bookings-pending-review-icon {
-        flex: 0 0 2.65rem;
-        height: 2.65rem;
-        width: 2.65rem;
+        bottom: 0.55rem;
+        height: 2.4rem;
+        position: absolute;
+        right: 0.65rem;
+        width: 2.4rem;
     }
 
     .bookings-pending-review-icon svg {
