@@ -3,7 +3,8 @@ namespace BC_CampusLearn.Services.Bookings;
 public record BookingCreationResult(
     bool Succeeded,
     int? BookingId,
-    string? ErrorMessage)
+    string? ErrorMessage,
+    bool PendingReviewRequired)
 {
     public static BookingCreationResult Success(
         int bookingId)
@@ -11,15 +12,18 @@ public record BookingCreationResult(
         return new BookingCreationResult(
             true,
             bookingId,
-            null);
+            null,
+            false);
     }
 
     public static BookingCreationResult Failure(
-        string errorMessage)
+        string errorMessage,
+        bool pendingReviewRequired = false)
     {
         return new BookingCreationResult(
             false,
             null,
-            errorMessage);
+            errorMessage,
+            pendingReviewRequired);
     }
 }

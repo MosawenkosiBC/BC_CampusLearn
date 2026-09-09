@@ -376,6 +376,16 @@
                                                    class="dropdown-item">
                                                     Session Details
                                                 </a>
+                                                @if (booking.Status == BookingStatus.Completed &&
+                                                     !booking.StudentReviewSubmitted)
+                                                {
+                                                    <a asp-page="/Bookings/SessionDetails"
+                                                       asp-route-bookingId="@booking.BookingId"
+                                                       asp-route-openReview="true"
+                                                       class="dropdown-item">
+                                                        Pending review
+                                                    </a>
+                                                }
                                                 @if (booking.Status == BookingStatus.Pending)
                                                 {
                                                     <form method="post"

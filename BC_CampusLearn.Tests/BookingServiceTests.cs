@@ -13,6 +13,58 @@ namespace BC_CampusLearn.Tests;
 public class BookingServiceTests
 {
     [Fact]
+    public async Task CreateBookingAsync_BlocksStudentWithPendingReview()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        string objectId = Guid.NewGuid().ToString();
+        string tenantId = Guid.NewGuid().ToString();
+        var completedBooking = new Booking
+        {
+            TutorId = 12,
+            ProgrammeModuleId = 3,
+            StudentBcUserId = 21,
+            StudentObjectId = objectId,
+            StudentTenantId = tenantId,
+            StudentName = "Student",
+            Location = "Teams",
+            Status = BookingStatus.Completed,
+            Duration = SessionDuration.OneHour,
+            ScheduledStartTime = DateTimeOffset.UtcNow.AddDays(-1),
+            DateBooked = DateTimeOffset.UtcNow.AddDays(-2)
+        };
+        context.Bookings.Add(completedBooking);
+        await context.SaveChangesAsync();
+
+        var currentUser = new CurrentUser(
+            21,
+            "STUDENT21",
+            objectId,
+            tenantId,
+            "Student",
+            "student@example.com");
+        var service = new BookingService(
+            context,
+            new TestCurrentUserService(currentUser),
+            new TestWebHostEnvironment());
+
+        BookingCreationResult result = await service.CreateBookingAsync(
+            new CreateBookingInput
+            {
+                TutorAvailabilityId = 45,
+                ProgrammeModuleId = 3,
+                Location = "Study room",
+                AcceptedTerms = true
+            });
+
+        Assert.False(result.Succeeded);
+        Assert.True(result.PendingReviewRequired);
+        Assert.Equal(
+            "Complete your pending session review before booking another session.",
+            result.ErrorMessage);
+        Assert.Single(context.Bookings);
+    }
+
+    [Fact]
     public async Task CreateBookingAsync_RejectsTutorsOwnAvailability()
     {
         await using ApplicationDbContext context = CreateContext();

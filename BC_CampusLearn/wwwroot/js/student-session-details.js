@@ -58,6 +58,56 @@
         "show.bs.modal", () => setEvaluationScrollLock(true));
     evaluationPanel?.addEventListener(
         "hidden.bs.modal", () => setEvaluationScrollLock(false));
+    if (evaluationPanel?.dataset.openOnLoad === "true" && window.bootstrap) {
+        bootstrap.Modal.getOrCreateInstance(evaluationPanel).show();
+    }
+
+    const completedSession = document.querySelector(
+        "[data-student-session-completed='true']");
+    const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)").matches;
+    if (completedSession && !reducedMotion) {
+        const celebration = document.createElement("div");
+        celebration.className = "student-session-confetti";
+        celebration.setAttribute("aria-hidden", "true");
+
+        const colours = [
+            "#c6005c", "#4ebdc2", "#f5b942", "#6f4a8a",
+            "#2f80ed", "#7bc96f", "#ef6c57"
+        ];
+        const educationIcons = ["🎓", "📚", "✏️", "⭐", "🧠", "📝"];
+
+        for (let index = 0; index < 72; index += 1) {
+            const piece = document.createElement("span");
+            const isEducationIcon = index % 6 === 0;
+            piece.className = isEducationIcon
+                ? "student-session-confetti-piece is-education-icon"
+                : "student-session-confetti-piece";
+            if (isEducationIcon) {
+                piece.textContent = educationIcons[
+                    Math.floor(Math.random() * educationIcons.length)];
+            }
+
+            piece.style.setProperty("--confetti-x", `${Math.random() * 100}vw`);
+            piece.style.setProperty(
+                "--confetti-delay", `${-Math.random() * 0.9}s`);
+            piece.style.setProperty(
+                "--confetti-duration", `${3.4 + Math.random() * 2.2}s`);
+            piece.style.setProperty(
+                "--confetti-drift", `${-90 + Math.random() * 180}px`);
+            piece.style.setProperty(
+                "--confetti-rotation", `${360 + Math.random() * 720}deg`);
+            piece.style.setProperty(
+                "--confetti-size", `${8 + Math.random() * 8}px`);
+            piece.style.setProperty(
+                "--confetti-colour",
+                colours[Math.floor(Math.random() * colours.length)]);
+            celebration.append(piece);
+        }
+
+        document.body.append(celebration);
+        window.setTimeout(() => celebration.remove(), 6500);
+    }
 
     const evaluationForm = evaluationPanel?.querySelector(
         "[data-session-evaluation-form]");

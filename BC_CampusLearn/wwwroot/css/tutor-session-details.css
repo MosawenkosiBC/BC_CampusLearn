@@ -3004,3 +3004,71 @@ body > footer a {
         max-width: 88%;
     }
 }
+
+.student-session-confetti {
+    height: 100vh;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    position: fixed;
+    width: 100vw;
+    z-index: 2000;
+}
+
+.student-session-confetti-piece {
+    animation: student-session-confetti-fall var(--confetti-duration) ease-in
+        var(--confetti-delay) both;
+    background: var(--confetti-colour);
+    border-radius: 2px;
+    height: calc(var(--confetti-size) * 1.55);
+    left: var(--confetti-x);
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    width: var(--confetti-size);
+    will-change: transform;
+}
+
+.student-session-confetti-piece:nth-child(3n) {
+    border-radius: 50%;
+}
+
+.student-session-confetti-piece:nth-child(4n) {
+    height: calc(var(--confetti-size) * 0.55);
+    width: calc(var(--confetti-size) * 1.7);
+}
+
+.student-session-confetti-piece.is-education-icon {
+    align-items: center;
+    background: transparent;
+    display: inline-flex;
+    font-size: clamp(20px, 2.5vw, 30px);
+    height: auto;
+    justify-content: center;
+    line-height: 1;
+    width: auto;
+}
+
+@keyframes student-session-confetti-fall {
+    0% {
+        opacity: 0;
+        transform: translate3d(0, -12vh, 0) rotate(0deg);
+    }
+
+    8%,
+    85% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate3d(var(--confetti-drift), 112vh, 0)
+            rotate(var(--confetti-rotation));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .student-session-confetti {
+        display: none;
+    }
+}

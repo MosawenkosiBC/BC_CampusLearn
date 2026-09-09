@@ -29,7 +29,8 @@
 
 @await Html.PartialAsync("~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
 
-<main class="container-fluid px-3 px-xl-5 pt-2 pb-4 tutor-session-details-page student-session-details-page">
+<main class="container-fluid px-3 px-xl-5 pt-2 pb-4 tutor-session-details-page student-session-details-page"
+      data-student-session-completed="@(Model.Session.Status == BookingStatus.Completed ? "true" : "false")">
     <header class="manage-session-heading">
         <h1>Session Details</h1>
         @if (Model.Session.Status is BookingStatus.Confirmed or
@@ -471,6 +472,7 @@
 @if (Model.Session.Status == BookingStatus.Completed && Model.Session.StudentEvaluation is null)
 {
     <div class="modal fade meeting-link-modal" id="review-session-modal" tabindex="-1"
+         data-open-on-load="@Model.OpenReviewPanel.ToString().ToLowerInvariant()"
          aria-labelledby="review-session-title" aria-hidden="true">
         <div class="modal-dialog tutor-evaluation-modal student-evaluation-modal">
             <div class="modal-content">

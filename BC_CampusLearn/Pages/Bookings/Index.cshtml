@@ -66,6 +66,10 @@
             </div>
 
             <form method="get">
+                @if (Model.PendingReviewOnly)
+                {
+                    <input type="hidden" asp-for="PendingReviewOnly" />
+                }
                 <div class="filter-group">
                     <label asp-for="TutorFilter">Search by tutor</label>
                     <div class="filter-search">
@@ -303,9 +307,37 @@
                                             @booking.Location
                                         </td>
                                         <td data-label="Status">
-                                            <span class="tutor-session-status tutor-session-status--@statusClass">
-                                                @booking.Status.ToDisplayText()
-                                            </span>
+                                            <div class="bookings-session-status-group">
+                                                <span class="tutor-session-status tutor-session-status--@statusClass">
+                                                    @booking.Status.ToDisplayText()
+                                                </span>
+                                                @if (booking.Status == BookingStatus.Completed &&
+                                                     !booking.StudentReviewSubmitted)
+                                                {
+                                                    <a asp-page="/Bookings/SessionDetails"
+                                                       asp-route-bookingId="@booking.BookingId"
+                                                       asp-route-openReview="true"
+                                                       class="bookings-pending-review-icon"
+                                                       aria-label="Review completed session with @booking.TutorName"
+                                                       title="Review session">
+                                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                            <path d="M0 0h24v24H0z" fill="none" />
+                                                            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.5 2v3m-9-3v3M11 2v3m8 7v-1.5c0-3.3 0-4.95-1.025-5.975S15.3 3.5 12 3.5h-2c-3.3 0-4.95 0-5.975 1.025S3 7.2 3 10.5V15c0 3.3 0 4.95 1.025 5.975S6.7 22 10 22h1m-4-7h4m-4-4h8m.737 10.653L14 22l.347-1.737c.07-.352.244-.676.499-.93l4.065-4.066a.91.91 0 0 1 1.288 0l.534.534a.91.91 0 0 1 0 1.288l-4.065 4.065a1.8 1.8 0 0 1-.931.499" />
+                                                        </svg>
+                                                    </a>
+                                                }
+                                                else if (booking.Status == BookingStatus.Completed)
+                                                {
+                                                    <span class="bookings-pending-review-icon bookings-pending-review-icon--submitted"
+                                                          aria-label="Review submitted"
+                                                          title="Review submitted">
+                                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                            <path d="M0 0h24v24H0z" fill="none" />
+                                                            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.5 2v3m-9-3v3M11 2v3m8 7v-1.5c0-3.3 0-4.95-1.025-5.975S15.3 3.5 12 3.5h-2c-3.3 0-4.95 0-5.975 1.025S3 7.2 3 10.5V15c0 3.3 0 4.95 1.025 5.975S6.7 22 10 22h1m-4-7h4m-4-4h8m.737 10.653L14 22l.347-1.737c.07-.352.244-.676.499-.93l4.065-4.066a.91.91 0 0 1 1.288 0l.534.534a.91.91 0 0 1 0 1.288l-4.065 4.065a1.8 1.8 0 0 1-.931.499" />
+                                                        </svg>
+                                                    </span>
+                                                }
+                                            </div>
                                         </td>
                                         <td data-label="Action">
                                             <div class="dropdown bookings-session-action-menu">
@@ -329,6 +361,16 @@
                                                        class="dropdown-item">
                                                         Session Details
                                                     </a>
+                                                    @if (booking.Status == BookingStatus.Completed &&
+                                                         !booking.StudentReviewSubmitted)
+                                                    {
+                                                        <a asp-page="/Bookings/SessionDetails"
+                                                           asp-route-bookingId="@booking.BookingId"
+                                                           asp-route-openReview="true"
+                                                           class="dropdown-item">
+                                                            Complete Review
+                                                        </a>
+                                                    }
                                                     @if (booking.Status == BookingStatus.Pending ||
                                                         booking.Status == BookingStatus.Confirmed)
                                                     {

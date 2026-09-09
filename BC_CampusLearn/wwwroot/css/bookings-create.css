@@ -1,28 +1,26 @@
-@media (min-width: 576px) {
-    .booking-create-page {
-        isolation: isolate;
-        position: relative;
-    }
+.booking-create-content-background {
+    isolation: isolate;
+    position: relative;
+}
 
-    .booking-create-page::before {
-        background-color: #fff;
-        background-image:
-            linear-gradient(
-                rgba(255, 255, 255, 0.88),
-                rgba(255, 255, 255, 0.88)),
-            url("/Media/common/backgroundNew.jpg");
-        background-position: center top;
-        background-repeat: repeat;
-        background-size: auto, 890px 360px;
-        bottom: 0;
-        content: "";
-        left: 50%;
-        position: absolute;
-        top: 0;
-        transform: translateX(-50%);
-        width: 100vw;
-        z-index: -1;
-    }
+.booking-create-content-background::before {
+    background-color: #fff;
+    background-image:
+        linear-gradient(
+            rgba(255, 255, 255, 0.88),
+            rgba(255, 255, 255, 0.88)),
+        url("/Media/common/backgroundNew.jpg");
+    background-position: center top;
+    background-repeat: repeat;
+    background-size: auto, 890px 360px;
+    bottom: 0;
+    content: "";
+    left: 50%;
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    width: 100vw;
+    z-index: -1;
 }
 
 .booking-create-title {
@@ -1199,5 +1197,84 @@ a.booking-added-item-label:focus-visible {
 @media (max-width: 575.98px) {
     .booking-create-page .booking-stage-header p {
         display: none;
+    }
+}
+
+.pending-review-booking-modal {
+    z-index: 1090;
+}
+
+.pending-review-booking-modal .modal-content {
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 18px 50px rgba(28, 21, 25, 0.2);
+}
+
+.pending-review-booking-modal .modal-header,
+.pending-review-booking-modal .modal-footer {
+    padding: 1.25rem 1.4rem;
+}
+
+.pending-review-booking-modal .modal-header {
+    align-items: flex-start;
+    border-bottom: 0;
+    padding-bottom: 0.75rem;
+}
+
+.pending-review-booking-modal h2 {
+    font-size: 20px;
+    margin: 0 0 0.35rem;
+}
+
+.pending-review-booking-modal p {
+    font-size: 16px;
+    margin: 0;
+}
+
+.pending-review-booking-modal .modal-header p {
+    color: #666;
+}
+
+.pending-review-booking-modal .modal-footer {
+    border-top: 0;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-top: 0.75rem;
+}
+
+.pending-review-later,
+.pending-review-open-sessions {
+    align-items: center;
+    border-radius: 8px;
+    display: inline-flex;
+    font-size: 16px;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+    text-decoration: none;
+}
+
+.pending-review-later {
+    background: #fff;
+    border: 1px solid #d7d7d7;
+    color: #333;
+}
+
+.pending-review-open-sessions {
+    background: #c6005c;
+    border: 1px solid #c6005c;
+    color: #fff;
+}
+
+.pending-review-open-sessions:hover,
+.pending-review-open-sessions:focus-visible {
+    background: #9f004a;
+    border-color: #9f004a;
+    color: #fff;
+}
+
+@media (max-width: 575.98px) {
+    .pending-review-booking-modal .modal-footer > * {
+        width: 100%;
     }
 }

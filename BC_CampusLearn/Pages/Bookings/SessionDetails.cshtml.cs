@@ -44,6 +44,8 @@ public class SessionDetailsModel : PageModel
 
     public string? LatestStatusReasonTitle { get; private set; }
 
+    public bool OpenReviewPanel { get; private set; }
+
     [BindProperty]
     public StudentEvaluationInput EvaluationInput { get; set; } = new();
 
@@ -58,6 +60,7 @@ public class SessionDetailsModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(
         int bookingId,
+        bool openReview,
         CancellationToken cancellationToken)
     {
         await _lifecycleService.ProcessDueTransitionsAsync(cancellationToken);
@@ -99,6 +102,9 @@ public class SessionDetailsModel : PageModel
             : session.TutorCourseModule.Tutor.BcUser.Email;
         TutorProfileImagePath =
             session.TutorCourseModule.Tutor.ProfileImagePath;
+        OpenReviewPanel = openReview &&
+            session.Status == BookingStatus.Completed &&
+            session.StudentEvaluation is null;
 
         if (session.Status is BookingStatus.Cancelled or
             BookingStatus.Declined)

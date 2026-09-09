@@ -47,6 +47,9 @@ public class IndexModel : PageModel
     public BookingStatus? StatusFilter { get; set; }
 
     [BindProperty(SupportsGet = true)]
+    public bool PendingReviewOnly { get; set; }
+
+    [BindProperty(SupportsGet = true)]
     public string SortBy { get; set; } = "date";
 
     [BindProperty(SupportsGet = true)]
@@ -72,7 +75,8 @@ public class IndexModel : PageModel
         !string.IsNullOrWhiteSpace(ModuleFilter) ||
         DateFilter.HasValue ||
         !string.IsNullOrWhiteSpace(LocationFilter) ||
-        StatusFilter.HasValue;
+        StatusFilter.HasValue ||
+        PendingReviewOnly;
 
     public bool IsSortedBy(string column) =>
         string.Equals(
@@ -106,6 +110,13 @@ public class IndexModel : PageModel
             .Where(booking =>
                 booking.StudentObjectId == student.ObjectId &&
                 booking.StudentTenantId == student.TenantId);
+
+        if (PendingReviewOnly)
+        {
+            query = query.Where(booking =>
+                booking.Status == BookingStatus.Completed &&
+                booking.StudentEvaluation == null);
+        }
 
         if (!string.IsNullOrWhiteSpace(ModuleFilter))
         {
@@ -159,7 +170,9 @@ public class IndexModel : PageModel
                     AvailableTime = booking.ScheduledStartTime,
                     Duration = booking.Duration,
                     Status = booking.Status,
-                    Summary = booking.Summary
+                    Summary = booking.Summary,
+                    StudentReviewSubmitted =
+                        booking.StudentEvaluation != null
                 })
             .ToListAsync(cancellationToken);
 

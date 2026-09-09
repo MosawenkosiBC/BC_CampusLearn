@@ -95,6 +95,15 @@ public class BookingService : IBookingService
         CurrentUser student =
             _currentUserService.GetRequiredUser();
 
+        if (await HasPendingStudentReviewAsync(
+            student,
+            cancellationToken))
+        {
+            return BookingCreationResult.Failure(
+                "Complete your pending session review before booking another session.",
+                pendingReviewRequired: true);
+        }
+
         TutorAvailability? slot =
             await _context.TutorAvailabilities
                 .Include(item => item.Tutor)
@@ -327,6 +336,26 @@ public class BookingService : IBookingService
             throw;
         }
     }
+
+    public Task<bool> HasPendingStudentReviewAsync(
+        CancellationToken cancellationToken = default)
+    {
+        CurrentUser student =
+            _currentUserService.GetRequiredUser();
+        return HasPendingStudentReviewAsync(student, cancellationToken);
+    }
+
+    private Task<bool> HasPendingStudentReviewAsync(
+        CurrentUser student,
+        CancellationToken cancellationToken) =>
+        _context.Bookings
+            .AsNoTracking()
+            .AnyAsync(booking =>
+                booking.StudentObjectId == student.ObjectId &&
+                booking.StudentTenantId == student.TenantId &&
+                booking.Status == BookingStatus.Completed &&
+                booking.StudentEvaluation == null,
+                cancellationToken);
 
     private static string? ValidateDocuments(
         IReadOnlyCollection<IFormFile> documents)

@@ -189,7 +189,10 @@ public class DashboardModel : PageModel
 
                         Status = booking.Status,
 
-                        Summary = booking.Summary
+                        Summary = booking.Summary,
+
+                        StudentReviewSubmitted =
+                            booking.StudentEvaluation != null
                     })
                 .Take(5)
                 .ToListAsync(cancellationToken);

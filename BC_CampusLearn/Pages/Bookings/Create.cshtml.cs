@@ -35,6 +35,8 @@ public class CreateModel : PageModel
     { get; private set; }
         = null!;
 
+    public bool ShowPendingReviewModal { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(
         int slotId,
         int? programmeModuleId,
@@ -62,6 +64,10 @@ public class CreateModel : PageModel
         }
 
         Preview = preview;
+
+        ShowPendingReviewModal =
+            await _bookingService.HasPendingStudentReviewAsync(
+                cancellationToken);
 
         Input.TutorAvailabilityId = slotId;
 
@@ -92,6 +98,15 @@ public class CreateModel : PageModel
     public async Task<IActionResult> OnPostAsync(
         CancellationToken cancellationToken)
     {
+        if (await _bookingService.HasPendingStudentReviewAsync(
+            cancellationToken))
+        {
+            ShowPendingReviewModal = true;
+            return await ReloadPageAsync(
+                Input.TutorAvailabilityId,
+                cancellationToken);
+        }
+
         if (MobileTermsAccepted)
         {
             bool hasValidAcceptance =
@@ -126,10 +141,14 @@ public class CreateModel : PageModel
 
         if (!result.Succeeded)
         {
-            ModelState.AddModelError(
-                string.Empty,
-                result.ErrorMessage
-                    ?? "The booking could not be created.");
+            ShowPendingReviewModal = result.PendingReviewRequired;
+            if (!result.PendingReviewRequired)
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    result.ErrorMessage
+                        ?? "The booking could not be created.");
+            }
 
             return await ReloadPageAsync(
                 Input.TutorAvailabilityId,

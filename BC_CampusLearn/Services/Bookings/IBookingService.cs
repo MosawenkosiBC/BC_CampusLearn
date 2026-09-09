@@ -13,4 +13,7 @@ public interface IBookingService
         CreateBookingAsync(
             CreateBookingInput input,
             CancellationToken cancellationToken = default);
+
+    Task<bool> HasPendingStudentReviewAsync(
+        CancellationToken cancellationToken = default);
 }

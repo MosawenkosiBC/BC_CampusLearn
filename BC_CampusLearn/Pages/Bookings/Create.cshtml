@@ -513,6 +513,41 @@
     </div>
 </section>
 
+@section Modals {
+    <div class="modal fade pending-review-booking-modal"
+         id="pending-review-booking-modal"
+         tabindex="-1"
+         data-open-on-load="@Model.ShowPendingReviewModal.ToString().ToLowerInvariant()"
+         aria-labelledby="pending-review-booking-title"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 id="pending-review-booking-title">Review required</h2>
+                        <p>
+                            Complete your pending reviews for completed sessions before booking
+                            another session. Once they are submitted, you can book new sessions.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="pending-review-later"
+                            data-bs-dismiss="modal">Not now</button>
+                    <a asp-page="/Bookings/Index"
+                       asp-route-PendingReviewOnly="true"
+                       asp-route-StatusFilter="@BookingStatus.Completed"
+                       class="pending-review-open-sessions">
+                        View pending reviews
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script src="~/js/components/navigation-drawer.js"

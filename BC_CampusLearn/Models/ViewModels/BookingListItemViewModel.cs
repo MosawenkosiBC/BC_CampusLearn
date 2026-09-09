@@ -28,4 +28,6 @@ public class BookingListItemViewModel
     public string? Summary { get; set; }
 
     public string? MeetingLink { get; set; }
+
+    public bool StudentReviewSubmitted { get; set; }
 }
