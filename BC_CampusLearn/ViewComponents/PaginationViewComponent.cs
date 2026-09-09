@@ -6,12 +6,38 @@ namespace BC_CampusLearn.ViewComponents;
 public sealed class PaginationViewComponent : ViewComponent
 {
     public IViewComponentResult Invoke(
-        string targetId,
+        string? targetId = null,
         int mobilePageSize = 7,
         int defaultPageSize = 11,
-        string ariaLabel = "Pagination")
+        string ariaLabel = "Pagination",
+        int? currentPage = null,
+        int? totalPages = null,
+        string pageRouteValueName = "page",
+        string? fragment = null)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(targetId);
+        bool usesServerPagination = currentPage.HasValue || totalPages.HasValue;
+
+        if (usesServerPagination)
+        {
+            if (!currentPage.HasValue || !totalPages.HasValue)
+            {
+                throw new ArgumentException(
+                    "Current page and total pages must both be supplied for server pagination.");
+            }
+
+            if (currentPage < 1 || totalPages < 1 || currentPage > totalPages)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(currentPage),
+                    "Server pagination values must describe a valid page.");
+            }
+
+            ArgumentException.ThrowIfNullOrWhiteSpace(pageRouteValueName);
+        }
+        else
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(targetId);
+        }
 
         if (mobilePageSize < 1)
         {
@@ -32,7 +58,13 @@ public sealed class PaginationViewComponent : ViewComponent
                     ? "Pagination"
                     : ariaLabel,
                 MobilePageSize = mobilePageSize,
-                DefaultPageSize = defaultPageSize
+                DefaultPageSize = defaultPageSize,
+                CurrentPage = currentPage,
+                TotalPages = totalPages,
+                PageRouteValueName = pageRouteValueName,
+                Fragment = string.IsNullOrWhiteSpace(fragment)
+                    ? null
+                    : fragment.TrimStart('#')
             });
     }
 }

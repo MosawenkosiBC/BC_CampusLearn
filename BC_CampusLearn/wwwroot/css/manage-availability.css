@@ -1564,6 +1564,21 @@
 /* Upcoming availability table. */
 .availability-list-section {
     margin-bottom: 2.5rem;
+    margin-top: clamp(3rem, 6vw, 5rem);
+}
+
+.availability-list-section.bookings-page {
+    min-height: 0;
+    padding-bottom: 1.5rem !important;
+}
+
+.availability-list-results {
+    min-width: 0;
+    scroll-margin-top: 6rem;
+}
+
+.availability-filters {
+    z-index: 2;
 }
 
 .availability-list-card {
@@ -1577,8 +1592,8 @@
 .availability-list-heading {
     align-items: center;
     display: flex;
-    justify-content: space-between;
-    padding: 1.4rem 1.65rem 1.15rem;
+    justify-content: flex-start;
+    padding: 0.9rem 1.25rem;
 }
 
 .availability-list-heading h2 {
@@ -1835,50 +1850,6 @@
 .availability-table-empty p {
     font-size: max(12px, 0.8rem);
     margin: 0;
-}
-
-.availability-pagination {
-    align-items: center;
-    border-top: 1px solid #eceef1;
-    display: flex;
-    gap: 0.35rem;
-    justify-content: flex-end;
-    padding: 0.8rem 1.65rem;
-}
-
-.availability-pagination a,
-.availability-pagination > span {
-    align-items: center;
-    background: #ffffff;
-    border: 1px solid #dfe2e6;
-    border-radius: 0.35rem;
-    color: #555d67;
-    display: inline-flex;
-    font-size: max(12px, 0.72rem);
-    font-weight: 600;
-    height: 2rem;
-    justify-content: center;
-    min-width: 2rem;
-    padding: 0 0.45rem;
-    text-decoration: none;
-}
-
-.availability-pagination a:hover,
-.availability-pagination a:focus-visible {
-    background: #f1f2f4;
-    border-color: #cfd3d8;
-    color: #303640;
-}
-
-.availability-pagination a.is-current {
-    background: #ad0151;
-    border-color: #ad0151;
-    color: #ffffff;
-}
-
-.availability-pagination > span.is-disabled {
-    color: #b7bbc1;
-    cursor: default;
 }
 
 .availability-delete-modal .modal-dialog {
@@ -2232,4 +2203,241 @@
     background: #ffffff;
     border-color: #aeb4bd;
     box-shadow: 0 0 0 3px rgba(104, 113, 129, 0.16);
+}
+
+/* Typography floors
+ * Keep these rules last so no responsive rule can make primary text unreadable.
+ */
+.manage-availability-page,
+.booking-calendar-settings-modal,
+.specific-availability-modal,
+.availability-delete-modal,
+.availability-edit-modal,
+.recurring-create-progress {
+    font-size: 16px;
+}
+
+.manage-availability-page > h1 {
+    font-size: clamp(2rem, calc(1.55rem + 1.5vw), 2.75rem);
+    line-height: 1.15;
+}
+
+.manage-availability-section-heading h2,
+.availability-list-heading h2,
+.booking-calendar-settings-modal h2,
+.specific-availability-modal h2,
+.availability-delete-modal h2,
+.availability-edit-modal h2,
+.recurring-create-progress h2,
+.availability-calendar-header h3,
+.recurring-editor-time-title {
+    font-size: 18px;
+    line-height: 1.3;
+}
+
+.manage-availability-page button,
+.manage-availability-page input,
+.manage-availability-page select,
+.manage-availability-page textarea,
+.manage-availability-page label,
+.manage-availability-page a,
+.availability-list-section button,
+.availability-list-section input,
+.availability-list-section a,
+.availability-table th,
+.availability-table td,
+.availability-calendar-day,
+.booking-calendar-settings-modal button,
+.booking-calendar-settings-modal input,
+.booking-calendar-settings-modal select,
+.booking-calendar-settings-modal textarea,
+.booking-calendar-settings-modal label,
+.specific-availability-modal button,
+.specific-availability-modal input,
+.specific-availability-modal select,
+.specific-availability-modal textarea,
+.specific-availability-modal label,
+.availability-delete-modal button,
+.availability-edit-modal button,
+.availability-edit-modal input,
+.availability-edit-modal label {
+    font-size: 16px;
+}
+
+.manage-availability-section-heading p,
+.calendar-settings-saved,
+.booking-calendar-settings-modal .modal-header p,
+.booking-calendar-setting-field small,
+.booking-calendar-weekend-setting small,
+.availability-calendar-weekdays,
+.manage-availability-slot-note,
+.manage-availability-insight-card div span,
+.manage-availability-insights-note,
+.manage-availability-timezone,
+.manage-availability-bar-column > span,
+.manage-availability-chart span,
+.manage-availability-chart-legend li,
+.manage-availability-field-error,
+.manage-availability-validation,
+.recurring-schedule-error,
+.recurring-schedule-week-selector > span,
+.recurring-schedule-empty p,
+.specific-availability-modal .modal-header p,
+.specific-availability-empty,
+.recurring-editor-calendar-help,
+.recurring-editor-time-help,
+.recurring-editor-selection,
+.recurring-editor-error,
+.recurring-editor-validation,
+.recurring-editor-slot-time,
+.recurring-editor-empty,
+.recurring-create-progress p,
+.availability-list-heading p,
+.availability-list-heading .availability-list-total,
+.availability-list-title-row > span,
+.availability-bulk-actions span,
+.availability-edit-modal .modal-header p,
+.availability-edit-date,
+.availability-delete-modal p {
+    font-size: 12px;
+}
+
+.manage-availability-create-panel,
+.manage-recurring-editor,
+.manage-availability-summary,
+.manage-recurring-schedule {
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.availability-calendar {
+    min-width: 19rem;
+    padding: 1rem;
+}
+
+.availability-calendar-header {
+    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+}
+
+.availability-calendar-header button,
+.availability-calendar-day {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+.manage-availability-time-input,
+.recurring-editor-time-input,
+.recurring-schedule-time-field input,
+.booking-calendar-setting-field select {
+    min-height: 48px;
+}
+
+.booking-calendar-settings-button,
+.manage-availability-create,
+.recurring-schedule-add,
+.recurring-editor-create,
+.specific-availability-modal .modal-footer button,
+.booking-calendar-settings-modal .modal-footer button,
+.availability-edit-save,
+.availability-edit-modal .availability-delete-cancel,
+.availability-delete-modal-actions button {
+    min-height: 44px;
+}
+
+.booking-calendar-settings-button,
+.recurring-schedule-add,
+.availability-list-title-row > span,
+.availability-time-cell {
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.availability-list-heading,
+.manage-availability-section-heading,
+.availability-bulk-actions-content,
+.recurring-schedule-week-selector {
+    flex-wrap: wrap;
+}
+
+.availability-table {
+    min-width: 48rem;
+}
+
+.availability-table th,
+.availability-table td {
+    line-height: 1.45;
+    padding-block: 1rem;
+}
+
+@media (max-width: 991.98px) {
+    .manage-availability-card {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .manage-availability-page > h1 {
+        font-size: 2rem;
+    }
+
+    .manage-availability-create-panel,
+    .manage-recurring-editor,
+    .manage-availability-summary,
+    .manage-recurring-schedule {
+        padding: 1.25rem;
+    }
+
+    .availability-calendar {
+        min-width: 0;
+        padding: 0.75rem;
+    }
+
+    .availability-calendar-grid {
+        gap: 0.2rem;
+    }
+
+    .availability-calendar-header button,
+    .availability-calendar-day {
+        min-height: 40px;
+        min-width: 0;
+    }
+
+    .availability-table {
+        min-width: 36rem;
+    }
+
+    .availability-list-heading {
+        align-items: stretch;
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    .availability-list-section .campus-pagination {
+        flex-wrap: nowrap;
+        gap: 0.25rem;
+        justify-content: center;
+        padding: 0.75rem 0.5rem;
+    }
+
+    .availability-list-section .campus-pagination__pages {
+        flex-wrap: nowrap;
+        gap: 0.25rem;
+        min-width: 0;
+    }
+
+    .availability-list-section .campus-pagination__direction,
+    .availability-list-section .campus-pagination__page {
+        height: 40px;
+        min-width: 40px;
+        padding-inline: 0.4rem;
+    }
+
+    .availability-list-section .campus-pagination__page--adjacent {
+        display: none;
+    }
+
+    .availability-list-section .campus-pagination__ellipsis {
+        min-width: 0.75rem;
+    }
 }

@@ -10,7 +10,16 @@
           href="~/css/components/navigation-drawer.css"
           asp-append-version="true" />
     <link rel="stylesheet"
+          href="~/css/tutors.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/bookings-index.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
           href="~/css/manage-availability.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/components/pagination.css"
           asp-append-version="true" />
 }
 
@@ -656,17 +665,93 @@
     </div>
 </div>
 
-<section class="container pb-4 availability-list-section"
+<section class="container pb-4 availability-list-section bookings-page"
          aria-labelledby="availability-list-title">
-    <div class="availability-list-card">
-        <div class="availability-list-heading">
-            <div>
-                <h2 id="availability-list-title">Availability</h2>
-                <p class="availability-list-total">
-                    @Model.TotalAvailabilityCount total slots
-                </p>
+    <div class="bookings-workspace availability-list-workspace">
+        <aside id="availability-filter-panel"
+               class="tutor-filters bookings-filters availability-filters"
+               aria-labelledby="availability-filter-title"
+               data-filter-breakpoint="1199.98"
+               data-filter-panel>
+            <div class="filter-heading">
+                <h2 id="availability-filter-title">Filters</h2>
+                <a asp-page="/Tutors/ManageAvailability"
+                   asp-fragment="availability-list-title">Clear all</a>
+                <button type="button"
+                        class="filter-modal-close"
+                        data-filter-close
+                        aria-label="Close filters">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 6l12 12M18 6 6 18" />
+                    </svg>
+                </button>
             </div>
-        </div>
+
+            <form method="get"
+                  asp-page="/Tutors/ManageAvailability"
+                  asp-fragment="availability-list-title">
+                <div class="filter-group">
+                    <label asp-for="AvailabilityDateFilter">Filter by date</label>
+                    <div class="filter-search bookings-date-filter">
+                        <input asp-for="AvailabilityDateFilter" type="date" />
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label asp-for="AvailabilityDayFilter">Filter by day</label>
+                    <select asp-for="AvailabilityDayFilter">
+                        <option value="">All days</option>
+                        @foreach (DayOfWeek day in Enum.GetValues<DayOfWeek>())
+                        {
+                            <option value="@day">@day</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label asp-for="AvailabilityTimeFilter">Filter by time</label>
+                    <div class="filter-search bookings-date-filter">
+                        <input asp-for="AvailabilityTimeFilter"
+                               type="time"
+                               step="60" />
+                    </div>
+                </div>
+
+                <button type="submit" class="apply-filters">
+                    Apply filters
+                </button>
+            </form>
+        </aside>
+        <button type="button"
+                class="tutor-filter-backdrop"
+                data-filter-close
+                aria-label="Close filters"></button>
+
+        <div id="availability-results"
+             class="bookings-results availability-list-results">
+            <div class="availability-list-heading results-toolbar bookings-results-toolbar">
+                    <h2 id="availability-list-title" class="visually-hidden">
+                        Availability
+                    </h2>
+                    <div class="results-count">
+                        <strong>@Model.TotalAvailabilityCount</strong>
+                        @(Model.TotalAvailabilityCount == 1 ? "slot" : "slots")
+                        displayed
+                    </div>
+                    <button type="button"
+                            class="mobile-filter-trigger @(Model.HasActiveAvailabilityFilters ? "has-active-filters" : null)"
+                            data-filter-open
+                            aria-controls="availability-filter-panel"
+                            aria-expanded="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="currentColor"
+                                  d="M4.38 3.22A1 1 0 0 1 5 3h14a1 1 0 0 1 .79 1.62L15 10.75v9.13c.04.3-.06.62-.29.83a.996.996 0 0 1-1.41 0l-4.01-4.01a.99.99 0 0 1-.29-.83v-5.12L4.21 4.62a1 1 0 0 1 .17-1.4Z" />
+                        </svg>
+                        <span>Filter</span>
+                    </button>
+            </div>
+
+            <div class="availability-list-card">
 
         @if (Model.AvailabilityRows.Count > 0)
         {
@@ -809,70 +894,52 @@
 
             @if (Model.TotalAvailabilityPages > 1)
             {
-                int firstPage = Math.Max(1, Model.AvailabilityPage - 2);
-                int lastPage = Math.Min(
-                    Model.TotalAvailabilityPages,
-                    firstPage + 4);
-                firstPage = Math.Max(1, lastPage - 4);
-
-                <nav class="availability-pagination"
-                     aria-label="Availability table pages">
-                    @if (Model.AvailabilityPage > 1)
+                @await Component.InvokeAsync(
+                    "Pagination",
+                    new
                     {
-                        <a asp-route-availabilityPage="@(Model.AvailabilityPage - 1)"
-                           aria-label="Previous page">
-                            <iconify-icon
-                                icon="solar:alt-arrow-left-linear"
-                                aria-hidden="true"></iconify-icon>
-                        </a>
-                    }
-                    else
-                    {
-                        <span class="is-disabled" aria-hidden="true">
-                            <iconify-icon
-                                icon="solar:alt-arrow-left-linear"></iconify-icon>
-                        </span>
-                    }
-
-                    @for (int pageNumber = firstPage;
-                          pageNumber <= lastPage;
-                          pageNumber++)
-                    {
-                        <a asp-route-availabilityPage="@pageNumber"
-                           class="@(pageNumber == Model.AvailabilityPage ? "is-current" : null)"
-                           aria-current="@(pageNumber == Model.AvailabilityPage ? "page" : null)">
-                            @pageNumber
-                        </a>
-                    }
-
-                    @if (Model.AvailabilityPage < Model.TotalAvailabilityPages)
-                    {
-                        <a asp-route-availabilityPage="@(Model.AvailabilityPage + 1)"
-                           aria-label="Next page">
-                            <iconify-icon
-                                icon="solar:alt-arrow-right-linear"
-                                aria-hidden="true"></iconify-icon>
-                        </a>
-                    }
-                    else
-                    {
-                        <span class="is-disabled" aria-hidden="true">
-                            <iconify-icon
-                                icon="solar:alt-arrow-right-linear"></iconify-icon>
-                        </span>
-                    }
-                </nav>
+                        currentPage = Model.AvailabilityPage,
+                        totalPages = Model.TotalAvailabilityPages,
+                        pageRouteValueName = "availabilityPage",
+                        fragment = "availability-results",
+                        ariaLabel = "Availability table pages"
+                    })
             }
         }
-        else
-        {
-            <div class="availability-table-empty">
-                <iconify-icon
-                    icon="solar:calendar-minimalistic-linear"
-                    aria-hidden="true"></iconify-icon>
-                <p>No upcoming availability has been created yet.</p>
+                else
+                {
+                    @if (Model.HasActiveAvailabilityFilters)
+                    {
+                        <div class="empty-tutors bookings-empty-results">
+                            <span class="bookings-empty-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <circle cx="10.5" cy="10.5" r="6.5" />
+                                    <path d="m15.4 15.4 4.1 4.1" />
+                                </svg>
+                            </span>
+                            <h2>No availability matches those filters</h2>
+                            <p>
+                                Try clearing a filter or choosing another date,
+                                day, or time.
+                            </p>
+                            <a asp-page="/Tutors/ManageAvailability"
+                               asp-fragment="availability-list-title">
+                                Clear all filters
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="availability-table-empty">
+                            <iconify-icon
+                                icon="solar:calendar-minimalistic-linear"
+                                aria-hidden="true"></iconify-icon>
+                            <p>No upcoming availability has been created yet.</p>
+                        </div>
+                    }
+                }
             </div>
-        }
+        </div>
     </div>
 </section>
 
@@ -911,6 +978,15 @@
                     <input type="hidden"
                            name="AvailabilityPage"
                            value="@Model.AvailabilityPage" />
+                    <input type="hidden"
+                           name="AvailabilityDateFilter"
+                           value="@Model.AvailabilityDateFilter?.ToString("yyyy-MM-dd")" />
+                    <input type="hidden"
+                           name="AvailabilityDayFilter"
+                           value="@Model.AvailabilityDayFilter" />
+                    <input type="hidden"
+                           name="AvailabilityTimeFilter"
+                           value="@Model.AvailabilityTimeFilter?.ToString("HH:mm")" />
                     <label asp-for="EditAvailabilityTime">Time</label>
                     <input asp-for="EditAvailabilityTime"
                            type="time"
@@ -959,6 +1035,18 @@
                         <input type="hidden"
                                name="availabilityId"
                                data-availability-delete-id />
+                        <input type="hidden"
+                               name="AvailabilityPage"
+                               value="@Model.AvailabilityPage" />
+                        <input type="hidden"
+                               name="AvailabilityDateFilter"
+                               value="@Model.AvailabilityDateFilter?.ToString("yyyy-MM-dd")" />
+                        <input type="hidden"
+                               name="AvailabilityDayFilter"
+                               value="@Model.AvailabilityDayFilter" />
+                        <input type="hidden"
+                               name="AvailabilityTimeFilter"
+                               value="@Model.AvailabilityTimeFilter?.ToString("HH:mm")" />
                         <button type="submit"
                                 class="availability-delete-confirm">
                             Delete
@@ -1023,6 +1111,15 @@
                         <input type="hidden"
                                name="AvailabilityPage"
                                value="@Model.AvailabilityPage" />
+                        <input type="hidden"
+                               name="AvailabilityDateFilter"
+                               value="@Model.AvailabilityDateFilter?.ToString("yyyy-MM-dd")" />
+                        <input type="hidden"
+                               name="AvailabilityDayFilter"
+                               value="@Model.AvailabilityDayFilter" />
+                        <input type="hidden"
+                               name="AvailabilityTimeFilter"
+                               value="@Model.AvailabilityTimeFilter?.ToString("HH:mm")" />
                         <div data-availability-bulk-delete-inputs></div>
                         <button type="submit"
                                 class="availability-delete-confirm">
@@ -1051,6 +1148,8 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+    <script src="~/js/tutors.js"
             asp-append-version="true"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
     <script src="~/js/manage-availability.js"

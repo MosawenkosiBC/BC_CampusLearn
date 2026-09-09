@@ -11,9 +11,6 @@
         "/Tutors/TutorDashboard",
         StringComparison.OrdinalIgnoreCase) ||
         currentPage.Equals(
-            "/Tutors/ManageAvailability",
-            StringComparison.OrdinalIgnoreCase) ||
-        currentPage.Equals(
             "/Tutors/Profile",
             StringComparison.OrdinalIgnoreCase) ||
         currentPage.Equals(
@@ -22,6 +19,9 @@
         currentPage.Equals(
             "/Tutors/StatisticsOverview",
             StringComparison.OrdinalIgnoreCase);
+    bool isManageAvailability = currentPage.Equals(
+        "/Tutors/ManageAvailability",
+        StringComparison.OrdinalIgnoreCase);
     bool isManageResources = currentPage.Equals(
         "/Tutors/ManageResources",
         StringComparison.OrdinalIgnoreCase);
@@ -34,6 +34,7 @@
             StringComparison.OrdinalIgnoreCase) &&
         !isTutorApplication &&
         !isTutorDashboard &&
+        !isManageAvailability &&
         !isManageResources;
     bool isTutor = User.HasClaim(
         EntraClaimTypes.IsTutor,
@@ -114,6 +115,12 @@
                    class="navigation-drawer-link @(isTutorDashboard ? "is-active" : null)"
                    aria-current="@(isTutorDashboard ? "page" : null)">
                     <span>Tutor Dashboard</span>
+                </a>
+
+                <a asp-page="/Tutors/ManageAvailability"
+                   class="navigation-drawer-link @(isManageAvailability ? "is-active" : null)"
+                   aria-current="@(isManageAvailability ? "page" : null)">
+                    <span>Manage Availability</span>
                 </a>
 
                 <a asp-page="/Tutors/ManageResources"

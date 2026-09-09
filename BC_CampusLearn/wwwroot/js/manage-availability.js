@@ -771,6 +771,12 @@
             renderScheduleTimes();
         });
 
+        slotTimeInput.addEventListener("blur", (event) => {
+            if (slotTimeInput.value && event.relatedTarget !== addSlotButton) {
+                addSlotButton.click();
+            }
+        });
+
         recurringEditor.addEventListener("submit", (event) => {
             if (selectedDates.size === 0) {
                 event.preventDefault();

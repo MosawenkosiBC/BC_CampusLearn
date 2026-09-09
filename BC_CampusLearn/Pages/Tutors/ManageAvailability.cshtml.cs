@@ -54,6 +54,15 @@ public class ManageAvailabilityModel : PageModel
     [BindProperty(SupportsGet = true)]
     public int AvailabilityPage { get; set; } = 1;
 
+    [BindProperty(SupportsGet = true)]
+    public DateOnly? AvailabilityDateFilter { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public DayOfWeek? AvailabilityDayFilter { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public TimeOnly? AvailabilityTimeFilter { get; set; }
+
     [TempData]
     public bool AvailabilityCreated { get; set; }
 
@@ -130,6 +139,11 @@ public class ManageAvailabilityModel : PageModel
     public int TotalAvailabilityCount { get; private set; }
 
     public int TotalAvailabilityPages { get; private set; }
+
+    public bool HasActiveAvailabilityFilters =>
+        AvailabilityDateFilter.HasValue ||
+        AvailabilityDayFilter.HasValue ||
+        AvailabilityTimeFilter.HasValue;
 
     public string MinimumDate =>
         DateOnly.FromDateTime(DateTime.Today)
@@ -402,14 +416,14 @@ public class ManageAvailabilityModel : PageModel
         }
         catch (DbUpdateConcurrencyException)
         {
-            return RedirectToPage();
+            return RedirectToAvailabilityList();
         }
 
         AvailabilityDeleted = true;
         DeleteSuccessMessage =
             $"Availability for {localTime:dd MMMM yyyy 'at' HH:mm} was deleted.";
 
-        return RedirectToPage();
+        return RedirectToAvailabilityList();
     }
 
     public async Task<IActionResult> OnPostDeleteAvailabilitiesAsync(
@@ -431,10 +445,7 @@ public class ManageAvailabilityModel : PageModel
 
         if (selectedIds.Count == 0)
         {
-            return RedirectToPage(new
-            {
-                availabilityPage = AvailabilityPage
-            });
+            return RedirectToAvailabilityList();
         }
 
         List<TutorAvailability> availabilityToDelete =
@@ -446,10 +457,7 @@ public class ManageAvailabilityModel : PageModel
 
         if (availabilityToDelete.Count == 0)
         {
-            return RedirectToPage(new
-            {
-                availabilityPage = AvailabilityPage
-            });
+            return RedirectToAvailabilityList();
         }
 
         _context.TutorAvailabilities.RemoveRange(availabilityToDelete);
@@ -460,10 +468,7 @@ public class ManageAvailabilityModel : PageModel
         }
         catch (DbUpdateConcurrencyException)
         {
-            return RedirectToPage(new
-            {
-                availabilityPage = AvailabilityPage
-            });
+            return RedirectToAvailabilityList();
         }
 
         AvailabilityDeleted = true;
@@ -471,10 +476,7 @@ public class ManageAvailabilityModel : PageModel
             ? "1 availability slot was deleted."
             : $"{availabilityToDelete.Count} availability slots were deleted.";
 
-        return RedirectToPage(new
-        {
-            availabilityPage = AvailabilityPage
-        });
+        return RedirectToAvailabilityList();
     }
 
     public async Task<IActionResult> OnPostUpdateAvailabilityTimeAsync(
@@ -570,20 +572,14 @@ public class ManageAvailabilityModel : PageModel
         }
         catch (DbUpdateConcurrencyException)
         {
-            return RedirectToPage(new
-            {
-                availabilityPage = AvailabilityPage
-            });
+            return RedirectToAvailabilityList();
         }
 
         AvailabilityUpdated = true;
         UpdateSuccessMessage =
             $"Availability time updated to {updatedTime:HH:mm}.";
 
-        return RedirectToPage(new
-        {
-            availabilityPage = AvailabilityPage
-        });
+        return RedirectToAvailabilityList();
     }
 
     public async Task<IActionResult> OnPostCreateForDateAsync(
@@ -691,6 +687,17 @@ public class ManageAvailabilityModel : PageModel
         return RedirectToPage();
     }
 
+    private RedirectToPageResult RedirectToAvailabilityList()
+    {
+        return RedirectToPage(new
+        {
+            availabilityPage = AvailabilityPage,
+            availabilityDateFilter = AvailabilityDateFilter,
+            availabilityDayFilter = AvailabilityDayFilter,
+            availabilityTimeFilter = AvailabilityTimeFilter
+        });
+    }
+
     private async Task LoadAvailabilityInsightsAsync(
         int tutorId,
         CancellationToken cancellationToken)
@@ -727,7 +734,36 @@ public class ManageAvailabilityModel : PageModel
                 .ToString("yyyy-MM-dd'T'HH:mm"))
             .ToArray();
 
-        TotalAvailabilityCount = futureAvailability.Count;
+        IEnumerable<TutorAvailability> filteredAvailability =
+            futureAvailability;
+
+        if (AvailabilityDateFilter.HasValue)
+        {
+            filteredAvailability = filteredAvailability.Where(slot =>
+                DateOnly.FromDateTime(
+                    slot.AvailableTime.ToOffset(SouthAfricaOffset).DateTime) ==
+                AvailabilityDateFilter.Value);
+        }
+
+        if (AvailabilityDayFilter.HasValue)
+        {
+            filteredAvailability = filteredAvailability.Where(slot =>
+                slot.AvailableTime.ToOffset(SouthAfricaOffset).DayOfWeek ==
+                AvailabilityDayFilter.Value);
+        }
+
+        if (AvailabilityTimeFilter.HasValue)
+        {
+            filteredAvailability = filteredAvailability.Where(slot =>
+                TimeOnly.FromDateTime(
+                    slot.AvailableTime.ToOffset(SouthAfricaOffset).DateTime) ==
+                AvailabilityTimeFilter.Value);
+        }
+
+        List<TutorAvailability> filteredAvailabilityList =
+            filteredAvailability.ToList();
+
+        TotalAvailabilityCount = filteredAvailabilityList.Count;
         TotalAvailabilityPages = (int)Math.Ceiling(
             TotalAvailabilityCount / (double)AvailabilityPageSize);
         AvailabilityPage = TotalAvailabilityPages == 0
@@ -737,7 +773,7 @@ public class ManageAvailabilityModel : PageModel
                 1,
                 TotalAvailabilityPages);
 
-        AvailabilityRows = futureAvailability
+        AvailabilityRows = filteredAvailabilityList
             .Skip((AvailabilityPage - 1) * AvailabilityPageSize)
             .Take(AvailabilityPageSize)
             .Select(slot => new AvailabilityListItem

@@ -1,26 +1,118 @@
 @model BC_CampusLearn.Models.ViewModels.PaginationViewModel
 
-<nav class="campus-pagination"
-     aria-label="@Model.AriaLabel"
-     data-pagination
-     data-pagination-target="@Model.TargetId"
-     data-pagination-mobile-page-size="@Model.MobilePageSize"
-     data-pagination-default-page-size="@Model.DefaultPageSize"
-     hidden>
-    <button type="button"
-            class="campus-pagination__direction"
-            aria-label="Previous page"
-            data-pagination-previous>
-        <span aria-hidden="true"></span>
-    </button>
-    <span class="campus-pagination__pages" data-pagination-pages></span>
-    <button type="button"
-            class="campus-pagination__direction"
-            aria-label="Next page"
-            data-pagination-next>
-        <span aria-hidden="true"></span>
-    </button>
-    <span class="visually-hidden"
-          aria-live="polite"
-          data-pagination-status></span>
-</nav>
+@if (Model.UsesServerPagination)
+{
+    int currentPage = Model.CurrentPage!.Value;
+    int totalPages = Model.TotalPages!.Value;
+    IReadOnlyList<int> pageNumbers = totalPages <= 7
+        ? Enumerable.Range(1, totalPages).ToArray()
+        : new[] { 1, totalPages, currentPage - 1, currentPage, currentPage + 1 }
+            .Where(pageNumber => pageNumber >= 1 && pageNumber <= totalPages)
+            .Distinct()
+            .OrderBy(pageNumber => pageNumber)
+            .ToArray();
+
+    string PageUrl(int pageNumber)
+    {
+        var routeValues = new Microsoft.AspNetCore.Routing.RouteValueDictionary();
+        foreach (var queryValue in Context.Request.Query)
+        {
+            routeValues[queryValue.Key] = queryValue.Value.ToString();
+        }
+
+        routeValues[Model.PageRouteValueName] = pageNumber;
+        string pageUrl =
+            Url.Page(pageName: null, pageHandler: null, values: routeValues) ?? "#";
+        return Model.Fragment is null
+            ? pageUrl
+            : $"{pageUrl}#{Uri.EscapeDataString(Model.Fragment)}";
+    }
+
+    <nav class="campus-pagination" aria-label="@Model.AriaLabel">
+        @if (currentPage > 1)
+        {
+            <a class="campus-pagination__direction"
+               href="@PageUrl(currentPage - 1)"
+               aria-label="Previous page"
+               data-pagination-previous>
+                <span aria-hidden="true"></span>
+            </a>
+        }
+        else
+        {
+            <button type="button"
+                    class="campus-pagination__direction"
+                    aria-label="Previous page"
+                    data-pagination-previous
+                    disabled>
+                <span aria-hidden="true"></span>
+            </button>
+        }
+
+        <span class="campus-pagination__pages">
+            @{ int previousPageNumber = 0; }
+            @foreach (int pageNumber in pageNumbers)
+            {
+                if (pageNumber - previousPageNumber > 1)
+                {
+                    <span class="campus-pagination__ellipsis"
+                          aria-hidden="true">…</span>
+                }
+                <a class="campus-pagination__page @(pageNumber == currentPage ? "is-current" : null) @(Math.Abs(pageNumber - currentPage) == 1 && pageNumber != 1 && pageNumber != totalPages ? "campus-pagination__page--adjacent" : null)"
+                   href="@PageUrl(pageNumber)"
+                   aria-label="Page @pageNumber"
+                   aria-current="@(pageNumber == currentPage ? "page" : null)">
+                    @pageNumber
+                </a>
+                previousPageNumber = pageNumber;
+            }
+        </span>
+
+        @if (currentPage < totalPages)
+        {
+            <a class="campus-pagination__direction"
+               href="@PageUrl(currentPage + 1)"
+               aria-label="Next page"
+               data-pagination-next>
+                <span aria-hidden="true"></span>
+            </a>
+        }
+        else
+        {
+            <button type="button"
+                    class="campus-pagination__direction"
+                    aria-label="Next page"
+                    data-pagination-next
+                    disabled>
+                <span aria-hidden="true"></span>
+            </button>
+        }
+    </nav>
+}
+else
+{
+    <nav class="campus-pagination"
+         aria-label="@Model.AriaLabel"
+         data-pagination
+         data-pagination-target="@Model.TargetId"
+         data-pagination-mobile-page-size="@Model.MobilePageSize"
+         data-pagination-default-page-size="@Model.DefaultPageSize"
+         hidden>
+        <button type="button"
+                class="campus-pagination__direction"
+                aria-label="Previous page"
+                data-pagination-previous>
+            <span aria-hidden="true"></span>
+        </button>
+        <span class="campus-pagination__pages" data-pagination-pages></span>
+        <button type="button"
+                class="campus-pagination__direction"
+                aria-label="Next page"
+                data-pagination-next>
+            <span aria-hidden="true"></span>
+        </button>
+        <span class="visually-hidden"
+              aria-live="polite"
+              data-pagination-status></span>
+    </nav>
+}
