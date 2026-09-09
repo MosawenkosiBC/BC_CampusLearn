@@ -46,6 +46,9 @@
         layoutPagePath.Equals(
             "/Tutors/Details",
             StringComparison.OrdinalIgnoreCase);
+    bool isTutor = User.HasClaim(
+        EntraClaimTypes.IsTutor,
+        bool.TrueString);
 }
 
 <!DOCTYPE html>
@@ -334,6 +337,23 @@
             line-height: 1;
         }
 
+        .user-menu-avatar {
+            border-radius: 50%;
+            height: 44px;
+            object-fit: cover;
+            width: 44px;
+        }
+
+        .user-menu-identity {
+            border-bottom: 0.5px solid #d8d8d8;
+            color: #252525;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 0 0.75rem 0.35rem;
+            overflow-wrap: anywhere;
+            padding: 0.65rem 0.25rem 0.7rem;
+        }
+
         .user-menu-button:hover .user-menu-initials,
         .user-menu-button:focus .user-menu-initials,
         .user-menu-button[aria-expanded="true"] .user-menu-initials {
@@ -507,11 +527,16 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav navbar-primary-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark @(ViewContext.RouteData.Values["Page"]?.ToString() == "/Index" ? "active" : "")" asp-area="" asp-page="/Index">Home</a>
-                        </li>
-                        <li class="nav-item">
                             <a class="nav-link text-dark @(ViewContext.RouteData.Values["Page"]?.ToString() == "/Student/Dashboard" ? "active" : "")" asp-area="" asp-page="/Student/Dashboard">Dashboard</a>
                         </li>
+                        @if (isTutor)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark @(layoutPagePath == "/Tutors/TutorDashboard" ? "active" : "")"
+                                   asp-area=""
+                                   asp-page="/Tutors/TutorDashboard">Tutor Dashboard</a>
+                            </li>
+                        }
                         <li class="nav-item">
                             <a class="nav-link text-dark @(ViewContext.RouteData.Values["Page"]?.ToString() == "/Tutors/Index" ? "active" : "")" asp-area="" asp-page="/Tutors/Index">All Tutors</a>
                         </li>
@@ -533,6 +558,8 @@
                             bool isTutor = User.HasClaim(
                                 EntraClaimTypes.IsTutor,
                                 bool.TrueString);
+                            string? tutorProfileImagePath = User.FindFirst(
+                                EntraClaimTypes.TutorProfileImagePath)?.Value;
 
                             <span class="navbar-action-divider" aria-hidden="true"></span>
 
@@ -565,7 +592,18 @@
                                         data-bs-toggle="dropdown"
                                         aria-expanded="false"
                                         aria-label="Open user menu">
-                                    <span class="user-menu-initials">@initials</span>
+                                    @if (isTutor &&
+                                        !string.IsNullOrWhiteSpace(
+                                            tutorProfileImagePath))
+                                    {
+                                        <img class="user-menu-avatar"
+                                             src="@tutorProfileImagePath"
+                                             alt="" />
+                                    }
+                                    else
+                                    {
+                                        <span class="user-menu-initials">@initials</span>
+                                    }
                                     <svg class="user-menu-chevron"
                                          xmlns="http://www.w3.org/2000/svg"
                                          width="1em"
@@ -579,15 +617,7 @@
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm"
                                     aria-labelledby="userMenuDropdown">
-                                    @if (isTutor)
-                                    {
-                                        <li>
-                                            <a asp-page="/Tutors/TutorDashboard"
-                                               class="dropdown-item d-flex align-items-center gap-2">
-                                                Tutor Dashboard
-                                            </a>
-                                        </li>
-                                    }
+                                    <li class="user-menu-identity">@displayName</li>
                                     <li>
                                         @if (isTutor)
                                         {

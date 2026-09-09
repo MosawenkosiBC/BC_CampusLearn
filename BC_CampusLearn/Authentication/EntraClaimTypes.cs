@@ -12,6 +12,7 @@ public static class EntraClaimTypes
     public const string BcUserId = "bc_user_id";
     public const string PersonnelNumber = "personnel_number";
     public const string IsTutor = "is_tutor";
+    public const string TutorProfileImagePath = "tutor_profile_image_path";
 
     public const string ObjectIdUri =
         "http://schemas.microsoft.com/identity/claims/objectidentifier";

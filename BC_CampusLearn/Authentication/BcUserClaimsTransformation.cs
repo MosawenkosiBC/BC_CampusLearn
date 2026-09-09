@@ -36,18 +36,35 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
 
         if (int.TryParse(bcUserIdValue, out int existingBcUserId))
         {
+            var existingTutor = await _context.Tutors
+                .AsNoTracking()
+                .Where(tutor => tutor.BcUserId == existingBcUserId)
+                .Select(tutor => new
+                {
+                    tutor.ProfileImagePath
+                })
+                .SingleOrDefaultAsync();
+
+            var tutorIdentity = new ClaimsIdentity();
             if (!principal.HasClaim(
                     claim => claim.Type == EntraClaimTypes.IsTutor))
             {
-                bool existingUserIsTutor = await _context.Tutors
-                    .AsNoTracking()
-                    .AnyAsync(tutor =>
-                        tutor.BcUserId == existingBcUserId);
-
-                var tutorIdentity = new ClaimsIdentity();
                 tutorIdentity.AddClaim(new Claim(
                     EntraClaimTypes.IsTutor,
-                    existingUserIsTutor.ToString()));
+                    (existingTutor is not null).ToString()));
+            }
+
+            if (!string.IsNullOrWhiteSpace(existingTutor?.ProfileImagePath) &&
+                !principal.HasClaim(claim =>
+                    claim.Type == EntraClaimTypes.TutorProfileImagePath))
+            {
+                tutorIdentity.AddClaim(new Claim(
+                    EntraClaimTypes.TutorProfileImagePath,
+                    existingTutor.ProfileImagePath));
+            }
+
+            if (tutorIdentity.Claims.Any())
+            {
                 principal.AddIdentity(tutorIdentity);
             }
 
@@ -137,15 +154,26 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
 
         await _context.SaveChangesAsync();
 
-        bool isTutor = await _context.Tutors
+        var tutorProfile = await _context.Tutors
             .AsNoTracking()
-            .AnyAsync(tutor => tutor.BcUserId == user.BcUserId);
+            .Where(tutor => tutor.BcUserId == user.BcUserId)
+            .Select(tutor => new
+            {
+                tutor.ProfileImagePath
+            })
+            .SingleOrDefaultAsync();
 
         var identity = new ClaimsIdentity();
         identity.AddClaim(new Claim(EntraClaimTypes.BcUserId, user.BcUserId.ToString()));
         identity.AddClaim(new Claim(
             EntraClaimTypes.IsTutor,
-            isTutor.ToString()));
+            (tutorProfile is not null).ToString()));
+        if (!string.IsNullOrWhiteSpace(tutorProfile?.ProfileImagePath))
+        {
+            identity.AddClaim(new Claim(
+                EntraClaimTypes.TutorProfileImagePath,
+                tutorProfile.ProfileImagePath));
+        }
         if (!principal.HasClaim(claim => claim.Type == EntraClaimTypes.PersonnelNumber))
         {
             identity.AddClaim(new Claim(EntraClaimTypes.PersonnelNumber, user.PersonnelNumber));
