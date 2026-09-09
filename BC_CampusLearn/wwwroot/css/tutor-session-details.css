@@ -1789,6 +1789,27 @@ body.tutor-evaluation-panel-open {
     width: 4.75rem;
 }
 
+@media (min-width: 992px) {
+    .manage-session-layout:has(.session-top-sidebar.has-session-countdown) {
+        align-items: stretch;
+    }
+
+    .session-top-sidebar.has-session-countdown {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .session-top-sidebar.has-session-countdown .completed-session-countdown {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+    }
+
+    .session-top-sidebar.has-session-countdown .session-countdown-card {
+        flex: 1;
+    }
+}
+
 .session-countdown-caption {
     color: #6f7378;
     font-size: 0.87rem;

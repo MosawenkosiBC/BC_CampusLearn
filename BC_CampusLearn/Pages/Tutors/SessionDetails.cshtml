@@ -1,16 +1,21 @@
 @page "{bookingId:int}"
 @model BC_CampusLearn.Pages.Tutors.SessionDetailsModel
+@using BC_CampusLearn.Services.Sessions
 
 @{
     ViewData["Title"] = "Manage session";
     DateTimeOffset start = Model.Session.ScheduledStartTime.ToOffset(TimeSpan.FromHours(2));
     DateTimeOffset end = start.AddHours((int)Model.Session.Duration);
-    bool hasAttachedLinks = !string.IsNullOrWhiteSpace(Model.Session.MeetingLink) ||
-        Model.Session.PreparationLinks.Count > 0;
+    bool hasAttachedLinks = Model.Session.PreparationLinks.Count > 0;
     bool hasAttachedDocuments = Model.Session.Documents.Count > 0;
-    bool chatIsClosed = Model.Session.Status is
-        BC_CampusLearn.Models.Entities.BookingStatus.Cancelled or
-        BC_CampusLearn.Models.Entities.BookingStatus.Declined;
+    bool hasSessionCountdown = Model.Session.Status is
+        BC_CampusLearn.Models.Entities.BookingStatus.Confirmed or
+        BC_CampusLearn.Models.Entities.BookingStatus.InProgress or
+        BC_CampusLearn.Models.Entities.BookingStatus.Completed;
+    bool chatIsClosed = SessionCommunicationPolicy.IsClosed(
+        Model.Session.Status,
+        Model.Session.TutorEvaluation is not null,
+        Model.Session.StudentEvaluation is not null);
     string[] studentNameParts = Model.Session.StudentName.Split(
         ' ',
         StringSplitOptions.RemoveEmptyEntries);
@@ -194,18 +199,6 @@
                                     @if (hasAttachedLinks)
                                     {
                                         <div class="session-material-list">
-                                        @if (!string.IsNullOrWhiteSpace(Model.Session.MeetingLink))
-                                        {
-                                            <div class="session-readonly-row">
-                                                <input type="url" value="@Model.Session.MeetingLink" aria-label="Meeting link" readonly />
-                                                <a href="@Model.Session.MeetingLink" target="_blank" rel="noopener noreferrer" aria-label="Open meeting link">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
-                                                        <path d="M0 0h24v24H0z" fill="none" />
-                                                        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M5.576 13.481a3.5 3.5 0 0 0 4.95 4.95m2.473-7.423a3.5 3.5 0 0 1 0 4.95l-2.475 2.475m-2.475-7.425l-2.475 2.475m12.857-2.957a3.5 3.5 0 1 0-4.95-4.95M11.01 13a3.5 3.5 0 0 1 0-4.95l2.474-2.475M15.958 13l2.475-2.475" />
-                                                    </svg>
-                                                </a>
-                                            </div>
-                                        }
                                         @foreach (var link in Model.Session.PreparationLinks.OrderBy(item => item.Position))
                                         {
                                             <div class="session-readonly-row">
@@ -247,7 +240,7 @@
 
         </div>
 
-        <aside class="manage-session-sidebar session-top-sidebar" aria-label="Session status">
+        <aside class="manage-session-sidebar session-top-sidebar @(hasSessionCountdown ? "has-session-countdown" : null)" aria-label="Session status">
             <header class="manage-card-heading">
                 <h2>Manage Session</h2>
             </header>
@@ -321,9 +314,7 @@
                 </section>
             }
 
-            @if (Model.Session.Status is BC_CampusLearn.Models.Entities.BookingStatus.Confirmed or
-                 BC_CampusLearn.Models.Entities.BookingStatus.InProgress or
-                 BC_CampusLearn.Models.Entities.BookingStatus.Completed)
+            @if (hasSessionCountdown)
             {
                 <section class="completed-session-countdown" aria-labelledby="completed-countdown-title">
                     <div class="completed-session-countdown-heading">
@@ -367,7 +358,8 @@
                             @if (Model.Session.Status is BC_CampusLearn.Models.Entities.BookingStatus.Confirmed or
                                  BC_CampusLearn.Models.Entities.BookingStatus.InProgress)
                             {
-                                <form method="post" asp-page-handler="Join" class="session-countdown-join">
+                                <form method="post" asp-page-handler="Join" class="session-countdown-join"
+                                      target="_blank" rel="noopener noreferrer">
                                     <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
                                     <button type="submit"
                                             class="session-join-button"

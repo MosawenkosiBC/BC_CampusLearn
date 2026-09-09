@@ -35,6 +35,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<BookingPreparationLink> BookingPreparationLinks =>
         Set<BookingPreparationLink>();
 
+    public DbSet<MeetingLink> MeetingLinks => Set<MeetingLink>();
+
     public DbSet<BookingDocument> BookingDocuments =>
         Set<BookingDocument>();
 

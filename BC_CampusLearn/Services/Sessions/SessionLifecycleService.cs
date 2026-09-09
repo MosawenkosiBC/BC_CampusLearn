@@ -125,7 +125,11 @@ public class SessionLifecycleService : ISessionLifecycleService
                 "Only an upcoming pending booking can be confirmed.");
         }
 
-        booking.MeetingLink = link;
+        booking.MeetingLink ??= new MeetingLink
+        {
+            BookingId = booking.BookingId
+        };
+        booking.MeetingLink.Url = link;
         ChangeStatus(
             booking,
             BookingStatus.Confirmed,
@@ -292,7 +296,7 @@ public class SessionLifecycleService : ISessionLifecycleService
 
         DateTimeOffset now = _timeProvider.GetUtcNow();
         if (booking.Status != BookingStatus.Confirmed ||
-            string.IsNullOrWhiteSpace(booking.MeetingLink) ||
+            string.IsNullOrWhiteSpace(booking.MeetingLink?.Url) ||
             !SessionLifecyclePolicy.CanStart(
                 booking.ScheduledStartTime,
                 now))
@@ -324,6 +328,7 @@ public class SessionLifecycleService : ISessionLifecycleService
     {
         return await _context.Bookings
             .Include(booking => booking.SessionExecution)
+            .Include(booking => booking.MeetingLink)
             .Include(booking => booking.StatusHistory)
             .SingleOrDefaultAsync(booking =>
                 booking.BookingId == bookingId &&

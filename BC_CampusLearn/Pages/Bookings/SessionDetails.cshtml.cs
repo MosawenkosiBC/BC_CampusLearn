@@ -71,10 +71,12 @@ public class SessionDetailsModel : PageModel
                 .ThenInclude(assignment => assignment.Tutor)
                     .ThenInclude(tutor => tutor.BcUser)
             .Include(booking => booking.PreparationLinks)
+            .Include(booking => booking.MeetingLink)
             .Include(booking => booking.Documents)
             .Include(booking => booking.SessionMessages)
                 .ThenInclude(message => message.Sender)
             .Include(booking => booking.StudentEvaluation)
+            .Include(booking => booking.TutorEvaluation)
             .Include(booking => booking.StatusHistory)
             .SingleOrDefaultAsync(
                 booking => booking.BookingId == bookingId,
@@ -152,7 +154,9 @@ public class SessionDetailsModel : PageModel
             .Select(booking => new
             {
                 booking.Status,
-                booking.MeetingLink
+                MeetingLink = booking.MeetingLink == null
+                    ? null
+                    : booking.MeetingLink.Url
             })
             .SingleOrDefaultAsync(cancellationToken);
 

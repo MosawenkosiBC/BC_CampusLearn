@@ -89,12 +89,14 @@ public class SessionDetailsModel : PageModel
             .AsSplitQuery()
             .Include(booking => booking.ProgrammeModule)
             .Include(booking => booking.PreparationLinks)
+            .Include(booking => booking.MeetingLink)
             .Include(booking => booking.Documents)
             .Include(booking => booking.SessionExecution)
             .Include(booking => booking.StatusHistory)
             .Include(booking => booking.SessionMessages)
                 .ThenInclude(message => message.Sender)
             .Include(booking => booking.TutorEvaluation)
+            .Include(booking => booking.StudentEvaluation)
             .SingleOrDefaultAsync(booking =>
                 booking.BookingId == bookingId &&
                 booking.TutorId == tutorId.Value,
@@ -111,7 +113,7 @@ public class SessionDetailsModel : PageModel
         TutorEmail = string.IsNullOrWhiteSpace(currentUser.Email)
             ? "Not available"
             : currentUser.Email;
-        MeetingLink = session.MeetingLink;
+        MeetingLink = session.MeetingLink?.Url;
         DateTimeOffset now = _timeProvider.GetUtcNow();
         SessionStartRemainingText = FormatTimeUntilStart(
             session.ScheduledStartTime - now);
@@ -289,12 +291,12 @@ public class SessionDetailsModel : PageModel
             return Forbid();
         }
 
-        string? link = await _context.Bookings
+        string? link = await _context.MeetingLinks
             .AsNoTracking()
-            .Where(booking =>
-                booking.BookingId == bookingId &&
-                booking.TutorId == tutorId.Value)
-            .Select(booking => booking.MeetingLink)
+            .Where(meetingLink =>
+                meetingLink.BookingId == bookingId &&
+                meetingLink.Booking.TutorId == tutorId.Value)
+            .Select(meetingLink => meetingLink.Url)
             .SingleOrDefaultAsync(cancellationToken);
         SessionLifecycleResult result = await _lifecycleService.StartAsync(
             tutorId.Value,
@@ -415,6 +417,7 @@ public class SessionDetailsModel : PageModel
         }
 
         Booking? booking = await _context.Bookings
+            .Include(item => item.MeetingLink)
             .SingleOrDefaultAsync(item =>
                 item.BookingId == bookingId &&
                 item.TutorId == tutorId.Value,
@@ -445,7 +448,11 @@ public class SessionDetailsModel : PageModel
             return RedirectToPage(new { bookingId });
         }
 
-        booking.MeetingLink = link;
+        booking.MeetingLink ??= new MeetingLink
+        {
+            BookingId = booking.BookingId
+        };
+        booking.MeetingLink.Url = link;
         await _context.SaveChangesAsync(cancellationToken);
 
         MeetingLinkMessage = "Meeting link saved.";

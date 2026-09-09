@@ -24,8 +24,6 @@ public class Booking
 
     public string? Summary { get; set; }
 
-    public string? MeetingLink { get; set; }
-
     public string? CancellationReason { get; set; }
 
     public BookingStatus Status { get; set; }
@@ -47,6 +45,8 @@ public class Booking
     public BcUser? StudentBcUser { get; set; }
 
     public SessionExecution? SessionExecution { get; set; }
+
+    public MeetingLink? MeetingLink { get; set; }
 
     public ICollection<BookingStatusHistory> StatusHistory { get; set; }
         = new List<BookingStatusHistory>();

@@ -1,6 +1,7 @@
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Sessions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -56,8 +57,10 @@ public class SessionHub : Hub
                 "Messages must contain between 1 and 2000 characters.");
         }
 
-        if (participant.Status is BookingStatus.Cancelled or
-            BookingStatus.Declined)
+        if (SessionCommunicationPolicy.IsClosed(
+            participant.Status,
+            participant.TutorReviewSubmitted,
+            participant.StudentReviewSubmitted))
         {
             throw new HubException(
                 "Messages are closed for this session.");
@@ -174,8 +177,10 @@ public class SessionHub : Hub
             bookingId,
             user,
             Context.ConnectionAborted);
-        if (participant.Status is BookingStatus.Cancelled or
-            BookingStatus.Declined)
+        if (SessionCommunicationPolicy.IsClosed(
+            participant.Status,
+            participant.TutorReviewSubmitted,
+            participant.StudentReviewSubmitted))
         {
             return;
         }
@@ -201,6 +206,8 @@ public class SessionHub : Hub
             .Where(booking => booking.BookingId == bookingId)
             .Select(booking => new BookingParticipant(
                 booking.Status,
+                booking.TutorEvaluation != null,
+                booking.StudentEvaluation != null,
                 booking.TutorCourseModule.Tutor.BcUserId,
                 booking.StudentBcUserId,
                 booking.StudentObjectId,
@@ -229,6 +236,8 @@ public class SessionHub : Hub
 
     private sealed record BookingParticipant(
         BookingStatus Status,
+        bool TutorReviewSubmitted,
+        bool StudentReviewSubmitted,
         int TutorBcUserId,
         int? StudentBcUserId,
         string StudentObjectId,

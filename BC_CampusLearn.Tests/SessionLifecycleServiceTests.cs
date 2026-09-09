@@ -34,7 +34,11 @@ public class SessionLifecycleServiceTests
         Assert.False(invalid.Succeeded);
         Assert.True(valid.Succeeded);
         Assert.Equal(BookingStatus.Confirmed, booking.Status);
-        Assert.Equal("https://teams.microsoft.com/meeting", booking.MeetingLink);
+        Assert.Equal(
+            "https://teams.microsoft.com/meeting",
+            booking.MeetingLink?.Url);
+        Assert.Single(context.MeetingLinks);
+        Assert.Empty(booking.PreparationLinks);
         BookingStatusHistory history = Assert.Single(booking.StatusHistory);
         Assert.Equal(BookingStatus.Pending, history.PreviousStatus);
         Assert.Equal(BookingStatus.Confirmed, history.NewStatus);
@@ -279,7 +283,10 @@ public class SessionLifecycleServiceTests
         await using ApplicationDbContext context = CreateContext();
         Booking booking = CreateBooking(scheduled);
         booking.Status = BookingStatus.Confirmed;
-        booking.MeetingLink = "https://teams.microsoft.com/meeting";
+        booking.MeetingLink = new MeetingLink
+        {
+            Url = "https://teams.microsoft.com/meeting"
+        };
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         var service = new SessionLifecycleService(context, clock);
@@ -313,7 +320,10 @@ public class SessionLifecycleServiceTests
         await using ApplicationDbContext context = CreateContext();
         Booking booking = CreateBooking(scheduled);
         booking.Status = BookingStatus.Confirmed;
-        booking.MeetingLink = "https://teams.microsoft.com/meeting";
+        booking.MeetingLink = new MeetingLink
+        {
+            Url = "https://teams.microsoft.com/meeting"
+        };
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         var service = new SessionLifecycleService(
@@ -336,6 +346,49 @@ public class SessionLifecycleServiceTests
             SessionSchedulingRules.TriggeredCountdownLength,
             booking.SessionExecution.ExpectedCompletionAt -
                 booking.SessionExecution.StartedAt);
+    }
+
+    [Fact]
+    public async Task Start_TargetsOnlyTheRequestedBookingAndItsMeetingLink()
+    {
+        DateTimeOffset scheduled =
+            new(2026, 8, 31, 10, 0, 0, TimeSpan.Zero);
+        await using ApplicationDbContext context = CreateContext();
+        Booking requestedBooking = CreateBooking(scheduled);
+        requestedBooking.Status = BookingStatus.Confirmed;
+        requestedBooking.MeetingLink = new MeetingLink
+        {
+            Url = "https://teams.microsoft.com/requested-session"
+        };
+        Booking otherBooking = CreateBooking(scheduled);
+        otherBooking.Status = BookingStatus.Confirmed;
+        otherBooking.MeetingLink = new MeetingLink
+        {
+            Url = "https://teams.microsoft.com/other-session"
+        };
+        context.Bookings.AddRange(requestedBooking, otherBooking);
+        await context.SaveChangesAsync();
+        var service = new SessionLifecycleService(
+            context,
+            new TestTimeProvider(scheduled));
+
+        SessionLifecycleResult result = await service.StartAsync(
+            requestedBooking.TutorId,
+            8,
+            requestedBooking.BookingId,
+            SessionStartSource.JoinMeeting);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(BookingStatus.InProgress, requestedBooking.Status);
+        Assert.NotNull(requestedBooking.SessionExecution);
+        Assert.Equal(BookingStatus.Confirmed, otherBooking.Status);
+        Assert.Null(otherBooking.SessionExecution);
+        Assert.Equal(
+            "https://teams.microsoft.com/requested-session",
+            requestedBooking.MeetingLink.Url);
+        Assert.Equal(
+            "https://teams.microsoft.com/other-session",
+            otherBooking.MeetingLink.Url);
     }
 
     private static ApplicationDbContext CreateContext()

@@ -152,7 +152,9 @@ public class DashboardModel : PageModel
                         Status = booking.Status,
 
                         Summary = booking.Summary,
-                        MeetingLink = booking.MeetingLink
+                        MeetingLink = booking.MeetingLink == null
+                            ? null
+                            : booking.MeetingLink.Url
                     })
                 .FirstOrDefaultAsync(cancellationToken);
 

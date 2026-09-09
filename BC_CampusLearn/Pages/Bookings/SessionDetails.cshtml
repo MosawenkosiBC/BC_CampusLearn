@@ -1,6 +1,7 @@
 @page "{bookingId:int}"
 @model BC_CampusLearn.Pages.Bookings.SessionDetailsModel
 @using BC_CampusLearn.Models.Entities
+@using BC_CampusLearn.Services.Sessions
 
 @{
     ViewData["Title"] = "Session details";
@@ -8,7 +9,10 @@
     DateTimeOffset end = start.AddHours((int)Model.Session.Duration);
     bool hasAttachedLinks = Model.Session.PreparationLinks.Count > 0;
     bool hasAttachedDocuments = Model.Session.Documents.Count > 0;
-    bool chatIsClosed = Model.Session.Status is BookingStatus.Cancelled or BookingStatus.Declined;
+    bool chatIsClosed = SessionCommunicationPolicy.IsClosed(
+        Model.Session.Status,
+        Model.Session.TutorEvaluation is not null,
+        Model.Session.StudentEvaluation is not null);
     string[] tutorNameParts = Model.TutorName.Split(
         ' ',
         StringSplitOptions.RemoveEmptyEntries);
@@ -289,10 +293,11 @@
                             <div><dt>Scheduled:</dt><dd>@start.ToString("dd MMM yyyy, HH:mm")&ndash;@end.ToString("HH:mm")</dd></div>
                             <div><dt>Location:</dt><dd>@Model.Session.Location</dd></div>
                         </dl>
-                        <form method="post" asp-page-handler="Join">
+                        <form method="post" asp-page-handler="Join"
+                              target="_blank" rel="noopener noreferrer">
                             <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
                             <button type="submit" class="session-join-button"
-                                    disabled="@string.IsNullOrWhiteSpace(Model.Session.MeetingLink)">
+                                    disabled="@string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url)">
                                 <i class="bi bi-microsoft-teams" aria-hidden="true"></i>
                                 Join Meeting
                             </button>
