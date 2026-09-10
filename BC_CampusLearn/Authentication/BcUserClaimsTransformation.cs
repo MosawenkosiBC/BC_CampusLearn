@@ -38,7 +38,10 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
         {
             var existingTutor = await _context.Tutors
                 .AsNoTracking()
-                .Where(tutor => tutor.BcUserId == existingBcUserId)
+                .Where(tutor =>
+                    tutor.BcUserId == existingBcUserId &&
+                    tutor.Status == TutorStatus.Approved &&
+                    tutor.IsActive)
                 .Select(tutor => new
                 {
                     tutor.ProfileImagePath
@@ -156,7 +159,10 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
 
         var tutorProfile = await _context.Tutors
             .AsNoTracking()
-            .Where(tutor => tutor.BcUserId == user.BcUserId)
+            .Where(tutor =>
+                tutor.BcUserId == user.BcUserId &&
+                tutor.Status == TutorStatus.Approved &&
+                tutor.IsActive)
             .Select(tutor => new
             {
                 tutor.ProfileImagePath

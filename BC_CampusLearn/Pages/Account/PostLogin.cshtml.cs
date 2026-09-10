@@ -1,5 +1,6 @@
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
+using BC_CampusLearn.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -31,7 +32,9 @@ public class PostLoginModel : PageModel
             .AsNoTracking()
             .AnyAsync(
                 tutor =>
-                    tutor.BcUserId == currentUser.BcUserId,
+                    tutor.BcUserId == currentUser.BcUserId &&
+                    tutor.Status == TutorStatus.Approved &&
+                    tutor.IsActive,
                 cancellationToken);
 
         return RedirectToPage(

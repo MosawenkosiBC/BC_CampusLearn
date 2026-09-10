@@ -399,7 +399,9 @@ public class TutorDashboardModel : PageModel
         return await _context.Tutors
             .AsNoTracking()
             .Where(tutor =>
-                tutor.BcUserId == currentUser.BcUserId)
+                tutor.BcUserId == currentUser.BcUserId &&
+                tutor.Status == TutorStatus.Approved &&
+                tutor.IsActive)
             .Select(tutor => (int?)tutor.TutorId)
             .SingleOrDefaultAsync(cancellationToken);
     }

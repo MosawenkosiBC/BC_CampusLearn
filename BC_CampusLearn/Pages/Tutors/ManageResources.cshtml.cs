@@ -595,7 +595,10 @@ public class ManageResourcesModel : PageModel
     {
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
         return await _context.Tutors.AsNoTracking()
-            .Where(tutor => tutor.BcUserId == currentUser.BcUserId)
+            .Where(tutor =>
+                tutor.BcUserId == currentUser.BcUserId &&
+                tutor.Status == TutorStatus.Approved &&
+                tutor.IsActive)
             .Select(tutor => (int?)tutor.TutorId)
             .SingleOrDefaultAsync(cancellationToken);
     }

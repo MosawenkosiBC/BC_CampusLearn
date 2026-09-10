@@ -91,7 +91,10 @@ public class ProfileModel : PageModel
 
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
         Tutor? tutor = await _context.Tutors.SingleOrDefaultAsync(
-            item => item.BcUserId == currentUser.BcUserId,
+            item =>
+                item.BcUserId == currentUser.BcUserId &&
+                item.Status == TutorStatus.Approved &&
+                item.IsActive,
             cancellationToken);
         if (tutor is null)
         {
@@ -112,7 +115,10 @@ public class ProfileModel : PageModel
 
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
         var tutor = await _context.Tutors
-            .Where(item => item.BcUserId == currentUser.BcUserId)
+            .Where(item =>
+                item.BcUserId == currentUser.BcUserId &&
+                item.Status == TutorStatus.Approved &&
+                item.IsActive)
             .Select(item => new { item.TutorId, item.ProgrammeId })
             .SingleOrDefaultAsync(cancellationToken);
         if (tutor is null)
@@ -229,7 +235,10 @@ public class ProfileModel : PageModel
 
         var tutor = await _context.Tutors
             .SingleOrDefaultAsync(
-                item => item.BcUserId == currentUser.BcUserId,
+                item =>
+                    item.BcUserId == currentUser.BcUserId &&
+                    item.Status == TutorStatus.Approved &&
+                    item.IsActive,
                 cancellationToken);
 
         if (tutor is null)
@@ -301,7 +310,10 @@ public class ProfileModel : PageModel
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
         var tutor = await _context.Tutors
             .AsNoTracking()
-            .Where(item => item.BcUserId == currentUser.BcUserId)
+            .Where(item =>
+                item.BcUserId == currentUser.BcUserId &&
+                item.Status == TutorStatus.Approved &&
+                item.IsActive)
             .Select(item => new
             {
                 item.TutorId,

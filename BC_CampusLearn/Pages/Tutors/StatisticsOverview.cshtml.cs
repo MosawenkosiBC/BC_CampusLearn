@@ -69,7 +69,10 @@ public class StatisticsOverviewModel : PageModel
 
         var tutor = await _context.Tutors
             .AsNoTracking()
-            .Where(item => item.BcUserId == currentUser.BcUserId)
+            .Where(item =>
+                item.BcUserId == currentUser.BcUserId &&
+                item.Status == TutorStatus.Approved &&
+                item.IsActive)
             .Select(item => new
             {
                 item.TutorId,

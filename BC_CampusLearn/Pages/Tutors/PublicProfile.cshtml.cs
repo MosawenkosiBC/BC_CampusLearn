@@ -1,5 +1,6 @@
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
+using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -39,7 +40,10 @@ public class PublicProfileModel : PageModel
 
         var tutor = await _context.Tutors
             .AsNoTracking()
-            .Where(item => item.BcUserId == currentUser.BcUserId)
+            .Where(item =>
+                item.BcUserId == currentUser.BcUserId &&
+                item.Status == TutorStatus.Approved &&
+                item.IsActive)
             .Select(item => new
             {
                 item.BcUser.DisplayName,
@@ -83,7 +87,10 @@ public class PublicProfileModel : PageModel
         var tutor = await _context.Tutors
             .Include(item => item.BcUser)
             .SingleOrDefaultAsync(
-                item => item.BcUserId == currentUser.BcUserId,
+                item =>
+                    item.BcUserId == currentUser.BcUserId &&
+                    item.Status == TutorStatus.Approved &&
+                    item.IsActive,
                 cancellationToken);
 
         if (tutor is null)
