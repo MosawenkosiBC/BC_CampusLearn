@@ -17,6 +17,25 @@ public class StudentLearningResourceListItem
     public string? TutorProfileImagePath { get; set; }
     public DateTimeOffset? DatePublished { get; set; }
 
+    public string TutorInitials
+    {
+        get
+        {
+            string[] nameParts = TutorName.Split(
+                ' ',
+                StringSplitOptions.RemoveEmptyEntries |
+                StringSplitOptions.TrimEntries);
+
+            return nameParts.Length switch
+            {
+                > 1 => $"{nameParts[0][0]}{nameParts[^1][0]}"
+                    .ToUpperInvariant(),
+                1 => nameParts[0][..1].ToUpperInvariant(),
+                _ => "T"
+            };
+        }
+    }
+
     public string Summary => ExtractPlainText(Content, 115);
 
     public string TopicDisplay

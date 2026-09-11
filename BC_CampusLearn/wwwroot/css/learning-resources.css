@@ -386,11 +386,15 @@
 .student-resource-author-icon {
     display: grid;
     place-items: center;
+    flex: 0 0 28px;
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: #f1e6da;
-    color: #744c2d;
+    background: rgba(74, 193, 193, 0.16);
+    color: #287f7f;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
 }
 
 .student-resource-author-image {

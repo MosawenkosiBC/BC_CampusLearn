@@ -130,8 +130,9 @@
                                 }
                                 else
                                 {
-                                    <span class="student-resource-author-icon" aria-hidden="true">
-                                        <i class="bi bi-person"></i>
+                                    <span class="student-resource-author-icon"
+                                          aria-label="@resource.TutorName initials">
+                                        @resource.TutorInitials
                                     </span>
                                 }
                                 <a asp-page="/Tutors/Details"

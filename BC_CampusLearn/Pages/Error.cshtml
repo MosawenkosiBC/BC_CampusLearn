@@ -1,15 +1,76 @@
 ﻿@page
 @model ErrorModel
 @{
-    ViewData["Title"] = "Error";
+    ViewData["Title"] = "Something went wrong";
 }
 
-<h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
-
-@if (Model.ShowRequestId)
-{
-    <p>
-        <strong>Request ID:</strong> <code>@Model.RequestId</code>
-    </p>
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/Dashboard.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/error.css"
+          asp-append-version="true" />
 }
+
+<section class="error-page" aria-labelledby="error-title">
+    <div class="error-content">
+        <span class="error-code-backdrop" aria-hidden="true">500</span>
+
+        <div class="error-robot-scene" aria-hidden="true">
+            <svg class="error-robot-svg" viewBox="0 0 300 330" focusable="false">
+                <ellipse class="error-robot-shadow" cx="150" cy="302" rx="76" ry="13" />
+                <g class="error-robot">
+                    <path class="error-robot-antenna" d="M150 48V25" />
+                    <circle class="error-robot-antenna-light" cx="150" cy="18" r="8" />
+                    <circle class="error-robot-ear" cx="69" cy="103" r="17" />
+                    <circle class="error-robot-ear" cx="231" cy="103" r="17" />
+                    <rect class="error-robot-shell" x="73" y="45" width="154" height="118" rx="42" />
+                    <rect class="error-robot-face" x="92" y="68" width="116" height="70" rx="25" />
+                    <path class="error-robot-brow" d="M111 91l18-5M189 91l-18-5" />
+                    <circle class="error-robot-eye error-robot-eye--teal" cx="122" cy="105" r="8" />
+                    <circle class="error-robot-eye error-robot-eye--pink" cx="178" cy="105" r="8" />
+                    <path class="error-robot-mouth" d="M136 125q14-8 28 0" />
+                    <rect class="error-robot-neck" x="133" y="158" width="34" height="18" rx="6" />
+                    <rect class="error-robot-shell" x="88" y="170" width="124" height="104" rx="38" />
+                    <circle class="error-robot-panel" cx="150" cy="215" r="25" />
+                    <path class="error-robot-mark" d="M136 215h28M150 201v28" />
+                    <circle class="error-robot-status error-robot-status--teal" cx="131" cy="251" r="4" />
+                    <circle class="error-robot-status error-robot-status--pink" cx="150" cy="251" r="4" />
+                    <circle class="error-robot-status error-robot-status--gold" cx="169" cy="251" r="4" />
+                    <path class="error-robot-limb" d="M91 193Q54 206 61 244" />
+                    <circle class="error-robot-hand" cx="62" cy="251" r="12" />
+                    <g class="error-robot-wave">
+                        <path class="error-robot-limb" d="M209 193q37 13 30 51" />
+                        <circle class="error-robot-hand" cx="238" cy="251" r="12" />
+                    </g>
+                    <path class="error-robot-limb" d="M122 270v23M178 270v23" />
+                    <path class="error-robot-foot" d="M103 299h35M162 299h35" />
+                </g>
+            </svg>
+        </div>
+
+        <div class="error-copy">
+            <h1 id="error-title">Something went wrong</h1>
+            <p class="error-slogan">
+                It’s the way we’re
+                <img src="~/images/wired-wordmark.png"
+                     asp-append-version="true"
+                     alt="wired" />, but even the best connections have an off day.
+            </p>
+            <p class="error-message">
+                We could not complete your request. Please try again or return to the home page.
+            </p>
+
+            <div class="error-actions">
+                <a asp-page="/Index" class="error-home-link">Back to home</a>
+                <button type="button"
+                        class="error-back-button"
+                        onclick="window.history.back()">
+                    Go back
+                </button>
+            </div>
+
+        </div>
+    </div>
+</section>
