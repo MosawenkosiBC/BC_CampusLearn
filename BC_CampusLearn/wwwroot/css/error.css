@@ -142,6 +142,17 @@
     stroke-width: 5;
 }
 
+.error-robot-lock {
+    fill: none;
+    stroke: #617177;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 4;
+    transform: scale(0.72);
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
 .error-robot-status--gold {
     fill: #efad27;
 }

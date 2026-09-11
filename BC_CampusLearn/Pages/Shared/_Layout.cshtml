@@ -10,6 +10,9 @@
             StringComparison.OrdinalIgnoreCase) ||
         layoutPagePath.Equals(
             "/Error",
+            StringComparison.OrdinalIgnoreCase) ||
+        layoutPagePath.Equals(
+            "/Account/AccessDenied",
             StringComparison.OrdinalIgnoreCase);
     bool hasSessionDetailsBackground =
         layoutPagePath.Equals(
