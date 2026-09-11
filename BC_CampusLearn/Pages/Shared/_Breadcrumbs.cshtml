@@ -102,6 +102,9 @@
         case "/Error":
             breadcrumbs.Add(("Error", null));
             break;
+        case "/NotFound":
+            breadcrumbs.Add(("Page Not Found", null));
+            break;
         default:
             var fallbackLabel = pageTitle;
             if (string.IsNullOrWhiteSpace(fallbackLabel))

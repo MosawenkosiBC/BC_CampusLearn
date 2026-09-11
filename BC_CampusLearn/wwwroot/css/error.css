@@ -153,6 +153,14 @@
     transform-origin: center;
 }
 
+.error-robot-question {
+    fill: none;
+    stroke: #617177;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 4;
+}
+
 .error-robot-status--gold {
     fill: #efad27;
 }

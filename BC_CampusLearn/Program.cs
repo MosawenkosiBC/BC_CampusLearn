@@ -96,6 +96,7 @@ builder.Services.AddRazorPages(options =>
         "/Account/SignIn");
     options.Conventions.AllowAnonymousToPage(
         "/Account/AccessDenied");
+    options.Conventions.AllowAnonymousToPage("/NotFound");
 
     options.Conventions.AuthorizeFolder("/Student");
     options.Conventions.AuthorizeFolder("/Tutors");
@@ -109,6 +110,8 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
+
+app.UseStatusCodePagesWithReExecute("/NotFound");
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
