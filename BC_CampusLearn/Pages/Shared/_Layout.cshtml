@@ -418,11 +418,14 @@
             }
 
             body > header {
-                box-shadow: none;
+                box-shadow:
+                    0 0.35rem 0.9rem rgba(0, 0, 0, 0.08),
+                    0 0.08rem 0.3rem rgba(0, 0, 0, 0.04);
             }
 
             .navbar {
-                min-height: 84px;
+                border-bottom: 0 !important;
+                min-height: var(--campus-mobile-header-height);
                 padding-block: 0.75rem;
             }
 
@@ -463,12 +466,12 @@
             .navbar-collapse {
                 position: fixed;
                 z-index: 1;
-                top: 84px;
+                top: var(--campus-mobile-header-height);
                 right: 0;
                 bottom: 0;
                 left: 0;
                 width: 100%;
-                height: calc(100dvh - 84px);
+                height: calc(100dvh - var(--campus-mobile-header-height));
                 overflow-y: auto;
                 padding: 1rem 1.5rem 2rem;
                 background: #fff;
@@ -582,7 +585,7 @@
             }
 
             .user-menu .dropdown-menu > li:last-child {
-                margin-top: 0.75rem;
+                margin-top: 0;
                 margin-bottom: 0;
             }
 
@@ -743,9 +746,9 @@
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm"
                                     aria-labelledby="userMenuDropdown">
                                     <li class="user-menu-identity">@displayName</li>
-                                    <li>
-                                        @if (isTutor)
-                                        {
+                                    @if (isTutor)
+                                    {
+                                        <li>
                                             <a asp-page="/Tutors/Profile"
                                                class="dropdown-item d-flex align-items-center gap-2 @(hasManageAccountBackground ? "active" : null)"
                                                aria-current="@(hasManageAccountBackground ? "page" : null)">
@@ -763,27 +766,8 @@
                                             </svg>
                                             Manage account
                                             </a>
-                                        }
-                                        else
-                                        {
-                                            <button type="button"
-                                                    class="dropdown-item d-flex align-items-center gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg"
-                                                     width="1em"
-                                                     height="1em"
-                                                     viewBox="0 0 24 24"
-                                                     aria-hidden="true"
-                                                     focusable="false">
-                                                    <path d="M0 0h24v24H0z" fill="none" />
-                                                    <g fill="none" stroke="currentColor" stroke-width="2">
-                                                        <path stroke-linejoin="round" d="M4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
-                                                        <circle cx="12" cy="7" r="3" />
-                                                    </g>
-                                                </svg>
-                                                Manage account
-                                            </button>
-                                        }
-                                    </li>
+                                        </li>
+                                    }
                                     <li>
                                         <form method="post"
                                               asp-page="/Account/SignOut">

@@ -300,7 +300,7 @@
 @media (max-width: 767.98px) {
     .error-page {
         min-height: calc(100vh - 9rem);
-        padding: 2rem 1.25rem 4rem;
+        padding: 1rem 1.25rem 4rem;
     }
 
     .error-content {

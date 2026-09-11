@@ -3,6 +3,7 @@ html {
 }
 
 :root {
+  --campus-mobile-header-height: 84px;
   --campus-font-family:
     system-ui,
     -apple-system,
@@ -281,7 +282,7 @@ body {
 
 @media (max-width: 575.98px) {
   body {
-    padding-top: 68px;
+    padding-top: var(--campus-mobile-header-height);
   }
 
   .campus-breadcrumbs {
