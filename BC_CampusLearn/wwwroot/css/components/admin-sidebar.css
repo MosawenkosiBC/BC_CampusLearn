@@ -1,5 +1,7 @@
 :root {
+    --admin-active-shape-width: 4.375rem;
     --admin-header-height: 4.75rem;
+    --admin-sidebar-link-size: 3.25rem;
     --admin-sidebar-width: 5.5rem;
 }
 
@@ -283,7 +285,6 @@ body.administrator-area > .admin-topbar {
     align-items: center;
     background: #363c3d;
     bottom: 0;
-    box-shadow: 0.15rem 0 0.75rem rgba(14, 16, 17, 0.16);
     display: flex;
     flex-direction: column;
     left: 0;
@@ -325,12 +326,12 @@ body.administrator-area > .admin-topbar {
     border-radius: 0.65rem;
     color: #fff;
     display: flex;
-    flex: 0 0 3.25rem;
-    height: 3.25rem;
+    flex: 0 0 var(--admin-sidebar-link-size);
+    height: var(--admin-sidebar-link-size);
     justify-content: center;
     position: relative;
     text-decoration: none;
-    width: 3.25rem;
+    width: var(--admin-sidebar-link-size);
 }
 
 .admin-sidebar-link svg {
@@ -343,8 +344,7 @@ body.administrator-area > .admin-topbar {
     width: 2rem;
 }
 
-a.admin-sidebar-link:hover,
-a.admin-sidebar-link:focus-visible {
+a.admin-sidebar-link:not(.is-active):focus-visible {
     background: rgba(255, 255, 255, 0.12);
     color: #fff;
 }
@@ -352,11 +352,10 @@ a.admin-sidebar-link:focus-visible {
 .admin-sidebar-link.is-active {
     background: transparent;
     color: #363c3d;
-    left: 0.65rem;
 }
 
 .admin-sidebar-link.is-active::before {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 100' preserveAspectRatio='none'%3E%3Cpath fill='%23fff' d='M50 0C22 0 0 22 0 50s22 50 50 50c22 0 33-26 46-30s10 14 32 14c18 0 32-15 32-34s-14-34-32-34c-22 0-19 18-32 14S72 0 50 0Z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 100' preserveAspectRatio='none'%3E%3Cpath fill='%23fff' d='M60 0C32 0 10 22 10 50s22 50 50 50c22 0 31-16 46-24 24-13 54-3 54 6V18c0 9-30 19-54 6C91 16 82 0 60 0Z'/%3E%3C/svg%3E");
     background-position: left center;
     background-repeat: no-repeat;
     background-size: 100% 100%;
@@ -366,7 +365,7 @@ a.admin-sidebar-link:focus-visible {
     pointer-events: none;
     position: absolute;
     top: 0;
-    width: 5.2rem;
+    width: var(--admin-active-shape-width);
 }
 
 .admin-sidebar-link.is-active svg {
@@ -402,7 +401,6 @@ a.admin-sidebar-link:focus-visible,
     z-index: 1050;
 }
 
-.admin-sidebar-link:not(.is-active):hover::after,
 .admin-sidebar-link:not(.is-active):focus-visible::after {
     opacity: 1;
     transform: translate(0, -50%);
@@ -411,10 +409,6 @@ a.admin-sidebar-link:focus-visible,
 
 .admin-sidebar-link.is-coming-soon {
     cursor: default;
-}
-
-.admin-sidebar-link.is-coming-soon:hover {
-    background: rgba(255, 255, 255, 0.07);
 }
 
 .admin-sidebar-settings {
@@ -437,7 +431,9 @@ a.admin-sidebar-link:focus-visible,
 
 @media (max-width: 575.98px) {
     :root {
+        --admin-active-shape-width: 3.575rem;
         --admin-header-height: 4.25rem;
+        --admin-sidebar-link-size: 2.9rem;
         --admin-sidebar-width: 4.25rem;
     }
 
@@ -480,17 +476,9 @@ a.admin-sidebar-link:focus-visible,
     }
 
     .admin-sidebar-link {
-        flex-basis: 2.9rem;
-        height: 2.9rem;
-        width: 2.9rem;
-    }
-
-    .admin-sidebar-link.is-active {
-        left: 0.45rem;
-    }
-
-    .admin-sidebar-link.is-active::before {
-        width: 4.64rem;
+        flex-basis: var(--admin-sidebar-link-size);
+        height: var(--admin-sidebar-link-size);
+        width: var(--admin-sidebar-link-size);
     }
 
     .admin-sidebar-link svg {
