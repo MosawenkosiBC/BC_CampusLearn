@@ -37,7 +37,6 @@
 
 .admin-stat-icon {
     align-items: center;
-    border-radius: 50%;
     display: flex;
     flex: 0 0 3.75rem;
     height: 3.75rem;
@@ -47,31 +46,28 @@
 
 .admin-stat-icon svg {
     fill: none;
-    height: 2rem;
+    height: 3.2rem;
     stroke: currentColor;
     stroke-linecap: round;
     stroke-linejoin: round;
-    stroke-width: 1.6;
-    width: 2rem;
+    stroke-width: 1.8;
+    vector-effect: non-scaling-stroke;
+    width: 3.2rem;
 }
 
 .admin-stat-icon--tutors {
-    background: #f6e4ed;
     color: #ad3e73;
 }
 
 .admin-stat-icon--resources {
-    background: #dce8ef;
     color: #4f87a5;
 }
 
 .admin-stat-icon--requests {
-    background: #ffdadd;
     color: #f02d3d;
 }
 
 .admin-stat-icon--sessions {
-    background: #e5d8e7;
     color: #7e4d85;
 }
 
