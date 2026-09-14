@@ -15,14 +15,14 @@
     string PageUrl(int pageNumber)
     {
         var routeValues = new Microsoft.AspNetCore.Routing.RouteValueDictionary();
-        foreach (var queryValue in Context.Request.Query)
-        {
-            routeValues[queryValue.Key] = queryValue.Value.ToString();
-        }
-
         routeValues[Model.PageRouteValueName] = pageNumber;
         string pageUrl =
             Url.Page(pageName: null, pageHandler: null, values: routeValues) ?? "#";
+        // Preserve repeated query values, such as multiple selected years.
+        pageUrl = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(
+            pageUrl,
+            Context.Request.Query.Where(item => !item.Key.Equals(
+                Model.PageRouteValueName, StringComparison.OrdinalIgnoreCase)));
         return Model.Fragment is null
             ? pageUrl
             : $"{pageUrl}#{Uri.EscapeDataString(Model.Fragment)}";

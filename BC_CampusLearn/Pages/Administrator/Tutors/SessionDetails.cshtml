@@ -1,0 +1,88 @@
+@page "{id:int}"
+@model BC_CampusLearn.Pages.Administrator.Tutors.SessionDetailsModel
+@using BC_CampusLearn.Models.Entities
+@{
+    ViewData["Title"] = "Session Information";
+    var session = Model.Session;
+    var student = session.StudentEvaluation;
+    var tutor = session.TutorEvaluation;
+    string Answer(string? value) => string.IsNullOrWhiteSpace(value) ? "Not provided" : value;
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-session-details.css" asp-append-version="true" />
+}
+<section class="admin-dashboard admin-session-information" aria-labelledby="session-information-title">
+    <header class="admin-dashboard-header">
+        <h1 id="session-information-title">Session Information</h1>
+        <a asp-page="Profile" asp-route-id="@session.TutorId">Back to tutor profile</a>
+        <p>@session.StudentName · @session.ProgrammeModule.ModuleCode · @session.ScheduledStartTime.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
+            <span class="admin-session-status @(session.Status == BookingStatus.Cancelled ? "is-cancelled" : null)">@session.Status</span>
+        </p>
+    </header>
+    <section class="admin-session-summary" aria-labelledby="session-summary-title">
+        <h2 id="session-summary-title">Session Summary</h2>
+        <div class="admin-session-card">
+            <p class="admin-session-prose">@(string.IsNullOrWhiteSpace(session.Summary) ? "No session summary provided." : session.Summary)</p>
+            @if (session.Status == BookingStatus.Cancelled)
+            {
+                <h3>Cancellation reason</h3><p class="admin-session-prose">@Answer(session.CancellationReason)</p>
+            }
+        </div>
+    </section>
+    <div class="admin-session-review-grid">
+        <section aria-labelledby="student-review-title">
+            <h2 id="student-review-title">Student Review</h2>
+            <div class="admin-session-card">
+                @if (student is null) { <p>No student review submitted.</p> }
+                else
+                {
+                    <dl class="admin-session-answers">
+                        @foreach (var field in new[] {
+                            ("Tutoring mode", student.TutoringMode), ("Platform experience", student.PlatformExperience),
+                            ("Mode rating", $"{student.ModeRating}/5"), ("Tutor response", student.TutorResponse),
+                            ("Tutor interest", student.TutorInterest), ("Friendliness", student.TutorFriendliness),
+                            ("Explanation", student.TutorExplanation), ("Participation", student.TutorParticipation),
+                            ("Punctuality", student.TutorPunctuality), ("Advice", student.TutorAdvice),
+                            ("Help", student.TutorHelp), ("Topic", student.TutorTopic),
+                            ("Tutoring service", student.TutoringService), ("Programme improvements", student.ImproveBCProgramme),
+                            ("Platform rating", $"{student.PlatformRating}/5") })
+                        { <div><dt>@field.Item1</dt><dd>@Answer(field.Item2)</dd></div> }
+                    </dl>
+                }
+                @foreach (var review in session.SessionReviews.Where(item => item.ReviewerBcUserId == session.StudentBcUserId))
+                { <div class="admin-session-submitted-review"><h3>Session rating: @review.Rating/5</h3><p class="admin-session-prose">@Answer(review.Comment)</p></div> }
+            </div>
+        </section>
+        <section aria-labelledby="tutor-review-title">
+            <h2 id="tutor-review-title">Tutor Review</h2>
+            <div class="admin-session-card">
+                @if (tutor is null) { <p>No tutor review submitted.</p> }
+                else
+                {
+                    <dl class="admin-session-answers">
+                        @foreach (var field in new[] {
+                            ("Session planned", tutor.SessionPlan ? "Yes" : "No"),
+                            ("Preparation information provided", tutor.StudentPreparationInfo ? "Yes" : "No"),
+                            ("Student punctual", tutor.StudentPunctuality ? "Yes" : "No"),
+                            ("Student prepared", tutor.StudentPrepared ? "Yes" : "No"),
+                            ("Previous homework", tutor.PreviousHomework), ("Student interaction", tutor.StudentInteract),
+                            ("Student focus", tutor.StudentFocus), ("Student issues", tutor.StudentIssues),
+                            ("Tutor comments", tutor.TutorComments), ("Recording", tutor.RecordingLink) })
+                        { <div><dt>@field.Item1</dt><dd>@Answer(field.Item2)</dd></div> }
+                    </dl>
+                }
+                @foreach (var review in session.SessionReviews.Where(item => item.ReviewerBcUserId == session.TutorCourseModule.Tutor.BcUserId))
+                { <div class="admin-session-submitted-review"><h3>Session rating: @review.Rating/5</h3><p class="admin-session-prose">@Answer(review.Comment)</p></div> }
+            </div>
+        </section>
+        <section class="admin-session-approval" aria-labelledby="head-review-title">
+            <h2 id="head-review-title">Tutor Head Review</h2>
+            <div class="admin-session-card"><p><strong>Approved:</strong> Not recorded</p><p><strong>Date approved:</strong> —</p></div>
+        </section>
+        <section class="admin-session-approval" aria-labelledby="admin-approval-title">
+            <h2 id="admin-approval-title">Administrator Approval</h2>
+            <div class="admin-session-card"><p><strong>Approved:</strong> Not recorded</p><p><strong>Date approved:</strong> —</p></div>
+        </section>
+    </div>
+</section>

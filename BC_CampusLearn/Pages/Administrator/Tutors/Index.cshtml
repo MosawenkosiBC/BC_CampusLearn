@@ -1,0 +1,116 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Tutors.IndexModel
+@{
+    ViewData["Title"] = "Tutors";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-tutors.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/pagination.css" asp-append-version="true" />
+}
+
+<section class="admin-dashboard" aria-labelledby="admin-tutors-title">
+    <header class="admin-dashboard-header">
+        <h1 id="admin-tutors-title">Tutors</h1>
+    </header>
+
+    <div class="admin-tutors-workspace">
+        <aside class="admin-tutor-filters" aria-labelledby="admin-filter-title">
+            <div class="admin-filter-heading">
+                <h2 id="admin-filter-title">Filters</h2>
+                <a asp-page="/Administrator/Tutors/Index">Clear All</a>
+            </div>
+            <form method="get" asp-page="/Administrator/Tutors/Index">
+                <div class="admin-filter-group">
+                    <label asp-for="SearchName">Search by Name</label>
+                    <div class="admin-filter-search">
+                        <input asp-for="SearchName" type="search" />
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                    </div>
+                </div>
+                <div class="admin-filter-group">
+                    <label asp-for="SearchModule">Search by Module</label>
+                    <div class="admin-filter-search">
+                        <input asp-for="SearchModule" type="search" />
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                    </div>
+                </div>
+                <div class="admin-filter-group">
+                    <label asp-for="SearchCourse">Search by Course</label>
+                    <div class="admin-filter-search">
+                        <input asp-for="SearchCourse" type="search" />
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                    </div>
+                </div>
+                <fieldset class="admin-filter-years">
+                    <legend>Year</legend>
+                    @foreach (int year in new[] { 3, 2, 4 })
+                    {
+                        <label>
+                            <input type="checkbox" name="Years" value="@year" checked="@(Model.Years.Contains(year))" />
+                            <span>@(year switch { 2 => "Second Year", 3 => "Third Year", _ => "Fourth Year" })</span>
+                        </label>
+                    }
+                </fieldset>
+                <button type="submit" class="admin-apply-filters">Apply Filters</button>
+            </form>
+        </aside>
+        <div class="admin-tutor-results">
+            <p class="admin-tutor-result-count" role="status">
+                Showing <strong>@Model.TotalTutors</strong> tutors
+            </p>
+    <div class="admin-tutors-table-wrap" role="region" aria-label="Tutors table" tabindex="0">
+        <table class="admin-tutors-table">
+            <caption class="visually-hidden">Tutors and their profiles</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Tutor</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Programme</th>
+                    <th scope="col">Campus</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var tutor in Model.Tutors)
+                {
+                    var displayName = string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName)
+                        ? tutor.BcUser.PersonnelNumber : tutor.BcUser.DisplayName;
+                    <tr>
+                        <th scope="row">
+                            @displayName
+                        </th>
+                        <td>@(tutor.BcUser.Email ?? "Not provided")</td>
+                        <td>@tutor.Programme.Name</td>
+                        <td>@tutor.CampusOfStudy</td>
+                        <td>
+                            <span class="admin-tutor-status">@tutor.Status</span>
+                        </td>
+                        <td>
+                            <a asp-page="/Administrator/Tutors/Profile" asp-route-id="@tutor.TutorId"
+                               class="admin-tutor-profile-link" aria-label="View profile for @displayName">View profile</a>
+                        </td>
+                    </tr>
+                }
+                @if (Model.Tutors.Count == 0)
+                {
+                    <tr><td colspan="6" class="admin-tutors-empty">No tutors found. Try changing or clearing your filters.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+            @if (Model.TotalPages > 1)
+            {
+                @await Component.InvokeAsync("Pagination", new
+                {
+                    currentPage = Model.TutorPage,
+                    totalPages = Model.TotalPages,
+                    pageRouteValueName = "TutorPage",
+                    ariaLabel = "Tutors table pages"
+                })
+            }
+        </div>
+    </div>
+</section>

@@ -23,10 +23,6 @@ body.administrator-area > .container {
     width: 100%;
 }
 
-body.administrator-area .campus-breadcrumbs {
-    display: none;
-}
-
 body.administrator-area > .admin-topbar {
     align-items: center;
     background: #fff;

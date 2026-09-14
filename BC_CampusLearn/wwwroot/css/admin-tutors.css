@@ -1,0 +1,162 @@
+.admin-tutors-workspace {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+.admin-tutor-results { min-width: 0; }
+.admin-tutor-result-count {
+    background: #fff;
+    border-radius: 0.65rem;
+    box-shadow: 0 0.3rem 1rem rgba(25, 30, 38, 0.1);
+    color: #111;
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin: 0 0 1.75rem;
+    padding: 1.5rem 1.75rem;
+}
+.admin-tutor-result-count strong { font-weight: 700; }
+.admin-tutor-filters {
+    padding: 1.5rem 1rem 1rem;
+    border-radius: 0.6rem;
+    background: #fff;
+    box-shadow: 0 0.3rem 1rem rgba(25, 30, 38, 0.12);
+    color: #111;
+}
+.admin-filter-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1.75rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #c9c9c9;
+}
+.admin-filter-heading h2 { margin: 0; font-size: 1.5rem; font-weight: 600; }
+.admin-filter-heading a { color: #444; text-decoration: none; white-space: nowrap; }
+.admin-filter-heading a:hover { text-decoration: underline; }
+.admin-filter-group { margin-bottom: 1rem; }
+.admin-filter-group > label { display: block; margin-bottom: 0.8rem; font-weight: 500; }
+.admin-filter-search { position: relative; }
+.admin-filter-search input {
+    width: 100%;
+    min-height: 44px;
+    border: 0;
+    border-radius: 0.65rem;
+    padding: 0.6rem 2.5rem 0.6rem 0.75rem;
+    background: #ededed;
+    color: #222;
+}
+.admin-filter-search svg {
+    position: absolute;
+    width: 1.35rem;
+    height: 1.35rem;
+    right: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    stroke: #444;
+    stroke-width: 2;
+    fill: none;
+    pointer-events: none;
+}
+.admin-filter-years { border: 0; padding: 0; margin: 1.75rem 0 3.5rem; }
+.admin-filter-years legend { float: none; font-size: 1.25rem; font-weight: 500; margin-bottom: 1rem; }
+.admin-filter-years label { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.75rem; cursor: pointer; }
+.admin-filter-years input {
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    border: 0;
+    border-radius: 0.3rem;
+    background: #d9d9d9;
+    cursor: pointer;
+}
+.admin-filter-years input:checked {
+    background: #444 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='white' stroke-width='2' d='m3 8 3 3 7-7'/%3E%3C/svg%3E") center / 16px no-repeat;
+}
+.admin-apply-filters {
+    width: 100%;
+    min-height: 64px;
+    border: 0;
+    border-radius: 0.65rem;
+    background: #444;
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+.admin-apply-filters:hover { background: #292929; }
+.admin-tutor-filters :is(input, button, a):focus-visible { outline: 3px solid #4f87a5; outline-offset: 3px; }
+@media (max-width: 991.98px) {
+    .admin-tutors-workspace { grid-template-columns: 1fr; }
+    .admin-filter-years { margin-bottom: 1.5rem; }
+}
+
+.admin-tutors-table-wrap,
+.admin-tutor-profile-card {
+    background: #fff;
+    border: 1px solid #e6e8ec;
+    border-radius: 0.6rem;
+    box-shadow: 0 0.4rem 1.4rem rgba(25, 30, 38, 0.06);
+}
+
+.admin-tutors-table-wrap { overflow-x: auto; }
+.admin-tutors-table { border-collapse: collapse; width: 100%; }
+.admin-tutors-table th,
+.admin-tutors-table td {
+    padding: 1rem 1.25rem;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid #edf0f3;
+    font-size: 0.9rem;
+}
+.admin-tutors-table thead th {
+    background: #f7f8fa;
+    color: #525b68;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.admin-tutors-table tbody th { font-weight: 600; }
+.admin-tutors-table tbody tr:last-child > * { border-bottom: 0; }
+.admin-tutors-table tbody tr:hover { background: #fbfcfd; }
+.admin-tutor-secondary {
+    display: block;
+    margin-top: 0.25rem;
+    color: #626b78;
+    font-size: 0.8rem;
+    font-weight: 400;
+}
+.admin-tutor-status {
+    display: inline-block;
+    background: #eef2f7;
+    border-radius: 1rem;
+    color: #39475b;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.8rem;
+}
+.admin-tutor-profile-link {
+    display: inline-flex;
+    background: #173d64;
+    border-radius: 0.4rem;
+    color: #fff;
+    padding: 0.55rem 0.9rem;
+    text-decoration: none;
+    white-space: nowrap;
+    font-weight: 600;
+}
+.admin-tutor-profile-link:hover { background: #102e4d; color: #fff; }
+.admin-tutor-profile-link:focus-visible,
+.admin-tutors-table-wrap:focus-visible { outline: 3px solid #4f87a5; outline-offset: 3px; }
+.admin-tutors-table .admin-tutors-empty { padding: 3rem 1rem; text-align: center; color: #626b78; }
+.admin-tutor-profile-card { padding: clamp(1rem, 3vw, 2rem); overflow-wrap: anywhere; }
+.admin-tutor-profile-card h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+.admin-tutor-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 2rem; margin-bottom: 2rem; }
+.admin-tutor-details dt { color: #626b78; font-size: 0.8rem; font-weight: 500; }
+.admin-tutor-details dd { margin: 0.25rem 0 0; }
+.admin-tutor-bio { white-space: pre-line; margin-bottom: 1.5rem; }
+@media (max-width: 575.98px) {
+    .admin-tutor-details { grid-template-columns: 1fr; }
+    .admin-tutors-table th, .admin-tutors-table td { padding: 0.85rem; }
+}

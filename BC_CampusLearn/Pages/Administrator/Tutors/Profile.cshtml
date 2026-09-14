@@ -1,0 +1,163 @@
+@page "{id:int}"
+@model BC_CampusLearn.Pages.Administrator.Tutors.ProfileModel
+@{
+    ViewData["Title"] = "Tutor Profile";
+    var tutor = Model.Tutor;
+    var displayName = string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName) ? tutor.BcUser.PersonnelNumber : tutor.BcUser.DisplayName;
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-tutors.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-tutor-profile.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/pagination.css" asp-append-version="true" />
+}
+<section class="admin-profile-page" aria-labelledby="admin-tutor-profile-title">
+    <header class="admin-profile-heading admin-dashboard-header">
+        <h1 id="admin-tutor-profile-title">Tutor Profile</h1>
+        <a asp-page="Profile" asp-route-id="@tutor.TutorId" asp-route-period="@Model.Period" class="admin-profile-refresh"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Refresh</a>
+    </header>
+    <div class="admin-profile-layout">
+        <aside class="admin-profile-personal admin-profile-panel" aria-label="Tutor personal details">
+            <div class="admin-profile-identity">
+                @if (!string.IsNullOrWhiteSpace(tutor.ProfileImagePath))
+                {
+                    <img src="@tutor.ProfileImagePath" alt="Profile photo of @displayName" />
+                }
+                else
+                {
+                    <div class="admin-profile-avatar" aria-hidden="true"><i class="bi bi-person"></i></div>
+                }
+                <h2>@displayName</h2>
+            </div>
+            <dl class="admin-profile-fields">
+                @foreach (var field in new[] {
+                    (Label: "Student number", Value: tutor.BcUser.PersonnelNumber, Copy: true),
+                    (Label: "Student email", Value: tutor.BcUser.Email, Copy: true),
+                    (Label: "Phone number", Value: tutor.PhoneNumber, Copy: true),
+                    (Label: "Year of study", Value: tutor.YearOfStudy.ToString(), Copy: false),
+                    (Label: "Programme", Value: tutor.Programme.Name, Copy: false),
+                    (Label: "Campus", Value: tutor.CampusOfStudy, Copy: false) })
+                {
+                    <div>
+                        <dt>@field.Label</dt>
+                        <dd><span>@(string.IsNullOrWhiteSpace(field.Value) ? "Not provided" : field.Value)</span>
+                            @if (field.Copy && !string.IsNullOrWhiteSpace(field.Value))
+                            {
+                                <button type="button" class="admin-profile-copy" data-copy-value="@field.Value" aria-label="Copy @field.Label"><i class="bi bi-copy" aria-hidden="true"></i></button>
+                            }
+                        </dd>
+                    </div>
+                }
+            </dl>
+            <p class="admin-profile-copy-status" role="status" aria-live="polite"></p>
+            <span class="admin-tutor-status">@tutor.Status · @(tutor.IsActive ? "Active" : "Inactive")</span>
+        </aside>
+        <div class="admin-profile-content">
+            <div class="admin-profile-stats">
+                <article class="admin-profile-stat admin-profile-panel"><i class="bi bi-person-check" aria-hidden="true"></i><h2>Total Completed Sessions</h2><strong>@Model.CompletedSessions</strong></article>
+                <article class="admin-profile-stat admin-profile-panel"><i class="bi bi-person-gear" aria-hidden="true"></i><h2>Module change requests</h2><strong>@Model.ModuleChangeRequests</strong></article>
+                <article class="admin-profile-stat admin-profile-panel"><i class="bi bi-chat-dots" aria-hidden="true"></i><h2>Pending Student reviews</h2><strong>@Model.PendingStudentReviews</strong></article>
+            </div>
+            <section id="recent-sessions" class="admin-profile-sessions admin-profile-panel" aria-labelledby="recent-sessions-title">
+                <h2 id="recent-sessions-title">Recent sessions</h2>
+                <div class="admin-profile-table-wrap" role="region" aria-label="Recent sessions table" tabindex="0">
+                    <table class="admin-profile-table">
+                        <thead><tr><th scope="col">Student</th><th scope="col">Module</th><th scope="col">Date</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead>
+                        <tbody>
+                            @foreach (var session in Model.RecentSessions)
+                            {
+                                <tr>
+                                    <td>@session.StudentName</td>
+                                    <td>@session.ProgrammeModule.ModuleCode</td>
+                                    <td>@session.ScheduledStartTime.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")</td>
+                                    <td><span class="admin-tutor-status @(session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Cancelled ? "admin-session-cancelled" : null)">@session.Status</span></td>
+                                    <td><a asp-page="SessionDetails" asp-route-id="@session.BookingId" class="admin-session-details-link" aria-label="View details for @session.StudentName">View details</a></td>
+                                </tr>
+                            }
+                            @if (Model.RecentSessions.Count == 0)
+                            {
+                                <tr><td colspan="5" class="admin-profile-empty">No sessions to display yet.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (Model.TotalSessionPages > 1)
+                {
+                    @await Component.InvokeAsync("Pagination", new {
+                        currentPage = Model.SessionPage,
+                        totalPages = Model.TotalSessionPages,
+                        pageRouteValueName = "SessionPage",
+                        fragment = "recent-sessions",
+                        ariaLabel = "Recent sessions pages"
+                    })
+                }
+            </section>
+            <details id="ratings" class="admin-profile-ratings admin-profile-panel" open>
+                <summary id="ratings-title">Statistics</summary>
+                <div class="admin-ratings-body">
+                <div class="admin-ratings-heading">
+                    <div class="admin-rating-filter">
+                    <nav class="admin-rating-periods" aria-label="Statistics time period">
+                        @foreach (var period in new[] { "day", "week", "month" })
+                        {
+                            <a asp-page="Profile" asp-route-id="@tutor.TutorId" asp-route-period="@period" asp-route-sessionPage="@Model.SessionPage" asp-fragment="ratings"
+                               class="@(Model.Period == period ? "is-selected" : null)" aria-current="@(Model.Period == period ? "true" : null)">@(char.ToUpperInvariant(period[0]) + period.Substring(1))</a>
+                        }
+                    </nav>
+                    <p class="admin-profile-muted admin-rating-date">@Model.PeriodLabel</p>
+                    </div>
+                </div>
+                <div class="admin-profile-stars" aria-label="@(Model.AverageRating.HasValue ? $"{Model.AverageRating.Value:0.0} out of 5 stars" : "No ratings in this period")">
+                    @for (int star = 1; star <= 5; star++)
+                    {
+                        <i class="bi @(Model.AverageRating >= star ? "bi-star-fill" : "bi-star")" aria-hidden="true"></i>
+                    }
+                </div>
+                @if (Model.AverageRating.HasValue)
+                {
+                    <p>@Model.AverageRating.Value.ToString("0.0") out of 5 · @Model.ReviewCount reviews</p>
+                }
+                else
+                {
+                    <p class="admin-profile-muted">No student ratings in this period.</p>
+                }
+                <figure class="admin-module-chart" aria-labelledby="module-chart-title">
+                    <figcaption id="module-chart-title">Completed sessions by module</figcaption>
+                    @if (Model.TopModules.Count == 0)
+                    {
+                        <p class="admin-chart-empty">No completed sessions in this period.</p>
+                    }
+                    else
+                    {
+                        var maximum = Model.TopModules.Max(item => item.Count);
+                        <ol class="admin-module-bars">
+                            @foreach (var module in Model.TopModules)
+                            {
+                                var width = (100.0 * module.Count / maximum).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+                                <li>
+                                    <span class="admin-module-label" title="@module.Name">@module.Code<span>@module.Name</span></span>
+                                    <span class="admin-module-track" aria-hidden="true"><span style="width: @(width)%"></span></span>
+                                    <strong aria-label="@module.Count completed sessions">@module.Count</strong>
+                                </li>
+                            }
+                        </ol>
+                        <p class="admin-profile-muted">Number of completed sessions</p>
+                    }
+                </figure>
+                </div>
+            </details>
+            <details class="admin-profile-about admin-profile-panel">
+                <summary>About this tutor</summary>
+                <h2>Biography</h2><p class="admin-tutor-bio">@(string.IsNullOrWhiteSpace(tutor.Biography) ? "No biography provided." : tutor.Biography)</p>
+                <h2>Teaching style</h2><p class="admin-tutor-bio">@tutor.TeachingStyle</p>
+                <h2>Assigned modules</h2>
+                @if (tutor.TutorCourseModules.Count == 0) { <p>No modules assigned.</p> }
+                <ul>@foreach (var module in tutor.TutorCourseModules.OrderBy(item => item.ProgrammeModule.ModuleCode)) { <li>@module.ProgrammeModule.ModuleCode — @module.ProgrammeModule.ModuleName</li> }</ul>
+            </details>
+        </div>
+    </div>
+</section>
+@section Scripts {
+    <script src="~/js/admin-tutor-profile.js" asp-append-version="true"></script>
+}
+
