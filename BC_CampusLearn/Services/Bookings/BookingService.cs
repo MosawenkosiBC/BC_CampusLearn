@@ -185,8 +185,6 @@ public class BookingService : IBookingService
 
             ProgrammeModuleId = input.ProgrammeModuleId,
 
-            StudentObjectId = student.ObjectId,
-            StudentTenantId = student.TenantId,
             StudentName = student.DisplayName,
             StudentEmail = student.Email,
 
@@ -351,8 +349,7 @@ public class BookingService : IBookingService
         _context.Bookings
             .AsNoTracking()
             .AnyAsync(booking =>
-                booking.StudentObjectId == student.ObjectId &&
-                booking.StudentTenantId == student.TenantId &&
+                booking.StudentBcUserId == student.BcUserId &&
                 booking.Status == BookingStatus.Completed &&
                 booking.StudentEvaluation == null,
                 cancellationToken);

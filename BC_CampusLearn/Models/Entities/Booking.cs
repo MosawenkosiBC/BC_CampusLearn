@@ -10,11 +10,6 @@ public class Booking
 
     public int? StudentBcUserId { get; set; }
 
-    // Identity of the student from Entra claims.
-    public string StudentObjectId { get; set; } = string.Empty;
-
-    public string StudentTenantId { get; set; } = string.Empty;
-
     // Display snapshots.
     public string StudentName { get; set; } = string.Empty;
 

@@ -11,14 +11,6 @@ public class BookingConfiguration
     {
         builder.HasKey(booking => booking.BookingId);
 
-        builder.Property(booking => booking.StudentObjectId)
-            .HasMaxLength(36)
-            .IsRequired();
-
-        builder.Property(booking => booking.StudentTenantId)
-            .HasMaxLength(36)
-            .IsRequired();
-
         builder.Property(booking => booking.StudentName)
             .HasMaxLength(200)
             .IsRequired();

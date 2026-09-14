@@ -99,8 +99,7 @@ public class StatisticsOverviewModel : PageModel
                 .Where(booking => booking.TutorId == tutor.TutorId)
                 .Select(booking => new StatisticsBookingRow
                 {
-                    StudentObjectId = booking.StudentObjectId,
-                    StudentTenantId = booking.StudentTenantId,
+                    StudentBcUserId = booking.StudentBcUserId,
                     ModuleCode = booking.ProgrammeModule.ModuleCode,
                     Status = booking.Status,
                     HasStudentReview = booking.StudentEvaluation != null,
@@ -144,9 +143,9 @@ public class StatisticsOverviewModel : PageModel
         {
             CompletedSessions = completed.Count,
             UniqueStudents = completed
-                .Select(booking =>
-                    $"{booking.StudentTenantId}:{booking.StudentObjectId}")
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Where(booking => booking.StudentBcUserId.HasValue)
+                .Select(booking => booking.StudentBcUserId)
+                .Distinct()
                 .Count(),
             TutoringHours = completed.Count,
             CompletionRate = concludedAcceptedSessions == 0
@@ -249,9 +248,7 @@ public class StatisticsOverviewModel : PageModel
 
     private sealed class StatisticsBookingRow
     {
-        public string StudentObjectId { get; set; } = string.Empty;
-
-        public string StudentTenantId { get; set; } = string.Empty;
+        public int? StudentBcUserId { get; set; }
 
         public string ModuleCode { get; set; } = string.Empty;
 

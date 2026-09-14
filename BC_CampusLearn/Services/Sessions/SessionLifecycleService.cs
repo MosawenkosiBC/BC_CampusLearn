@@ -224,8 +224,6 @@ public class SessionLifecycleService : ISessionLifecycleService
 
     public async Task<SessionLifecycleResult> CancelByStudentAsync(
         int studentBcUserId,
-        string studentObjectId,
-        string studentTenantId,
         int bookingId,
         string? reason,
         CancellationToken cancellationToken = default)
@@ -234,9 +232,7 @@ public class SessionLifecycleService : ISessionLifecycleService
             .Include(item => item.StatusHistory)
             .SingleOrDefaultAsync(item =>
                 item.BookingId == bookingId &&
-                (item.StudentBcUserId == studentBcUserId ||
-                 (item.StudentObjectId == studentObjectId &&
-                  item.StudentTenantId == studentTenantId)),
+                item.StudentBcUserId == studentBcUserId,
                 cancellationToken);
         if (booking is null)
         {

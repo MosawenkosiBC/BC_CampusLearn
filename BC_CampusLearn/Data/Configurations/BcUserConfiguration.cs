@@ -17,6 +17,5 @@ public class BcUserConfiguration : IEntityTypeConfiguration<BcUser>
         builder.Property(user => user.PublicActivityDisabledReason).HasMaxLength(500);
         builder.Property(user => user.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         builder.HasIndex(user => user.PersonnelNumber).IsUnique();
-        builder.HasIndex(user => new { user.EntraTenantId, user.EntraObjectId }).IsUnique();
     }
 }

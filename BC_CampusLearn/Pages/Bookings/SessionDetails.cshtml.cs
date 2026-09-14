@@ -192,8 +192,6 @@ public class SessionDetailsModel : PageModel
         SessionLifecycleResult result =
             await _lifecycleService.CancelByStudentAsync(
                 student.BcUserId,
-                student.ObjectId,
-                student.TenantId,
                 bookingId,
                 CancellationReason,
                 cancellationToken);
@@ -301,9 +299,7 @@ public class SessionDetailsModel : PageModel
             .SingleOrDefaultAsync(item =>
                 item.BookingDocumentId == documentId &&
                 item.BookingId == bookingId &&
-                (item.Booking.StudentBcUserId == student.BcUserId ||
-                 (item.Booking.StudentObjectId == student.ObjectId &&
-                  item.Booking.StudentTenantId == student.TenantId)),
+                item.Booking.StudentBcUserId == student.BcUserId,
                 cancellationToken);
 
         if (document is null)
@@ -348,7 +344,5 @@ public class SessionDetailsModel : PageModel
 
     private IQueryable<Booking> StudentBookings(CurrentUser student) =>
         _context.Bookings.Where(booking =>
-            booking.StudentBcUserId == student.BcUserId ||
-            (booking.StudentObjectId == student.ObjectId &&
-             booking.StudentTenantId == student.TenantId));
+            booking.StudentBcUserId == student.BcUserId);
 }

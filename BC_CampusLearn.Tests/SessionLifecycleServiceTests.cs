@@ -199,8 +199,6 @@ public class SessionLifecycleServiceTests
 
         SessionLifecycleResult result = await service.CancelByStudentAsync(
             booking.StudentBcUserId!.Value,
-            booking.StudentObjectId,
-            booking.StudentTenantId,
             booking.BookingId,
             reason: null);
 
@@ -229,14 +227,10 @@ public class SessionLifecycleServiceTests
 
         SessionLifecycleResult invalid = await service.CancelByStudentAsync(
             booking.StudentBcUserId!.Value,
-            booking.StudentObjectId,
-            booking.StudentTenantId,
             booking.BookingId,
             reason: null);
         SessionLifecycleResult valid = await service.CancelByStudentAsync(
             booking.StudentBcUserId.Value,
-            booking.StudentObjectId,
-            booking.StudentTenantId,
             booking.BookingId,
             "I can no longer attend the session.");
 
@@ -264,8 +258,6 @@ public class SessionLifecycleServiceTests
 
         SessionLifecycleResult result = await service.CancelByStudentAsync(
             studentBcUserId: 999,
-            studentObjectId: "another-object-id",
-            studentTenantId: "another-tenant-id",
             booking.BookingId,
             reason: null);
 
@@ -406,8 +398,6 @@ public class SessionLifecycleServiceTests
             TutorId = 12,
             ProgrammeModuleId = 3,
             StudentBcUserId = 21,
-            StudentObjectId = Guid.NewGuid().ToString(),
-            StudentTenantId = Guid.NewGuid().ToString(),
             StudentName = "Student",
             Location = "Teams",
             Status = BookingStatus.Pending,

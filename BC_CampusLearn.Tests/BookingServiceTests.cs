@@ -16,15 +16,11 @@ public class BookingServiceTests
     public async Task CreateBookingAsync_BlocksStudentWithPendingReview()
     {
         await using ApplicationDbContext context = CreateContext();
-        string objectId = Guid.NewGuid().ToString();
-        string tenantId = Guid.NewGuid().ToString();
         var completedBooking = new Booking
         {
             TutorId = 12,
             ProgrammeModuleId = 3,
             StudentBcUserId = 21,
-            StudentObjectId = objectId,
-            StudentTenantId = tenantId,
             StudentName = "Student",
             Location = "Teams",
             Status = BookingStatus.Completed,
@@ -38,8 +34,6 @@ public class BookingServiceTests
         var currentUser = new CurrentUser(
             21,
             "STUDENT21",
-            objectId,
-            tenantId,
             "Student",
             "student@example.com");
         var service = new BookingService(
@@ -73,8 +67,6 @@ public class BookingServiceTests
             BcUserId = 31,
             PersonnelNumber = "TUTOR31",
             DisplayName = "Tutor Student",
-            EntraObjectId = Guid.NewGuid(),
-            EntraTenantId = Guid.NewGuid(),
             CreatedAt = DateTime.UtcNow
         };
         var tutor = new Tutor
@@ -107,8 +99,6 @@ public class BookingServiceTests
         var currentUser = new CurrentUser(
             tutorUser.BcUserId,
             tutorUser.PersonnelNumber,
-            tutorUser.EntraObjectId.ToString(),
-            tutorUser.EntraTenantId.ToString(),
             tutorUser.DisplayName,
             tutorUser.Email);
         var service = new BookingService(

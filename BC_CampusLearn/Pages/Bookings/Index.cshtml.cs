@@ -108,8 +108,7 @@ public class IndexModel : PageModel
         IQueryable<Booking> query = _context.Bookings
             .AsNoTracking()
             .Where(booking =>
-                booking.StudentObjectId == student.ObjectId &&
-                booking.StudentTenantId == student.TenantId);
+                booking.StudentBcUserId == student.BcUserId);
 
         if (PendingReviewOnly)
         {
@@ -227,8 +226,6 @@ public class IndexModel : PageModel
         SessionLifecycleResult result =
             await _lifecycleService.CancelByStudentAsync(
                 student.BcUserId,
-                student.ObjectId,
-                student.TenantId,
                 bookingId,
                 cancellationReason,
                 cancellationToken);

@@ -24,8 +24,6 @@ public interface ISessionLifecycleService
 
     Task<SessionLifecycleResult> CancelByStudentAsync(
         int studentBcUserId,
-        string studentObjectId,
-        string studentTenantId,
         int bookingId,
         string? reason,
         CancellationToken cancellationToken = default);

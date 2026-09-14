@@ -79,10 +79,8 @@ public class DashboardModel : PageModel
             _context.Bookings
                 .AsNoTracking()
                 .Where(booking =>
-                    booking.StudentObjectId ==
-                        CurrentUser.ObjectId &&
-                    booking.StudentTenantId ==
-                        CurrentUser.TenantId);
+                    booking.StudentBcUserId ==
+                        CurrentUser.BcUserId);
 
         Summary =
             await studentBookings
@@ -281,8 +279,6 @@ public class DashboardModel : PageModel
         SessionLifecycleResult result =
             await _lifecycleService.CancelByStudentAsync(
                 student.BcUserId,
-                student.ObjectId,
-                student.TenantId,
                 bookingId,
                 cancellationReason,
                 cancellationToken);

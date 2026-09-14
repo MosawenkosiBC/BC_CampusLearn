@@ -209,16 +209,12 @@ public class SessionHub : Hub
                 booking.TutorEvaluation != null,
                 booking.StudentEvaluation != null,
                 booking.TutorCourseModule.Tutor.BcUserId,
-                booking.StudentBcUserId,
-                booking.StudentObjectId,
-                booking.StudentTenantId))
+                booking.StudentBcUserId))
             .SingleOrDefaultAsync(cancellationToken);
 
         bool isParticipant = participant is not null &&
             (participant.TutorBcUserId == user.BcUserId ||
-             participant.StudentBcUserId == user.BcUserId ||
-             (participant.StudentObjectId == user.ObjectId &&
-              participant.StudentTenantId == user.TenantId));
+             participant.StudentBcUserId == user.BcUserId);
         if (!isParticipant)
         {
             throw new HubException(
@@ -239,7 +235,5 @@ public class SessionHub : Hub
         bool TutorReviewSubmitted,
         bool StudentReviewSubmitted,
         int TutorBcUserId,
-        int? StudentBcUserId,
-        string StudentObjectId,
-        string StudentTenantId);
+        int? StudentBcUserId);
 }
