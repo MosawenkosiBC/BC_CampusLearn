@@ -28,7 +28,7 @@ public class ManageResourcesModel : PageModel
         new(StringComparer.OrdinalIgnoreCase)
         {
             ".pdf", ".doc", ".docx", ".ppt", ".pptx",
-            ".xls", ".xlsx", ".txt", ".zip"
+            ".xls", ".xlsx", ".txt"
         };
 
     private readonly ApplicationDbContext _context;
@@ -81,6 +81,7 @@ public class ManageResourcesModel : PageModel
         = Array.Empty<ResourceListItem>();
     public IReadOnlyList<ResourceDocumentItem> ExistingDocuments { get; private set; }
         = Array.Empty<ResourceDocumentItem>();
+    public string TutorDisplayName { get; private set; } = "Tutor";
     public bool IsEditing => Input.LearningResourceId.HasValue;
     public bool HasActiveFilters =>
         !string.IsNullOrWhiteSpace(Search) ||
@@ -342,6 +343,8 @@ public class ManageResourcesModel : PageModel
 
     private async Task LoadPageAsync(int tutorId, CancellationToken cancellationToken)
     {
+        TutorDisplayName = _currentUserService.GetRequiredUser().DisplayName;
+
         ModuleOptions = await _context.TutorCourseModules
             .AsNoTracking()
             .Where(item => item.TutorId == tutorId)
@@ -349,8 +352,7 @@ public class ManageResourcesModel : PageModel
             .Select(item => new SelectListItem
             {
                 Value = item.ProgrammeModuleId.ToString(),
-                Text = item.ProgrammeModule.ModuleCode + " — " +
-                    item.ProgrammeModule.ModuleName
+                Text = item.ProgrammeModule.ModuleName
             }).ToListAsync(cancellationToken);
 
         IQueryable<LearningResource> baseQuery = _context.LearningResources

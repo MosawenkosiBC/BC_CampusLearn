@@ -51,6 +51,10 @@
         layoutPagePath.Equals(
             "/LearningResources/Details",
             StringComparison.OrdinalIgnoreCase);
+    bool hasManageResourcesBackground =
+        layoutPagePath.Equals(
+            "/Tutors/ManageResources",
+            StringComparison.OrdinalIgnoreCase);
     bool hasTutorDirectoryBackground =
         layoutPagePath.Equals(
             "/Tutors/Index",
@@ -802,7 +806,7 @@
         </nav>
     </header>
 
-    <div class="container flex-grow-1 @(hasSessionDetailsBackground ? "session-details-content-background" : null) @(hasDashboardBackground ? "dashboard-content-background" : null) @(hasAllSessionsBackground ? "bookings-content-background" : null) @(hasManageAccountBackground ? "profile-content-background" : null) @(hasLearningResourcesBackground ? "learning-resources-content-background" : null) @(hasTutorDirectoryBackground ? "tutor-directory-content-background" : null)">
+    <div class="container flex-grow-1 @(hasSessionDetailsBackground ? "session-details-content-background" : null) @(hasDashboardBackground ? "dashboard-content-background" : null) @(hasAllSessionsBackground ? "bookings-content-background" : null) @(hasManageAccountBackground ? "profile-content-background" : null) @(hasLearningResourcesBackground ? "learning-resources-content-background" : null) @(hasManageResourcesBackground ? "manage-resources-content-background" : null) @(hasTutorDirectoryBackground ? "tutor-directory-content-background" : null)">
         <main role="main"
               class="@(ViewData["BreadcrumbsInHeroOnMobile"] is true ? "has-mobile-hero-breadcrumbs" : null)">
             <partial name="_Breadcrumbs" />

@@ -1,16 +1,33 @@
 (() => {
     const editor = document.querySelector("[data-resource-editor]");
+    const creationWorkspace = document.querySelector("[data-resource-creation-workspace]");
+    const resizeHandle = document.querySelector("[data-resource-resize-handle]");
     const openButtons = document.querySelectorAll("[data-resource-editor-open]");
     const resourceForm = document.querySelector(".resource-form");
+    const publishButton = resourceForm?.querySelector('[name="submitAction"][value="publish"]');
+    const commentsInput = resourceForm?.querySelector('#Input_AllowSubscriberComments');
+    const publishDialog = document.querySelector('[data-resource-publish-dialog]');
+    let publishConfirmed = false;
     const content = document.querySelector("[data-resource-content-input]");
     const quillHost = document.querySelector("[data-resource-quill-editor]");
     const contentValidation = document.querySelector("[data-resource-content-validation]");
     const counter = document.querySelector("[data-content-count]");
-    const previewButton = document.querySelector("[data-resource-preview-open]");
-    const previewModal = document.querySelector("[data-resource-preview-modal]");
     const previewHost = document.querySelector("[data-resource-preview-editor]");
     const previewTopic = document.querySelector("[data-resource-preview-topic]");
     const previewModule = document.querySelector("[data-resource-preview-module]");
+    const previewReading = document.querySelector("[data-resource-preview-reading]");
+    const previewLinks = document.querySelector("[data-resource-preview-links]");
+    const previewDocuments = document.querySelector("[data-resource-preview-documents]");
+    const previewBody = document.querySelector("[data-resource-preview-body]");
+    const previewModuleRow = document.querySelector("[data-resource-preview-module-row]");
+    const mobilePreviewModal = document.querySelector("[data-resource-mobile-preview-modal]");
+    const mobilePreviewContent = document.querySelector("[data-resource-mobile-preview-content]");
+    const mobilePreviewOpen = document.querySelector("[data-resource-preview-open]");
+    const topicInput = document.querySelector("#Input_Topic");
+    const linkInputs = [
+        document.querySelector("#Input_Link1"),
+        document.querySelector("#Input_Link2")
+    ].filter(Boolean);
     const fileInput = document.querySelector("#resource-documents");
     const selectedFiles = document.querySelector("[data-selected-files]");
     const modulePicker = document.querySelector("[data-resource-module-picker]");
@@ -24,6 +41,7 @@
 
     const updateNewResourceButtons = () => {
         const editorIsOpen = editor?.classList.contains("is-open") ?? false;
+        creationWorkspace?.classList.toggle("is-open", editorIsOpen);
         openButtons.forEach((button) => {
             button.hidden = editorIsOpen;
         });
@@ -41,8 +59,6 @@
 
     let quill = null;
     let previewQuill = null;
-    let pendingPreviewDelta = null;
-    let contentSynchronized = false;
 
     const editorFormats = [
         "header", "bold", "italic", "underline", "list",
@@ -99,20 +115,25 @@
         }
 
         quill.on("text-change", () => {
-            contentSynchronized = false;
+            content.value = JSON.stringify(quill.getContents());
             showContentError("");
             updateCount();
+            updatePreview();
         });
     } else if (content) {
         content.hidden = false;
-        content.addEventListener("input", updateCount);
+        content.addEventListener("input", () => {
+            updateCount();
+            updatePreview();
+        });
     }
 
+    // Synchronize before other form validators inspect the hidden content field.
     resourceForm?.addEventListener("submit", (event) => {
-        if (!quill || contentSynchronized) return;
+        if (!quill) return;
 
-        event.preventDefault();
         if (!quill.getText().trim()) {
+            event.preventDefault();
             showContentError("Add the learning content.");
             quill.focus();
             quillHost?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -120,40 +141,141 @@
         }
 
         content.value = JSON.stringify(quill.getContents());
-        contentSynchronized = true;
-        resourceForm.requestSubmit(event.submitter);
+    }, true);
+
+    resourceForm?.addEventListener("submit", (event) => {
+        if (event.defaultPrevented || event.submitter !== publishButton || publishConfirmed) return;
+        event.preventDefault();
+        publishDialog?.showModal();
     });
 
-    const loadPreview = () => {
-        if (!previewHost || !pendingPreviewDelta || !window.Quill) return;
-        previewQuill ??= new window.Quill(previewHost, {
-            theme: "bubble",
-            readOnly: true,
-            formats: editorFormats,
-            modules: { toolbar: false }
+    document.querySelectorAll('[data-resource-publish-comments]').forEach((button) => {
+        button.addEventListener("click", () => {
+            if (!resourceForm || !publishButton || !commentsInput) return;
+            commentsInput.value = button.dataset.resourcePublishComments;
+            publishDialog.close();
+            publishConfirmed = true;
+            try {
+                // This runs from the choice click, after the original submit event ended.
+                resourceForm.requestSubmit(publishButton);
+            } finally {
+                publishConfirmed = false;
+            }
         });
-        previewQuill.setContents(pendingPreviewDelta, "silent");
-        previewQuill.enable(false);
+    });
+    document.querySelector('[data-resource-publish-back]')?.addEventListener("click", () => publishDialog?.close());
+
+    const previewDocumentMarkup = previewDocuments?.innerHTML ?? "";
+
+    const getSafeUrl = (value) => {
+        try {
+            const url = new URL(value);
+            return ["http:", "https:"].includes(url.protocol) ? url.href : null;
+        } catch {
+            return null;
+        }
     };
 
-    previewButton?.addEventListener("click", () => {
-        if (!quill || !previewModal || !window.bootstrap) return;
-        pendingPreviewDelta = quill.getContents();
+    const updatePreviewLinks = () => {
+        if (!previewLinks) return false;
+        previewLinks.replaceChildren();
+
+        linkInputs.forEach((input) => {
+            const rawUrl = input.value.trim();
+            const url = getSafeUrl(rawUrl);
+            if (!url) return;
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.target = "_blank";
+            link.rel = "noopener";
+            link.innerHTML = '<i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>';
+            link.append(` ${rawUrl}`);
+            previewLinks.append(link);
+        });
+
+        return previewLinks.childElementCount > 0;
+    };
+
+    const updatePreviewDocuments = () => {
+        if (!previewDocuments) return false;
+        previewDocuments.innerHTML = previewDocumentMarkup;
+
+        Array.from(fileInput?.files ?? []).forEach((file) => {
+            const documentItem = document.createElement("span");
+            documentItem.className = "resource-live-preview-document";
+            documentItem.innerHTML = '<i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>';
+            documentItem.append(` ${file.name}`);
+            previewDocuments.append(documentItem);
+        });
+
+        return previewDocuments.childElementCount > 0;
+    };
+
+    const updatePreview = () => {
+        const hasTopic = Boolean(topicInput?.value.trim());
+        const hasModule = moduleSelect?.value !== "0";
         if (previewTopic) {
-            previewTopic.textContent = document.querySelector("#Input_Topic")?.value.trim()
-                || "Untitled resource";
+            previewTopic.textContent = topicInput?.value.trim() || "";
+            previewTopic.hidden = !hasTopic;
         }
         if (previewModule) {
-            const selectedModule = moduleSelect?.value !== "0"
+            const selectedModule = hasModule
                 ? moduleLabel?.textContent.trim()
                 : "";
-            previewModule.textContent = selectedModule || "No module selected";
+            previewModule.textContent = selectedModule || "";
         }
-        window.bootstrap.Modal.getOrCreateInstance(previewModal).show();
+        if (previewModuleRow) previewModuleRow.hidden = !hasModule;
+
+        let hasContent = false;
+        if (previewHost && quill && window.Quill) {
+            previewQuill ??= new window.Quill(previewHost, {
+                theme: "bubble",
+                readOnly: true,
+                formats: editorFormats,
+                modules: { toolbar: false }
+            });
+            hasContent = Boolean(quill.getText().trim());
+            previewQuill.setContents(quill.getContents(), "silent");
+            previewQuill.enable(false);
+            previewHost.hidden = !hasContent;
+        } else if (previewHost && content) {
+            hasContent = Boolean(content.value.trim());
+            previewHost.textContent = content.value;
+            previewHost.hidden = !hasContent;
+        }
+
+        const hasLinks = updatePreviewLinks();
+        const hasDocuments = updatePreviewDocuments();
+        if (previewReading) previewReading.hidden = !hasLinks && !hasDocuments;
+        if (previewBody) {
+            previewBody.hidden = !hasTopic && !hasModule && !hasContent && !hasLinks && !hasDocuments;
+        }
+    };
+
+    const renderMobilePreview = () => {
+        if (!mobilePreviewContent || !previewBody) return;
+        const preview = previewBody.cloneNode(true);
+        preview.hidden = false;
+        preview.removeAttribute("data-resource-preview-body");
+        mobilePreviewContent.replaceChildren(preview);
+    };
+
+    mobilePreviewOpen?.addEventListener("click", () => {
+        if (!mobilePreviewModal || !window.bootstrap) return;
+        updatePreview();
+        renderMobilePreview();
+        if (mobilePreviewModal.parentElement !== document.body) {
+            document.body.append(mobilePreviewModal);
+        }
+        window.bootstrap.Modal.getOrCreateInstance(mobilePreviewModal).show();
     });
 
-    previewModal?.addEventListener("shown.bs.modal", loadPreview);
+    topicInput?.addEventListener("input", updatePreview);
+    linkInputs.forEach((input) => input.addEventListener("input", updatePreview));
+
     updateCount();
+    updatePreview();
 
     fileInput?.addEventListener("change", () => {
         if (!selectedFiles) return;
@@ -161,6 +283,43 @@
         selectedFiles.textContent = names.length
             ? `${names.length} selected: ${names.join(", ")}`
             : "";
+        updatePreview();
+    });
+
+    const setEditorWidth = (width) => {
+        if (!creationWorkspace) return;
+        const workspaceWidth = creationWorkspace.getBoundingClientRect().width;
+        const handleWidth = resizeHandle?.getBoundingClientRect().width ?? 18;
+        const minimumWidth = 320;
+        const maximumWidth = Math.max(minimumWidth, workspaceWidth - handleWidth - minimumWidth);
+        const clampedWidth = Math.min(Math.max(width, minimumWidth), maximumWidth);
+        creationWorkspace.style.gridTemplateColumns = `${clampedWidth}px ${handleWidth}px minmax(${minimumWidth}px, 1fr)`;
+        resizeHandle?.setAttribute("aria-valuenow", String(Math.round(clampedWidth)));
+    };
+
+    let resizeStartX = 0;
+    let resizeStartWidth = 0;
+    const onResizeMove = (event) => setEditorWidth(resizeStartWidth + event.clientX - resizeStartX);
+    const stopResize = () => {
+        document.body.classList.remove("resource-resizing");
+        window.removeEventListener("pointermove", onResizeMove);
+        window.removeEventListener("pointerup", stopResize);
+    };
+
+    resizeHandle?.addEventListener("pointerdown", (event) => {
+        if (!creationWorkspace) return;
+        resizeStartX = event.clientX;
+        resizeStartWidth = editor?.getBoundingClientRect().width ?? 0;
+        document.body.classList.add("resource-resizing");
+        window.addEventListener("pointermove", onResizeMove);
+        window.addEventListener("pointerup", stopResize, { once: true });
+    });
+
+    resizeHandle?.addEventListener("keydown", (event) => {
+        if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+        event.preventDefault();
+        const currentWidth = editor?.getBoundingClientRect().width ?? 0;
+        setEditorWidth(currentWidth + (event.key === "ArrowLeft" ? -40 : 40));
     });
 
     document.querySelectorAll("[data-date-filter]").forEach((input) => {
@@ -216,6 +375,7 @@
                 String(item === option)));
             moduleSelect.dispatchEvent(new Event("change", { bubbles: true }));
             closeModulePanel(true);
+            updatePreview();
         });
     });
 

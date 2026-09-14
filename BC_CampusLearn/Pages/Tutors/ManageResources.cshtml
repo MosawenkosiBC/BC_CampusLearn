@@ -33,6 +33,7 @@
             new CampusAlertViewModel(Model.SuccessMessage))
     }
 
+    <div class="resource-creation-workspace" data-resource-creation-workspace>
     <section id="resource-editor"
              class="resource-editor @(Model.Create || Model.IsEditing || !ViewData.ModelState.IsValid ? "is-open" : null)"
              data-resource-editor
@@ -58,12 +59,12 @@
             <div asp-validation-summary="ModelOnly" class="resource-validation"></div>
 
             <div class="resource-form-grid">
-                <div class="resource-field resource-field--wide">
+                <div class="resource-field">
                     <label asp-for="Input.Topic">Resource title or topic</label>
                     <input asp-for="Input.Topic" placeholder="e.g. Introduction to object-oriented programming" />
                     <span asp-validation-for="Input.Topic"></span>
                 </div>
-                <div class="resource-field resource-field--wide">
+                <div class="resource-field">
                     <label asp-for="Input.ProgrammeModuleId">Module</label>
                     <div class="resource-module-picker" data-resource-module-picker>
                         <button type="button"
@@ -102,7 +103,7 @@
                                 <input id="resource-module-search"
                                        type="search"
                                        data-resource-module-search
-                                       placeholder="Search by code or module name"
+                                       placeholder="Search by module name"
                                        autocomplete="off" />
                             </div>
                             <div class="resource-module-options"
@@ -110,10 +111,6 @@
                                  aria-label="Assigned modules">
                                 @foreach (var module in Model.ModuleOptions)
                                 {
-                                    string[] moduleParts = module.Text.Split(
-                                        " — ",
-                                        2,
-                                        StringSplitOptions.None);
                                     <button type="button"
                                             class="resource-module-option"
                                             data-resource-module-option
@@ -121,11 +118,7 @@
                                             data-label="@module.Text"
                                             role="option"
                                             aria-selected="@(module.Value == Model.Input.ProgrammeModuleId.ToString() ? "true" : "false")">
-                                        <strong>@moduleParts[0]</strong>
-                                        @if (moduleParts.Length > 1)
-                                        {
-                                            <span>@moduleParts[1]</span>
-                                        }
+                                        <strong>@module.Text</strong>
                                     </button>
                                 }
                             </div>
@@ -158,44 +151,58 @@
                     <small data-content-count>0 characters</small>
                 </div>
                 <div class="resource-form-side">
-                    <div class="resource-links-heading">
-                        <h3>Learning links</h3>
+                    <div class="resource-links-heading resource-support-heading resource-support-heading--shared">
+                        <h3>Additional resources</h3>
+                        <p>Share additional resources to help students understand the topic better</p>
                     </div>
-                    <div class="resource-field">
-                        <label asp-for="Input.Link1">Learning link 1 <small>Optional</small></label>
-                        <div class="resource-input-icon">
-                            <i class="bi bi-link-45deg" aria-hidden="true"></i>
-                            <input asp-for="Input.Link1" placeholder="https://..." />
+
+                    <div class="resource-links-column">
+                        <div class="resource-field">
+                            <label asp-for="Input.Link1">Learning link 1</label>
+                            <div class="resource-input-icon">
+                                <i class="bi bi-link-45deg" aria-hidden="true"></i>
+                                <input asp-for="Input.Link1" placeholder="https://..." />
+                            </div>
+                            <span asp-validation-for="Input.Link1"></span>
                         </div>
-                        <span asp-validation-for="Input.Link1"></span>
-                    </div>
-                    <div class="resource-field">
-                        <label asp-for="Input.Link2">Learning link 2 <small>Optional</small></label>
-                        <div class="resource-input-icon">
-                            <i class="bi bi-link-45deg" aria-hidden="true"></i>
-                            <input asp-for="Input.Link2" placeholder="https://..." />
+                        <div class="resource-field">
+                            <label asp-for="Input.Link2">Learning link 2</label>
+                            <div class="resource-input-icon">
+                                <i class="bi bi-link-45deg" aria-hidden="true"></i>
+                                <input asp-for="Input.Link2" placeholder="https://..." />
+                            </div>
+                            <span asp-validation-for="Input.Link2"></span>
                         </div>
-                        <span asp-validation-for="Input.Link2"></span>
                     </div>
-                    <div class="resource-upload">
-                        <label for="resource-documents">
-                            <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
-                            <strong>Add documents</strong>
-                            <span>PDF, Office, TXT or ZIP · max 10 MB each</span>
-                        </label>
-                        <input asp-for="Input.Documents" id="resource-documents" type="file" multiple
-                               accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip" />
-                        <div class="resource-selected-files" data-selected-files></div>
-                        <span asp-validation-for="Input.Documents"></span>
+
+                    <div class="resource-attachments-column">
+                        <div class="resource-upload">
+                            <p class="resource-upload-field-label">Document</p>
+                            <div class="resource-document-picker">
+                                <input asp-for="Input.Documents" id="resource-documents" type="file" multiple
+                                       accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt" />
+                                <label for="resource-documents" class="resource-document-select">
+                                    <svg aria-hidden="true" width="1em" height="1em" viewBox="0 0 20 20">
+                                        <path d="M0 0h20v20H0z" fill="none" />
+                                        <path fill="currentColor"
+                                              d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.414a1.5 1.5 0 0 0-.44-1.06l-3.914-3.915A1.5 1.5 0 0 0 10.586 2zM5 4a1 1 0 0 1 1-1h4v3.5A1.5 1.5 0 0 0 11.5 8H15v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1zm9.793 3H11.5a.5.5 0 0 1-.5-.5V3.207z" />
+                                    </svg>
+                                    <span>Choose documents</span>
+                                </label>
+                            </div>
+                            <div class="resource-selected-files" data-selected-files></div>
+                            <span asp-validation-for="Input.Documents"></span>
+                        </div>
+                        <div class="resource-support-actions">
+                            <button type="button"
+                                    class="resource-preview-action resource-mobile-preview-action"
+                                    data-resource-preview-open>Preview</button>
+                            <button type="submit" name="submitAction" value="draft"
+                                    class="resource-secondary-action resource-save-draft-action"
+                                    disabled="@(Model.ModuleOptions.Count == 0)">Save draft</button>
+                        </div>
                     </div>
-                    <div class="resource-preview-placement">
-                        <button type="button"
-                                class="resource-preview-action"
-                                data-resource-preview-open>
-                            <i class="bi bi-eye" aria-hidden="true"></i>
-                            Preview
-                        </button>
-                    </div>
+
                 </div>
             </div>
 
@@ -223,18 +230,12 @@
             }
 
             <div class="resource-form-footer">
-                <label class="resource-comments-toggle">
-                    <span class="resource-comments-label">Allow students to comment</span>
-                    <input asp-for="Input.AllowSubscriberComments" />
-                    <span class="resource-comments-switch" aria-hidden="true"></span>
-                </label>
+                <input asp-for="Input.AllowSubscriberComments" type="hidden" />
                 <div class="resource-form-actions">
                     <a asp-page="./ManageResources" class="resource-cancel-action">Cancel</a>
-                    <button type="submit" name="submitAction" value="draft" class="resource-secondary-action"
-                            disabled="@(Model.ModuleOptions.Count == 0)">Save draft</button>
                     <button type="submit" name="submitAction" value="publish" class="resource-primary-action"
                             disabled="@(Model.ModuleOptions.Count == 0)">
-                        <i class="bi bi-send" aria-hidden="true"></i> Publish
+                        Publish
                     </button>
                 </div>
             </div>
@@ -250,40 +251,112 @@
         }
     </section>
 
-    <div class="modal fade resource-preview-modal"
-         id="resource-preview-modal"
+        <div class="resource-resize-handle"
+             data-resource-resize-handle
+             role="separator"
+             aria-label="Resize create resource and preview panels"
+             aria-orientation="vertical"
+             aria-valuemin="320"
+             aria-valuemax="900"
+             aria-valuenow="600"
+             tabindex="0">
+            <span class="resource-resize-grip" aria-hidden="true">
+                <svg viewBox="0 0 12 20">
+                    <circle cx="3" cy="4" r="1.25" />
+                    <circle cx="9" cy="4" r="1.25" />
+                    <circle cx="3" cy="10" r="1.25" />
+                    <circle cx="9" cy="10" r="1.25" />
+                    <circle cx="3" cy="16" r="1.25" />
+                    <circle cx="9" cy="16" r="1.25" />
+                </svg>
+            </span>
+        </div>
+
+        <aside class="resource-live-preview"
+               aria-labelledby="resource-live-preview-heading">
+            <div class="resource-live-preview-heading">
+                <span id="resource-live-preview-heading">Preview</span>
+            </div>
+            <article class="student-resource-reader resource-live-preview-reader"
+                     data-resource-preview-body
+                     hidden>
+                <header class="student-resource-reader-meta">
+                    <div class="student-resource-reader-details">
+                        <h2 data-resource-preview-topic hidden></h2>
+                        <div class="student-resource-meta-row" data-resource-preview-module-row hidden>
+                            <strong>Module:</strong>
+                            <span data-resource-preview-module></span>
+                        </div>
+                        <div class="student-resource-meta-row student-resource-meta-byline">
+                            <span><strong>Tutor:</strong> @Model.TutorDisplayName</span>
+                            <span class="student-resource-published">
+                                <span aria-hidden="true">|</span>
+                                <strong>Posted:</strong> Draft
+                            </span>
+                        </div>
+                    </div>
+                </header>
+
+                <section class="student-resource-content resource-live-preview-content"
+                         data-resource-preview-editor
+                         hidden></section>
+
+                <section class="student-resource-further-reading"
+                         data-resource-preview-reading
+                         hidden>
+                    <h3>Further Reading</h3>
+                    <div data-resource-preview-links></div>
+                    <div data-resource-preview-documents>
+                        @foreach (var document in Model.ExistingDocuments.OrderBy(item => item.DocumentName))
+                        {
+                            <a href="@document.FileUrl" target="_blank" rel="noopener">
+                                <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
+                                @document.DocumentName
+                            </a>
+                        }
+                    </div>
+                </section>
+            </article>
+        </aside>
+    </div>
+
+    <div class="modal fade resource-preview-modal resource-mobile-preview-modal"
+         id="resource-mobile-preview-modal"
          tabindex="-1"
-         aria-labelledby="resource-preview-title"
+         aria-labelledby="resource-mobile-preview-title"
          aria-hidden="true"
-         data-resource-preview-modal>
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+         data-resource-mobile-preview-modal>
+        <div class="modal-dialog modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
-                        <p>Resource preview</p>
-                        <h2 class="modal-title"
-                            id="resource-preview-title"
-                            data-resource-preview-topic>Untitled resource</h2>
-                        <span data-resource-preview-module>No module selected</span>
+                        <h2 class="modal-title" id="resource-mobile-preview-title">Preview</h2>
                     </div>
-                    <button type="button"
-                            class="btn-close"
-                            data-bs-dismiss="modal"
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close preview"></button>
                 </div>
                 <div class="modal-body">
-                    <article class="resource-preview-article">
-                        <div data-resource-preview-editor></div>
-                    </article>
+                    <article class="resource-preview-article"
+                             data-resource-mobile-preview-content></article>
                 </div>
                 <div class="modal-footer">
-                    <button type="button"
-                            class="resource-preview-close"
+                    <button type="button" class="resource-preview-close"
                             data-bs-dismiss="modal">Close preview</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <dialog class="resource-publish-dialog" data-resource-publish-dialog
+            aria-labelledby="resource-publish-title" aria-describedby="resource-publish-description">
+        <h2 id="resource-publish-title">Allow students to comment?</h2>
+        <p id="resource-publish-description">Choose whether students can comment on this resource when you publish it.</p>
+        <div class="resource-publish-choices">
+            <button type="button" data-resource-publish-comments="true">Allow</button>
+            <button type="button" data-resource-publish-comments="false">Don't Allow</button>
+        </div>
+        <button type="button" class="resource-publish-back" data-resource-publish-back>Back</button>
+    </dialog>
 
     <section class="resource-library" aria-label="Manage learning resources">
         <div class="resource-library-heading">
