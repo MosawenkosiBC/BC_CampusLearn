@@ -1,0 +1,121 @@
+.admin-dashboard {
+    padding: 1.5rem 0 3rem;
+}
+
+.admin-dashboard-header {
+    margin-bottom: 2rem;
+}
+
+.admin-dashboard-header h1 {
+    color: #121318;
+    font-size: clamp(1.55rem, 2.4vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    margin: 0;
+}
+
+.admin-stat-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-stat-card {
+    align-items: center;
+    background: #fff;
+    border: 1px solid rgba(18, 19, 24, 0.025);
+    border-radius: 0.45rem;
+    box-shadow:
+        0 0.6rem 1.5rem rgba(25, 30, 38, 0.08),
+        0 0.1rem 0.3rem rgba(25, 30, 38, 0.06);
+    display: flex;
+    gap: 1rem;
+    min-height: 7.25rem;
+    padding: 1.1rem;
+}
+
+.admin-stat-icon {
+    align-items: center;
+    border-radius: 50%;
+    display: flex;
+    flex: 0 0 3.75rem;
+    height: 3.75rem;
+    justify-content: center;
+    width: 3.75rem;
+}
+
+.admin-stat-icon svg {
+    fill: none;
+    height: 2rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.6;
+    width: 2rem;
+}
+
+.admin-stat-icon--tutors {
+    background: #f6e4ed;
+    color: #ad3e73;
+}
+
+.admin-stat-icon--resources {
+    background: #dce8ef;
+    color: #4f87a5;
+}
+
+.admin-stat-icon--requests {
+    background: #ffdadd;
+    color: #f02d3d;
+}
+
+.admin-stat-icon--sessions {
+    background: #e5d8e7;
+    color: #7e4d85;
+}
+
+.admin-stat-content {
+    min-width: 0;
+}
+
+.admin-stat-content h2 {
+    color: #25272c;
+    font-size: 0.86rem;
+    font-weight: 500;
+    line-height: 1.25;
+    margin: 0 0 0.45rem;
+}
+
+.admin-stat-content p {
+    color: #0d0f13;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    margin: 0;
+}
+
+@media (max-width: 991.98px) {
+    .admin-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    .admin-dashboard {
+        padding-top: 1rem;
+    }
+
+    .admin-dashboard-header {
+        margin-bottom: 1.4rem;
+    }
+
+    .admin-stat-grid {
+        gap: 1rem;
+        grid-template-columns: 1fr;
+    }
+
+    .admin-stat-card {
+        min-height: 6.5rem;
+    }
+}

@@ -1,12 +1,19 @@
 @using BC_CampusLearn.Authentication
+@using BC_CampusLearn.Models.Entities
 
 @{
     string layoutPagePath =
         ViewContext.RouteData.Values["Page"]?.ToString()
         ?? string.Empty;
+    bool isAdministratorArea = layoutPagePath.StartsWith(
+        "/Administrator/",
+        StringComparison.OrdinalIgnoreCase);
     bool hasDashboardBackground =
         layoutPagePath.Equals(
             "/Student/Dashboard",
+            StringComparison.OrdinalIgnoreCase) ||
+        layoutPagePath.Equals(
+            "/Administrator/Admin/Dashboard",
             StringComparison.OrdinalIgnoreCase) ||
         layoutPagePath.Equals(
             "/Error",
@@ -58,9 +65,14 @@
         layoutPagePath.Equals(
             "/Tutors/Details",
             StringComparison.OrdinalIgnoreCase);
-    bool isTutor = User.HasClaim(
-        EntraClaimTypes.IsTutor,
-        bool.TrueString);
+    bool isTutor = User.IsInRole(nameof(BcUserRole.Tutor)) ||
+        User.IsInRole(nameof(BcUserRole.HeadOfTutors));
+    bool isAdmin = User.IsInRole(nameof(BcUserRole.Admin)) ||
+        User.IsInRole(nameof(BcUserRole.SuperAdmin)) ||
+        User.IsInRole(nameof(BcUserRole.Dev));
+    string dashboardPage = isAdmin
+        ? "/Administrator/Admin/Dashboard"
+        : "/Student/Dashboard";
     string mobileDisplayName = User.FindFirst("name")?.Value
         ?? User.Identity?.Name
         ?? "User";
@@ -76,6 +88,12 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/CampusLearn.styles.css" asp-append-version="true" />
+    @if (isAdministratorArea)
+    {
+        <link rel="stylesheet"
+              href="~/css/components/admin-sidebar.css"
+              asp-append-version="true" />
+    }
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     @RenderSection("Styles", false)
 
@@ -601,9 +619,18 @@
         }
     </style>
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow">
+<body class="@(isAdministratorArea ? "administrator-area" : null)">
+    @if (isAdministratorArea)
+    {
+        @await Html.PartialAsync(
+            "~/Pages/Administrator/Shared/_AdminSidebar.cshtml")
+        @await Component.InvokeAsync("AdminHeader")
+    }
+
+    @if (!isAdministratorArea)
+    {
+        <header>
+            <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow">
             <div class="container-fluid px-4">
                 <a class="navbar-brand" asp-area="" asp-page="/Index">
                     <img src="/Media/common/CampusLearnLogo.png" alt="CampusLearn Logo" style="height:50px;" />
@@ -648,10 +675,10 @@
                             <li class="mobile-menu-identity">@mobileDisplayName</li>
                         }
                         <li class="nav-item">
-                            <a class="nav-link text-dark @(layoutPagePath == "/Student/Dashboard" ? "active" : "")"
-                               aria-current="@(layoutPagePath == "/Student/Dashboard" ? "page" : null)"
+                            <a class="nav-link text-dark @(layoutPagePath == dashboardPage ? "active" : "")"
+                               aria-current="@(layoutPagePath == dashboardPage ? "page" : null)"
                                asp-area=""
-                               asp-page="/Student/Dashboard">Dashboard</a>
+                               asp-page="@dashboardPage">Dashboard</a>
                         </li>
                         @if (isTutor)
                         {
@@ -683,9 +710,8 @@
                                 ? $"{nameParts[0][0]}{nameParts[^1][0]}"
                                 : displayName[..1];
                             initials = initials.ToUpperInvariant();
-                            bool isTutor = User.HasClaim(
-                                EntraClaimTypes.IsTutor,
-                                bool.TrueString);
+                            bool isTutor = User.IsInRole(nameof(BcUserRole.Tutor)) ||
+                                User.IsInRole(nameof(BcUserRole.HeadOfTutors));
                             string? tutorProfileImagePath = User.FindFirst(
                                 EntraClaimTypes.TutorProfileImagePath)?.Value;
 
@@ -799,8 +825,9 @@
                     </div>
                 </div>
             </div>
-        </nav>
-    </header>
+            </nav>
+        </header>
+    }
 
     <div class="container flex-grow-1 @(hasSessionDetailsBackground ? "session-details-content-background" : null) @(hasDashboardBackground ? "dashboard-content-background" : null) @(hasAllSessionsBackground ? "bookings-content-background" : null) @(hasManageAccountBackground ? "profile-content-background" : null) @(hasLearningResourcesBackground ? "learning-resources-content-background" : null) @(hasTutorDirectoryBackground ? "tutor-directory-content-background" : null)">
         <main role="main"
@@ -812,8 +839,10 @@
 
     @await RenderSectionAsync("Modals", required: false)
 
-    <footer class="text-light pt-4 pb-4" style="background-color:#1E1E1E;">
-        <div class="container">
+    @if (!isAdministratorArea)
+    {
+        <footer class="text-light pt-4 pb-4" style="background-color:#1E1E1E;">
+            <div class="container">
             <div class="row text-start align-items-start">
                 <div class="col-12 col-md-6 mb-4">
                     <h5 class="mb-3">Connect</h5>
@@ -883,8 +912,9 @@
             <div class="text-center mt-4 border-top pt-3">
                 <small>&copy; @DateTime.Now.Year Belgium Campus ITversity. All Rights Reserved.</small>
             </div>
-        </div>
-    </footer>
+            </div>
+        </footer>
+    }
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

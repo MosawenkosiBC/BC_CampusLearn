@@ -1,5 +1,6 @@
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Authentication.Development;
+using BC_CampusLearn.Models.Entities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -18,17 +19,20 @@ public class SignInModel : PageModel
     private readonly IConfiguration _configuration;
     private readonly DevelopmentUserOptions _developmentUser;
     private readonly DevelopmentStudentOptions _developmentStudent;
+    private readonly DevelopmentAdminOptions _developmentAdmin;
 
     public SignInModel(
         IWebHostEnvironment environment,
         IConfiguration configuration,
         IOptions<DevelopmentUserOptions> developmentUserOptions,
-        IOptions<DevelopmentStudentOptions> developmentStudentOptions)
+        IOptions<DevelopmentStudentOptions> developmentStudentOptions,
+        IOptions<DevelopmentAdminOptions> developmentAdminOptions)
     {
         _environment = environment;
         _configuration = configuration;
         _developmentUser = developmentUserOptions.Value;
         _developmentStudent = developmentStudentOptions.Value;
+        _developmentAdmin = developmentAdminOptions.Value;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -42,6 +46,9 @@ public class SignInModel : PageModel
 
     public string DevelopmentStudentDisplayName =>
         _developmentStudent.DisplayName;
+
+    public string DevelopmentAdminDisplayName =>
+        _developmentAdmin.DisplayName;
 
     public bool IsDevelopmentAuthentication =>
         _environment.IsDevelopment() &&
@@ -72,13 +79,17 @@ public class SignInModel : PageModel
                 OpenIdConnectDefaults.AuthenticationScheme);
         }
 
-        DevelopmentUserOptions selectedUser =
-            string.Equals(
-                DevelopmentAccount,
-                "student",
-                StringComparison.OrdinalIgnoreCase)
-                ? _developmentStudent
-                : _developmentUser;
+        bool isDevelopmentAdmin = string.Equals(
+            DevelopmentAccount,
+            "admin",
+            StringComparison.OrdinalIgnoreCase);
+
+        DevelopmentUserOptions selectedUser = DevelopmentAccount?.ToLowerInvariant() switch
+        {
+            "student" => _developmentStudent,
+            "admin" => _developmentAdmin,
+            _ => _developmentUser
+        };
 
         if (string.IsNullOrWhiteSpace(selectedUser.ObjectId) ||
             string.IsNullOrWhiteSpace(selectedUser.TenantId) ||
@@ -91,7 +102,7 @@ public class SignInModel : PageModel
             return Page();
         }
 
-        Claim[] claims =
+        var claims = new List<Claim>
         {
             new Claim(
                 EntraClaimTypes.ObjectId,
@@ -120,6 +131,13 @@ public class SignInModel : PageModel
                 EntraClaimTypes.PersonnelNumber,
                 selectedUser.PersonnelNumber)
         };
+
+        if (isDevelopmentAdmin)
+        {
+            claims.Add(new Claim(
+                EntraClaimTypes.DevelopmentRole,
+                nameof(BcUserRole.Admin)));
+        }
 
         var identity = new ClaimsIdentity(
             claims,

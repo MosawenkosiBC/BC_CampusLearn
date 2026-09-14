@@ -1,5 +1,7 @@
 using System.Security.Claims;
 
+using BC_CampusLearn.Models.Entities;
+
 namespace BC_CampusLearn.Authentication;
 
 public class ClaimsCurrentUserService : ICurrentUserService
@@ -53,6 +55,14 @@ public class ClaimsCurrentUserService : ICurrentUserService
             ?? principal.FindFirstValue(
                 EntraClaimTypes.PreferredUsername);
 
+        string? roleValue = principal.FindFirstValue(EntraClaimTypes.BcRole);
+        if (!Enum.TryParse(roleValue, ignoreCase: false, out BcUserRole role) ||
+            !Enum.IsDefined(role))
+        {
+            throw new InvalidOperationException(
+                "The authenticated principal does not have a valid BC user role.");
+        }
+
 
 
 
@@ -60,6 +70,7 @@ public class ClaimsCurrentUserService : ICurrentUserService
             bcUserId,
             personnelNumber,
             displayName,
-            email);
+            email,
+            role);
     }
 }

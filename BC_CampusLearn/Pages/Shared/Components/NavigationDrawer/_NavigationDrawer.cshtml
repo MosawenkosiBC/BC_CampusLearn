@@ -1,4 +1,5 @@
 @using BC_CampusLearn.Authentication
+@using BC_CampusLearn.Models.Entities
 
 @{
     string currentPage =
@@ -6,7 +7,13 @@
         ?? string.Empty;
 
     bool isHome = currentPage == "/Index";
-    bool isDashboard = currentPage == "/Student/Dashboard";
+    bool isAdmin = User.IsInRole(nameof(BcUserRole.Admin)) ||
+        User.IsInRole(nameof(BcUserRole.SuperAdmin)) ||
+        User.IsInRole(nameof(BcUserRole.Dev));
+    string dashboardPage = isAdmin
+        ? "/Administrator/Admin/Dashboard"
+        : "/Student/Dashboard";
+    bool isDashboard = currentPage == dashboardPage;
     bool isTutorDashboard = currentPage.Equals(
         "/Tutors/TutorDashboard",
         StringComparison.OrdinalIgnoreCase) ||
@@ -36,9 +43,8 @@
         !isTutorDashboard &&
         !isManageAvailability &&
         !isManageResources;
-    bool isTutor = User.HasClaim(
-        EntraClaimTypes.IsTutor,
-        bool.TrueString);
+    bool isTutor = User.IsInRole(nameof(BcUserRole.Tutor)) ||
+        User.IsInRole(nameof(BcUserRole.HeadOfTutors));
 }
 
 <div class="navigation-drawer-component" data-navigation-drawer>
@@ -103,7 +109,7 @@
                 <span>Home</span>
             </a>
 
-            <a asp-page="/Student/Dashboard"
+            <a asp-page="@dashboardPage"
                class="navigation-drawer-link navigation-drawer-link--mobile @(isDashboard ? "is-active" : null)"
                aria-current="@(isDashboard ? "page" : null)">
                 <span>Dashboard</span>

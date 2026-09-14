@@ -13,9 +13,20 @@ public class BcUserConfiguration : IEntityTypeConfiguration<BcUser>
         builder.Property(user => user.PersonnelNumber).HasMaxLength(50).IsRequired();
         builder.Property(user => user.DisplayName).HasMaxLength(200).IsRequired();
         builder.Property(user => user.Email).HasMaxLength(320);
+        builder.Property(user => user.Role)
+            .HasConversion<int>()
+            .HasDefaultValue(BcUserRole.Student)
+            .HasSentinel((BcUserRole)0)
+            .IsRequired();
         builder.Property(user => user.IsPublicActivityEnabled).HasDefaultValue(true);
         builder.Property(user => user.PublicActivityDisabledReason).HasMaxLength(500);
         builder.Property(user => user.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         builder.HasIndex(user => user.PersonnelNumber).IsUnique();
+        builder.ToTable("BcUsers", table =>
+        {
+            table.HasCheckConstraint(
+                "CK_BcUsers_Role",
+                "[Role] BETWEEN 1 AND 6");
+        });
     }
 }
