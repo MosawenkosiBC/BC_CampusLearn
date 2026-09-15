@@ -41,13 +41,15 @@ public class AdminTutorsTests
         var page = new ProfileModel(context) { Period = period };
         await page.OnGetAsync(1, CancellationToken.None);
         Assert.Equal(new[] { 7, 6, 5, 4, 3 }, page.TopModules.Select(module => module.Count));
+        Assert.Equal(27, page.CompletedSessions);
+        Assert.Equal(27, page.PendingStudentReviews);
         Assert.Equal(5, page.RecentSessions.Count);
         Assert.All(page.RecentSessions, item => Assert.Contains(item.Status, new[] { BookingStatus.Completed, BookingStatus.Cancelled }));
         var details = new SessionDetailsModel(context);
         Assert.IsType<Microsoft.AspNetCore.Mvc.RazorPages.PageResult>(await details.OnGetAsync(existingBooking.BookingId, CancellationToken.None));
         Assert.IsType<Microsoft.AspNetCore.Mvc.NotFoundResult>(await details.OnGetAsync(hiddenBooking.BookingId, CancellationToken.None));
         Assert.IsType<Microsoft.AspNetCore.Mvc.NotFoundResult>(await details.OnGetAsync(int.MaxValue, CancellationToken.None));
-        Assert.Equal(8, page.TotalSessionPages);
+        Assert.Equal(7, page.TotalSessionPages);
         var firstPageIds = page.RecentSessions.Select(item => item.BookingId).ToArray();
         page.SessionPage = 2;
         await page.OnGetAsync(1, CancellationToken.None);
@@ -55,11 +57,188 @@ public class AdminTutorsTests
         Assert.DoesNotContain(page.RecentSessions, item => firstPageIds.Contains(item.BookingId));
         page.SessionPage = int.MaxValue;
         await page.OnGetAsync(1, CancellationToken.None);
-        Assert.Equal(8, page.SessionPage);
-        Assert.Equal(4, page.RecentSessions.Count);
+        Assert.Equal(7, page.SessionPage);
+        Assert.Equal(3, page.RecentSessions.Count);
         Assert.Null(page.AverageRating);
         await page.OnGetAsync(18, CancellationToken.None);
         Assert.Empty(page.TopModules);
+    }
+
+    [Fact]
+    public async Task PendingTutorReviewsExcludeReviewedUncompletedAndOutOfPeriodSessions()
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var date = new DateTimeOffset(2026, 9, 10, 12, 0, 0, TimeSpan.FromHours(2));
+        var assignment = await context.TutorCourseModules.FirstAsync(item => item.TutorId == 1);
+        foreach (var kind in new[] { "pending", "reviewed", "cancelled", "outside" })
+        {
+            context.Bookings.Add(new Booking
+            {
+                TutorId = 1, TutorCourseModule = assignment, ProgrammeModuleId = 1,
+                Status = kind == "cancelled" ? BookingStatus.Cancelled : BookingStatus.Completed,
+                CompletedAt = date,
+                ScheduledStartTime = kind == "outside" ? date.AddDays(-1) : date,
+                TutorEvaluation = kind == "reviewed" ? new TutorStudentEvaluation() : null
+            });
+        }
+        await context.SaveChangesAsync();
+        var page = new ProfileModel(context)
+        {
+            Period = "custom", StartDate = new DateOnly(2026, 9, 10), EndDate = new DateOnly(2026, 9, 10)
+        };
+        await page.OnGetAsync(1, CancellationToken.None);
+        Assert.Equal(1, page.PendingTutorReviews);
+        Assert.Equal(2, page.PendingStudentReviews);
+        Assert.Equal(2, page.CompletedSessions);
+    }
+
+    [Fact]
+    public async Task DefaultMonthAndEachPresetFilterEverySummaryCard()
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var now = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(2));
+        var today = new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, now.Offset);
+        var assignment = await context.TutorCourseModules.FirstAsync(item => item.TutorId == 1);
+        for (int days = -40; days <= 1; days++)
+        {
+            var date = today.AddDays(days).AddHours(12);
+            context.Bookings.Add(new Booking
+            {
+                TutorId = 1, TutorCourseModule = assignment, ProgrammeModuleId = 1,
+                Status = BookingStatus.Completed, CompletedAt = now, ScheduledStartTime = date
+            });
+            context.TutorModuleChangeRequests.Add(new TutorModuleChangeRequest
+            {
+                TutorId = 1, ProgrammeModuleId = 1, Status = TutorAccountRequestStatus.Pending,
+                SubmittedAt = date.UtcDateTime
+            });
+        }
+        await context.SaveChangesAsync();
+        var page = new ProfileModel(context);
+        Assert.Equal("month", page.Period);
+        foreach (var period in new[] { "month", "week", "day" })
+        {
+            page.Period = period;
+            await page.OnGetAsync(1, CancellationToken.None);
+            var start = period switch
+            {
+                "day" => today,
+                "week" => today.AddDays(-((int)today.DayOfWeek + 6) % 7),
+                _ => new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, now.Offset)
+            };
+            var end = period == "day" ? start.AddDays(1) : period == "week" ? start.AddDays(7) : start.AddMonths(1);
+            var expected = Enumerable.Range(-40, 42).Count(days => today.AddDays(days).AddHours(12) >= start
+                && today.AddDays(days).AddHours(12) < end);
+            Assert.Equal(expected, page.CompletedSessions);
+            Assert.Equal(expected, page.PendingStudentReviews);
+            Assert.Equal(expected, page.PendingTutorReviews);
+            Assert.Equal(expected, Assert.Single(page.TopModules).Count);
+            Assert.Equal(expected, page.ModuleChangeRequests);
+        }
+    }
+
+    [Fact]
+    public async Task CustomDatesFilterAllActivityUsingInclusiveSouthAfricanDates()
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var start = new DateTimeOffset(2026, 9, 10, 0, 0, 0, TimeSpan.FromHours(2));
+        var end = start.AddDays(2);
+        var assignment = await context.TutorCourseModules.FirstAsync(item => item.TutorId == 1);
+        foreach (var date in new[] { start.AddTicks(-1), start, end.AddTicks(-1), end })
+        {
+            var booking = new Booking
+            {
+                TutorId = 1, TutorCourseModule = assignment, ProgrammeModuleId = 1,
+                Status = BookingStatus.Completed, CompletedAt = date.ToUniversalTime(), ScheduledStartTime = date.ToUniversalTime()
+            };
+            context.Bookings.Add(booking);
+            context.SessionReviews.Add(new SessionReview
+            {
+                Booking = booking, ReviewerBcUserId = 2, RevieweeBcUserId = 1,
+                CreatedAt = date.ToUniversalTime(), Rating = date >= start && date < end ? (byte)5 : (byte)1
+            });
+            context.TutorModuleChangeRequests.Add(new TutorModuleChangeRequest
+            {
+                TutorId = 1, ProgrammeModuleId = 1, Status = TutorAccountRequestStatus.Pending,
+                SubmittedAt = date.UtcDateTime
+            });
+        }
+        await context.SaveChangesAsync();
+        var page = new ProfileModel(context)
+        {
+            Period = "custom", StartDate = new DateOnly(2026, 9, 10), EndDate = new DateOnly(2026, 9, 11), SessionPage = 99
+        };
+        await page.OnGetAsync(1, CancellationToken.None);
+        Assert.Null(page.DateFilterError);
+        Assert.Equal(2, page.CompletedSessions);
+        Assert.Equal(2, page.PendingStudentReviews);
+        Assert.Equal(2, page.ModuleChangeRequests);
+        Assert.Equal(2, page.ReviewCount);
+        Assert.Equal(5d, page.AverageRating);
+        Assert.Equal(2, Assert.Single(page.TopModules).Count);
+        Assert.Equal(2, page.RecentSessions.Count);
+        Assert.Equal(1, page.SessionPage);
+
+        page.EndDate = page.StartDate;
+        await page.OnGetAsync(1, CancellationToken.None);
+        Assert.Equal(1, page.CompletedSessions);
+        Assert.Single(page.RecentSessions);
+        page.StartDate = new DateOnly(2020, 1, 1);
+        page.EndDate = page.StartDate;
+        await page.OnGetAsync(1, CancellationToken.None);
+        Assert.Equal(0, page.CompletedSessions);
+        Assert.Empty(page.RecentSessions);
+        Assert.Empty(page.TopModules);
+        Assert.Null(page.AverageRating);
+    }
+
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("2026-09-12", "2026-09-10")]
+    [InlineData("2026-09-12", "9999-12-31")]
+    public async Task InvalidCustomDatesShowValidationWithoutThrowing(string? start, string? end)
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var page = new ProfileModel(context)
+        {
+            Period = "custom", StartDate = start is null ? null : DateOnly.Parse(start),
+            EndDate = end is null ? null : DateOnly.Parse(end)
+        };
+        await page.OnGetAsync(1, CancellationToken.None);
+        Assert.NotNull(page.DateFilterError);
+    }
+
+    [Fact]
+    public async Task TutorListExcludesUnplacedInactiveAndUnapprovedTutorsBeforeCountingAndPaging()
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var tutors = await context.Tutors.OrderBy(tutor => tutor.TutorId).ToListAsync();
+        tutors[0].IsActive = false;
+        tutors[1].ApplicationStage = TutorApplicationStage.Interview;
+        tutors[2].Status = TutorStatus.Pending;
+        tutors[3].Status = TutorStatus.Rejected;
+        tutors[4].Status = TutorStatus.Suspended;
+        await context.SaveChangesAsync();
+
+        var page = new IndexModel(context);
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Equal(13, page.TotalTutors);
+        Assert.Equal(2, page.TotalPages);
+        Assert.Equal(Enumerable.Range(6, 8), page.Tutors.Select(tutor => tutor.TutorId));
+        page.TutorPage = 2;
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Equal(Enumerable.Range(14, 5), page.Tutors.Select(tutor => tutor.TutorId));
+
+        page.SearchName = "Tutor 01";
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Empty(page.Tutors);
+        Assert.Equal(0, page.TotalTutors);
+        Assert.Equal(1, page.TutorPage);
     }
 
     [Fact]
@@ -131,6 +310,7 @@ public class AdminTutorsTests
                 ReasonForTutoring = "Reason", TeachingStyle = "Style",
                 PreviousTutoringExperience = "Experience", CampusOfStudy = "Pretoria",
                 DemonstrationVideoUrl = "", Status = TutorStatus.Approved,
+                ApplicationStage = TutorApplicationStage.Placement, IsActive = true,
                 TutorCourseModules = id <= 13
                     ? [new TutorCourseModule { ProgrammeModule = module }] : []
             });

@@ -14,8 +14,54 @@
 <section class="admin-profile-page" aria-labelledby="admin-tutor-profile-title">
     <header class="admin-profile-heading admin-dashboard-header">
         <h1 id="admin-tutor-profile-title">Tutor Profile</h1>
-        <a asp-page="Profile" asp-route-id="@tutor.TutorId" asp-route-period="@Model.Period" class="admin-profile-refresh"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Refresh</a>
+        <div class="admin-profile-actions">
+            <div class="admin-profile-date-filter">
+                <nav class="admin-rating-periods" aria-label="Profile date range">
+                    @foreach (var period in new[] { "day", "week", "month" })
+                    {
+                        <a asp-page="Profile" asp-route-id="@tutor.TutorId" asp-route-period="@period"
+                           class="@(Model.Period == period ? "is-selected" : null)" aria-current="@(Model.Period == period ? "page" : null)">@(char.ToUpperInvariant(period[0]) + period.Substring(1))</a>
+                    }
+                    <button type="button" class="@(Model.Period == "custom" ? "is-selected" : null)"
+                            data-bs-toggle="modal" data-bs-target="#custom-date-modal" aria-haspopup="dialog">Custom</button>
+                </nav>
+                <p class="admin-profile-muted admin-rating-date">@Model.PeriodLabel</p>
+                @if (Model.DateFilterError is not null)
+                {
+                    <p class="admin-profile-date-error" role="alert">@Model.DateFilterError</p>
+                }
+            </div>
+            <a asp-page="Profile" asp-route-id="@tutor.TutorId" asp-route-period="@Model.Period"
+               asp-route-startDate="@(Model.Period == "custom" ? Model.StartDate?.ToString("yyyy-MM-dd") : null)"
+               asp-route-endDate="@(Model.Period == "custom" ? Model.EndDate?.ToString("yyyy-MM-dd") : null)"
+               asp-route-sessionPage="@Model.SessionPage" class="admin-profile-refresh"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Refresh</a>
+        </div>
     </header>
+    <div class="modal fade" id="custom-date-modal" tabindex="-1" aria-labelledby="custom-date-title" aria-hidden="true"
+         data-date-error="@(Model.DateFilterError is not null ? "true" : "false")">
+        <div class="modal-dialog modal-dialog-centered">
+            <form method="get" asp-page="Profile" asp-route-id="@tutor.TutorId" class="modal-content" id="custom-date-form">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="custom-date-title">Custom date range</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="admin-profile-muted">Filter all stats and activity. Both dates are included.</p>
+                    <input type="hidden" name="Period" value="custom" />
+                    <div class="mb-3"><label asp-for="StartDate" class="form-label">From</label><input asp-for="StartDate" class="form-control" type="date" min="0001-01-02" max="9999-12-30" required /></div>
+                    <div><label asp-for="EndDate" class="form-label">To</label><input asp-for="EndDate" class="form-control" type="date" min="0001-01-02" max="9999-12-30" required /></div>
+                    @if (Model.DateFilterError is not null)
+                    {
+                        <p class="admin-profile-date-error" role="alert">@Model.DateFilterError</p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="admin-profile-refresh border-0">Apply dates</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="admin-profile-layout">
         <aside class="admin-profile-personal admin-profile-panel" aria-label="Tutor personal details">
             <div class="admin-profile-identity">
@@ -54,9 +100,9 @@
         </aside>
         <div class="admin-profile-content">
             <div class="admin-profile-stats">
-                <article class="admin-profile-stat admin-profile-panel"><i class="bi bi-person-check" aria-hidden="true"></i><h2>Total Completed Sessions</h2><strong>@Model.CompletedSessions</strong></article>
-                <article class="admin-profile-stat admin-profile-panel"><i class="bi bi-person-gear" aria-hidden="true"></i><h2>Module change requests</h2><strong>@Model.ModuleChangeRequests</strong></article>
                 <article class="admin-profile-stat admin-profile-panel"><i class="bi bi-chat-dots" aria-hidden="true"></i><h2>Pending Student reviews</h2><strong>@Model.PendingStudentReviews</strong></article>
+                <article class="admin-profile-stat admin-profile-panel"><i class="bi bi-chat-square-text" aria-hidden="true"></i><h2>Pending Tutor Reviews</h2><strong>@Model.PendingTutorReviews</strong></article>
+                <article class="admin-profile-stat admin-profile-panel"><i class="bi bi-person-check" aria-hidden="true"></i><h2>Total Completed Sessions</h2><strong>@Model.CompletedSessions</strong></article>
             </div>
             <section id="recent-sessions" class="admin-profile-sessions admin-profile-panel" aria-labelledby="recent-sessions-title">
                 <h2 id="recent-sessions-title">Recent sessions</h2>
@@ -76,7 +122,7 @@
                             }
                             @if (Model.RecentSessions.Count == 0)
                             {
-                                <tr><td colspan="5" class="admin-profile-empty">No sessions to display yet.</td></tr>
+                                <tr><td colspan="5" class="admin-profile-empty">No sessions in this period.</td></tr>
                             }
                         </tbody>
                     </table>
@@ -95,18 +141,6 @@
             <details id="ratings" class="admin-profile-ratings admin-profile-panel" open>
                 <summary id="ratings-title">Statistics</summary>
                 <div class="admin-ratings-body">
-                <div class="admin-ratings-heading">
-                    <div class="admin-rating-filter">
-                    <nav class="admin-rating-periods" aria-label="Statistics time period">
-                        @foreach (var period in new[] { "day", "week", "month" })
-                        {
-                            <a asp-page="Profile" asp-route-id="@tutor.TutorId" asp-route-period="@period" asp-route-sessionPage="@Model.SessionPage" asp-fragment="ratings"
-                               class="@(Model.Period == period ? "is-selected" : null)" aria-current="@(Model.Period == period ? "true" : null)">@(char.ToUpperInvariant(period[0]) + period.Substring(1))</a>
-                        }
-                    </nav>
-                    <p class="admin-profile-muted admin-rating-date">@Model.PeriodLabel</p>
-                    </div>
-                </div>
                 <div class="admin-profile-stars" aria-label="@(Model.AverageRating.HasValue ? $"{Model.AverageRating.Value:0.0} out of 5 stars" : "No ratings in this period")">
                     @for (int star = 1; star <= 5; star++)
                     {
@@ -129,19 +163,52 @@
                     }
                     else
                     {
-                        var maximum = Model.TopModules.Max(item => item.Count);
-                        <ol class="admin-module-bars">
-                            @foreach (var module in Model.TopModules)
+                        var slices = Model.TopModules.Select(module => (module.Code, module.Name, module.Count)).ToList();
+                        var otherCount = Model.CompletedSessions - slices.Sum(slice => slice.Count);
+                        if (otherCount > 0)
+                        {
+                            slices.Add(("Other", "Remaining modules", otherCount));
+                        }
+                        var colors = new[] { "#4f87a5", "#dc9344", "#6c9b71", "#9273b1", "#c46678", "#889399" };
+                        <div class="admin-module-pie-layout">
+                        <div class="admin-module-pie-wrapper">
+                        <svg class="admin-module-pie" viewBox="0 0 240 240" role="group" aria-label="Completed sessions by module pie chart">
+                            @{ double angle = -Math.PI / 2; }
+                            @for (var index = 0; index < slices.Count; index++)
                             {
-                                var width = (100.0 * module.Count / maximum).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+                                var slice = slices[index];
+                                var share = (double)slice.Count / Model.CompletedSessions;
+                                var endAngle = angle + share * 2 * Math.PI;
+                                var tooltip = $"{slice.Code}: {(share * 100).ToString("0.#")}%";
+                                var path = FormattableString.Invariant($"M 120 120 L {120 + 118 * Math.Cos(angle)} {120 + 118 * Math.Sin(angle)} A 118 118 0 {(share > .5 ? 1 : 0)} 1 {120 + 118 * Math.Cos(endAngle)} {120 + 118 * Math.Sin(endAngle)} Z");
+                                <g class="admin-module-slice" tabindex="0" role="img" aria-label="@tooltip" data-pie-tooltip="@tooltip" fill="@colors[index]">
+                                    @if (slices.Count == 1)
+                                    {
+                                        <circle cx="120" cy="120" r="118" />
+                                    }
+                                    else
+                                    {
+                                        <path d="@path" />
+                                    }
+                                </g>
+                                angle = endAngle;
+                            }
+                        </svg>
+                        <div class="admin-module-tooltip" role="tooltip" hidden></div>
+                        </div>
+                        <ul class="admin-module-legend" id="module-pie-legend">
+                            @for (var index = 0; index < slices.Count; index++)
+                            {
+                                var slice = slices[index];
                                 <li>
-                                    <span class="admin-module-label" title="@module.Name">@module.Code<span>@module.Name</span></span>
-                                    <span class="admin-module-track" aria-hidden="true"><span style="width: @(width)%"></span></span>
-                                    <strong aria-label="@module.Count completed sessions">@module.Count</strong>
+                                    <span class="admin-module-swatch" style="background: @colors[index]" aria-hidden="true"></span>
+                                    <span class="admin-module-label">@slice.Code<span>@slice.Name</span></span>
+                                    <span class="admin-module-share"><strong>@slice.Count</strong></span>
                                 </li>
                             }
-                        </ol>
-                        <p class="admin-profile-muted">Number of completed sessions</p>
+                        </ul>
+                        </div>
+                        <p class="admin-profile-muted admin-module-total">@Model.CompletedSessions completed sessions</p>
                     }
                 </figure>
                 </div>

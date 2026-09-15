@@ -1,7 +1,7 @@
 .admin-tutors-workspace {
     display: grid;
     grid-template-columns: 250px minmax(0, 1fr);
-    gap: 1.5rem;
+    gap: 1.25rem;
     align-items: start;
 }
 .admin-tutor-results { min-width: 0; }
@@ -10,14 +10,14 @@
     border-radius: 0.65rem;
     box-shadow: 0 0.3rem 1rem rgba(25, 30, 38, 0.1);
     color: #111;
-    font-size: 1.5rem;
+    font-size: 1rem;
     font-weight: 500;
-    margin: 0 0 1.75rem;
-    padding: 1.5rem 1.75rem;
+    margin: 0 0 1.25rem;
+    padding: 1rem 1.25rem;
 }
 .admin-tutor-result-count strong { font-weight: 700; }
 .admin-tutor-filters {
-    padding: 1.5rem 1rem 1rem;
+    padding: 1.25rem;
     border-radius: 0.6rem;
     background: #fff;
     box-shadow: 0 0.3rem 1rem rgba(25, 30, 38, 0.12);
@@ -28,15 +28,15 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding-bottom: 1.75rem;
-    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1.25rem;
     border-bottom: 1px solid #c9c9c9;
 }
-.admin-filter-heading h2 { margin: 0; font-size: 1.5rem; font-weight: 600; }
-.admin-filter-heading a { color: #444; text-decoration: none; white-space: nowrap; }
+.admin-filter-heading h2 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+.admin-filter-heading a { color: #444; font-size: 1rem; text-decoration: none; white-space: nowrap; }
 .admin-filter-heading a:hover { text-decoration: underline; }
 .admin-filter-group { margin-bottom: 1rem; }
-.admin-filter-group > label { display: block; margin-bottom: 0.8rem; font-weight: 500; }
+.admin-filter-group > label { display: block; margin-bottom: 0.5rem; font-size: 1rem; font-weight: 500; }
 .admin-filter-search { position: relative; }
 .admin-filter-search input {
     width: 100%;
@@ -46,11 +46,12 @@
     padding: 0.6rem 2.5rem 0.6rem 0.75rem;
     background: #ededed;
     color: #222;
+    font-size: 1rem;
 }
 .admin-filter-search svg {
     position: absolute;
-    width: 1.35rem;
-    height: 1.35rem;
+    width: 1.1rem;
+    height: 1.1rem;
     right: 0.7rem;
     top: 50%;
     transform: translateY(-50%);
@@ -59,14 +60,14 @@
     fill: none;
     pointer-events: none;
 }
-.admin-filter-years { border: 0; padding: 0; margin: 1.75rem 0 3.5rem; }
-.admin-filter-years legend { float: none; font-size: 1.25rem; font-weight: 500; margin-bottom: 1rem; }
-.admin-filter-years label { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.75rem; cursor: pointer; }
+.admin-filter-years { border: 0; padding: 0; margin: 1.25rem 0 1.5rem; }
+.admin-filter-years legend { float: none; font-size: 1rem; font-weight: 500; margin-bottom: 0.75rem; }
+.admin-filter-years label { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.6rem; font-size: 1rem; cursor: pointer; }
 .admin-filter-years input {
     appearance: none;
-    width: 22px;
-    height: 22px;
-    flex: 0 0 22px;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
     border: 0;
     border-radius: 0.3rem;
     background: #d9d9d9;
@@ -77,12 +78,12 @@
 }
 .admin-apply-filters {
     width: 100%;
-    min-height: 64px;
+    min-height: 50px;
     border: 0;
     border-radius: 0.65rem;
     background: #444;
     color: #fff;
-    font-size: 1.4rem;
+    font-size: 1rem;
     font-weight: 600;
 }
 .admin-apply-filters:hover { background: #292929; }
