@@ -1,0 +1,18 @@
+.admin-session-information { color: #111; }
+.admin-session-information .admin-dashboard-header a { display: inline-block; margin-top: .75rem; color: #414849; }
+.admin-session-information .admin-dashboard-header p { color: #626b78; font-size: .85rem; margin-top: .75rem; }
+.admin-session-information h2 { font-size: 1rem; font-weight: 600; margin: 0 0 .65rem; }
+.admin-session-information h3 { font-size: .9rem; font-weight: 600; margin: 1rem 0 .5rem; }
+.admin-session-card { background: #fff; border-radius: .5rem; box-shadow: 0 .25rem .8rem rgba(25,30,38,.1); padding: 1.25rem; min-height: 240px; font-size: .9rem; overflow-wrap: anywhere; }
+.admin-session-summary { margin-bottom: 2rem; }
+.admin-session-review-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 2rem; align-items: start; }
+.admin-session-prose { white-space: pre-wrap; }
+.admin-session-answers { margin: 0; display: grid; gap: 1rem; }
+.admin-session-answers dt { font-weight: 600; }
+.admin-session-answers dd { margin: .25rem 0 0; white-space: pre-wrap; }
+.admin-session-approval .admin-session-card { min-height: 0; padding: 1rem; }
+.admin-session-approval p { margin: 0; }
+.admin-session-status { display: inline-block; border-radius: 1rem; background: #eef2f7; padding: .2rem .6rem; margin-left: .5rem; }
+.admin-session-status.is-cancelled { color: #b42318; background: #fde8e8; }
+.admin-session-submitted-review { border-top: 1px solid #edf0f3; margin-top: 1rem; }
+@media (max-width:767.98px) { .admin-session-review-grid { grid-template-columns: 1fr; } }

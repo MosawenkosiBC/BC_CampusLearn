@@ -8,11 +8,31 @@
         breadcrumbs.Add(("Home", pagePath == "/Index" ? null : "/Index"));
     }
 
-    AddHome();
+    if (!pagePath.StartsWith("/Administrator/", StringComparison.OrdinalIgnoreCase))
+    {
+        AddHome();
+    }
 
     switch (pagePath)
     {
         case "/Index":
+            break;
+        case "/Administrator/Admin/Dashboard":
+            breadcrumbs.Add(("Dashboard", null));
+            break;
+        case "/Administrator/Tutors/Index":
+            breadcrumbs.Add(("Dashboard", "/Administrator/Admin/Dashboard"));
+            breadcrumbs.Add(("Tutors", null));
+            break;
+        case "/Administrator/Tutors/Profile":
+            breadcrumbs.Add(("Dashboard", "/Administrator/Admin/Dashboard"));
+            breadcrumbs.Add(("Tutors", "/Administrator/Tutors/Index"));
+            breadcrumbs.Add(("Tutor Profile", null));
+            break;
+        case "/Administrator/Tutors/SessionDetails":
+            breadcrumbs.Add(("Dashboard", "/Administrator/Admin/Dashboard"));
+            breadcrumbs.Add(("Tutors", "/Administrator/Tutors/Index"));
+            breadcrumbs.Add(("Session Information", null));
             break;
         case "/Student/Dashboard":
             breadcrumbs.Add(("Dashboard", null));

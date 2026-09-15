@@ -25,6 +25,9 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
         builder.Property(tutor => tutor.CampusOfStudy).HasMaxLength(100).IsRequired();
         builder.Property(tutor => tutor.DemonstrationVideoUrl).HasMaxLength(500).IsRequired();
         builder.Property(tutor => tutor.Status).HasConversion<int>().HasDefaultValue(TutorStatus.Pending);
+        builder.Property(tutor => tutor.ApplicationStage)
+            .HasConversion<int>()
+            .HasDefaultValue(TutorApplicationStage.Submitted);
         builder.Property(tutor => tutor.IsActive).HasDefaultValue(false);
         builder.Property(tutor => tutor.SubmittedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         builder.Property(tutor => tutor.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");

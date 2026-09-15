@@ -9,10 +9,14 @@ namespace BC_CampusLearn.Authentication;
 public sealed class BcUserClaimsTransformation : IClaimsTransformation
 {
     private readonly ApplicationDbContext _context;
+    private readonly IWebHostEnvironment _environment;
 
-    public BcUserClaimsTransformation(ApplicationDbContext context)
+    public BcUserClaimsTransformation(
+        ApplicationDbContext context,
+        IWebHostEnvironment environment)
     {
         _context = context;
+        _environment = environment;
     }
 
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
@@ -27,45 +31,44 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
 
         if (int.TryParse(bcUserIdValue, out int existingBcUserId))
         {
-            var existingTutor = await _context.Tutors
-                .AsNoTracking()
-                .Where(tutor =>
-                    tutor.BcUserId == existingBcUserId &&
-                    tutor.Status == TutorStatus.Approved &&
-                    tutor.IsActive)
-                .Select(tutor => new
+            BcUser existingUser = await _context.BcUsers
+                .Include(user => user.Admin)
+                .SingleOrDefaultAsync(user =>
+                    user.BcUserId == existingBcUserId)
+                ?? throw new InvalidOperationException(
+                    "The authenticated principal is linked to a BC user that no longer exists.");
+
+            if (RequiresAdminProfile(existingUser.Role) &&
+                existingUser.Admin is null)
+            {
+                existingUser.Admin = new Admin
                 {
-                    tutor.ProfileImagePath
-                })
-                .SingleOrDefaultAsync();
-
-            var tutorIdentity = new ClaimsIdentity();
-            if (!principal.HasClaim(
-                    claim => claim.Type == EntraClaimTypes.IsTutor))
-            {
-                tutorIdentity.AddClaim(new Claim(
-                    EntraClaimTypes.IsTutor,
-                    (existingTutor is not null).ToString()));
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _context.SaveChangesAsync();
             }
 
-            if (!string.IsNullOrWhiteSpace(existingTutor?.ProfileImagePath) &&
-                !principal.HasClaim(claim =>
-                    claim.Type == EntraClaimTypes.TutorProfileImagePath))
-            {
-                tutorIdentity.AddClaim(new Claim(
-                    EntraClaimTypes.TutorProfileImagePath,
-                    existingTutor.ProfileImagePath));
-            }
+            string? existingTutorProfileImagePath = existingUser.Role is
+                    BcUserRole.Tutor or BcUserRole.HeadOfTutors
+                ? await _context.Tutors
+                    .AsNoTracking()
+                    .Where(tutor => tutor.BcUserId == existingBcUserId)
+                    .Select(tutor => tutor.ProfileImagePath)
+                    .SingleOrDefaultAsync()
+                : null;
 
-            if (tutorIdentity.Claims.Any())
-            {
-                principal.AddIdentity(tutorIdentity);
-            }
+            AddApplicationClaims(
+                principal,
+                existingBcUserId,
+                existingUser.Role,
+                existingTutorProfileImagePath,
+                personnelNumber: null);
 
             return principal;
         }
 
-        string? personnelNumber = principal.FindFirstValue(EntraClaimTypes.PersonnelNumber);
+        string? personnelNumber =
+            principal.FindFirstValue(EntraClaimTypes.PersonnelNumber);
         string? displayName = principal.FindFirstValue(ClaimTypes.Name)
             ?? principal.FindFirstValue(EntraClaimTypes.DisplayName);
         string? email = principal.FindFirstValue(ClaimTypes.Email)
@@ -78,8 +81,12 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
         }
 
         string normalizedPersonnelNumber = personnelNumber.Trim();
-        BcUser? user = await _context.BcUsers.SingleOrDefaultAsync(item =>
-            item.PersonnelNumber == normalizedPersonnelNumber);
+        BcUser? user = await _context.BcUsers
+            .Include(item => item.Admin)
+            .SingleOrDefaultAsync(item =>
+                item.PersonnelNumber == normalizedPersonnelNumber);
+
+        BcUserRole? developmentRole = GetDevelopmentRole(principal);
 
         if (user is null)
         {
@@ -92,6 +99,7 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
                 Email = string.IsNullOrWhiteSpace(email)
                     ? null
                     : email.Trim(),
+                Role = developmentRole ?? BcUserRole.Student,
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow
             };
@@ -115,39 +123,128 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
                     "The linked BC user does not have a verified personnel number.");
             }
 
+            if (developmentRole.HasValue)
+            {
+                user.Role = developmentRole.Value;
+            }
+
             user.LastLoginAt = DateTime.UtcNow;
+        }
+
+        if (RequiresAdminProfile(user.Role) &&
+            user.Admin is null)
+        {
+            user.Admin = new Admin
+            {
+                CreatedAt = DateTime.UtcNow
+            };
         }
 
         await _context.SaveChangesAsync();
 
-        var tutorProfile = await _context.Tutors
-            .AsNoTracking()
-            .Where(tutor =>
-                tutor.BcUserId == user.BcUserId &&
-                tutor.Status == TutorStatus.Approved &&
-                tutor.IsActive)
-            .Select(tutor => new
-            {
-                tutor.ProfileImagePath
-            })
-            .SingleOrDefaultAsync();
+        string? tutorProfileImagePath = user.Role is
+                BcUserRole.Tutor or BcUserRole.HeadOfTutors
+            ? await _context.Tutors
+                .AsNoTracking()
+                .Where(tutor => tutor.BcUserId == user.BcUserId)
+                .Select(tutor => tutor.ProfileImagePath)
+                .SingleOrDefaultAsync()
+            : null;
 
-        var identity = new ClaimsIdentity();
-        identity.AddClaim(new Claim(EntraClaimTypes.BcUserId, user.BcUserId.ToString()));
-        identity.AddClaim(new Claim(
-            EntraClaimTypes.IsTutor,
-            (tutorProfile is not null).ToString()));
-        if (!string.IsNullOrWhiteSpace(tutorProfile?.ProfileImagePath))
-        {
-            identity.AddClaim(new Claim(
-                EntraClaimTypes.TutorProfileImagePath,
-                tutorProfile.ProfileImagePath));
-        }
-        if (!principal.HasClaim(claim => claim.Type == EntraClaimTypes.PersonnelNumber))
-        {
-            identity.AddClaim(new Claim(EntraClaimTypes.PersonnelNumber, user.PersonnelNumber));
-        }
-        principal.AddIdentity(identity);
+        AddApplicationClaims(
+            principal,
+            user.BcUserId,
+            user.Role,
+            tutorProfileImagePath,
+            user.PersonnelNumber);
+
         return principal;
+    }
+
+    private BcUserRole? GetDevelopmentRole(ClaimsPrincipal principal)
+    {
+        if (!_environment.IsDevelopment())
+        {
+            return null;
+        }
+
+        string? roleValue = principal.FindFirstValue(
+            EntraClaimTypes.DevelopmentRole);
+
+        return Enum.TryParse(roleValue, ignoreCase: false, out BcUserRole role) &&
+            Enum.IsDefined(role)
+                ? role
+                : null;
+    }
+
+    private static bool RequiresAdminProfile(BcUserRole role) =>
+        role is BcUserRole.Admin or
+            BcUserRole.SuperAdmin or
+            BcUserRole.Dev;
+
+    private static void AddApplicationClaims(
+        ClaimsPrincipal principal,
+        int bcUserId,
+        BcUserRole role,
+        string? tutorProfileImagePath,
+        string? personnelNumber)
+    {
+        ClaimsIdentity? applicationIdentity = principal.Identities
+            .FirstOrDefault(identity =>
+                identity.AuthenticationType == "BcUser");
+
+        if (applicationIdentity is not null)
+        {
+            foreach (Claim claim in applicationIdentity.Claims.ToList())
+            {
+                applicationIdentity.RemoveClaim(claim);
+            }
+        }
+
+        var claims = new List<Claim>
+        {
+            new(
+                EntraClaimTypes.BcUserId,
+                bcUserId.ToString()),
+            new(
+                EntraClaimTypes.BcRole,
+                role.ToString())
+        };
+
+        if (!string.IsNullOrWhiteSpace(tutorProfileImagePath) &&
+            !principal.HasClaim(claim =>
+                claim.Type == EntraClaimTypes.TutorProfileImagePath))
+        {
+            claims.Add(new Claim(
+                EntraClaimTypes.TutorProfileImagePath,
+                tutorProfileImagePath));
+        }
+
+        if (!string.IsNullOrWhiteSpace(personnelNumber) &&
+            !principal.HasClaim(claim =>
+                claim.Type == EntraClaimTypes.PersonnelNumber))
+        {
+            claims.Add(new Claim(
+                EntraClaimTypes.PersonnelNumber,
+                personnelNumber));
+        }
+
+        if (claims.Count == 0)
+        {
+            return;
+        }
+
+        if (applicationIdentity is null)
+        {
+            principal.AddIdentity(new ClaimsIdentity(
+                claims,
+                authenticationType: "BcUser",
+                nameType: ClaimTypes.Name,
+                roleType: EntraClaimTypes.BcRole));
+        }
+        else
+        {
+            applicationIdentity.AddClaims(claims);
+        }
     }
 }

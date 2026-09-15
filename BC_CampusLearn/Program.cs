@@ -6,6 +6,7 @@ using BC_CampusLearn.Services.Availability;
 using BC_CampusLearn.Services.Tutors;
 using BC_CampusLearn.Services.Sessions;
 using BC_CampusLearn.Hubs;
+using BC_CampusLearn.Models.Entities;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication;
@@ -38,6 +39,10 @@ builder.Services.Configure<DevelopmentStudentOptions>(
     builder.Configuration.GetSection(
         DevelopmentStudentOptions.SectionName));
 
+builder.Services.Configure<DevelopmentAdminOptions>(
+    builder.Configuration.GetSection(
+        DevelopmentAdminOptions.SectionName));
+
 bool useDevelopmentAuthentication =
     builder.Environment.IsDevelopment() &&
     builder.Configuration.GetValue<bool>(
@@ -63,7 +68,21 @@ else
             builder.Configuration.GetSection("AzureAd"));
 }
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        AuthorizationPolicies.TutorAccess,
+        policy => policy.RequireRole(
+            nameof(BcUserRole.Tutor),
+            nameof(BcUserRole.HeadOfTutors)));
+
+    options.AddPolicy(
+        AuthorizationPolicies.AdminAccess,
+        policy => policy.RequireRole(
+            nameof(BcUserRole.Admin),
+            nameof(BcUserRole.SuperAdmin),
+            nameof(BcUserRole.Dev)));
+});
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IClaimsTransformation, BcUserClaimsTransformation>();
@@ -101,6 +120,28 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Student");
     options.Conventions.AuthorizeFolder("/Tutors");
     options.Conventions.AuthorizeFolder("/Bookings");
+    options.Conventions.AuthorizeFolder(
+        "/Administrator",
+        AuthorizationPolicies.AdminAccess);
+
+    string[] tutorOnlyPages =
+    {
+        "/Tutors/TutorDashboard",
+        "/Tutors/ManageAvailability",
+        "/Tutors/ManageResources",
+        "/Tutors/Profile",
+        "/Tutors/PublicProfile",
+        "/Tutors/Sessions",
+        "/Tutors/SessionDetails",
+        "/Tutors/StatisticsOverview"
+    };
+
+    foreach (string page in tutorOnlyPages)
+    {
+        options.Conventions.AuthorizePage(
+            page,
+            AuthorizationPolicies.TutorAccess);
+    }
 });
 
 var app = builder.Build();

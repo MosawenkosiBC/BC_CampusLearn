@@ -22,6 +22,30 @@ namespace BC_CampusLearn.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.Admin", b =>
+                {
+                    b.Property<int>("AdminId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AdminId"));
+
+                    b.Property<int>("BcUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("AdminId");
+
+                    b.HasIndex("BcUserId")
+                        .IsUnique();
+
+                    b.ToTable("Admins", (string)null);
+                });
+
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.BcUser", b =>
                 {
                     b.Property<int>("BcUserId")
@@ -64,12 +88,20 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int>("Role")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
                     b.HasKey("BcUserId");
 
                     b.HasIndex("PersonnelNumber")
                         .IsUnique();
 
-                    b.ToTable("BcUsers", (string)null);
+                    b.ToTable("BcUsers", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_BcUsers_Role", "[Role] BETWEEN 1 AND 6");
+                        });
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.Booking", b =>
@@ -774,6 +806,11 @@ namespace BC_CampusLearn.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TutorId"));
 
+                    b.Property<int>("ApplicationStage")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<int>("BcUserId")
                         .HasColumnType("int");
 
@@ -873,6 +910,51 @@ namespace BC_CampusLearn.Migrations
                             t.HasCheckConstraint("CK_Tutors_OverallAverage", "[OverallAverage] BETWEEN 0 AND 100");
 
                             t.HasCheckConstraint("CK_Tutors_YearOfStudy", "[YearOfStudy] BETWEEN 1 AND 4");
+                        });
+                });
+
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorApplicationSettings", b =>
+                {
+                    b.Property<int>("TutorApplicationSettingsId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TutorApplicationSettingsId"));
+
+                    b.Property<bool>("IsOpen")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("NotifyStudents")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<int?>("ShortlistLimit")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("TutorApplicationSettingsId");
+
+                    b.ToTable("TutorApplicationSettings", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_TutorApplicationSettings_ShortlistLimit", "[ShortlistLimit] IS NULL OR [ShortlistLimit] > 0");
+
+                            t.HasCheckConstraint("CK_TutorApplicationSettings_Singleton", "[TutorApplicationSettingsId] = 1");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            TutorApplicationSettingsId = 1,
+                            IsOpen = false,
+                            NotifyStudents = false,
+                            UpdatedAt = new DateTime(2026, 9, 14, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
@@ -1099,6 +1181,17 @@ namespace BC_CampusLearn.Migrations
                         .IsUnique();
 
                     b.ToTable("TutorStudentEvaluations", (string)null);
+                });
+
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.Admin", b =>
+                {
+                    b.HasOne("BC_CampusLearn.Models.Entities.BcUser", "BcUser")
+                        .WithOne("Admin")
+                        .HasForeignKey("BC_CampusLearn.Models.Entities.Admin", "BcUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BcUser");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.Booking", b =>
@@ -1425,6 +1518,8 @@ namespace BC_CampusLearn.Migrations
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.BcUser", b =>
                 {
+                    b.Navigation("Admin");
+
                     b.Navigation("ResourceComments");
 
                     b.Navigation("Tutor");
