@@ -1,0 +1,395 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Admin.ApplicationsModel
+
+@{
+    ViewData["Title"] = "Applications";
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/admin-applications.css"
+          asp-append-version="true" />
+}
+
+<section class="admin-applications" aria-labelledby="applications-title">
+    <div class="admin-applications-heading">
+        <h1 id="applications-title">Applications</h1>
+    </div>
+
+    <div class="applications-toolbar">
+        <form method="post"
+              asp-page-handler="Settings"
+              class="applications-toggle-form"
+              data-application-settings-form>
+            <input type="hidden" name="Stage" value="@Model.Stage" />
+            <input type="hidden" name="Search" value="@Model.Search" />
+            <input type="hidden" name="isOpen" value="false" />
+            <label class="applications-toggle">
+                <span>Open applications</span>
+                <input type="checkbox"
+                       checked="@Model.OpenApplications"
+                       data-applications-toggle />
+                <span class="applications-toggle-track" aria-hidden="true">
+                    <span></span>
+                </span>
+            </label>
+        </form>
+
+        <form method="get" class="applications-search-form" role="search">
+            <input type="hidden" name="Stage" value="@Model.Stage" />
+            <div class="applications-search-group">
+            <div class="applications-search">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m16 16l5 5" />
+                </svg>
+                <label class="visually-hidden" asp-for="Search">Search candidates</label>
+                <input asp-for="Search" placeholder="Search candidates..." />
+                @if (!string.IsNullOrWhiteSpace(Model.Search))
+                {
+                    <a asp-page="/Administrator/Admin/Applications"
+                       asp-route-Stage="@Model.Stage"
+                       class="applications-search-clear"
+                       aria-label="Clear candidate search"
+                       title="Clear search">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 6l12 12M18 6L6 18" />
+                        </svg>
+                    </a>
+                }
+            </div>
+
+                <button type="submit" class="applications-search-button">Search</button>
+            </div>
+
+            <button type="submit" class="applications-refresh">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20 6v5h-5M4 18v-5h5M18.5 9A7 7 0 0 0 6.2 6.2L4 8m16 8l-2.2 1.8A7 7 0 0 1 5.5 15" />
+                </svg>
+                Refresh
+            </button>
+        </form>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.PageMessage))
+    {
+        <div class="applications-notice" role="status">@Model.PageMessage</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.PageError))
+    {
+        <div class="applications-notice applications-notice--error" role="alert">@Model.PageError</div>
+    }
+
+    <dialog class="admin-application-modal"
+            data-shortlist-limit-modal
+            aria-labelledby="shortlist-limit-title">
+        <button type="button" class="admin-modal-close" data-admin-modal-close aria-label="Close">&times;</button>
+        <h2 id="shortlist-limit-title">Set the shortlist target</h2>
+        <p>
+            Set a shortlist target and choose whether to notify students.
+        </p>
+        <form method="post"
+              asp-page-handler="Settings"
+              data-shortlist-limit-form
+              novalidate>
+            <input type="hidden" name="Stage" value="@Model.Stage" />
+            <input type="hidden" name="Search" value="@Model.Search" />
+            <input type="hidden" name="isOpen" value="true" />
+            <label for="shortlist-limit">Number of students</label>
+            <input id="shortlist-limit"
+                   name="shortlistLimit"
+                   type="number"
+                   step="1"
+                   value="@Model.ShortlistLimit"
+                   aria-describedby="shortlist-limit-validation" />
+            <span id="shortlist-limit-validation"
+                  class="admin-modal-validation"
+                  data-shortlist-limit-validation
+                  aria-live="polite"></span>
+            <label class="admin-notification-toggle">
+                <span>
+                    <strong>Notify students</strong>
+                    <small>Let students know tutor applications are open.</small>
+                </span>
+                <input type="checkbox"
+                       name="notifyStudents"
+                       value="true"
+                       checked />
+                <span class="applications-toggle-track" aria-hidden="true">
+                    <span></span>
+                </span>
+            </label>
+            <input type="hidden" name="notifyStudents" value="false" />
+            <div class="admin-modal-actions">
+                <button type="submit"
+                        name="openWithoutTarget"
+                        value="true"
+                        formnovalidate
+                        class="admin-modal-no-target">
+                    Continue without target
+                </button>
+                <button type="submit">Open applications</button>
+            </div>
+        </form>
+    </dialog>
+
+    <nav class="application-stage-tabs" aria-label="Application stages">
+        <a asp-page="/Administrator/Admin/Applications"
+           asp-route-Stage="applications"
+           asp-route-Search="@Model.Search"
+           class="application-stage-tab @(Model.Stage == "applications" ? "is-active" : null)"
+           aria-current="@(Model.Stage == "applications" ? "page" : null)">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14.5 5h-2c-2.828 0-4.243 0-5.121.879C6.5 6.757 6.5 8.172 6.5 11v5c0 2.828 0 4.243.879 5.121C8.257 22 9.672 22 12.5 22h1.343c.818 0 1.226 0 1.594-.152s.656-.441 1.235-1.02l2.656-2.656c.579-.579.867-.867 1.02-1.235c.152-.368.152-.776.152-1.594V11c0-2.828 0-4.243-.879-5.121C18.743 5 17.328 5 14.5 5M15 21.5v-1c0-1.886 0-2.828.586-3.414S17.114 16.5 19 16.5h1M6.5 19a3 3 0 0 1-3-3V8c0-2.828 0-4.243.879-5.121C5.257 2 6.672 2 9.5 2h5a3 3 0 0 1 3 3m-7.499 8h4m-4-4h7" />
+            </svg>
+            <span>Applications</span>
+            <strong>@Model.ApplicationCount</strong>
+        </a>
+
+        <a asp-page="/Administrator/Admin/Applications"
+           asp-route-Stage="shortlist"
+           asp-route-Search="@Model.Search"
+           class="application-stage-tab @(Model.Stage == "shortlist" ? "is-active" : null)"
+           aria-current="@(Model.Stage == "shortlist" ? "page" : null)">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="10" cy="7" r="4" />
+                <path d="M10 14c-5 0-8 2.5-8 5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2c0-2.5-3-5-8-5m6-3.167s1.011.338 1.5 1.667c0 0 2.382-3.333 4.5-4" />
+            </svg>
+            <span>Shortlist</span>
+            <strong>@Model.ShortlistCount</strong>
+        </a>
+
+        <a asp-page="/Administrator/Admin/Applications"
+           asp-route-Stage="interview"
+           asp-route-Search="@Model.Search"
+           class="application-stage-tab @(Model.Stage == "interview" ? "is-active" : null)"
+           aria-current="@(Model.Stage == "interview" ? "page" : null)">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21.5 12a9.5 9.5 0 0 1-9.5 9.5c-1.628 0-3.16-.41-4.5-1.131c-1.868-1.007-3.125-.071-4.234.097a.53.53 0 0 1-.456-.156a.64.64 0 0 1-.117-.703c.436-1.025.835-2.969.29-4.607a9.5 9.5 0 0 1-.483-3a9.5 9.5 0 1 1 19 0" />
+                <path d="M12.126 12H12m-3.876 0H8m8.125 0H16m-3.75 0a.25.25 0 1 1-.5 0a.25.25 0 0 1 .5 0m-4 0a.25.25 0 1 1-.5 0a.25.25 0 0 1 .5 0m8 0a.25.25 0 1 1-.5 0a.25.25 0 0 1 .5 0" />
+            </svg>
+            <span>Interview</span>
+            <strong>@Model.InterviewCount</strong>
+        </a>
+
+        <a asp-page="/Administrator/Admin/Applications"
+           asp-route-Stage="placement"
+           asp-route-Search="@Model.Search"
+           class="application-stage-tab @(Model.Stage == "placement" ? "is-active" : null)"
+           aria-current="@(Model.Stage == "placement" ? "page" : null)">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8.5 6.5c0-1.404 0-2.107.337-2.611a2 2 0 0 1 .552-.552C9.893 3 10.596 3 12 3s2.107 0 2.611.337a2 2 0 0 1 .552.552c.337.504.337 1.207.337 2.611M22 14v-.5c0-3.3 0-4.95-1.025-5.975S18.3 6.5 15 6.5H9c-3.3 0-4.95 0-5.975 1.025S2 10.2 2 13.5v.5c0 3.3 0 4.95 1.025 5.975S5.7 21 9 21h6c3.3 0 4.95 0 5.975-1.025S22 17.3 22 14" />
+                <path d="M2 11s2.632 4 10 4s10-4 10-4M12.125 11.75H12m.25 0a.25.25 0 1 1-.5 0a.25.25 0 0 1 .5 0" />
+            </svg>
+            <span>Placement</span>
+            <strong>@Model.PlacementCount</strong>
+        </a>
+    </nav>
+
+    @if (Model.Stage == "placement")
+    {
+        <div class="placement-actions">
+            <button type="button"
+                    class="add-tutor-button"
+                    data-add-tutor-open>
+                <span aria-hidden="true">+</span>
+                Add tutor
+            </button>
+        </div>
+    }
+
+    <section class="application-candidate-panel" aria-label="Application candidates">
+        <div class="application-table-heading" aria-hidden="true">
+            <span>Candidate</span>
+            <span>Programme</span>
+            <span>Year</span>
+            <span>Average</span>
+            <span>Modules</span>
+            <span>Submitted</span>
+            <span>Status</span>
+            <span>Action</span>
+        </div>
+
+        @if (Model.Candidates.Count == 0)
+        {
+            <div class="application-empty-state">
+                <span class="application-empty-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M3 7h6l2 2h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2ZM3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2" />
+                    </svg>
+                </span>
+                <strong>No candidates in @Model.Stage</strong>
+                @if (!string.IsNullOrWhiteSpace(Model.Search))
+                {
+                    <span>Try a different candidate search.</span>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="application-candidate-list">
+                @foreach (var candidate in Model.Candidates)
+                {
+                    <article class="application-candidate-row">
+                        <div class="candidate-identity">
+                            <div>
+                                <h3>@candidate.DisplayName</h3>
+                                <p>@candidate.PersonnelNumber</p>
+                            </div>
+                        </div>
+                        <dl>
+                            <div>
+                                <dt>Programme</dt>
+                                <dd>@candidate.ProgrammeName</dd>
+                            </div>
+                            <div>
+                                <dt>Year</dt>
+                                <dd>@candidate.YearOfStudy</dd>
+                            </div>
+                            <div>
+                                <dt>Average</dt>
+                                <dd>@candidate.OverallAverage.ToString("0.#")%</dd>
+                            </div>
+                            <div>
+                                <dt>Modules</dt>
+                                <dd>@candidate.ModuleCount</dd>
+                            </div>
+                            <div>
+                                <dt>Submitted</dt>
+                                <dd>@candidate.SubmittedAt.ToString("dd MMM yyyy")</dd>
+                            </div>
+                        </dl>
+                        <span class="candidate-status candidate-status--@candidate.Status.ToString().ToLowerInvariant()">
+                            @candidate.ApplicationStage
+                        </span>
+                        <button type="button"
+                                class="candidate-action-menu"
+                                aria-label="Actions for @candidate.DisplayName"
+                                aria-haspopup="menu"
+                                aria-expanded="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="5" r="1.5" />
+                                <circle cx="12" cy="12" r="1.5" />
+                                <circle cx="12" cy="19" r="1.5" />
+                            </svg>
+                        </button>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+
+    <dialog class="admin-application-modal"
+            data-final-shortlist-modal
+            aria-labelledby="final-shortlist-title">
+        <button type="button" class="admin-modal-close" data-admin-modal-close aria-label="Close">&times;</button>
+        <h2 id="final-shortlist-title">Complete the shortlist?</h2>
+        <p>
+            Shortlisting <strong data-final-candidate-name></strong> will reach
+            the target of @Model.ShortlistLimit. All unchecked applications
+            will be rejected. Are you sure you want to continue?
+        </p>
+        <form method="post" asp-page-handler="Shortlist">
+            <input type="hidden" name="tutorId" data-final-candidate-id />
+            <input type="hidden" name="finalizeThreshold" value="true" />
+            <input type="hidden" name="Search" value="@Model.Search" />
+            <div class="admin-modal-actions">
+                <button type="button" data-admin-modal-close>Keep reviewing</button>
+                <button type="submit">Shortlist and continue</button>
+            </div>
+        </form>
+    </dialog>
+
+    @if (Model.Stage == "placement")
+    {
+        <dialog class="admin-application-modal admin-add-tutor-modal"
+                data-add-tutor-modal
+                aria-labelledby="add-tutor-title">
+            <button type="button"
+                    class="admin-modal-close"
+                    data-admin-modal-close
+                    aria-label="Close">&times;</button>
+            <h2 id="add-tutor-title">Add tutor</h2>
+            <p>Select a student and enter the details needed to create their tutor profile.</p>
+            <form method="post" asp-page-handler="AddTutor">
+                <div class="admin-add-tutor-grid">
+                    <div class="admin-add-tutor-field admin-add-tutor-field--full">
+                        <label for="manual-student-search">Student</label>
+                        <span class="admin-student-picker" data-student-picker>
+                            <input id="manual-student-search"
+                                   type="search"
+                                   placeholder="Search by name or student number"
+                                   autocomplete="off"
+                                   aria-label="Search eligible students"
+                                   aria-controls="eligible-student-results"
+                                   aria-expanded="false"
+                                   data-student-search />
+                            <input asp-for="ManualTutor.BcUserId"
+                                   type="hidden"
+                                   data-student-id />
+                            <span id="eligible-student-results"
+                                  class="admin-student-results"
+                                  role="listbox"
+                                  data-student-results
+                                  hidden>
+                                @foreach (SelectListItem student in Model.StudentOptions)
+                                {
+                                    <button type="button"
+                                            role="option"
+                                            data-student-option
+                                            data-student-id="@student.Value"
+                                            data-search-text="@student.Text.ToLowerInvariant()">
+                                        @student.Text
+                                    </button>
+                                }
+                                <span class="admin-student-empty"
+                                      data-student-empty
+                                      hidden>
+                                    No matching students found.
+                                </span>
+                            </span>
+                        </span>
+                    </div>
+                    <label class="admin-add-tutor-field admin-add-tutor-field--full">
+                        <span>Programme</span>
+                        <select asp-for="ManualTutor.ProgrammeId"
+                                asp-items="Model.ProgrammeOptions"
+                                required>
+                            <option value="">Select a programme</option>
+                        </select>
+                    </label>
+                    <label class="admin-add-tutor-field">
+                        <span>Year of study</span>
+                        <input asp-for="ManualTutor.YearOfStudy"
+                               type="number" min="1" max="4" required />
+                    </label>
+                    <label class="admin-add-tutor-field">
+                        <span>Overall average</span>
+                        <input asp-for="ManualTutor.OverallAverage"
+                               type="number" min="0" max="100" step="0.01" required />
+                    </label>
+                    <label class="admin-add-tutor-field">
+                        <span>Campus</span>
+                        <input asp-for="ManualTutor.CampusOfStudy" required />
+                    </label>
+                    <label class="admin-add-tutor-field">
+                        <span>Phone number</span>
+                        <input asp-for="ManualTutor.PhoneNumber" type="tel" />
+                    </label>
+                    <label class="admin-add-tutor-field admin-add-tutor-field--full">
+                        <span>Preferred tutoring mode</span>
+                        <select asp-for="ManualTutor.PreferredTutoringMode"
+                                asp-items="Html.GetEnumSelectList<PreferredTutoringMode>()"></select>
+                    </label>
+                </div>
+                <div class="admin-modal-actions">
+                    <button type="submit">Add tutor</button>
+                </div>
+            </form>
+        </dialog>
+    }
+</section>
+
+@section Scripts {
+    <script src="~/js/admin-applications.js" asp-append-version="true"></script>
+}

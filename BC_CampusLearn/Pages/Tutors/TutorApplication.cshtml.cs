@@ -55,6 +55,8 @@ public class TutorApplicationModel : PageModel
     public string LastName { get; private set; } = string.Empty;
     public string StudentNumber { get; private set; } = string.Empty;
     public string EmailAddress { get; private set; } = string.Empty;
+    public bool ApplicationsOpen { get; private set; }
+    public bool ShowClosedApplicationsModal { get; private set; }
 
     public int InitialStep { get; private set; }
 
@@ -77,6 +79,17 @@ public class TutorApplicationModel : PageModel
     {
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
         await LoadPageDataAsync(currentUser, cancellationToken);
+
+        if (!ApplicationsOpen)
+        {
+            InitialStep = 0;
+            ShowClosedApplicationsModal = true;
+            ModelState.AddModelError(
+                string.Empty,
+                "Tutor applications are currently closed.");
+            return Page();
+        }
+
         InitialStep = 3;
 
         if (!string.IsNullOrWhiteSpace(ExistingApplicationMessage))
@@ -154,6 +167,7 @@ public class TutorApplicationModel : PageModel
             PreferredTutoringMode =
                 FinalInput.PreferredTutoringMode!.Value,
             Status = TutorStatus.Pending,
+            ApplicationStage = TutorApplicationStage.Submitted,
             IsActive = false,
             SubmittedAt = submittedAt,
             CreatedAt = submittedAt
@@ -294,6 +308,13 @@ public class TutorApplicationModel : PageModel
         CancellationToken cancellationToken)
     {
         SetIdentityDetails(currentUser);
+
+        ApplicationsOpen = await _context.TutorApplicationSettings
+            .AsNoTracking()
+            .Where(settings => settings.TutorApplicationSettingsId ==
+                TutorApplicationSettings.SingletonId)
+            .Select(settings => settings.IsOpen)
+            .SingleOrDefaultAsync(cancellationToken);
 
         ProgrammeOptions = await _context.ProgrammesOfStudy
             .AsNoTracking()

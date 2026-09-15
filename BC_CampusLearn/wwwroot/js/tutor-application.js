@@ -11,6 +11,10 @@
         "[data-existing-application]");
     const existingApplicationCloseButtons = document.querySelectorAll(
         "[data-existing-application-close]");
+    const applicationsClosed = document.querySelector(
+        "[data-applications-closed]");
+    const applicationsClosedButtons = document.querySelectorAll(
+        "[data-applications-closed-close]");
     const siteFooter = document.querySelector("body > footer");
     const orientationAccordionTriggers = Array.from(
         document.querySelectorAll(
@@ -624,6 +628,11 @@
         });
 
     agreeButton.addEventListener("click", () => {
+        if (applicationsClosed) {
+            applicationsClosed.showModal();
+            return;
+        }
+
         if (existingApplication) {
             existingApplication.showModal();
             return;
@@ -657,5 +666,21 @@
             existingApplication.close();
         }
     });
+
+    applicationsClosedButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            applicationsClosed?.close();
+        });
+    });
+
+    applicationsClosed?.addEventListener("click", event => {
+        if (event.target === applicationsClosed) {
+            applicationsClosed.close();
+        }
+    });
+
+    if (applicationsClosed?.dataset.autoOpen === "true") {
+        applicationsClosed.showModal();
+    }
 
 })();

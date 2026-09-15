@@ -15,6 +15,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Admin> Admins => Set<Admin>();
     public DbSet<BcUser> BcUsers => Set<BcUser>();
     public DbSet<TutorDocument> TutorDocuments => Set<TutorDocument>();
+    public DbSet<TutorApplicationSettings> TutorApplicationSettings =>
+        Set<TutorApplicationSettings>();
 
     public DbSet<ProgrammeModule> ProgrammeModules =>
         Set<ProgrammeModule>();

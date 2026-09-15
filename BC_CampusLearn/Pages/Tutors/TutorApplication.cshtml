@@ -296,6 +296,34 @@
         </dialog>
     }
 
+    @if (!Model.ApplicationsOpen)
+    {
+        <dialog class="tutor-application-status-modal"
+                data-applications-closed
+                data-auto-open="@Model.ShowClosedApplicationsModal.ToString().ToLowerInvariant()"
+                aria-labelledby="applications-closed-title"
+                aria-describedby="applications-closed-message">
+            <button type="button"
+                    class="application-status-close"
+                    data-applications-closed-close
+                    aria-label="Close applications notice">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+            </button>
+            <h2 id="applications-closed-title">Applications Closed</h2>
+            <p id="applications-closed-message">
+                Tutor applications are currently closed and are not accepting
+                new submissions. You can apply when applications open again.
+            </p>
+            <button type="button"
+                    class="application-status-confirm"
+                    data-applications-closed-close>
+                Close
+            </button>
+        </dialog>
+    }
+
     <section class="application-loader"
              data-application-loader
              role="status"

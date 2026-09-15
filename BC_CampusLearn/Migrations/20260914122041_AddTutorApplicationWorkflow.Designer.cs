@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260914122041_AddTutorApplicationWorkflow")]
+    partial class AddTutorApplicationWorkflow
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -926,11 +929,6 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
-                    b.Property<bool>("NotifyStudents")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
                     b.Property<int?>("ShortlistLimit")
                         .HasColumnType("int");
 
@@ -953,7 +951,6 @@ namespace BC_CampusLearn.Migrations
                         {
                             TutorApplicationSettingsId = 1,
                             IsOpen = false,
-                            NotifyStudents = false,
                             UpdatedAt = new DateTime(2026, 9, 14, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
