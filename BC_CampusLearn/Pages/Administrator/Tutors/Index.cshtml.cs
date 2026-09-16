@@ -25,6 +25,10 @@ public class IndexModel(ApplicationDbContext context) : PageModel
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
+        var query = context.Tutors.AsNoTracking().Where(tutor =>
+            tutor.ApplicationStage == TutorApplicationStage.Placement &&
+            tutor.IsActive &&
+            tutor.Status == TutorStatus.Approved);
         var query = context.Tutors
             .AsNoTracking()
             .Where(tutor => tutor.Status == TutorStatus.Approved);

@@ -48,8 +48,8 @@
 .admin-ratings-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .admin-ratings-heading h2 { margin-bottom: 0; }
 .admin-rating-periods { display: flex; flex-wrap: wrap; gap: .25rem; background: #f4f4f4; padding: .25rem; border-radius: .5rem; }
-.admin-rating-periods a { color: #555; font-size: .85rem; text-decoration: none; padding: .45rem .85rem; border-radius: .35rem; }
-.admin-rating-periods a.is-selected { background: #363c3d; color: #fff; }
+.admin-rating-periods :is(a,button) { border: 0; background: transparent; color: #555; font-size: .85rem; text-decoration: none; padding: .45rem .85rem; border-radius: .35rem; }
+.admin-rating-periods :is(a,button).is-selected { background: #363c3d; color: #fff; }
 .admin-ratings-heading { align-items: flex-start; margin-bottom: 1rem; }
 .admin-rating-filter { margin-left: auto; max-width: 100%; }
 .admin-rating-date { text-align: right; margin: .6rem 0 0; overflow-wrap: anywhere; }
@@ -66,16 +66,27 @@
 }
 .admin-module-chart { border-top: 1px solid #edf0f3; margin: 1.5rem 0 0; padding-top: 1.25rem; }
 .admin-module-chart figcaption { font-size: 1rem; margin-bottom: 1.5rem; font-weight: 500; }
-.admin-module-bars { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 1.25rem; }
-.admin-module-bars li { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(0, 2fr) 2.5rem; gap: .85rem; align-items: center; font-size: .85rem; }
-.admin-module-label { overflow-wrap: anywhere; font-weight: 600; }
+.admin-module-pie-layout { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; margin-bottom: 1.25rem; }
+.admin-module-pie-wrapper { position: relative; width: min(240px, 100%); }
+.admin-module-pie { display: block; width: 100%; aspect-ratio: 1; overflow: visible; }
+.admin-module-slice { cursor: pointer; }
+.admin-module-slice:hover, .admin-module-slice:focus-visible { filter: brightness(1.12); outline: none; stroke: #fff; stroke-width: 2px; }
+.admin-module-tooltip { position: absolute; bottom: calc(100% + .4rem); left: 50%; transform: translateX(-50%); background: #363c3d; color: #fff; padding: .4rem .65rem; border-radius: .35rem; font-size: .85rem; pointer-events: none; width: max-content; max-width: 100%; text-align: center; z-index: 1; }
+.admin-module-total { text-align: center; }
+.admin-module-legend { list-style: none; padding: 0; margin: 0; width: min(420px, 100%); display: grid; gap: 1rem; }
+.admin-module-legend li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: .65rem; align-items: center; font-size: .85rem; }
+.admin-module-swatch { width: 12px; height: 12px; border-radius: .2rem; }
+.admin-module-label { display: block; overflow-wrap: anywhere; font-weight: 600; }
 .admin-module-label > span { display: block; font-size: .8rem; color: #777; font-weight: 400; margin-top: .2rem; }
-.admin-module-track { background: #f1f3f4; height: 24px; border-radius: .3rem; overflow: hidden; }
-.admin-module-track > span { display: block; background: #4f87a5; height: 100%; border-radius: .3rem; }
-.admin-module-bars strong { text-align: right; }
+.admin-module-share { text-align: right; }
+.admin-module-share > span { display: block; color: #777; font-size: .8rem; }
 .admin-chart-empty { background: #f8f9fa; border-radius: .5rem; text-align: center; padding: 2rem 1rem; color: #777; font-size: .85rem; }
-@media (max-width: 575.98px) {
-    .admin-module-bars li { grid-template-columns: minmax(0, 1fr) 2.5rem; gap: .5rem; }
-    .admin-module-label { grid-column: 1 / -1; }
-}
 .admin-session-details-link { color: #414849; text-decoration: underline; text-underline-offset: .2rem; }
+.admin-profile-actions { display: flex; align-items: flex-start; justify-content: flex-end; gap: 1rem; flex-wrap: wrap; }
+.admin-profile-date-filter { min-width: 0; max-width: 100%; }
+.admin-profile-date-error { color: #b42318; font-size: .85rem; max-width: 440px; margin: .65rem 0 0; }
+.admin-profile-heading { flex-wrap: wrap; }
+@media (max-width: 575.98px) {
+    .admin-profile-actions { justify-content: flex-start; width: 100%; }
+    .admin-rating-date { text-align: left; }
+}
