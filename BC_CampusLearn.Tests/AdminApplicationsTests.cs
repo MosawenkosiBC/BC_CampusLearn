@@ -194,6 +194,71 @@ public class AdminApplicationsTests
     }
 
     [Fact]
+    public async Task ShortlistingSavesStageReasonAndReviewerAudit()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        context.BcUsers.AddRange(
+            CreateUser(1, "Candidate", "ST3901"),
+            new BcUser
+            {
+                BcUserId = 2,
+                DisplayName = "Reviewing Administrator",
+                PersonnelNumber = "AD3902",
+                Role = BcUserRole.Admin
+            });
+        context.Tutors.Add(CreateTutor(1, TutorStatus.Pending));
+        context.TutorApplicationSettings.Add(new TutorApplicationSettings
+        {
+            IsOpen = true,
+            ShortlistLimit = 2,
+            OpenDate = DateTime.UtcNow.Date.AddDays(-1),
+            CloseDate = DateTime.UtcNow.Date.AddDays(7),
+            UpdatedAt = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        ShortlistResult result = await TutorApplicationReview.ShortlistAsync(
+            context,
+            1,
+            "Strong academic results and tutoring experience.",
+            CancellationToken.None,
+            reviewerBcUserId: 2);
+
+        Assert.True(result.Succeeded);
+        Tutor shortlistedTutor = await context.Tutors.FindAsync(1)
+            ?? throw new InvalidOperationException();
+        Assert.Equal(1, (int)shortlistedTutor.ApplicationStage);
+
+        TutorApplicationReviewDecision decision = await context
+            .TutorApplicationReviewDecisions.SingleAsync();
+        Assert.Equal(1, decision.TutorId);
+        Assert.Equal(2, decision.ReviewerBcUserId);
+        Assert.Equal("Reviewing Administrator", decision.AdminName);
+        Assert.Equal(TutorApplicationStage.Submitted, decision.PreviousStage);
+        Assert.Equal(TutorApplicationStage.Shortlisted, decision.NewStage);
+        Assert.Equal(
+            "Strong academic results and tutoring experience.",
+            decision.Reason);
+
+        var shortlistPage = new ApplicationsModel(context)
+        {
+            Stage = "shortlist"
+        };
+        await shortlistPage.OnGetAsync(CancellationToken.None);
+        Assert.Single(shortlistPage.Candidates);
+        Assert.Equal(1, shortlistPage.Candidates[0].TutorId);
+    }
+
+    [Fact]
     public async Task AdministratorCanRejectApplicationWithReasonAndNotification()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -223,7 +288,15 @@ public class AdminApplicationsTests
             CancellationToken.None);
 
         Assert.True(result.Succeeded);
-        Assert.Null(await context.Tutors.FindAsync(1));
+        Tutor rejected = await context.Tutors.FindAsync(1)
+            ?? throw new InvalidOperationException();
+        Assert.Equal(TutorStatus.Rejected, rejected.Status);
+        Assert.Equal(
+            TutorApplicationStage.Rejected,
+            rejected.ApplicationStage);
+        Assert.Equal(
+            "The application does not meet the academic requirements.",
+            rejected.ShortlistReason);
         UserNotification notification = await context.UserNotifications
             .SingleAsync();
         Assert.Equal(1, notification.RecipientBcUserId);
@@ -257,12 +330,96 @@ public class AdminApplicationsTests
             CancellationToken.None);
 
         Assert.True(result.Succeeded);
-        Assert.Null(await context.Tutors.FindAsync(1));
+        Tutor rejected = await context.Tutors.FindAsync(1)
+            ?? throw new InvalidOperationException();
+        Assert.Equal(TutorStatus.Rejected, rejected.Status);
+        Assert.Equal(
+            TutorApplicationStage.Rejected,
+            rejected.ApplicationStage);
+        Assert.Null(rejected.ShortlistReason);
         UserNotification notification = await context.UserNotifications
             .SingleAsync();
         Assert.Equal(
             "Your tutor application was not moved to the shortlist.",
             notification.Message);
+    }
+
+    [Fact]
+    public async Task ClosingApplicationCycleDeletesRejectedTutorRows()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Diploma in IT"
+        });
+        context.BcUsers.Add(CreateUser(1, "Rejected Candidate", "ST4003"));
+        context.Tutors.Add(CreateTutor(1, TutorStatus.Pending));
+        context.TutorApplicationSettings.Add(new TutorApplicationSettings
+        {
+            IsOpen = true,
+            OpenDate = DateTime.UtcNow.Date.AddDays(-1),
+            CloseDate = DateTime.UtcNow.Date.AddDays(7),
+            UpdatedAt = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        await TutorApplicationReview.RejectAsync(
+            context,
+            1,
+            null,
+            CancellationToken.None);
+
+        Assert.NotNull(await context.Tutors.FindAsync(1));
+
+        var page = new ApplicationsModel(context);
+        await page.OnPostSettingsAsync(
+            false,
+            null,
+            null,
+            null,
+            CancellationToken.None);
+
+        Assert.Null(await context.Tutors.FindAsync(1));
+    }
+
+    [Fact]
+    public async Task ExpiredApplicationCycleDeletesRejectedTutorRows()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Diploma in IT"
+        });
+        context.BcUsers.Add(CreateUser(1, "Expired Candidate", "ST4004"));
+        Tutor rejected = CreateTutor(1, TutorStatus.Rejected);
+        rejected.ApplicationStage = TutorApplicationStage.Rejected;
+        context.Tutors.Add(rejected);
+        context.TutorApplicationSettings.Add(new TutorApplicationSettings
+        {
+            IsOpen = true,
+            OpenDate = DateTime.UtcNow.Date.AddDays(-7),
+            CloseDate = DateTime.UtcNow.Date.AddDays(-1),
+            UpdatedAt = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        int removedCount = await TutorApplicationReview
+            .RemoveRejectedApplicationsWhenCycleClosedAsync(
+                context,
+                CancellationToken.None);
+
+        Assert.Equal(1, removedCount);
+        Assert.Null(await context.Tutors.FindAsync(1));
     }
 
     [Fact]

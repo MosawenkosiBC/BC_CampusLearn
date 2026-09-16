@@ -232,6 +232,68 @@
     margin: 0 0 1rem;
 }
 
+.application-review--decision h2 {
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+}
+
+.application-review-decision-card {
+    background: #fff;
+    border: 0;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.7rem 1.8rem rgba(25, 30, 32, 0.11);
+    overflow: hidden;
+}
+
+.application-review-decision-reason {
+    padding: 1.3rem 1.4rem 1.35rem;
+}
+
+.application-review-decision-reason > span,
+.application-review-decision-meta dt {
+    color: #6f7677;
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 750;
+    letter-spacing: 0.075em;
+    text-transform: uppercase;
+}
+
+.application-review-decision-reason p {
+    color: #252a2b;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    margin: 0.55rem 0 0;
+    max-width: 72ch;
+    overflow-wrap: anywhere;
+    white-space: pre-line;
+}
+
+.application-review-decision-meta {
+    background: #f7f9f9;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+}
+
+.application-review-decision-meta > div {
+    min-width: 0;
+    padding: 0.95rem 1.35rem 1rem;
+}
+
+.application-review-decision-meta > div + div {
+    padding-left: 1.75rem;
+}
+
+.application-review-decision-meta dd {
+    color: #252a2b;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.45;
+    margin: 0.35rem 0 0;
+    overflow-wrap: anywhere;
+}
+
 .application-review label {
     color: #34393a;
     display: block;
@@ -390,5 +452,14 @@
     .application-reject-modal-actions {
         align-items: stretch;
         flex-direction: column-reverse;
+    }
+
+    .application-review-decision-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .application-review-decision-meta > div + div {
+        padding-left: 1.35rem;
+        padding-top: 0.35rem;
     }
 }

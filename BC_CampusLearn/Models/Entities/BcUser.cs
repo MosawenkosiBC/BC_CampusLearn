@@ -18,4 +18,7 @@ public class BcUser
         = new List<ResourceComment>();
     public ICollection<UserNotification> Notifications { get; set; }
         = new List<UserNotification>();
+    public ICollection<TutorApplicationReviewDecision>
+        TutorApplicationReviewDecisions { get; set; }
+        = new List<TutorApplicationReviewDecision>();
 }

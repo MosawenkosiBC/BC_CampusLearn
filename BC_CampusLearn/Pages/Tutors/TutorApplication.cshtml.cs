@@ -2,6 +2,7 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
+using BC_CampusLearn.Services.Tutors;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -156,9 +157,7 @@ public class TutorApplicationModel : PageModel
             .SingleOrDefaultAsync(
                 item => item.BcUserId == currentUser.BcUserId,
                 cancellationToken);
-        bool isReapplication = tutor is not null;
-
-        if (tutor is not null && tutor.Status != TutorStatus.Rejected)
+        if (tutor is not null)
         {
             ModelState.AddModelError(
                 string.Empty,
@@ -166,22 +165,11 @@ public class TutorApplicationModel : PageModel
             return Page();
         }
 
-        if (tutor is null)
+        tutor = new Tutor
         {
-            tutor = new Tutor
-            {
-                BcUserId = currentUser.BcUserId,
-                CreatedAt = submittedAt
-            };
-        }
-        else
-        {
-            _context.TutorCourseModules.RemoveRange(
-                tutor.TutorCourseModules);
-            _context.TutorDocuments.RemoveRange(tutor.TutorDocuments);
-            tutor.TutorCourseModules.Clear();
-            tutor.TutorDocuments.Clear();
-        }
+            BcUserId = currentUser.BcUserId,
+            CreatedAt = submittedAt
+        };
 
         tutor.ProgrammeId = Input.ProgrammeId!.Value;
         tutor.OverallAverage = Input.OverallAverage!.Value;
@@ -202,7 +190,7 @@ public class TutorApplicationModel : PageModel
         tutor.ReviewedAt = null;
         tutor.IsActive = false;
         tutor.SubmittedAt = submittedAt;
-        tutor.UpdatedAt = isReapplication ? submittedAt : null;
+        tutor.UpdatedAt = null;
 
         foreach (int moduleId in moduleIds)
         {
@@ -247,10 +235,7 @@ public class TutorApplicationModel : PageModel
                     cancellationToken);
             }
 
-            if (!isReapplication)
-            {
-                _context.Tutors.Add(tutor);
-            }
+            _context.Tutors.Add(tutor);
             await _context.SaveChangesAsync(cancellationToken);
         }
         catch (OperationCanceledException)
@@ -352,6 +337,14 @@ public class TutorApplicationModel : PageModel
         ApplicationsOpen = applicationSettings?.IsAcceptingApplications(
             DateTime.UtcNow) ?? false;
 
+        if (!ApplicationsOpen)
+        {
+            await TutorApplicationReview
+                .RemoveRejectedApplicationsWhenCycleClosedAsync(
+                    _context,
+                    cancellationToken);
+        }
+
         ProgrammeOptions = await _context.ProgrammesOfStudy
             .AsNoTracking()
             .OrderBy(programme => programme.Name)
@@ -387,10 +380,9 @@ public class TutorApplicationModel : PageModel
             { Status: TutorStatus.Approved } =>
                 "Your tutor application has been approved. " +
                 "You cannot submit another application.",
-            { Status: TutorStatus.Rejected } when ApplicationsOpen => null,
             { Status: TutorStatus.Rejected } =>
-                "Your previous tutor application was not approved. " +
-                "You can submit a new application when applications reopen. " +
+                "Your tutor application was not approved. " +
+                "You cannot submit another application during this application cycle. " +
                 (string.IsNullOrWhiteSpace(existingApplication.ShortlistReason)
                     ? string.Empty
                     : $"Reason: {existingApplication.ShortlistReason}"),

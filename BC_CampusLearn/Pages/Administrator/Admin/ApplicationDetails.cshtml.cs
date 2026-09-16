@@ -1,3 +1,4 @@
+using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Tutors;
@@ -10,7 +11,8 @@ namespace BC_CampusLearn.Pages.Administrator.Admin;
 
 public class ApplicationDetailsModel(
     ApplicationDbContext context,
-    IWebHostEnvironment environment) : PageModel
+    IWebHostEnvironment environment,
+    ICurrentUserService? currentUserService = null) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public string Stage { get; set; } = "applications";
@@ -76,21 +78,12 @@ public class ApplicationDetailsModel(
         int id,
         CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            if (!await LoadApplicationAsync(id, cancellationToken))
-            {
-                return NotFound();
-            }
-
-            return Page();
-        }
-
         ShortlistResult result = await TutorApplicationReview.ShortlistAsync(
             context,
             id,
             ReviewReason,
-            cancellationToken);
+            cancellationToken,
+            currentUserService?.GetRequiredUser().BcUserId);
 
         if (result.Succeeded)
         {
@@ -158,6 +151,8 @@ public class ApplicationDetailsModel(
             .Include(tutor => tutor.TutorCourseModules)
                 .ThenInclude(item => item.ProgrammeModule)
             .Include(tutor => tutor.TutorDocuments)
+            .Include(tutor => tutor.ApplicationReviewDecisions)
+                .ThenInclude(decision => decision.Reviewer)
             .SingleOrDefaultAsync(
                 tutor => tutor.TutorId == id,
                 cancellationToken);

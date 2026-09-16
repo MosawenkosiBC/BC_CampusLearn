@@ -29,9 +29,6 @@ public class IndexModel(ApplicationDbContext context) : PageModel
             tutor.ApplicationStage == TutorApplicationStage.Placement &&
             tutor.IsActive &&
             tutor.Status == TutorStatus.Approved);
-        var query = context.Tutors
-            .AsNoTracking()
-            .Where(tutor => tutor.Status == TutorStatus.Approved);
         if (!string.IsNullOrWhiteSpace(SearchName))
         {
             string name = SearchName.Trim();

@@ -17,6 +17,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<TutorDocument> TutorDocuments => Set<TutorDocument>();
     public DbSet<TutorApplicationSettings> TutorApplicationSettings =>
         Set<TutorApplicationSettings>();
+    public DbSet<TutorApplicationReviewDecision>
+        TutorApplicationReviewDecisions =>
+        Set<TutorApplicationReviewDecision>();
 
     public DbSet<ProgrammeModule> ProgrammeModules =>
         Set<ProgrammeModule>();

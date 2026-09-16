@@ -100,7 +100,45 @@ public class AdminApplicationDetailsTests
     }
 
     [Fact]
-    public async Task RejectingApplicationDeletesTutorAndRedirectsToApplications()
+    public async Task ApprovingApplicationIgnoresUnrelatedModelStateErrors()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        Tutor application = CreateApplication();
+        context.Tutors.Add(application);
+        context.TutorApplicationSettings.Add(new TutorApplicationSettings
+        {
+            IsOpen = true,
+            OpenDate = DateTime.UtcNow.AddDays(-1),
+            CloseDate = DateTime.UtcNow.AddDays(1),
+            ShortlistLimit = 2
+        });
+        await context.SaveChangesAsync();
+
+        var detailsPage = new ApplicationDetailsModel(
+            context,
+            new TestWebHostEnvironment())
+        {
+            ReviewReason = "Strong application and suitable module knowledge."
+        };
+        detailsPage.ModelState.AddModelError(
+            "UnrelatedField",
+            "A different page binding failed.");
+
+        IActionResult result = await detailsPage.OnPostShortlistAsync(
+            application.TutorId,
+            CancellationToken.None);
+
+        RedirectToPageResult redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("/Administrator/Admin/Applications", redirect.PageName);
+        Assert.Equal("shortlist", redirect.RouteValues?["Stage"]);
+
+        Tutor shortlisted = await context.Tutors.FindAsync(application.TutorId)
+            ?? throw new InvalidOperationException("Application was not found.");
+        Assert.Equal(TutorApplicationStage.Shortlisted, shortlisted.ApplicationStage);
+    }
+
+    [Fact]
+    public async Task RejectingApplicationRetainsRejectedStageAndRedirects()
     {
         await using ApplicationDbContext context = CreateContext();
         Tutor application = CreateApplication();
@@ -123,9 +161,14 @@ public class AdminApplicationDetailsTests
         Assert.Equal("applications", redirect.RouteValues?["Stage"]);
         Assert.False(redirect.RouteValues?.ContainsKey("Search"));
         Assert.True(detailsPage.ShowReviewResultModal);
-        Assert.Null(await context.Tutors.FindAsync(application.TutorId));
-        Assert.Empty(await context.TutorCourseModules.ToListAsync());
-        Assert.Empty(await context.TutorDocuments.ToListAsync());
+        Tutor rejected = await context.Tutors.FindAsync(application.TutorId)
+            ?? throw new InvalidOperationException();
+        Assert.Equal(TutorStatus.Rejected, rejected.Status);
+        Assert.Equal(
+            TutorApplicationStage.Rejected,
+            rejected.ApplicationStage);
+        Assert.NotEmpty(await context.TutorCourseModules.ToListAsync());
+        Assert.NotEmpty(await context.TutorDocuments.ToListAsync());
         Assert.NotNull(await context.BcUsers.FindAsync(application.BcUserId));
 
         var applicationsPage = new ApplicationsModel(context)

@@ -4,6 +4,9 @@
 @{
     ViewData["Title"] = "Tutor Application";
     var application = Model.Application;
+    var latestReviewDecision = application.ApplicationReviewDecisions
+        .OrderByDescending(item => item.ReviewedAt)
+        .FirstOrDefault();
 }
 
 @section Styles {
@@ -199,8 +202,8 @@
                 <div>
                     <h2 id="application-reject-modal-title">Reject this application?</h2>
                     <p>
-                        @Model.DisplayName will be removed from the current application process.
-                        They can submit a fresh application during an open application cycle.
+                        @Model.DisplayName will be marked as rejected and removed from active
+                        applications. They cannot submit another application during this cycle.
                     </p>
                     <div class="application-reject-modal-actions">
                         <button type="button"
@@ -223,14 +226,28 @@
         }
         else if (!string.IsNullOrWhiteSpace(application.ShortlistReason))
         {
-            <section class="application-review" aria-labelledby="application-review-title">
+            <section class="application-review application-review--decision"
+                     aria-labelledby="application-review-title">
                 <h2 id="application-review-title">Review decision</h2>
-                <dl class="application-written-answers">
-                    <div>
-                        <dt>Administrator's review reason</dt>
-                        <dd>@application.ShortlistReason</dd>
+                <div class="application-review-decision-card">
+                    <div class="application-review-decision-reason">
+                        <span>Administrator's review reason</span>
+                        <p>@(latestReviewDecision?.Reason ?? application.ShortlistReason)</p>
                     </div>
-                </dl>
+                    @if (latestReviewDecision is not null)
+                    {
+                        <dl class="application-review-decision-meta">
+                            <div>
+                                <dt>Reviewed by</dt>
+                                <dd>@latestReviewDecision.AdminName</dd>
+                            </div>
+                            <div>
+                                <dt>Reviewed at</dt>
+                                <dd>@latestReviewDecision.ReviewedAt.ToString("dd MMMM yyyy 'at' HH:mm")</dd>
+                            </div>
+                        </dl>
+                    }
+                </div>
             </section>
         }
     </div>

@@ -107,6 +107,8 @@ builder.Services.AddSignalR();
 
 builder.Services.AddHostedService<
     ExpiredAvailabilityCleanupService>();
+builder.Services.AddHostedService<
+    RejectedTutorApplicationCleanupService>();
 
 builder.Services.AddRazorPages(options =>
 {

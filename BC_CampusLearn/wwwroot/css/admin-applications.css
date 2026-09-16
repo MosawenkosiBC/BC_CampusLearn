@@ -590,18 +590,20 @@
     text-align: center;
 }
 
-.application-result-icon {
-    align-items: center;
-    background: #e5f6f1;
+.application-result-modal .admin-modal-close {
+    border: none;
+    box-shadow: none;
+    outline: none;
+}
+
+.application-result-modal .admin-modal-close:hover,
+.application-result-modal .admin-modal-close:focus-visible {
+    background: transparent;
+    border: none;
     border-radius: 50%;
-    color: #24775f;
-    display: inline-flex;
-    font-size: 1.35rem;
-    font-weight: 800;
-    height: 3rem;
-    justify-content: center;
-    margin-bottom: 1rem;
-    width: 3rem;
+    box-shadow: none;
+    color: #252a2b;
+    outline: none;
 }
 
 .application-result-modal .admin-modal-actions {

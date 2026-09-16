@@ -1,3 +1,4 @@
+using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Tutors;
@@ -13,8 +14,15 @@ public class ApplicationsModel : PageModel
 {
     private static readonly string[] ValidStages = { "applications", "shortlist", "interview", "placement" };
     private readonly ApplicationDbContext _context;
+    private readonly ICurrentUserService? _currentUserService;
 
-    public ApplicationsModel(ApplicationDbContext context) => _context = context;
+    public ApplicationsModel(
+        ApplicationDbContext context,
+        ICurrentUserService? currentUserService = null)
+    {
+        _context = context;
+        _currentUserService = currentUserService;
+    }
 
     [BindProperty(SupportsGet = true)]
     public string Stage { get; set; } = "applications";
@@ -59,11 +67,17 @@ public class ApplicationsModel : PageModel
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         NormalizeStage();
+        await TutorApplicationReview
+            .RemoveRejectedApplicationsWhenCycleClosedAsync(
+                _context,
+                cancellationToken);
         await LoadSettingsAsync(cancellationToken);
 
         IQueryable<Tutor> applications = _context.Tutors
             .AsNoTracking()
-            .Where(tutor => tutor.Status != TutorStatus.Rejected);
+            .Where(tutor =>
+                tutor.Status != TutorStatus.Rejected &&
+                tutor.ApplicationStage != TutorApplicationStage.Rejected);
         string? normalizedSearch = Search?.Trim();
 
         if (!string.IsNullOrWhiteSpace(normalizedSearch))
@@ -224,6 +238,14 @@ public class ApplicationsModel : PageModel
         settings.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync(cancellationToken);
 
+        if (!settings.IsAcceptingApplications(DateTime.UtcNow))
+        {
+            await TutorApplicationReview
+                .RemoveRejectedApplicationsWhenCycleClosedAsync(
+                    _context,
+                    cancellationToken);
+        }
+
         PageMessage = isOpen
             ? "Tutor applications are now open."
             : "Tutor applications are now closed.";
@@ -257,7 +279,8 @@ public class ApplicationsModel : PageModel
             _context,
             tutorId,
             reviewReason,
-            cancellationToken);
+            cancellationToken,
+            _currentUserService?.GetRequiredUser().BcUserId);
         if (!result.Succeeded)
         {
             PageError = result.Message;

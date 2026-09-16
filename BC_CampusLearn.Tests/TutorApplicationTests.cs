@@ -6,6 +6,7 @@ using BC_CampusLearn.Pages.Tutors;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Xunit;
@@ -15,7 +16,7 @@ namespace BC_CampusLearn.Tests;
 public class TutorApplicationTests
 {
     [Fact]
-    public async Task RejectedStudentCanReplaceApplicationWhileCycleIsOpen()
+    public async Task RejectedStudentCannotReapplyWhileCycleIsOpen()
     {
         string contentRoot = Path.Combine(
             Path.GetTempPath(),
@@ -71,7 +72,7 @@ public class TutorApplicationTests
                 DemonstrationVideoUrl = "https://example.test/old",
                 PreferredTutoringMode = PreferredTutoringMode.Online,
                 Status = TutorStatus.Rejected,
-                ApplicationStage = TutorApplicationStage.Submitted,
+                ApplicationStage = TutorApplicationStage.Rejected,
                 ShortlistReason = "Previously unsuccessful",
                 SubmittedAt = DateTime.UtcNow.AddMonths(-1),
                 CreatedAt = DateTime.UtcNow.AddMonths(-1),
@@ -126,17 +127,26 @@ public class TutorApplicationTests
 
             IActionResult result = await page.OnPostAsync(CancellationToken.None);
 
-            Assert.IsType<RedirectToPageResult>(result);
+            Assert.IsType<PageResult>(result);
             Assert.Equal(1, await context.Tutors.CountAsync());
-            Tutor resubmitted = await context.Tutors
+            Tutor retainedApplication = await context.Tutors
                 .Include(item => item.TutorCourseModules)
                 .SingleAsync();
-            Assert.Equal(rejected.TutorId, resubmitted.TutorId);
-            Assert.Equal(TutorStatus.Pending, resubmitted.Status);
-            Assert.Equal(TutorApplicationStage.Submitted, resubmitted.ApplicationStage);
-            Assert.Null(resubmitted.ShortlistReason);
-            Assert.Equal("New reason", resubmitted.ReasonForTutoring);
-            Assert.Equal(2, resubmitted.TutorCourseModules.Count);
+            Assert.Equal(rejected.TutorId, retainedApplication.TutorId);
+            Assert.Equal(TutorStatus.Rejected, retainedApplication.Status);
+            Assert.Equal(
+                TutorApplicationStage.Rejected,
+                retainedApplication.ApplicationStage);
+            Assert.Equal(
+                "Previously unsuccessful",
+                retainedApplication.ShortlistReason);
+            Assert.Equal("Old reason", retainedApplication.ReasonForTutoring);
+            Assert.Single(retainedApplication.TutorCourseModules);
+            Assert.Contains(
+                page.ModelState[string.Empty]!.Errors,
+                error => error.ErrorMessage.Contains(
+                    "cannot submit another application",
+                    StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
