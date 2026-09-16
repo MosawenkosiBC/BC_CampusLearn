@@ -16,6 +16,11 @@ public class Tutor
     public TutorStatus Status { get; set; }
     public TutorApplicationStage ApplicationStage { get; set; }
     public string? ShortlistReason { get; set; }
+    public string? InterviewPreparationNotes { get; set; }
+    public DateTime? InterviewScheduledAt { get; set; }
+    public int? InterviewDurationMinutes { get; set; }
+    public string? InterviewLocation { get; set; }
+    public string? AssignedInterviewer { get; set; }
     public DateTime SubmittedAt { get; set; }
     public DateTime? ReviewedAt { get; set; }
     public DateTime CreatedAt { get; set; }

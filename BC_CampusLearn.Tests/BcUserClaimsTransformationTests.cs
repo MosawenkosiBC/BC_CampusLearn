@@ -50,6 +50,73 @@ public class BcUserClaimsTransformationTests
         Assert.True(principal.IsInRole(nameof(BcUserRole.Admin)));
     }
 
+    [Fact]
+    public async Task StudentNumberFallsBackToNumericPreferredUsername()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        var transformation = new BcUserClaimsTransformation(
+            context,
+            new TestWebHostEnvironment(Environments.Production));
+        ClaimsPrincipal principal = CreatePrincipalWithoutPersonnelNumber(
+            "601334@student.belgiumcampus.ac.za");
+
+        await transformation.TransformAsync(principal);
+
+        BcUser user = await context.BcUsers.SingleAsync();
+        Assert.Equal("601334", user.PersonnelNumber);
+        Assert.Equal(
+            "601334@student.belgiumcampus.ac.za",
+            user.Email);
+        Assert.Equal(
+            "601334",
+            principal.FindFirstValue(
+                EntraClaimTypes.PersonnelNumber));
+    }
+
+    [Fact]
+    public async Task DerivedStudentNumberRemainsAvailableOnRepeatedTransformation()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        var transformation = new BcUserClaimsTransformation(
+            context,
+            new TestWebHostEnvironment(Environments.Production));
+        ClaimsPrincipal principal = CreatePrincipalWithoutPersonnelNumber(
+            "601334@student.belgiumcampus.ac.za");
+
+        await transformation.TransformAsync(principal);
+        await transformation.TransformAsync(principal);
+
+        Assert.Equal(
+            "601334",
+            principal.FindFirstValue(
+                EntraClaimTypes.PersonnelNumber));
+        Assert.Single(context.BcUsers);
+    }
+
+    [Theory]
+    [InlineData("surname.i@belgiumcampus.ac.za")]
+    [InlineData("student.name@student.belgiumcampus.ac.za")]
+    [InlineData("601334@external.example")]
+    public async Task NonStudentPreferredUsernameCannotBecomePersonnelNumber(
+        string preferredUsername)
+    {
+        await using ApplicationDbContext context = CreateContext();
+        var transformation = new BcUserClaimsTransformation(
+            context,
+            new TestWebHostEnvironment(Environments.Production));
+        ClaimsPrincipal principal = CreatePrincipalWithoutPersonnelNumber(
+            preferredUsername);
+
+        InvalidOperationException exception = await Assert.ThrowsAsync<
+            InvalidOperationException>(() =>
+                transformation.TransformAsync(principal));
+
+        Assert.Contains(
+            "numeric Belgium Campus student username",
+            exception.Message);
+        Assert.Empty(context.BcUsers);
+    }
+
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -68,6 +135,22 @@ public class BcUserClaimsTransformationTests
             new(ClaimTypes.Email, "test.user@belgiumcampus.ac.za")
         };
         claims.AddRange(extraClaims);
+
+        return new ClaimsPrincipal(new ClaimsIdentity(
+            claims,
+            authenticationType: "Test"));
+    }
+
+    private static ClaimsPrincipal CreatePrincipalWithoutPersonnelNumber(
+        string preferredUsername)
+    {
+        Claim[] claims =
+        [
+            new Claim(ClaimTypes.Name, "Test Student"),
+            new Claim(
+                EntraClaimTypes.PreferredUsername,
+                preferredUsername)
+        ];
 
         return new ClaimsPrincipal(new ClaimsIdentity(
             claims,

@@ -54,6 +54,9 @@ public class ApplicationsModel : PageModel
     [TempData]
     public bool ShowApplicationSettingsModal { get; set; }
 
+    [TempData]
+    public int? OpenShortlistCandidateId { get; set; }
+
     public IReadOnlyList<ApplicationCandidate> Candidates { get; private set; }
         = Array.Empty<ApplicationCandidate>();
     public IReadOnlyList<SelectListItem> StudentOptions { get; private set; }
@@ -63,6 +66,9 @@ public class ApplicationsModel : PageModel
 
     [BindProperty]
     public ManualTutorInput ManualTutor { get; set; } = new();
+
+    [BindProperty]
+    public InterviewPreparationInput InterviewPreparation { get; set; } = new();
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
@@ -138,7 +144,48 @@ public class ApplicationsModel : PageModel
                 Status = tutor.Status,
                 ApplicationStage = tutor.Status == TutorStatus.Approved
                     ? TutorApplicationStage.Placement
-                    : tutor.ApplicationStage
+                    : tutor.ApplicationStage,
+                Email = tutor.BcUser.Email,
+                PhoneNumber = tutor.PhoneNumber,
+                CampusOfStudy = tutor.CampusOfStudy,
+                PreferredTutoringMode = tutor.PreferredTutoringMode,
+                ReasonForTutoring = tutor.ReasonForTutoring,
+                TeachingStyle = tutor.TeachingStyle,
+                PreviousTutoringExperience = tutor.PreviousTutoringExperience,
+                DemonstrationVideoUrl = tutor.DemonstrationVideoUrl,
+                InterviewPreparationNotes = tutor.InterviewPreparationNotes,
+                InterviewScheduledAt = tutor.InterviewScheduledAt,
+                InterviewDurationMinutes = tutor.InterviewDurationMinutes,
+                InterviewLocation = tutor.InterviewLocation,
+                AssignedInterviewer = tutor.AssignedInterviewer,
+                DecisionHistory = tutor.ApplicationReviewDecisions
+                    .OrderByDescending(decision => decision.ReviewedAt)
+                    .Select(decision => new CandidateDecision
+                    {
+                        PreviousStage = decision.PreviousStage,
+                        NewStage = decision.NewStage,
+                        Notes = decision.Reason,
+                        AdminName = decision.AdminName,
+                        ReviewedAt = decision.ReviewedAt
+                    })
+                    .ToList(),
+                Modules = tutor.TutorCourseModules
+                    .OrderBy(item => item.ProgrammeModule.ModuleCode)
+                    .Select(item => new CandidateModule
+                    {
+                        Code = item.ProgrammeModule.ModuleCode,
+                        Name = item.ProgrammeModule.ModuleName
+                    })
+                    .ToList(),
+                Documents = tutor.TutorDocuments
+                    .OrderBy(document => document.DocumentType)
+                    .Select(document => new CandidateDocument
+                    {
+                        TutorDocumentId = document.TutorDocumentId,
+                        DocumentType = document.DocumentType,
+                        OriginalFileName = document.OriginalFileName
+                    })
+                    .ToList()
             })
             .ToListAsync(cancellationToken);
 
@@ -305,6 +352,77 @@ public class ApplicationsModel : PageModel
         });
     }
 
+    public async Task<IActionResult> OnPostMoveToInterviewAsync(
+        int tutorId,
+        CancellationToken cancellationToken)
+    {
+        ShortlistResult result = await TutorApplicationReview.MoveToInterviewAsync(
+            _context,
+            tutorId,
+            InterviewPreparation.ToDetails(),
+            cancellationToken,
+            _currentUserService?.GetRequiredUser().BcUserId);
+
+        if (result.Succeeded)
+        {
+            PageMessage = result.Message;
+        }
+        else
+        {
+            PageError = result.Message;
+        }
+
+        return RedirectToPage(new { Stage = "shortlist", Search });
+    }
+
+    public async Task<IActionResult> OnPostSaveInterviewPreparationAsync(
+        int tutorId,
+        CancellationToken cancellationToken)
+    {
+        ShortlistResult result = await TutorApplicationReview
+            .SaveInterviewPreparationAsync(
+                _context,
+                tutorId,
+                InterviewPreparation.ToDetails(),
+                cancellationToken,
+                _currentUserService?.GetRequiredUser().BcUserId);
+
+        OpenShortlistCandidateId = tutorId;
+        if (result.Succeeded)
+        {
+            PageMessage = result.Message;
+        }
+        else
+        {
+            PageError = result.Message;
+        }
+
+        return RedirectToPage(new { Stage = "shortlist", Search });
+    }
+
+    public async Task<IActionResult> OnPostRejectShortlistedAsync(
+        int tutorId,
+        CancellationToken cancellationToken)
+    {
+        ShortlistResult result = await TutorApplicationReview.RejectShortlistedAsync(
+            _context,
+            tutorId,
+            InterviewPreparation.Notes,
+            cancellationToken,
+            _currentUserService?.GetRequiredUser().BcUserId);
+
+        if (result.Succeeded)
+        {
+            PageMessage = result.Message;
+        }
+        else
+        {
+            PageError = result.Message;
+        }
+
+        return RedirectToPage(new { Stage = "shortlist", Search });
+    }
+
     private async Task LoadSettingsAsync(CancellationToken cancellationToken)
     {
         TutorApplicationSettings? settings = await _context
@@ -351,6 +469,14 @@ public class ApplicationsModel : PageModel
             .ToListAsync(cancellationToken);
     }
 
+    public static string GetDocumentTypeLabel(TutorDocumentType type) =>
+        type switch
+        {
+            TutorDocumentType.AcademicTranscript => "Academic transcript",
+            TutorDocumentType.ExternalCertificate => "Additional certificate",
+            _ => type.ToString()
+        };
+
     public sealed class ManualTutorInput
     {
         [Range(1, int.MaxValue)]
@@ -375,6 +501,35 @@ public class ApplicationsModel : PageModel
             = PreferredTutoringMode.Both;
     }
 
+    public sealed class InterviewPreparationInput
+    {
+        [StringLength(1000)]
+        public string? Notes { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? ScheduledDate { get; set; }
+
+        [DataType(DataType.Time)]
+        public TimeSpan? ScheduledTime { get; set; }
+
+        [Range(15, 240)]
+        public int? DurationMinutes { get; set; }
+
+        [StringLength(500)]
+        public string? LocationOrMeetingLink { get; set; }
+
+        [StringLength(200)]
+        public string? AssignedInterviewer { get; set; }
+
+        public InterviewPreparationDetails ToDetails() => new(
+            Notes,
+            ScheduledDate,
+            ScheduledTime,
+            DurationMinutes,
+            LocationOrMeetingLink,
+            AssignedInterviewer);
+    }
+
     public sealed class ApplicationCandidate
     {
         public int TutorId { get; init; }
@@ -387,6 +542,40 @@ public class ApplicationsModel : PageModel
         public DateTime SubmittedAt { get; init; }
         public TutorStatus Status { get; init; }
         public TutorApplicationStage ApplicationStage { get; init; }
+        public string? Email { get; init; }
+        public string? PhoneNumber { get; init; }
+        public string CampusOfStudy { get; init; } = string.Empty;
+        public PreferredTutoringMode PreferredTutoringMode { get; init; }
+        public string ReasonForTutoring { get; init; } = string.Empty;
+        public string TeachingStyle { get; init; } = string.Empty;
+        public string PreviousTutoringExperience { get; init; } = string.Empty;
+        public string DemonstrationVideoUrl { get; init; } = string.Empty;
+        public string? InterviewPreparationNotes { get; init; }
+        public DateTime? InterviewScheduledAt { get; init; }
+        public int? InterviewDurationMinutes { get; init; }
+        public string? InterviewLocation { get; init; }
+        public string? AssignedInterviewer { get; init; }
+        public IReadOnlyList<CandidateDecision> DecisionHistory { get; init; }
+            = Array.Empty<CandidateDecision>();
+        public IReadOnlyList<CandidateModule> Modules { get; init; }
+            = Array.Empty<CandidateModule>();
+        public IReadOnlyList<CandidateDocument> Documents { get; init; }
+            = Array.Empty<CandidateDocument>();
+
+        public string PreferredTutoringModeLabel => PreferredTutoringMode switch
+        {
+            PreferredTutoringMode.FaceToFace => "Face-To-Face",
+            PreferredTutoringMode.Online => "Online",
+            PreferredTutoringMode.Both => "Face-To-Face and online",
+            _ => PreferredTutoringMode.ToString()
+        };
+
+        public bool HasDemonstrationVideoLink => Uri.TryCreate(
+                DemonstrationVideoUrl,
+                UriKind.Absolute,
+                out Uri? uri) &&
+            (uri.Scheme == Uri.UriSchemeHttps ||
+                uri.Scheme == Uri.UriSchemeHttp);
 
         public string Initials
         {
@@ -401,5 +590,38 @@ public class ApplicationsModel : PageModel
                 };
             }
         }
+    }
+
+    public sealed class CandidateModule
+    {
+        public string Code { get; init; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
+    }
+
+    public sealed class CandidateDocument
+    {
+        public int TutorDocumentId { get; init; }
+        public TutorDocumentType DocumentType { get; init; }
+        public string OriginalFileName { get; init; } = string.Empty;
+    }
+
+    public sealed class CandidateDecision
+    {
+        public TutorApplicationStage PreviousStage { get; init; }
+        public TutorApplicationStage NewStage { get; init; }
+        public string Notes { get; init; } = string.Empty;
+        public string AdminName { get; init; } = string.Empty;
+        public DateTime ReviewedAt { get; init; }
+
+        public string Label => PreviousStage == NewStage
+            ? "Preparation notes saved"
+            : NewStage switch
+            {
+                TutorApplicationStage.Shortlisted => "Application shortlisted",
+                TutorApplicationStage.Interview => "Moved to interview",
+                TutorApplicationStage.Placement => "Moved to placement",
+                TutorApplicationStage.Rejected => "Application rejected",
+                _ => $"Moved to {NewStage}"
+            };
     }
 }

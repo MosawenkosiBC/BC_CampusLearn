@@ -160,6 +160,283 @@ public static class TutorApplicationReview
             "Application rejected.");
     }
 
+    public static async Task<ShortlistResult> MoveToInterviewAsync(
+        ApplicationDbContext context,
+        int tutorId,
+        InterviewPreparationDetails preparation,
+        CancellationToken cancellationToken,
+        int? reviewerBcUserId = null)
+    {
+        Tutor? candidate = await context.Tutors.SingleOrDefaultAsync(
+            tutor => tutor.TutorId == tutorId,
+            cancellationToken);
+        if (candidate is null || candidate.Status != TutorStatus.Pending ||
+            candidate.ApplicationStage != TutorApplicationStage.Shortlisted)
+        {
+            return ShortlistResult.Failure(
+                "This candidate is no longer in the shortlist.");
+        }
+
+        ShortlistResult preparationResult = ApplyInterviewPreparation(
+            candidate,
+            preparation,
+            out string normalizedNotes);
+        if (!preparationResult.Succeeded)
+        {
+            return preparationResult;
+        }
+
+        DateTime reviewedAt = DateTime.UtcNow;
+        candidate.ApplicationStage = TutorApplicationStage.Interview;
+        candidate.ReviewedAt = reviewedAt;
+        candidate.UpdatedAt = reviewedAt;
+
+        ShortlistResult auditResult = await AddReviewDecisionAsync(
+            context,
+            candidate,
+            reviewerBcUserId,
+            TutorApplicationStage.Shortlisted,
+            TutorApplicationStage.Interview,
+            string.IsNullOrEmpty(normalizedNotes)
+                ? "Candidate moved to interview."
+                : normalizedNotes,
+            reviewedAt,
+            cancellationToken);
+        if (!auditResult.Succeeded)
+        {
+            return auditResult;
+        }
+
+        context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = candidate.BcUserId,
+            Title = "Tutor application moved to interview",
+            Message = "Your tutor application has progressed to the interview stage.",
+            LinkUrl = "/Tutors/TutorApplication",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
+        await context.SaveChangesAsync(cancellationToken);
+        return ShortlistResult.Success("Candidate moved to interview.");
+    }
+
+    public static async Task<ShortlistResult> SaveInterviewPreparationAsync(
+        ApplicationDbContext context,
+        int tutorId,
+        InterviewPreparationDetails preparation,
+        CancellationToken cancellationToken,
+        int? reviewerBcUserId = null)
+    {
+        Tutor? candidate = await context.Tutors.SingleOrDefaultAsync(
+            tutor => tutor.TutorId == tutorId,
+            cancellationToken);
+        if (candidate is null || candidate.Status != TutorStatus.Pending ||
+            candidate.ApplicationStage != TutorApplicationStage.Shortlisted)
+        {
+            return ShortlistResult.Failure(
+                "This candidate is no longer in the shortlist.");
+        }
+
+        ShortlistResult preparationResult = ApplyInterviewPreparation(
+            candidate,
+            preparation,
+            out string normalizedNotes);
+        if (!preparationResult.Succeeded)
+        {
+            return preparationResult;
+        }
+
+        DateTime savedAt = DateTime.UtcNow;
+        candidate.UpdatedAt = savedAt;
+
+        ShortlistResult auditResult = await AddReviewDecisionAsync(
+            context,
+            candidate,
+            reviewerBcUserId,
+            TutorApplicationStage.Shortlisted,
+            TutorApplicationStage.Shortlisted,
+            string.IsNullOrEmpty(normalizedNotes)
+                ? "Interview preparation updated."
+                : normalizedNotes,
+            savedAt,
+            cancellationToken);
+        if (!auditResult.Succeeded)
+        {
+            return auditResult;
+        }
+
+        await context.SaveChangesAsync(cancellationToken);
+        return ShortlistResult.Success("Interview preparation saved.");
+    }
+
+    public static async Task<ShortlistResult> RejectShortlistedAsync(
+        ApplicationDbContext context,
+        int tutorId,
+        string? reason,
+        CancellationToken cancellationToken,
+        int? reviewerBcUserId = null)
+    {
+        string normalizedReason = reason?.Trim() ?? string.Empty;
+        if (normalizedReason.Length > 1000)
+        {
+            return ShortlistResult.Failure(
+                "The rejection reason cannot exceed 1,000 characters.");
+        }
+
+        Tutor? candidate = await context.Tutors.SingleOrDefaultAsync(
+            tutor => tutor.TutorId == tutorId,
+            cancellationToken);
+        if (candidate is null || candidate.Status != TutorStatus.Pending ||
+            candidate.ApplicationStage != TutorApplicationStage.Shortlisted)
+        {
+            return ShortlistResult.Failure(
+                "This candidate is no longer in the shortlist.");
+        }
+
+        DateTime reviewedAt = DateTime.UtcNow;
+        candidate.Status = TutorStatus.Rejected;
+        candidate.ApplicationStage = TutorApplicationStage.Rejected;
+        candidate.ReviewedAt = reviewedAt;
+        candidate.UpdatedAt = reviewedAt;
+        candidate.IsActive = false;
+
+        ShortlistResult auditResult = await AddReviewDecisionAsync(
+            context,
+            candidate,
+            reviewerBcUserId,
+            TutorApplicationStage.Shortlisted,
+            TutorApplicationStage.Rejected,
+            string.IsNullOrEmpty(normalizedReason)
+                ? "Candidate rejected during shortlist review."
+                : normalizedReason,
+            reviewedAt,
+            cancellationToken);
+        if (!auditResult.Succeeded)
+        {
+            return auditResult;
+        }
+
+        context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = candidate.BcUserId,
+            Title = "Tutor application reviewed",
+            Message = string.IsNullOrEmpty(normalizedReason)
+                ? "Your tutor application will not progress to the interview stage."
+                : "Your tutor application will not progress to the interview stage. " +
+                    $"Reason: {normalizedReason}",
+            LinkUrl = "/Tutors/TutorApplication",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
+        await context.SaveChangesAsync(cancellationToken);
+        return ShortlistResult.Success("Candidate rejected.");
+    }
+
+    private static async Task<ShortlistResult> AddReviewDecisionAsync(
+        ApplicationDbContext context,
+        Tutor candidate,
+        int? reviewerBcUserId,
+        TutorApplicationStage previousStage,
+        TutorApplicationStage newStage,
+        string reason,
+        DateTime reviewedAt,
+        CancellationToken cancellationToken)
+    {
+        if (!reviewerBcUserId.HasValue)
+        {
+            return ShortlistResult.Success(string.Empty);
+        }
+
+        BcUser? reviewer = await context.BcUsers
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                user => user.BcUserId == reviewerBcUserId.Value,
+                cancellationToken);
+        if (reviewer is null)
+        {
+            return ShortlistResult.Failure(
+                "The reviewing administrator could not be identified.");
+        }
+
+        context.TutorApplicationReviewDecisions.Add(
+            new TutorApplicationReviewDecision
+            {
+                TutorId = candidate.TutorId,
+                ReviewerBcUserId = reviewerBcUserId.Value,
+                AdminName = string.IsNullOrWhiteSpace(reviewer.DisplayName)
+                    ? reviewer.PersonnelNumber
+                    : reviewer.DisplayName,
+                PreviousStage = previousStage,
+                NewStage = newStage,
+                Reason = reason,
+                ReviewedAt = reviewedAt
+            });
+
+        return ShortlistResult.Success(string.Empty);
+    }
+
+    private static ShortlistResult ApplyInterviewPreparation(
+        Tutor candidate,
+        InterviewPreparationDetails preparation,
+        out string normalizedNotes)
+    {
+        normalizedNotes = preparation.Notes?.Trim() ?? string.Empty;
+        string normalizedLocation =
+            preparation.LocationOrMeetingLink?.Trim() ?? string.Empty;
+        string normalizedInterviewer =
+            preparation.AssignedInterviewer?.Trim() ?? string.Empty;
+
+        if (normalizedNotes.Length > 1000)
+        {
+            return ShortlistResult.Failure(
+                "Interview preparation notes cannot exceed 1,000 characters.");
+        }
+
+        if (normalizedLocation.Length > 500)
+        {
+            return ShortlistResult.Failure(
+                "The interview location or meeting link cannot exceed 500 characters.");
+        }
+
+        if (normalizedInterviewer.Length > 200)
+        {
+            return ShortlistResult.Failure(
+                "The assigned interviewer cannot exceed 200 characters.");
+        }
+
+        if (preparation.DurationMinutes is < 15 or > 240)
+        {
+            return ShortlistResult.Failure(
+                "Interview duration must be between 15 and 240 minutes.");
+        }
+
+        if (preparation.ScheduledDate.HasValue !=
+            preparation.ScheduledTime.HasValue)
+        {
+            return ShortlistResult.Failure(
+                "Enter both an interview date and time, or leave both blank.");
+        }
+
+        DateTime? scheduledAt = preparation.ScheduledDate.HasValue
+            ? preparation.ScheduledDate.Value.Date.Add(
+                preparation.ScheduledTime!.Value)
+            : null;
+
+        candidate.InterviewPreparationNotes = string.IsNullOrEmpty(normalizedNotes)
+            ? null
+            : normalizedNotes;
+        candidate.InterviewScheduledAt = scheduledAt;
+        candidate.InterviewDurationMinutes = preparation.DurationMinutes;
+        candidate.InterviewLocation = string.IsNullOrEmpty(normalizedLocation)
+            ? null
+            : normalizedLocation;
+        candidate.AssignedInterviewer = string.IsNullOrEmpty(normalizedInterviewer)
+            ? null
+            : normalizedInterviewer;
+
+        return ShortlistResult.Success(string.Empty);
+    }
+
     public static async Task<int> RemoveRejectedApplicationsWhenCycleClosedAsync(
         ApplicationDbContext context,
         CancellationToken cancellationToken)
@@ -215,3 +492,11 @@ public sealed record ShortlistResult(
         new(false, message, RequiresContinuation: requiresContinuation);
 
 }
+
+public sealed record InterviewPreparationDetails(
+    string? Notes,
+    DateTime? ScheduledDate,
+    TimeSpan? ScheduledTime,
+    int? DurationMinutes,
+    string? LocationOrMeetingLink,
+    string? AssignedInterviewer);

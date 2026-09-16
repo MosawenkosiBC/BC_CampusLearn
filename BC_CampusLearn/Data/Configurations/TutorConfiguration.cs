@@ -14,6 +14,9 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
         {
             table.HasCheckConstraint("CK_Tutors_YearOfStudy", "[YearOfStudy] BETWEEN 1 AND 4");
             table.HasCheckConstraint("CK_Tutors_OverallAverage", "[OverallAverage] BETWEEN 0 AND 100");
+            table.HasCheckConstraint(
+                "CK_Tutors_InterviewDurationMinutes",
+                "[InterviewDurationMinutes] IS NULL OR [InterviewDurationMinutes] BETWEEN 15 AND 240");
         });
         builder.HasIndex(tutor => tutor.BcUserId).IsUnique();
         builder.Property(tutor => tutor.OverallAverage).HasPrecision(5, 2).IsRequired();
@@ -30,6 +33,12 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
             .HasDefaultValue(TutorApplicationStage.Submitted);
         builder.Property(tutor => tutor.ShortlistReason)
             .HasMaxLength(1000);
+        builder.Property(tutor => tutor.InterviewPreparationNotes)
+            .HasMaxLength(1000);
+        builder.Property(tutor => tutor.InterviewLocation)
+            .HasMaxLength(500);
+        builder.Property(tutor => tutor.AssignedInterviewer)
+            .HasMaxLength(200);
         builder.Property(tutor => tutor.IsActive).HasDefaultValue(false);
         builder.Property(tutor => tutor.SubmittedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         builder.Property(tutor => tutor.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");

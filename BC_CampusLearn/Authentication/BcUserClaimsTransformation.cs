@@ -62,7 +62,7 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
                 existingBcUserId,
                 existingUser.Role,
                 existingTutorProfileImagePath,
-                personnelNumber: null);
+                existingUser.PersonnelNumber);
 
             return principal;
         }
@@ -76,8 +76,15 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
 
         if (string.IsNullOrWhiteSpace(personnelNumber))
         {
-            throw new InvalidOperationException(
-                "A verified personnel number is required to link a BC user.");
+            personnelNumber = GetStudentNumberFromPreferredUsername(
+                principal.FindFirstValue(
+                    EntraClaimTypes.PreferredUsername));
+
+            if (string.IsNullOrWhiteSpace(personnelNumber))
+            {
+                throw new InvalidOperationException(
+                    "A verified personnel number or numeric Belgium Campus student username is required to link a BC user.");
+            }
         }
 
         string normalizedPersonnelNumber = personnelNumber.Trim();
@@ -159,6 +166,31 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
             user.PersonnelNumber);
 
         return principal;
+    }
+
+    private static string? GetStudentNumberFromPreferredUsername(
+        string? preferredUsername)
+    {
+        if (string.IsNullOrWhiteSpace(preferredUsername))
+        {
+            return null;
+        }
+
+        const string studentDomain =
+            "@student.belgiumcampus.ac.za";
+        string normalizedUsername = preferredUsername.Trim();
+        if (!normalizedUsername.EndsWith(
+                studentDomain,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        string studentNumber = normalizedUsername[..^studentDomain.Length];
+        return studentNumber.Length > 0 &&
+            studentNumber.All(char.IsAsciiDigit)
+                ? studentNumber
+                : null;
     }
 
     private BcUserRole? GetDevelopmentRole(ClaimsPrincipal principal)

@@ -7,6 +7,12 @@
     var latestReviewDecision = application.ApplicationReviewDecisions
         .OrderByDescending(item => item.ReviewedAt)
         .FirstOrDefault();
+    var showReviewDecision = string.Equals(
+            Model.Stage,
+            "shortlist",
+            StringComparison.OrdinalIgnoreCase) &&
+        (latestReviewDecision is not null ||
+            !string.IsNullOrWhiteSpace(application.ShortlistReason));
 }
 
 @section Styles {
@@ -18,12 +24,41 @@
 <section class="application-details" aria-labelledby="application-details-title">
     <header class="application-details-header">
         <div>
-            <h1 id="application-details-title">Tutor application</h1>
-            <p>Submitted by @Model.DisplayName on @application.SubmittedAt.ToString("dd MMMM yyyy 'at' HH:mm")</p>
+            <h1 id="application-details-title">@Model.DisplayName</h1>
+            <p>Submitted on @application.SubmittedAt.ToString("dd MMMM yyyy 'at' HH:mm")</p>
         </div>
     </header>
 
     <div class="application-form-view">
+        @if (showReviewDecision)
+        {
+            <section class="application-review application-review--decision"
+                     aria-labelledby="application-review-title">
+                <h2 id="application-review-title">Review decision</h2>
+                <div class="application-review-decision-card">
+                    <div class="application-review-decision-reason">
+                        <span>Administrator's review reason</span>
+                        <p>@(latestReviewDecision?.Reason ?? application.ShortlistReason ?? "No reason provided")</p>
+                    </div>
+                    @if (latestReviewDecision is not null)
+                    {
+                        <dl class="application-review-decision-meta">
+                            <div>
+                                <dt>Reviewed by</dt>
+                                <dd>@latestReviewDecision.AdminName</dd>
+                            </div>
+                            <div>
+                                <dt>Reviewed at</dt>
+                                <dd>@latestReviewDecision.ReviewedAt.ToString("dd MMMM yyyy 'at' HH:mm")</dd>
+                            </div>
+                        </dl>
+                    }
+                </div>
+            </section>
+        }
+
+        <h2 class="application-form-view-title">Application details</h2>
+
         <details class="application-form-section"
                  name="application-sections"
                  aria-labelledby="personal-details-title">
@@ -223,32 +258,6 @@
                     </div>
                 </div>
             </dialog>
-        }
-        else if (!string.IsNullOrWhiteSpace(application.ShortlistReason))
-        {
-            <section class="application-review application-review--decision"
-                     aria-labelledby="application-review-title">
-                <h2 id="application-review-title">Review decision</h2>
-                <div class="application-review-decision-card">
-                    <div class="application-review-decision-reason">
-                        <span>Administrator's review reason</span>
-                        <p>@(latestReviewDecision?.Reason ?? application.ShortlistReason)</p>
-                    </div>
-                    @if (latestReviewDecision is not null)
-                    {
-                        <dl class="application-review-decision-meta">
-                            <div>
-                                <dt>Reviewed by</dt>
-                                <dd>@latestReviewDecision.AdminName</dd>
-                            </div>
-                            <div>
-                                <dt>Reviewed at</dt>
-                                <dd>@latestReviewDecision.ReviewedAt.ToString("dd MMMM yyyy 'at' HH:mm")</dd>
-                            </div>
-                        </dl>
-                    }
-                </div>
-            </section>
         }
     </div>
 </section>

@@ -28,6 +28,13 @@
     gap: 1.25rem;
 }
 
+.application-form-view-title {
+    color: #252a2b;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+    margin: 0.35rem 0 -0.25rem;
+}
+
 .application-form-section {
     background: #fff;
     border: 1px solid #eef0f1;
@@ -235,6 +242,12 @@
 .application-review--decision h2 {
     font-size: 1.05rem;
     letter-spacing: -0.01em;
+}
+
+.application-review--decision {
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 0;
 }
 
 .application-review-decision-card {

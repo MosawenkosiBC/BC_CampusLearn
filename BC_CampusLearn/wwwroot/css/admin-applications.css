@@ -787,6 +787,10 @@
     width: fit-content;
 }
 
+button.candidate-view-link {
+    cursor: pointer;
+}
+
 .candidate-view-link:hover,
 .candidate-view-link:focus-visible {
     background: #252a2b;
@@ -801,6 +805,486 @@
 .candidate-view-link:focus-visible {
     outline: 3px solid rgba(74, 193, 193, 0.45);
     outline-offset: 1px;
+}
+
+.shortlist-review-modal {
+    --shortlist-admin-accent: #2f8586;
+    --shortlist-admin-ink: #252a2b;
+    --shortlist-admin-muted: #6d7475;
+    background: #eef1f1;
+    border: 0;
+    border-radius: 0.65rem;
+    box-shadow: 0 1.4rem 3.5rem rgba(25, 30, 32, 0.22);
+    max-height: min(88vh, 56rem);
+    max-width: min(52rem, calc(100vw - 2rem));
+    overflow-y: auto;
+    padding: 0;
+}
+
+.shortlist-review-modal::backdrop {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    background: rgba(24, 29, 30, 0.52);
+}
+
+.shortlist-review-modal > .admin-modal-close {
+    align-items: center;
+    background: #f3f5f5;
+    border: 0;
+    border-radius: 50%;
+    color: #4f5657;
+    display: flex;
+    font-size: 1.2rem;
+    height: 2rem;
+    justify-content: center;
+    right: 1.25rem;
+    top: 1.15rem;
+    width: 2rem;
+}
+
+.shortlist-review-modal > .admin-modal-close:hover,
+.shortlist-review-modal > .admin-modal-close:focus-visible {
+    background: #e8ebeb;
+    color: var(--shortlist-admin-ink);
+}
+
+.shortlist-review-header {
+    background: #fff;
+    padding: 1.4rem 4rem 1.25rem 1.65rem;
+}
+
+.shortlist-review-header > span {
+    color: var(--shortlist-admin-accent);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 750;
+    letter-spacing: 0.075em;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+}
+
+.shortlist-review-modal .shortlist-review-header h2 {
+    color: var(--shortlist-admin-ink);
+    font-size: 1.4rem;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+}
+
+.shortlist-review-modal .shortlist-review-header p {
+    color: var(--shortlist-admin-muted);
+    font-size: 0.76rem;
+    margin: 0;
+}
+
+.shortlist-modal-section {
+    background: #fff;
+    border-radius: 0.55rem;
+    margin: 1rem 1.65rem 0;
+    padding: 1.2rem;
+}
+
+.shortlist-modal-section:last-child {
+    margin: 1rem 1.65rem 1.65rem;
+    padding: 1.2rem;
+}
+
+.shortlist-modal-section > h3 {
+    align-items: center;
+    color: var(--shortlist-admin-ink);
+    display: flex;
+    font-size: 0.82rem;
+    gap: 0.55rem;
+    letter-spacing: 0.015em;
+    margin: 0 0 0.9rem;
+}
+
+.shortlist-modal-section > h3::before {
+    background: var(--shortlist-admin-accent);
+    border-radius: 999px;
+    content: "";
+    flex: 0 0 0.25rem;
+    height: 1rem;
+    width: 0.25rem;
+}
+
+.shortlist-detail-group {
+    background: #fff;
+    border: 0;
+    border-radius: 0.45rem;
+    box-shadow: 0 0.4rem 1.15rem rgba(25, 30, 32, 0.09);
+    overflow: hidden;
+}
+
+.shortlist-detail-group + .shortlist-detail-group {
+    margin-top: 0.75rem;
+}
+
+.shortlist-detail-group summary {
+    align-items: center;
+    background: #fff;
+    color: var(--shortlist-admin-ink);
+    cursor: pointer;
+    display: flex;
+    font-size: 0.78rem;
+    font-weight: 700;
+    justify-content: space-between;
+    list-style: none;
+    padding: 0.9rem 1rem;
+}
+
+.shortlist-detail-group summary::-webkit-details-marker {
+    display: none;
+}
+
+.shortlist-detail-group summary::after {
+    border-bottom: 2px solid #73797a;
+    border-right: 2px solid #73797a;
+    content: "";
+    height: 0.45rem;
+    transform: rotate(45deg);
+    transition: transform 160ms ease;
+    width: 0.45rem;
+}
+
+.shortlist-detail-group[open] summary {
+    color: var(--shortlist-admin-accent);
+}
+
+.shortlist-detail-group[open] summary::after {
+    transform: rotate(225deg);
+}
+
+.shortlist-detail-group summary:focus-visible {
+    outline: 3px solid rgba(74, 193, 193, 0.42);
+    outline-offset: -3px;
+}
+
+.shortlist-detail-grid {
+    display: grid;
+    gap: 0.7rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    padding: 0.9rem;
+}
+
+.shortlist-detail-grid > div,
+.shortlist-written-answers > div {
+    background: #f7f9f9;
+    border-radius: 0.35rem;
+    padding: 0.7rem 0.75rem;
+}
+
+.shortlist-detail-grid dt,
+.shortlist-written-answers dt {
+    color: #747a7b;
+    font-size: 0.64rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+}
+
+.shortlist-detail-grid dd,
+.shortlist-written-answers dd {
+    color: #303536;
+    font-size: 0.76rem;
+    line-height: 1.5;
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-line;
+}
+
+.shortlist-written-answers {
+    display: grid;
+    gap: 0.7rem;
+    margin: 0;
+    padding: 0.9rem;
+}
+
+.shortlist-written-answers a,
+.shortlist-document-list a {
+    color: #276f70;
+    font-weight: 700;
+}
+
+.shortlist-detail-content {
+    padding: 0.9rem;
+}
+
+.shortlist-detail-content h4 {
+    color: #34393a;
+    font-size: 0.74rem;
+    margin: 0 0 0.55rem;
+}
+
+.shortlist-detail-content h4:not(:first-child) {
+    margin-top: 1rem;
+}
+
+.shortlist-module-list,
+.shortlist-document-list {
+    display: grid;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.shortlist-module-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.shortlist-module-list li,
+.shortlist-document-list li {
+    align-items: center;
+    background: #f8f9f9;
+    border-radius: 0.35rem;
+    display: flex;
+    gap: 0.65rem;
+    justify-content: space-between;
+    padding: 0.65rem 0.75rem;
+}
+
+.shortlist-module-list li {
+    justify-content: flex-start;
+}
+
+.shortlist-module-list strong,
+.shortlist-document-list strong {
+    color: #303536;
+    font-size: 0.72rem;
+}
+
+.shortlist-module-list span,
+.shortlist-document-list small {
+    color: #73797a;
+    font-size: 0.7rem;
+}
+
+.shortlist-document-list li > span {
+    display: grid;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.shortlist-document-list small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.shortlist-review-modal .shortlist-empty-value {
+    font-size: 0.75rem;
+    margin: 0;
+}
+
+.shortlist-history-empty {
+    background: #f7f9f9;
+    border-radius: 0.4rem;
+    color: var(--shortlist-admin-muted);
+    font-size: 0.76rem;
+    margin: 0;
+    padding: 0.9rem 1rem;
+}
+
+.shortlist-timeline {
+    display: grid;
+    gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.shortlist-timeline li {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: 0.8rem minmax(0, 1fr);
+    padding-bottom: 1rem;
+    position: relative;
+}
+
+.shortlist-timeline li:last-child {
+    padding-bottom: 0;
+}
+
+.shortlist-timeline li::before {
+    background: #dce4e4;
+    bottom: 0;
+    content: "";
+    left: 0.34rem;
+    position: absolute;
+    top: 0.7rem;
+    width: 2px;
+}
+
+.shortlist-timeline li:last-child::before {
+    display: none;
+}
+
+.shortlist-timeline-marker {
+    background: var(--shortlist-admin-accent);
+    border-radius: 50%;
+    height: 0.7rem;
+    margin-top: 0.25rem;
+    position: relative;
+    width: 0.7rem;
+    z-index: 1;
+}
+
+.shortlist-timeline li > div {
+    background: #f7f9f9;
+    border-radius: 0.4rem;
+    padding: 0.8rem 0.9rem;
+}
+
+.shortlist-timeline header {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.75rem;
+    justify-content: space-between;
+}
+
+.shortlist-timeline strong {
+    color: var(--shortlist-admin-ink);
+    font-size: 0.76rem;
+}
+
+.shortlist-timeline time,
+.shortlist-timeline small {
+    color: var(--shortlist-admin-muted);
+    font-size: 0.66rem;
+}
+
+.shortlist-review-modal .shortlist-timeline p {
+    color: #4f5657;
+    font-size: 0.74rem;
+    margin: 0.45rem 0 0.4rem;
+    white-space: pre-line;
+}
+
+.shortlist-review-modal .shortlist-interview-form label {
+    color: var(--shortlist-admin-ink);
+    margin-bottom: 0.4rem;
+}
+
+.shortlist-interview-form {
+    background: #f3f5f5;
+    border-radius: 0.45rem;
+    padding: 1rem;
+}
+
+.shortlist-interview-form textarea {
+    background: #fff;
+    border: 0;
+    border-radius: 0.45rem;
+    color: #252a2b;
+    font: inherit;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    padding: 0.7rem 0.75rem;
+    resize: vertical;
+    width: 100%;
+}
+
+.shortlist-interview-form textarea:focus {
+    outline: 2px solid var(--shortlist-admin-accent);
+    outline-offset: 1px;
+}
+
+.shortlist-schedule-grid {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 0.9rem;
+}
+
+.shortlist-review-modal .shortlist-schedule-grid label {
+    margin: 0;
+}
+
+.shortlist-schedule-grid label > span {
+    display: block;
+    margin-bottom: 0.4rem;
+}
+
+.shortlist-schedule-wide {
+    grid-column: 1 / -1;
+}
+
+.shortlist-review-modal .shortlist-interview-form input,
+.shortlist-review-modal .shortlist-interview-form select {
+    background: #fff;
+    border: 0;
+    border-radius: 0.4rem;
+    color: var(--shortlist-admin-ink);
+    font: inherit;
+    font-size: 0.76rem;
+    min-height: 2.65rem;
+    padding: 0.55rem 0.7rem;
+    width: 100%;
+}
+
+.shortlist-review-modal .shortlist-interview-form input:focus,
+.shortlist-review-modal .shortlist-interview-form select:focus {
+    outline: 2px solid var(--shortlist-admin-accent);
+    outline-offset: 1px;
+}
+
+.shortlist-modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.shortlist-modal-actions button {
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-height: 2.55rem;
+    padding: 0.55rem 0.85rem;
+}
+
+.shortlist-reject-button {
+    background: #fff1f0;
+    border: 0;
+    color: #b42318;
+    margin-right: auto;
+}
+
+.shortlist-reject-button:hover,
+.shortlist-reject-button:focus-visible {
+    background: #fff1f0;
+}
+
+.shortlist-communicate-button {
+    background: #e9ecec;
+    border: 0;
+    color: #555c5d;
+    cursor: not-allowed;
+}
+
+.shortlist-save-button {
+    background: #dceeee;
+    border: 0;
+    color: #205f60;
+}
+
+.shortlist-save-button:hover,
+.shortlist-save-button:focus-visible {
+    background: #c9e3e3;
+}
+
+.shortlist-interview-button {
+    background: var(--shortlist-admin-ink);
+    border: 0;
+    color: #fff;
+}
+
+.shortlist-interview-button:hover,
+.shortlist-interview-button:focus-visible {
+    background: #111516;
 }
 
 @media (max-width: 1199.98px) {
@@ -885,6 +1369,34 @@
     .admin-application-settings-grid label:first-child {
         grid-column: auto;
     }
+
+    .shortlist-review-modal {
+        padding: 0;
+    }
+
+    .shortlist-review-header {
+        padding-left: 1.2rem;
+    }
+
+    .shortlist-modal-section {
+        margin-left: 1.2rem;
+        margin-right: 1.2rem;
+    }
+
+    .shortlist-modal-section:last-child {
+        padding-left: 1.2rem;
+        padding-right: 1.2rem;
+    }
+
+    .shortlist-detail-grid,
+    .shortlist-module-list,
+    .shortlist-schedule-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .shortlist-schedule-wide {
+        grid-column: auto;
+    }
 }
 
 @media (max-width: 575.98px) {
@@ -922,5 +1434,16 @@
     .application-candidate-panel {
         min-height: 22rem;
         padding: 1rem;
+    }
+
+    .shortlist-modal-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .shortlist-modal-actions button,
+    .shortlist-reject-button {
+        margin-right: 0;
+        width: 100%;
     }
 }

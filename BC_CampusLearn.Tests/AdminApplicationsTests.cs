@@ -259,6 +259,159 @@ public class AdminApplicationsTests
     }
 
     [Fact]
+    public async Task AdministratorCanMoveShortlistedCandidateToInterview()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        context.BcUsers.AddRange(
+            CreateUser(1, "Shortlisted Candidate", "ST3951"),
+            new BcUser
+            {
+                BcUserId = 2,
+                DisplayName = "Interview Administrator",
+                PersonnelNumber = "AD3952",
+                Role = BcUserRole.Admin
+            });
+        Tutor candidate = CreateTutor(1, TutorStatus.Pending);
+        candidate.ApplicationStage = TutorApplicationStage.Shortlisted;
+        candidate.ShortlistReason = "Strong initial application.";
+        context.Tutors.Add(candidate);
+        await context.SaveChangesAsync();
+
+        ShortlistResult result = await TutorApplicationReview.MoveToInterviewAsync(
+            context,
+            1,
+            new InterviewPreparationDetails(
+                "Ask about the candidate's teaching demonstration.",
+                new DateTime(2026, 10, 12),
+                new TimeSpan(10, 30, 0),
+                45,
+                "Microsoft Teams",
+                "Interview Administrator"),
+            CancellationToken.None,
+            reviewerBcUserId: 2);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(TutorApplicationStage.Interview, candidate.ApplicationStage);
+        Assert.Equal(new DateTime(2026, 10, 12, 10, 30, 0),
+            candidate.InterviewScheduledAt);
+        Assert.Equal(45, candidate.InterviewDurationMinutes);
+        Assert.Equal("Microsoft Teams", candidate.InterviewLocation);
+        Assert.Equal("Interview Administrator", candidate.AssignedInterviewer);
+        TutorApplicationReviewDecision decision = await context
+            .TutorApplicationReviewDecisions.SingleAsync();
+        Assert.Equal(TutorApplicationStage.Shortlisted, decision.PreviousStage);
+        Assert.Equal(TutorApplicationStage.Interview, decision.NewStage);
+        Assert.Equal(
+            "Ask about the candidate's teaching demonstration.",
+            decision.Reason);
+        Assert.Contains(
+            "interview stage",
+            (await context.UserNotifications.SingleAsync()).Message,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task SavingInterviewPreparationDoesNotChangeCandidateStage()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        context.BcUsers.AddRange(
+            CreateUser(1, "Shortlisted Candidate", "ST3953"),
+            new BcUser
+            {
+                BcUserId = 2,
+                DisplayName = "Preparing Administrator",
+                PersonnelNumber = "AD3954",
+                Role = BcUserRole.Admin
+            });
+        Tutor candidate = CreateTutor(1, TutorStatus.Pending);
+        candidate.ApplicationStage = TutorApplicationStage.Shortlisted;
+        context.Tutors.Add(candidate);
+        await context.SaveChangesAsync();
+
+        ShortlistResult result = await TutorApplicationReview
+            .SaveInterviewPreparationAsync(
+                context,
+                1,
+                new InterviewPreparationDetails(
+                    "Focus on first-year module support.",
+                    new DateTime(2026, 10, 14),
+                    new TimeSpan(14, 0, 0),
+                    30,
+                    "Room B14",
+                    "Tutor Selection Panel"),
+                CancellationToken.None,
+                reviewerBcUserId: 2);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(TutorApplicationStage.Shortlisted, candidate.ApplicationStage);
+        Assert.Equal(
+            "Focus on first-year module support.",
+            candidate.InterviewPreparationNotes);
+        Assert.Equal(new DateTime(2026, 10, 14, 14, 0, 0),
+            candidate.InterviewScheduledAt);
+
+        TutorApplicationReviewDecision audit = await context
+            .TutorApplicationReviewDecisions.SingleAsync();
+        Assert.Equal(TutorApplicationStage.Shortlisted, audit.PreviousStage);
+        Assert.Equal(TutorApplicationStage.Shortlisted, audit.NewStage);
+        Assert.Equal("Preparing Administrator", audit.AdminName);
+    }
+
+    [Fact]
+    public async Task AdministratorCanRejectCandidateFromShortlist()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        context.BcUsers.Add(CreateUser(1, "Shortlisted Candidate", "ST3961"));
+        Tutor candidate = CreateTutor(1, TutorStatus.Pending);
+        candidate.ApplicationStage = TutorApplicationStage.Shortlisted;
+        context.Tutors.Add(candidate);
+        await context.SaveChangesAsync();
+
+        ShortlistResult result = await TutorApplicationReview
+            .RejectShortlistedAsync(
+                context,
+                1,
+                "Availability does not meet the programme needs.",
+                CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(TutorStatus.Rejected, candidate.Status);
+        Assert.Equal(TutorApplicationStage.Rejected, candidate.ApplicationStage);
+        Assert.False(candidate.IsActive);
+        Assert.Contains(
+            "not progress",
+            (await context.UserNotifications.SingleAsync()).Message,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task AdministratorCanRejectApplicationWithReasonAndNotification()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

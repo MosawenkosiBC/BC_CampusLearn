@@ -309,19 +309,272 @@
                         <span class="candidate-status candidate-status--@candidate.Status.ToString().ToLowerInvariant()">
                             @candidate.ApplicationStage
                         </span>
-                        <a asp-page="/Administrator/Admin/ApplicationDetails"
-                           asp-route-id="@candidate.TutorId"
-                           asp-route-stage="@Model.Stage"
-                           asp-route-search="@Model.Search"
-                           class="candidate-view-link"
-                           aria-label="View the application submitted by @candidate.DisplayName">
-                            View
-                        </a>
+                        @if (Model.Stage == "shortlist")
+                        {
+                            <button type="button"
+                                    class="candidate-view-link"
+                                    aria-label="View the shortlisted application submitted by @candidate.DisplayName"
+                                    aria-haspopup="dialog"
+                                    data-shortlist-view
+                                    data-shortlist-modal-id="shortlist-candidate-@candidate.TutorId">
+                                View
+                            </button>
+                        }
+                        else
+                        {
+                            <a asp-page="/Administrator/Admin/ApplicationDetails"
+                               asp-route-id="@candidate.TutorId"
+                               asp-route-stage="@Model.Stage"
+                               asp-route-search="@Model.Search"
+                               class="candidate-view-link"
+                               aria-label="View the application submitted by @candidate.DisplayName">
+                                View
+                            </a>
+                        }
                     </article>
                 }
             </div>
         }
     </section>
+
+    @if (Model.Stage == "shortlist")
+    {
+        @foreach (var candidate in Model.Candidates)
+        {
+            <dialog id="shortlist-candidate-@candidate.TutorId"
+                    class="admin-application-modal shortlist-review-modal"
+                    data-shortlist-review-modal
+                    data-show="@((Model.OpenShortlistCandidateId == candidate.TutorId).ToString().ToLowerInvariant())"
+                    aria-labelledby="shortlist-candidate-title-@candidate.TutorId">
+                <button type="button"
+                        class="admin-modal-close"
+                        data-admin-modal-close
+                        aria-label="Close">&times;</button>
+
+                <header class="shortlist-review-header">
+                    <span>Shortlisted applicant</span>
+                    <h2 id="shortlist-candidate-title-@candidate.TutorId">@candidate.DisplayName</h2>
+                    <p>Submitted @candidate.SubmittedAt.ToString("dd MMMM yyyy")</p>
+                </header>
+
+                <section class="shortlist-modal-section" aria-labelledby="applicant-details-@candidate.TutorId">
+                    <h3 id="applicant-details-@candidate.TutorId">Applicant details</h3>
+
+                    <details class="shortlist-detail-group">
+                        <summary>Personal and academic details</summary>
+                        <dl class="shortlist-detail-grid">
+                            <div><dt>Full name</dt><dd>@candidate.DisplayName</dd></div>
+                            <div><dt>Student number</dt><dd>@candidate.PersonnelNumber</dd></div>
+                            <div><dt>Email address</dt><dd>@(candidate.Email ?? "Not provided")</dd></div>
+                            <div><dt>Phone number</dt><dd>@(candidate.PhoneNumber ?? "Not provided")</dd></div>
+                            <div><dt>Programme</dt><dd>@candidate.ProgrammeName</dd></div>
+                            <div><dt>Year of study</dt><dd>@candidate.YearOfStudy</dd></div>
+                            <div><dt>Overall average</dt><dd>@candidate.OverallAverage.ToString("0.##")%</dd></div>
+                            <div><dt>Campus</dt><dd>@candidate.CampusOfStudy</dd></div>
+                            <div><dt>Preferred tutoring mode</dt><dd>@candidate.PreferredTutoringModeLabel</dd></div>
+                        </dl>
+                    </details>
+
+                    <details class="shortlist-detail-group">
+                        <summary>Motivation and teaching profile</summary>
+                        <dl class="shortlist-written-answers">
+                            <div>
+                                <dt>Why do you want to become a tutor?</dt>
+                                <dd>@candidate.ReasonForTutoring</dd>
+                            </div>
+                            <div>
+                                <dt>How would you describe your teaching style?</dt>
+                                <dd>@candidate.TeachingStyle</dd>
+                            </div>
+                            <div>
+                                <dt>Previous tutoring experience</dt>
+                                <dd>@candidate.PreviousTutoringExperience</dd>
+                            </div>
+                            <div>
+                                <dt>Demonstration video</dt>
+                                <dd>
+                                    @if (candidate.HasDemonstrationVideoLink)
+                                    {
+                                        <a href="@candidate.DemonstrationVideoUrl"
+                                           target="_blank"
+                                           rel="noopener noreferrer">Open demonstration video</a>
+                                    }
+                                    else
+                                    {
+                                        @candidate.DemonstrationVideoUrl
+                                    }
+                                </dd>
+                            </div>
+                        </dl>
+                    </details>
+
+                    <details class="shortlist-detail-group">
+                        <summary>Modules and documents</summary>
+                        <div class="shortlist-detail-content">
+                            <h4>Selected modules</h4>
+                            @if (candidate.Modules.Count == 0)
+                            {
+                                <p class="shortlist-empty-value">No modules were selected.</p>
+                            }
+                            else
+                            {
+                                <ul class="shortlist-module-list">
+                                    @foreach (var module in candidate.Modules)
+                                    {
+                                        <li><strong>@module.Code</strong><span>@module.Name</span></li>
+                                    }
+                                </ul>
+                            }
+
+                            <h4>Submitted documents</h4>
+                            @if (candidate.Documents.Count == 0)
+                            {
+                                <p class="shortlist-empty-value">No documents were submitted.</p>
+                            }
+                            else
+                            {
+                                <ul class="shortlist-document-list">
+                                    @foreach (var document in candidate.Documents)
+                                    {
+                                        <li>
+                                            <span>
+                                                <strong>@ApplicationsModel.GetDocumentTypeLabel(document.DocumentType)</strong>
+                                                <small>@document.OriginalFileName</small>
+                                            </span>
+                                            <a asp-page="/Administrator/Admin/ApplicationDetails"
+                                               asp-page-handler="Document"
+                                               asp-route-id="@candidate.TutorId"
+                                               asp-route-documentId="@document.TutorDocumentId">
+                                                Download
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    </details>
+                </section>
+
+                <section class="shortlist-modal-section shortlist-decision-history"
+                         aria-labelledby="decision-history-@candidate.TutorId">
+                    <h3 id="decision-history-@candidate.TutorId">Decision history</h3>
+                    @if (candidate.DecisionHistory.Count == 0)
+                    {
+                        <p class="shortlist-history-empty">No decisions have been recorded.</p>
+                    }
+                    else
+                    {
+                        <ol class="shortlist-timeline">
+                            @foreach (var decision in candidate.DecisionHistory)
+                            {
+                                <li>
+                                    <span class="shortlist-timeline-marker" aria-hidden="true"></span>
+                                    <div>
+                                        <header>
+                                            <strong>@decision.Label</strong>
+                                            <time datetime="@decision.ReviewedAt.ToString("O")">
+                                                @decision.ReviewedAt.ToString("dd MMM yyyy 'at' HH:mm")
+                                            </time>
+                                        </header>
+                                        <p>@decision.Notes</p>
+                                        <small>By @decision.AdminName</small>
+                                    </div>
+                                </li>
+                            }
+                        </ol>
+                    }
+                </section>
+
+                <section class="shortlist-modal-section"
+                         aria-labelledby="interview-preparation-@candidate.TutorId">
+                    <h3 id="interview-preparation-@candidate.TutorId">Prepare for interview</h3>
+                    <form method="post"
+                          class="shortlist-interview-form"
+                          data-shortlist-action-form>
+                        <input type="hidden" name="tutorId" value="@candidate.TutorId" />
+                        <input type="hidden" name="Search" value="@Model.Search" />
+                        <label for="interview-notes-@candidate.TutorId">
+                            Interview preparation notes
+                        </label>
+                        <textarea id="interview-notes-@candidate.TutorId"
+                                  name="InterviewPreparation.Notes"
+                                  rows="4"
+                                  maxlength="1000"
+                                  placeholder="Add optional notes for the interview panel.">@candidate.InterviewPreparationNotes</textarea>
+
+                        <div class="shortlist-schedule-grid">
+                            <label>
+                                <span>Interview date</span>
+                                <input type="date"
+                                       name="InterviewPreparation.ScheduledDate"
+                                       value="@candidate.InterviewScheduledAt?.ToString("yyyy-MM-dd")" />
+                            </label>
+                            <label>
+                                <span>Time</span>
+                                <input type="time"
+                                       name="InterviewPreparation.ScheduledTime"
+                                       value="@candidate.InterviewScheduledAt?.ToString("HH:mm")" />
+                            </label>
+                            <label>
+                                <span>Duration</span>
+                                <select name="InterviewPreparation.DurationMinutes">
+                                    <option value="">Select duration</option>
+                                    @foreach (int duration in new[] { 15, 30, 45, 60, 90, 120 })
+                                    {
+                                        <option value="@duration"
+                                                selected="@(candidate.InterviewDurationMinutes == duration)">
+                                            @duration minutes
+                                        </option>
+                                    }
+                                </select>
+                            </label>
+                            <label>
+                                <span>Assigned interviewer</span>
+                                <input type="text"
+                                       name="InterviewPreparation.AssignedInterviewer"
+                                       maxlength="200"
+                                       value="@candidate.AssignedInterviewer"
+                                       placeholder="Name or interview panel" />
+                            </label>
+                            <label class="shortlist-schedule-wide">
+                                <span>Location or meeting link</span>
+                                <input type="text"
+                                       name="InterviewPreparation.LocationOrMeetingLink"
+                                       maxlength="500"
+                                       value="@candidate.InterviewLocation"
+                                       placeholder="Room, campus, or online meeting link" />
+                            </label>
+                        </div>
+
+                        <div class="shortlist-modal-actions">
+                            <button type="submit"
+                                    class="shortlist-reject-button"
+                                    asp-page-handler="RejectShortlisted"
+                                    data-reject-shortlisted>
+                                Reject
+                            </button>
+                            <button type="button"
+                                    class="shortlist-communicate-button"
+                                    aria-disabled="true"
+                                    title="Communication tools are coming soon">
+                                Communicate
+                            </button>
+                            <button type="submit"
+                                    class="shortlist-save-button"
+                                    asp-page-handler="SaveInterviewPreparation">
+                                Save notes
+                            </button>
+                            <button type="submit"
+                                    class="shortlist-interview-button"
+                                    asp-page-handler="MoveToInterview">
+                                Move to interview
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            </dialog>
+        }
+    }
 
     @if (Model.Stage == "placement")
     {

@@ -29,6 +29,8 @@
         "[data-student-option]") ?? []);
     const studentEmpty = studentPicker?.querySelector(
         "[data-student-empty]");
+    const shortlistReviewModals = Array.from(document.querySelectorAll(
+        "[data-shortlist-review-modal]"));
 
     const filterStudents = () => {
         if (!studentSearch || !studentResults) {
@@ -139,6 +141,32 @@
             addTutorModal?.showModal();
         });
 
+    document.querySelectorAll("[data-shortlist-view]")
+        .forEach(button => {
+            button.addEventListener("click", () => {
+                const modalId = button.dataset.shortlistModalId;
+                if (!modalId) {
+                    return;
+                }
+
+                document.getElementById(modalId)?.showModal();
+            });
+        });
+
+    document.querySelectorAll("[data-shortlist-action-form]")
+        .forEach(form => {
+            form.addEventListener("submit", event => {
+                if (!event.submitter?.matches("[data-reject-shortlisted]")) {
+                    return;
+                }
+
+                if (!window.confirm(
+                    "Reject this shortlisted applicant? They will not progress to interview.")) {
+                    event.preventDefault();
+                }
+            });
+        });
+
     if (thresholdModal?.dataset.show === "true") {
         thresholdModal.showModal();
     }
@@ -151,6 +179,10 @@
         reviewResultModal.showModal();
     }
 
+    shortlistReviewModals
+        .find(modal => modal.dataset.show === "true")
+        ?.showModal();
+
     document.addEventListener("click", event => {
         if (studentPicker && !studentPicker.contains(event.target)) {
             if (studentResults) {
@@ -160,7 +192,8 @@
         }
     });
 
-    [addTutorModal, settingsModal, thresholdModal, reviewResultModal]
+    [addTutorModal, settingsModal, thresholdModal, reviewResultModal,
+        ...shortlistReviewModals]
         .forEach(modal => {
         modal?.addEventListener("click", event => {
             if (event.target === modal) {
