@@ -16,4 +16,6 @@ public class BcUser
     public Admin? Admin { get; set; }
     public ICollection<ResourceComment> ResourceComments { get; set; }
         = new List<ResourceComment>();
+    public ICollection<UserNotification> Notifications { get; set; }
+        = new List<UserNotification>();
 }

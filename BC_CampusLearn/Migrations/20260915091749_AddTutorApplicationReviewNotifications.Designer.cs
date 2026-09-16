@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260915091749_AddTutorApplicationReviewNotifications")]
+    partial class AddTutorApplicationReviewNotifications
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -925,14 +928,6 @@ namespace BC_CampusLearn.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TutorApplicationSettingsId"));
 
-                    b.Property<DateTime?>("CloseDate")
-                        .HasColumnType("date");
-
-                    b.Property<bool>("ContinueAfterShortlistLimit")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
                     b.Property<bool>("IsOpen")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -942,9 +937,6 @@ namespace BC_CampusLearn.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
-
-                    b.Property<DateTime?>("OpenDate")
-                        .HasColumnType("date");
 
                     b.Property<int?>("ShortlistLimit")
                         .HasColumnType("int");
@@ -967,7 +959,6 @@ namespace BC_CampusLearn.Migrations
                         new
                         {
                             TutorApplicationSettingsId = 1,
-                            ContinueAfterShortlistLimit = false,
                             IsOpen = false,
                             NotifyStudents = false,
                             UpdatedAt = new DateTime(2026, 9, 14, 0, 0, 0, 0, DateTimeKind.Utc)

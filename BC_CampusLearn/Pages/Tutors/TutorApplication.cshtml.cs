@@ -150,28 +150,59 @@ public class TutorApplicationModel : PageModel
         }
 
         DateTime submittedAt = DateTime.UtcNow;
-        var tutor = new Tutor
+        Tutor? tutor = await _context.Tutors
+            .Include(item => item.TutorCourseModules)
+            .Include(item => item.TutorDocuments)
+            .SingleOrDefaultAsync(
+                item => item.BcUserId == currentUser.BcUserId,
+                cancellationToken);
+        bool isReapplication = tutor is not null;
+
+        if (tutor is not null && tutor.Status != TutorStatus.Rejected)
         {
-            BcUserId = currentUser.BcUserId,
-            ProgrammeId = Input.ProgrammeId!.Value,
-            OverallAverage = Input.OverallAverage!.Value,
-            YearOfStudy = Input.YearOfStudy!.Value,
-            PhoneNumber = Input.PhoneNumber!.Trim(),
-            ReasonForTutoring = ProfileInput.ReasonForTutoring!.Trim(),
-            TeachingStyle = ProfileInput.TeachingStyle!.Trim(),
-            PreviousTutoringExperience =
-                ProfileInput.PreviousTutoringExperience!.Trim(),
-            CampusOfStudy = ProfileInput.CampusOfStudy!.Trim(),
-            DemonstrationVideoUrl =
-                ProfileInput.DemonstrationVideoUrl!.Trim(),
-            PreferredTutoringMode =
-                FinalInput.PreferredTutoringMode!.Value,
-            Status = TutorStatus.Pending,
-            ApplicationStage = TutorApplicationStage.Submitted,
-            IsActive = false,
-            SubmittedAt = submittedAt,
-            CreatedAt = submittedAt
-        };
+            ModelState.AddModelError(
+                string.Empty,
+                "You already have a tutor application or profile.");
+            return Page();
+        }
+
+        if (tutor is null)
+        {
+            tutor = new Tutor
+            {
+                BcUserId = currentUser.BcUserId,
+                CreatedAt = submittedAt
+            };
+        }
+        else
+        {
+            _context.TutorCourseModules.RemoveRange(
+                tutor.TutorCourseModules);
+            _context.TutorDocuments.RemoveRange(tutor.TutorDocuments);
+            tutor.TutorCourseModules.Clear();
+            tutor.TutorDocuments.Clear();
+        }
+
+        tutor.ProgrammeId = Input.ProgrammeId!.Value;
+        tutor.OverallAverage = Input.OverallAverage!.Value;
+        tutor.YearOfStudy = Input.YearOfStudy!.Value;
+        tutor.PhoneNumber = Input.PhoneNumber!.Trim();
+        tutor.ReasonForTutoring = ProfileInput.ReasonForTutoring!.Trim();
+        tutor.TeachingStyle = ProfileInput.TeachingStyle!.Trim();
+        tutor.PreviousTutoringExperience =
+            ProfileInput.PreviousTutoringExperience!.Trim();
+        tutor.CampusOfStudy = ProfileInput.CampusOfStudy!.Trim();
+        tutor.DemonstrationVideoUrl =
+            ProfileInput.DemonstrationVideoUrl!.Trim();
+        tutor.PreferredTutoringMode =
+            FinalInput.PreferredTutoringMode!.Value;
+        tutor.Status = TutorStatus.Pending;
+        tutor.ApplicationStage = TutorApplicationStage.Submitted;
+        tutor.ShortlistReason = null;
+        tutor.ReviewedAt = null;
+        tutor.IsActive = false;
+        tutor.SubmittedAt = submittedAt;
+        tutor.UpdatedAt = isReapplication ? submittedAt : null;
 
         foreach (int moduleId in moduleIds)
         {
@@ -216,7 +247,10 @@ public class TutorApplicationModel : PageModel
                     cancellationToken);
             }
 
-            _context.Tutors.Add(tutor);
+            if (!isReapplication)
+            {
+                _context.Tutors.Add(tutor);
+            }
             await _context.SaveChangesAsync(cancellationToken);
         }
         catch (OperationCanceledException)
@@ -309,12 +343,14 @@ public class TutorApplicationModel : PageModel
     {
         SetIdentityDetails(currentUser);
 
-        ApplicationsOpen = await _context.TutorApplicationSettings
+        TutorApplicationSettings? applicationSettings = await _context
+            .TutorApplicationSettings
             .AsNoTracking()
             .Where(settings => settings.TutorApplicationSettingsId ==
                 TutorApplicationSettings.SingletonId)
-            .Select(settings => settings.IsOpen)
             .SingleOrDefaultAsync(cancellationToken);
+        ApplicationsOpen = applicationSettings?.IsAcceptingApplications(
+            DateTime.UtcNow) ?? false;
 
         ProgrammeOptions = await _context.ProgrammesOfStudy
             .AsNoTracking()
@@ -326,24 +362,39 @@ public class TutorApplicationModel : PageModel
             })
             .ToListAsync(cancellationToken);
 
-        TutorStatus? existingStatus = await _context.Tutors
+        var existingApplication = await _context.Tutors
             .AsNoTracking()
             .Where(tutor => tutor.BcUserId == currentUser.BcUserId)
-            .Select(tutor => (TutorStatus?)tutor.Status)
+            .Select(tutor => new
+            {
+                tutor.Status,
+                tutor.ApplicationStage,
+                tutor.ShortlistReason
+            })
             .SingleOrDefaultAsync(cancellationToken);
 
-        ExistingApplicationMessage = existingStatus switch
+        ExistingApplicationMessage = existingApplication switch
         {
-            TutorStatus.Pending =>
+            { Status: TutorStatus.Pending,
+                ApplicationStage: TutorApplicationStage.Shortlisted } =>
+                "Your tutor application has been shortlisted. " +
+                (string.IsNullOrWhiteSpace(existingApplication.ShortlistReason)
+                    ? "You will be contacted about the next phase."
+                    : $"Reason: {existingApplication.ShortlistReason}"),
+            { Status: TutorStatus.Pending } =>
                 "You have already applied to become a tutor. " +
                 "Your application is currently under review.",
-            TutorStatus.Approved =>
+            { Status: TutorStatus.Approved } =>
                 "Your tutor application has been approved. " +
                 "You cannot submit another application.",
-            TutorStatus.Rejected =>
-                "You have already applied to become a tutor. " +
-                "Your application was not approved. Please contact Student Support for assistance.",
-            TutorStatus.Suspended =>
+            { Status: TutorStatus.Rejected } when ApplicationsOpen => null,
+            { Status: TutorStatus.Rejected } =>
+                "Your previous tutor application was not approved. " +
+                "You can submit a new application when applications reopen. " +
+                (string.IsNullOrWhiteSpace(existingApplication.ShortlistReason)
+                    ? string.Empty
+                    : $"Reason: {existingApplication.ShortlistReason}"),
+            { Status: TutorStatus.Suspended } =>
                 "Your tutor profile is currently suspended. " +
                 "Please contact Student Support for assistance.",
             _ => null

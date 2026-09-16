@@ -20,6 +20,15 @@
         case "/Administrator/Admin/Dashboard":
             breadcrumbs.Add(("Dashboard", null));
             break;
+        case "/Administrator/Admin/Applications":
+            breadcrumbs.Add(("Dashboard", "/Administrator/Admin/Dashboard"));
+            breadcrumbs.Add(("Applications", null));
+            break;
+        case "/Administrator/Admin/ApplicationDetails":
+            breadcrumbs.Add(("Dashboard", "/Administrator/Admin/Dashboard"));
+            breadcrumbs.Add(("Applications", "/Administrator/Admin/Applications"));
+            breadcrumbs.Add(("Application Details", null));
+            break;
         case "/Administrator/Tutors/Index":
             breadcrumbs.Add(("Dashboard", "/Administrator/Admin/Dashboard"));
             breadcrumbs.Add(("Tutors", null));

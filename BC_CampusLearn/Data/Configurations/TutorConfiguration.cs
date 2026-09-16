@@ -28,6 +28,8 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
         builder.Property(tutor => tutor.ApplicationStage)
             .HasConversion<int>()
             .HasDefaultValue(TutorApplicationStage.Submitted);
+        builder.Property(tutor => tutor.ShortlistReason)
+            .HasMaxLength(1000);
         builder.Property(tutor => tutor.IsActive).HasDefaultValue(false);
         builder.Property(tutor => tutor.SubmittedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         builder.Property(tutor => tutor.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");

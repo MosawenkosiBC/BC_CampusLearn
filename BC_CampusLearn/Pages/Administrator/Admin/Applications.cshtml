@@ -23,16 +23,18 @@
               data-application-settings-form>
             <input type="hidden" name="Stage" value="@Model.Stage" />
             <input type="hidden" name="Search" value="@Model.Search" />
-            <input type="hidden" name="isOpen" value="false" />
             <label class="applications-toggle">
                 <span>Open applications</span>
                 <input type="checkbox"
+                       name="isOpen"
+                       value="true"
                        checked="@Model.OpenApplications"
                        data-applications-toggle />
                 <span class="applications-toggle-track" aria-hidden="true">
                     <span></span>
                 </span>
             </label>
+            <input type="hidden" name="isOpen" value="false" />
         </form>
 
         <form method="get" class="applications-search-form" role="search">
@@ -71,7 +73,107 @@
         </form>
     </div>
 
-    @if (!string.IsNullOrWhiteSpace(Model.PageMessage))
+    <dialog class="admin-application-modal"
+            data-application-settings-modal
+            data-show="@Model.ShowApplicationSettingsModal.ToString().ToLowerInvariant()"
+            aria-labelledby="application-settings-title">
+        <button type="button"
+                class="admin-modal-close"
+                data-admin-modal-close
+                aria-label="Close">&times;</button>
+        <h2 id="application-settings-title">Open tutor applications</h2>
+        <p>Set the application window and the number of candidates you want to shortlist.</p>
+        <form method="post"
+              asp-page-handler="Settings"
+              data-cycle-settings-form>
+            <input type="hidden" name="Stage" value="@Model.Stage" />
+            <input type="hidden" name="Search" value="@Model.Search" />
+            <input type="hidden" name="isOpen" value="true" />
+            <div class="admin-application-settings-grid">
+                <label>
+                    <span>Students to shortlist</span>
+                    <input type="number"
+                           name="shortlistLimit"
+                           min="1"
+                           value="@Model.ShortlistLimit"
+                           required />
+                </label>
+                <label>
+                    <span>Opening date</span>
+                    <input type="date"
+                           name="openDate"
+                           data-cycle-open-date
+                           value="@(Model.ApplicationOpenDate?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))"
+                           required />
+                </label>
+                <label>
+                    <span>Closing date</span>
+                    <input type="date"
+                           name="closeDate"
+                           data-cycle-close-date
+                           min="@DateTime.UtcNow.ToString("yyyy-MM-dd")"
+                           value="@(Model.ApplicationCloseDate?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.AddMonths(1).ToString("yyyy-MM-dd"))"
+                           required />
+                </label>
+            </div>
+            <span class="admin-modal-validation" data-cycle-validation>
+                @(Model.ShowApplicationSettingsModal ? Model.PageError : null)
+            </span>
+            <div class="admin-modal-actions">
+                <button type="button"
+                        class="admin-modal-no-target"
+                        data-admin-modal-close>Cancel</button>
+                <button type="submit">Open applications</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog class="admin-application-modal"
+            data-shortlist-threshold-modal
+            data-show="@Model.ShowShortlistThresholdModal.ToString().ToLowerInvariant()"
+            aria-labelledby="shortlist-threshold-title">
+        <h2 id="shortlist-threshold-title">Shortlist target reached</h2>
+        <p>
+            You have shortlisted @Model.ShortlistLimit candidates. Do you want to continue
+            shortlisting beyond this target?
+        </p>
+        <div class="admin-modal-actions">
+            <button type="button"
+                    class="admin-modal-no-target"
+                    data-admin-modal-close>Stop for now</button>
+            <form method="post" asp-page-handler="ContinueShortlisting">
+                <input type="hidden" name="Search" value="@Model.Search" />
+                <button type="submit">Continue shortlisting</button>
+            </form>
+        </div>
+    </dialog>
+
+    @if (Model.ShowReviewResultModal &&
+        !string.IsNullOrWhiteSpace(Model.PageMessage))
+    {
+        <dialog class="admin-application-modal application-result-modal"
+                data-review-result-modal
+                data-show="true"
+                aria-labelledby="application-result-title">
+            <button type="button"
+                    class="admin-modal-close"
+                    data-admin-modal-close
+                    aria-label="Close">&times;</button>
+            <span class="application-result-icon" aria-hidden="true">&#10003;</span>
+            <h2 id="application-result-title">Application rejected</h2>
+            <p>@Model.PageMessage</p>
+            <div class="admin-modal-actions">
+                <button type="button"
+                        class="application-result-button"
+                        data-admin-modal-close>
+                    Continue reviewing applications
+                </button>
+            </div>
+        </dialog>
+    }
+
+    @if (!Model.ShowReviewResultModal &&
+        !string.IsNullOrWhiteSpace(Model.PageMessage))
     {
         <div class="applications-notice" role="status">@Model.PageMessage</div>
     }
@@ -79,59 +181,6 @@
     {
         <div class="applications-notice applications-notice--error" role="alert">@Model.PageError</div>
     }
-
-    <dialog class="admin-application-modal"
-            data-shortlist-limit-modal
-            aria-labelledby="shortlist-limit-title">
-        <button type="button" class="admin-modal-close" data-admin-modal-close aria-label="Close">&times;</button>
-        <h2 id="shortlist-limit-title">Set the shortlist target</h2>
-        <p>
-            Set a shortlist target and choose whether to notify students.
-        </p>
-        <form method="post"
-              asp-page-handler="Settings"
-              data-shortlist-limit-form
-              novalidate>
-            <input type="hidden" name="Stage" value="@Model.Stage" />
-            <input type="hidden" name="Search" value="@Model.Search" />
-            <input type="hidden" name="isOpen" value="true" />
-            <label for="shortlist-limit">Number of students</label>
-            <input id="shortlist-limit"
-                   name="shortlistLimit"
-                   type="number"
-                   step="1"
-                   value="@Model.ShortlistLimit"
-                   aria-describedby="shortlist-limit-validation" />
-            <span id="shortlist-limit-validation"
-                  class="admin-modal-validation"
-                  data-shortlist-limit-validation
-                  aria-live="polite"></span>
-            <label class="admin-notification-toggle">
-                <span>
-                    <strong>Notify students</strong>
-                    <small>Let students know tutor applications are open.</small>
-                </span>
-                <input type="checkbox"
-                       name="notifyStudents"
-                       value="true"
-                       checked />
-                <span class="applications-toggle-track" aria-hidden="true">
-                    <span></span>
-                </span>
-            </label>
-            <input type="hidden" name="notifyStudents" value="false" />
-            <div class="admin-modal-actions">
-                <button type="submit"
-                        name="openWithoutTarget"
-                        value="true"
-                        formnovalidate
-                        class="admin-modal-no-target">
-                    Continue without target
-                </button>
-                <button type="submit">Open applications</button>
-            </div>
-        </form>
-    </dialog>
 
     <nav class="application-stage-tabs" aria-label="Application stages">
         <a asp-page="/Administrator/Admin/Applications"
@@ -262,43 +311,19 @@
                         <span class="candidate-status candidate-status--@candidate.Status.ToString().ToLowerInvariant()">
                             @candidate.ApplicationStage
                         </span>
-                        <button type="button"
-                                class="candidate-action-menu"
-                                aria-label="Actions for @candidate.DisplayName"
-                                aria-haspopup="menu"
-                                aria-expanded="false">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="5" r="1.5" />
-                                <circle cx="12" cy="12" r="1.5" />
-                                <circle cx="12" cy="19" r="1.5" />
-                            </svg>
-                        </button>
+                        <a asp-page="/Administrator/Admin/ApplicationDetails"
+                           asp-route-id="@candidate.TutorId"
+                           asp-route-stage="@Model.Stage"
+                           asp-route-search="@Model.Search"
+                           class="candidate-view-link"
+                           aria-label="View the application submitted by @candidate.DisplayName">
+                            View
+                        </a>
                     </article>
                 }
             </div>
         }
     </section>
-
-    <dialog class="admin-application-modal"
-            data-final-shortlist-modal
-            aria-labelledby="final-shortlist-title">
-        <button type="button" class="admin-modal-close" data-admin-modal-close aria-label="Close">&times;</button>
-        <h2 id="final-shortlist-title">Complete the shortlist?</h2>
-        <p>
-            Shortlisting <strong data-final-candidate-name></strong> will reach
-            the target of @Model.ShortlistLimit. All unchecked applications
-            will be rejected. Are you sure you want to continue?
-        </p>
-        <form method="post" asp-page-handler="Shortlist">
-            <input type="hidden" name="tutorId" data-final-candidate-id />
-            <input type="hidden" name="finalizeThreshold" value="true" />
-            <input type="hidden" name="Search" value="@Model.Search" />
-            <div class="admin-modal-actions">
-                <button type="button" data-admin-modal-close>Keep reviewing</button>
-                <button type="submit">Shortlist and continue</button>
-            </div>
-        </form>
-    </dialog>
 
     @if (Model.Stage == "placement")
     {

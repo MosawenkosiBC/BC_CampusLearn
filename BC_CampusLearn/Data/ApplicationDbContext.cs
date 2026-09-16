@@ -52,6 +52,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<SessionMessage> SessionMessages =>
         Set<SessionMessage>();
 
+    public DbSet<UserNotification> UserNotifications =>
+        Set<UserNotification>();
+
     public DbSet<SessionReview> SessionReviews =>
         Set<SessionReview>();
 

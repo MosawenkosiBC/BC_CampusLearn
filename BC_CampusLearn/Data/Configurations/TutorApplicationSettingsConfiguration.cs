@@ -26,6 +26,12 @@ public class TutorApplicationSettingsConfiguration :
             .HasDefaultValue(false);
         builder.Property(settings => settings.NotifyStudents)
             .HasDefaultValue(false);
+        builder.Property(settings => settings.OpenDate)
+            .HasColumnType("date");
+        builder.Property(settings => settings.CloseDate)
+            .HasColumnType("date");
+        builder.Property(settings => settings.ContinueAfterShortlistLimit)
+            .HasDefaultValue(false);
         builder.Property(settings => settings.UpdatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
 
@@ -36,6 +42,9 @@ public class TutorApplicationSettingsConfiguration :
             IsOpen = false,
             NotifyStudents = false,
             ShortlistLimit = null,
+            OpenDate = null,
+            CloseDate = null,
+            ContinueAfterShortlistLimit = false,
             UpdatedAt = new DateTime(2026, 9, 14, 0, 0, 0,
                 DateTimeKind.Utc)
         });

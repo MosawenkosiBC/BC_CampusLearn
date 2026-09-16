@@ -15,6 +15,7 @@ public class Tutor
     public string DemonstrationVideoUrl { get; set; } = null!;
     public TutorStatus Status { get; set; }
     public TutorApplicationStage ApplicationStage { get; set; }
+    public string? ShortlistReason { get; set; }
     public DateTime SubmittedAt { get; set; }
     public DateTime? ReviewedAt { get; set; }
     public DateTime CreatedAt { get; set; }

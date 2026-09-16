@@ -25,7 +25,9 @@ public class IndexModel(ApplicationDbContext context) : PageModel
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        var query = context.Tutors.AsNoTracking();
+        var query = context.Tutors
+            .AsNoTracking()
+            .Where(tutor => tutor.Status == TutorStatus.Approved);
         if (!string.IsNullOrWhiteSpace(SearchName))
         {
             string name = SearchName.Trim();

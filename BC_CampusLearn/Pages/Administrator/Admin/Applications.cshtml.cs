@@ -1,5 +1,6 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Tutors;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -23,7 +24,8 @@ public class ApplicationsModel : PageModel
 
     public bool OpenApplications { get; private set; }
     public int? ShortlistLimit { get; private set; }
-    public int ShortlistRemaining => Math.Max((ShortlistLimit ?? 0) - ShortlistCount, 0);
+    public DateTime? ApplicationOpenDate { get; private set; }
+    public DateTime? ApplicationCloseDate { get; private set; }
     public int ApplicationCount { get; private set; }
     public int ShortlistCount { get; private set; }
     public int InterviewCount { get; private set; }
@@ -33,7 +35,16 @@ public class ApplicationsModel : PageModel
     public string? PageMessage { get; set; }
 
     [TempData]
+    public bool ShowReviewResultModal { get; set; }
+
+    [TempData]
     public string? PageError { get; set; }
+
+    [TempData]
+    public bool ShowShortlistThresholdModal { get; set; }
+
+    [TempData]
+    public bool ShowApplicationSettingsModal { get; set; }
 
     public IReadOnlyList<ApplicationCandidate> Candidates { get; private set; }
         = Array.Empty<ApplicationCandidate>();
@@ -50,7 +61,9 @@ public class ApplicationsModel : PageModel
         NormalizeStage();
         await LoadSettingsAsync(cancellationToken);
 
-        IQueryable<Tutor> applications = _context.Tutors.AsNoTracking();
+        IQueryable<Tutor> applications = _context.Tutors
+            .AsNoTracking()
+            .Where(tutor => tutor.Status != TutorStatus.Rejected);
         string? normalizedSearch = Search?.Trim();
 
         if (!string.IsNullOrWhiteSpace(normalizedSearch))
@@ -176,8 +189,8 @@ public class ApplicationsModel : PageModel
     public async Task<IActionResult> OnPostSettingsAsync(
         bool isOpen,
         int? shortlistLimit,
-        bool openWithoutTarget,
-        bool notifyStudents,
+        DateTime? openDate,
+        DateTime? closeDate,
         CancellationToken cancellationToken)
     {
         TutorApplicationSettings? settings = await _context
@@ -189,125 +202,84 @@ public class ApplicationsModel : PageModel
             _context.TutorApplicationSettings.Add(settings);
         }
 
-        if (isOpen)
+        if (isOpen && (!shortlistLimit.HasValue || shortlistLimit.Value < 1 ||
+            !openDate.HasValue || !closeDate.HasValue ||
+            openDate.Value.Date > closeDate.Value.Date ||
+            closeDate.Value.Date < DateTime.UtcNow.Date))
         {
-            int shortlisted = await _context.Tutors.CountAsync(tutor =>
-                tutor.Status == TutorStatus.Pending &&
-                tutor.ApplicationStage == TutorApplicationStage.Shortlisted,
-                cancellationToken);
-
-            if (openWithoutTarget)
-            {
-                settings.ShortlistLimit = null;
-            }
-            else
-            {
-                if (!shortlistLimit.HasValue || shortlistLimit.Value < 1)
-                {
-                    PageError = "Enter a shortlist target greater than zero.";
-                    return RedirectToPage(new { Stage, Search });
-                }
-
-                if (shortlistLimit.Value < shortlisted)
-                {
-                    PageError = $"The target cannot be lower than the {shortlisted} candidates already shortlisted.";
-                    return RedirectToPage(new { Stage, Search });
-                }
-
-                settings.ShortlistLimit = shortlistLimit.Value;
-            }
+            PageError = "Enter a shortlist target and a valid opening and closing date.";
+            ShowApplicationSettingsModal = true;
+            return RedirectToPage(new { Stage, Search });
         }
 
         settings.IsOpen = isOpen;
-        settings.NotifyStudents = isOpen && notifyStudents;
+        if (isOpen)
+        {
+            settings.ShortlistLimit = shortlistLimit;
+            settings.OpenDate = openDate!.Value.Date;
+            settings.CloseDate = closeDate!.Value.Date;
+            settings.ContinueAfterShortlistLimit = false;
+        }
+        settings.NotifyStudents = isOpen;
         settings.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync(cancellationToken);
 
         PageMessage = isOpen
-            ? settings.ShortlistLimit.HasValue
-                ? $"Tutor applications are open with a shortlist target of {settings.ShortlistLimit}."
-                : "Tutor applications are open without a shortlist target."
+            ? "Tutor applications are now open."
             : "Tutor applications are now closed.";
         return RedirectToPage(new { Stage, Search });
     }
 
-    public async Task<IActionResult> OnPostShortlistAsync(
-        int tutorId,
-        bool finalizeThreshold,
+    public async Task<IActionResult> OnPostContinueShortlistingAsync(
         CancellationToken cancellationToken)
     {
         TutorApplicationSettings? settings = await _context
             .TutorApplicationSettings.SingleOrDefaultAsync(cancellationToken);
-
-        if (settings is null)
+        if (settings is null || !settings.ShortlistLimit.HasValue)
         {
-            PageError = "Configure the application cycle before reviewing candidates.";
-            return RedirectToPage(new { Stage = "applications", Search });
+            PageError = "The application cycle settings could not be found.";
+            return RedirectToPage(new { Stage = "shortlist", Search });
         }
 
-        Tutor? candidate = await _context.Tutors.SingleOrDefaultAsync(
-            tutor => tutor.TutorId == tutorId,
-            cancellationToken);
-
-        if (candidate is null || candidate.Status != TutorStatus.Pending ||
-            candidate.ApplicationStage != TutorApplicationStage.Submitted)
-        {
-            PageError = "This candidate is no longer awaiting review.";
-            return RedirectToPage(new { Stage = "applications", Search });
-        }
-
-        int shortlisted = await _context.Tutors.CountAsync(tutor =>
-            tutor.Status == TutorStatus.Pending &&
-            tutor.ApplicationStage == TutorApplicationStage.Shortlisted,
-            cancellationToken);
-        int nextCount = shortlisted + 1;
-
-        if (settings.ShortlistLimit.HasValue &&
-            nextCount > settings.ShortlistLimit.Value)
-        {
-            PageError = "The shortlist target has already been reached. Increase the target before adding another candidate.";
-            return RedirectToPage(new { Stage = "applications", Search });
-        }
-
-        bool reachesThreshold = settings.ShortlistLimit.HasValue &&
-            nextCount == settings.ShortlistLimit.Value;
-        if (reachesThreshold && !finalizeThreshold)
-        {
-            PageError = "Confirm that you want to fill the final shortlist place before continuing.";
-            return RedirectToPage(new { Stage = "applications", Search });
-        }
-
-        DateTime reviewedAt = DateTime.UtcNow;
-        candidate.ApplicationStage = TutorApplicationStage.Shortlisted;
-        candidate.ReviewedAt = reviewedAt;
-        candidate.UpdatedAt = reviewedAt;
-
-        if (reachesThreshold)
-        {
-            List<Tutor> uncheckedApplications = await _context.Tutors
-                .Where(tutor => tutor.TutorId != tutorId &&
-                    tutor.Status == TutorStatus.Pending &&
-                    tutor.ApplicationStage == TutorApplicationStage.Submitted)
-                .ToListAsync(cancellationToken);
-
-            foreach (Tutor uncheckedApplication in uncheckedApplications)
-            {
-                uncheckedApplication.Status = TutorStatus.Rejected;
-                uncheckedApplication.ReviewedAt = reviewedAt;
-                uncheckedApplication.UpdatedAt = reviewedAt;
-            }
-
-            PageMessage = $"Shortlist target reached. {uncheckedApplications.Count} unchecked applications were rejected.";
-        }
-        else
-        {
-            PageMessage = settings.ShortlistLimit.HasValue
-                ? $"Candidate shortlisted. {settings.ShortlistLimit.Value - nextCount} places remain."
-                : "Candidate shortlisted.";
-        }
-
+        settings.ContinueAfterShortlistLimit = true;
+        settings.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync(cancellationToken);
-        return RedirectToPage(new { Stage = "applications", Search });
+        PageMessage = "You can continue adding candidates beyond the shortlist target.";
+        return RedirectToPage(new { Stage = "shortlist", Search });
+    }
+
+    public async Task<IActionResult> OnPostShortlistAsync(
+        int tutorId,
+        string? reviewReason,
+        CancellationToken cancellationToken)
+    {
+        ShortlistResult result = await TutorApplicationReview.ShortlistAsync(
+            _context,
+            tutorId,
+            reviewReason,
+            cancellationToken);
+        if (!result.Succeeded)
+        {
+            PageError = result.Message;
+            ShowShortlistThresholdModal = result.RequiresContinuation;
+            return RedirectToPage(new
+            {
+                Stage = result.RequiresContinuation
+                    ? "shortlist"
+                    : "applications",
+                Search
+            });
+        }
+
+        PageMessage = result.Message;
+        ShowShortlistThresholdModal = result.ShortlistLimitReached;
+        return RedirectToPage(new
+        {
+            Stage = result.ShortlistLimitReached
+                ? "shortlist"
+                : "applications",
+            Search
+        });
     }
 
     private async Task LoadSettingsAsync(CancellationToken cancellationToken)
@@ -317,6 +289,8 @@ public class ApplicationsModel : PageModel
             .SingleOrDefaultAsync(cancellationToken);
         OpenApplications = settings?.IsOpen ?? false;
         ShortlistLimit = settings?.ShortlistLimit;
+        ApplicationOpenDate = settings?.OpenDate;
+        ApplicationCloseDate = settings?.CloseDate;
     }
 
     private void NormalizeStage()

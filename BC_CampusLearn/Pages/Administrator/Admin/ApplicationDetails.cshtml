@@ -1,0 +1,243 @@
+@page "{id:int}"
+@model BC_CampusLearn.Pages.Administrator.Admin.ApplicationDetailsModel
+
+@{
+    ViewData["Title"] = "Tutor Application";
+    var application = Model.Application;
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/admin-application-details.css"
+          asp-append-version="true" />
+}
+
+<section class="application-details" aria-labelledby="application-details-title">
+    <header class="application-details-header">
+        <div>
+            <h1 id="application-details-title">Tutor application</h1>
+            <p>Submitted by @Model.DisplayName on @application.SubmittedAt.ToString("dd MMMM yyyy 'at' HH:mm")</p>
+        </div>
+    </header>
+
+    <div class="application-form-view">
+        <details class="application-form-section"
+                 name="application-sections"
+                 aria-labelledby="personal-details-title">
+            <summary class="application-form-section-heading">
+                <span>1</span>
+                <div>
+                    <h2 id="personal-details-title">Personal and academic details</h2>
+                </div>
+            </summary>
+            <div class="application-form-section-content">
+                <dl class="application-field-grid">
+                    <div><dt>Full name</dt><dd>@Model.DisplayName</dd></div>
+                    <div><dt>Student number</dt><dd>@application.BcUser.PersonnelNumber</dd></div>
+                    <div><dt>Email address</dt><dd>@(application.BcUser.Email ?? "Not provided")</dd></div>
+                    <div><dt>Phone number</dt><dd>@(application.PhoneNumber ?? "Not provided")</dd></div>
+                    <div><dt>Programme</dt><dd>@application.Programme.Name</dd></div>
+                    <div><dt>Year of study</dt><dd>@application.YearOfStudy</dd></div>
+                    <div><dt>Overall average</dt><dd>@application.OverallAverage.ToString("0.##")%</dd></div>
+                    <div><dt>Campus</dt><dd>@application.CampusOfStudy</dd></div>
+                </dl>
+            </div>
+        </details>
+
+        <details class="application-form-section"
+                 name="application-sections"
+                 aria-labelledby="motivation-title">
+            <summary class="application-form-section-heading">
+                <span>2</span>
+                <div>
+                    <h2 id="motivation-title">Motivation and teaching profile</h2>
+                </div>
+            </summary>
+            <div class="application-form-section-content">
+                <dl class="application-written-answers">
+                    <div>
+                        <dt>Why do you want to become a tutor?</dt>
+                        <dd>@application.ReasonForTutoring</dd>
+                    </div>
+                    <div>
+                        <dt>How would you describe your teaching style?</dt>
+                        <dd>@application.TeachingStyle</dd>
+                    </div>
+                    <div>
+                        <dt>Previous tutoring experience</dt>
+                        <dd>@application.PreviousTutoringExperience</dd>
+                    </div>
+                    <div>
+                        <dt>Demonstration video</dt>
+                        <dd>
+                            @if (Model.HasDemonstrationVideoLink)
+                            {
+                                <a href="@application.DemonstrationVideoUrl"
+                                   target="_blank"
+                                   rel="noopener noreferrer">Open demonstration video</a>
+                            }
+                            else
+                            {
+                                @application.DemonstrationVideoUrl
+                            }
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </details>
+
+        <details class="application-form-section"
+                 name="application-sections"
+                 aria-labelledby="modules-documents-title">
+            <summary class="application-form-section-heading">
+                <span>3</span>
+                <div>
+                    <h2 id="modules-documents-title">Modules and documents</h2>
+                </div>
+            </summary>
+            <div class="application-form-section-content">
+
+                <dl class="application-field-grid application-field-grid--single">
+                    <div><dt>Preferred tutoring mode</dt><dd>@Model.PreferredTutoringModeLabel</dd></div>
+                </dl>
+
+                <div class="application-detail-subsection">
+                    <h3>Selected modules</h3>
+                    @if (application.TutorCourseModules.Count == 0)
+                    {
+                        <p class="application-empty-value">No modules were selected.</p>
+                    }
+                    else
+                    {
+                        <ul class="application-module-list">
+                            @foreach (var item in application.TutorCourseModules
+                                .OrderBy(item => item.ProgrammeModule.ModuleCode))
+                            {
+                                <li>
+                                    <strong>@item.ProgrammeModule.ModuleCode</strong>
+                                    <span>@item.ProgrammeModule.ModuleName</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="application-detail-subsection">
+                    <h3>Submitted documents</h3>
+                    @if (application.TutorDocuments.Count == 0)
+                    {
+                        <p class="application-empty-value">No documents were submitted.</p>
+                    }
+                    else
+                    {
+                        <ul class="application-document-list">
+                            @foreach (var document in application.TutorDocuments
+                                .OrderBy(document => document.DocumentType))
+                            {
+                                <li>
+                                    <span>
+                                        <strong>@ApplicationDetailsModel.GetDocumentTypeLabel(document.DocumentType)</strong>
+                                        <small>@document.OriginalFileName</small>
+                                    </span>
+                                    <a asp-page-handler="Document"
+                                       asp-route-id="@application.TutorId"
+                                       asp-route-documentId="@document.TutorDocumentId">
+                                        Download
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </details>
+
+        @if (application.Status == TutorStatus.Pending &&
+            application.ApplicationStage == TutorApplicationStage.Submitted)
+        {
+            <section class="application-review" aria-labelledby="application-review-title">
+                <h2 id="application-review-title">Application review</h2>
+                <form method="post"
+                      id="application-review-form"
+                      asp-page-handler="Shortlist"
+                      asp-route-id="@application.TutorId"
+                      data-application-review-form>
+                    <label asp-for="ReviewReason">Review reason</label>
+                    <textarea asp-for="ReviewReason"
+                              rows="5"
+                              maxlength="1000"
+                              placeholder="Required for shortlisting; optional when rejecting."></textarea>
+                    <span asp-validation-for="ReviewReason"
+                          class="application-review-validation"></span>
+                    <span class="application-review-validation"
+                          data-review-reason-error
+                          role="alert"
+                          aria-live="polite"></span>
+                    @if (!string.IsNullOrWhiteSpace(Model.ReviewError))
+                    {
+                        <p class="application-review-error" role="alert">@Model.ReviewError</p>
+                    }
+                    <div class="application-review-actions">
+                        <button type="button"
+                                class="application-reject-button"
+                                data-reject-open>
+                            Reject
+                        </button>
+                        <button type="submit"
+                                asp-page-handler="Shortlist"
+                                asp-route-id="@application.TutorId"
+                                data-shortlist-submit>
+                            Approve and shortlist
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <dialog class="application-reject-modal"
+                    data-reject-modal
+                    aria-labelledby="application-reject-modal-title">
+                <div>
+                    <h2 id="application-reject-modal-title">Reject this application?</h2>
+                    <p>
+                        @Model.DisplayName will be removed from the current application process.
+                        They can submit a fresh application during an open application cycle.
+                    </p>
+                    <div class="application-reject-modal-actions">
+                        <button type="button"
+                                class="application-modal-cancel"
+                                data-reject-close>
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                form="application-review-form"
+                                asp-page-handler="Reject"
+                                asp-route-id="@application.TutorId"
+                                formnovalidate
+                                class="application-modal-confirm"
+                                data-reject-confirm>
+                            Yes, reject application
+                        </button>
+                    </div>
+                </div>
+            </dialog>
+        }
+        else if (!string.IsNullOrWhiteSpace(application.ShortlistReason))
+        {
+            <section class="application-review" aria-labelledby="application-review-title">
+                <h2 id="application-review-title">Review decision</h2>
+                <dl class="application-written-answers">
+                    <div>
+                        <dt>Administrator's review reason</dt>
+                        <dd>@application.ShortlistReason</dd>
+                    </div>
+                </dl>
+            </section>
+        }
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin-application-details.js"
+            asp-append-version="true"></script>
+}

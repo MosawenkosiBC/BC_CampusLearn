@@ -1,0 +1,51 @@
+@model BC_CampusLearn.Models.ViewModels.UserNotificationMenuViewModel
+
+<div class="dropdown message-notifications">
+    <button class="navbar-action-button"
+            type="button"
+            id="userNotifications-@Model.Instance"
+            data-bs-toggle="dropdown"
+            data-bs-auto-close="outside"
+            aria-expanded="false"
+            aria-label="Notifications, @Model.UnreadCount unread"
+            title="Notifications">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             width="1em"
+             height="1em"
+             viewBox="0 0 24 24"
+             aria-hidden="true"
+             focusable="false">
+            <path d="M0 0h24v24H0z" fill="none" />
+            <path fill="currentColor" d="M8.352 20.242A4.63 4.63 0 0 0 12 22a4.63 4.63 0 0 0 3.648-1.758a27.2 27.2 0 0 1-7.296 0M18.75 9v.704c0 .845.24 1.671.692 2.374l1.108 1.723c1.011 1.574.239 3.713-1.52 4.21a25.8 25.8 0 0 1-14.06 0c-1.759-.497-2.531-2.636-1.52-4.21l1.108-1.723a4.4 4.4 0 0 0 .693-2.374V9c0-3.866 3.022-7 6.749-7s6.75 3.134 6.75 7" />
+        </svg>
+        <span class="message-notification-count"
+              hidden="@(Model.UnreadCount == 0)">
+            @(Model.UnreadCount > 99 ? "99+" : Model.UnreadCount)
+        </span>
+    </button>
+
+    <div class="dropdown-menu dropdown-menu-end message-notification-menu"
+         aria-labelledby="userNotifications-@Model.Instance">
+        <div class="message-notification-heading">
+            <strong>Notifications</strong>
+            <span>@Model.UnreadCount unread</span>
+        </div>
+        <div class="message-notification-list">
+            @foreach (var notification in Model.Notifications)
+            {
+                <a class="message-notification-item"
+                   href="/Notifications/Open/@notification.UserNotificationId">
+                    <span class="message-notification-sender">@notification.Title</span>
+                    <span class="message-notification-preview">@notification.Message</span>
+                    <time datetime="@notification.CreatedAt.ToString("O")">
+                        @notification.CreatedAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM, HH:mm")
+                    </time>
+                </a>
+            }
+        </div>
+        @if (Model.UnreadCount == 0)
+        {
+            <p class="message-notification-empty">You have no unread notifications.</p>
+        }
+    </div>
+</div>

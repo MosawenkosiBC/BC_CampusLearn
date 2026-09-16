@@ -1,0 +1,394 @@
+.application-details {
+    padding: 1.25rem 0 3rem;
+}
+
+.application-details-header {
+    align-items: flex-end;
+    display: flex;
+    gap: 1.5rem;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.application-details-header h1 {
+    color: #141718;
+    font-size: clamp(1.65rem, 2.4vw, 2.1rem);
+    letter-spacing: -0.025em;
+    margin: 0 0 0.35rem;
+}
+
+.application-details-header p {
+    color: #747a7b;
+    font-size: 0.82rem;
+    margin: 0;
+}
+
+.application-form-view {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.application-form-section {
+    background: #fff;
+    border: 1px solid #eef0f1;
+    border-radius: 0.55rem;
+    box-shadow: 0 0.45rem 1.25rem rgba(25, 30, 32, 0.07);
+    overflow: hidden;
+}
+
+.application-form-section-heading {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    gap: 0.85rem;
+    list-style: none;
+    padding: 1.25rem 1.5rem;
+}
+
+.application-form-section-heading::-webkit-details-marker {
+    display: none;
+}
+
+.application-form-section-heading::after {
+    border-bottom: 2px solid #73797a;
+    border-right: 2px solid #73797a;
+    content: "";
+    height: 0.55rem;
+    margin-left: auto;
+    transform: rotate(45deg);
+    transition: transform 160ms ease;
+    width: 0.55rem;
+}
+
+.application-form-section[open] > .application-form-section-heading {
+    border-bottom: 1px solid #eceeef;
+}
+
+.application-form-section[open] > .application-form-section-heading::after {
+    transform: rotate(225deg);
+}
+
+.application-form-section-heading:hover,
+.application-form-section-heading:focus-visible {
+    background: #fafbfb;
+}
+
+.application-form-section-heading:focus-visible {
+    outline: 3px solid rgba(74, 193, 193, 0.45);
+    outline-offset: -3px;
+}
+
+.application-form-section-content {
+    padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.application-form-section-heading > span {
+    align-items: center;
+    background: #363c3d;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    flex: 0 0 2rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    height: 2rem;
+    justify-content: center;
+}
+
+.application-form-section-heading h2 {
+    color: #252a2b;
+    font-size: 1rem;
+    margin: 0 0 0.2rem;
+}
+
+.application-field-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+}
+
+.application-field-grid--single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.application-field-grid > div,
+.application-written-answers > div {
+    background: #f7f8f8;
+    border: 1px solid #eceeee;
+    border-radius: 0.4rem;
+    padding: 0.8rem 0.9rem;
+}
+
+.application-field-grid dt,
+.application-written-answers dt {
+    color: #7b8182;
+    font-size: 0.68rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+}
+
+.application-field-grid dd,
+.application-written-answers dd {
+    color: #2d3233;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-line;
+}
+
+.application-written-answers {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+}
+
+.application-written-answers a,
+.application-document-list a {
+    color: #276f70;
+    font-weight: 700;
+}
+
+.application-detail-subsection {
+    margin-top: 1.25rem;
+}
+
+.application-detail-subsection h3 {
+    color: #34393a;
+    font-size: 0.82rem;
+    margin: 0 0 0.7rem;
+}
+
+.application-module-list,
+.application-document-list {
+    display: grid;
+    gap: 0.65rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.application-module-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.application-module-list li,
+.application-document-list li {
+    align-items: center;
+    background: #f7f8f8;
+    border: 1px solid #eceeee;
+    border-radius: 0.4rem;
+    display: flex;
+    gap: 0.8rem;
+    justify-content: space-between;
+    padding: 0.75rem 0.9rem;
+}
+
+.application-module-list li {
+    justify-content: flex-start;
+}
+
+.application-module-list strong,
+.application-document-list strong {
+    color: #303536;
+    font-size: 0.78rem;
+}
+
+.application-module-list span,
+.application-document-list small {
+    color: #73797a;
+    font-size: 0.74rem;
+}
+
+.application-document-list li > span {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.application-document-list small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.application-empty-value {
+    color: #7b8182;
+    font-size: 0.78rem;
+    margin: 0;
+}
+
+.application-review {
+    border-top: 1px solid #dfe3e3;
+    margin-top: 0.35rem;
+    padding: 1.5rem 0 0;
+}
+
+.application-review h2 {
+    color: #252a2b;
+    font-size: 1rem;
+    margin: 0 0 1rem;
+}
+
+.application-review label {
+    color: #34393a;
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 0.45rem;
+}
+
+.application-review textarea {
+    border: 1px solid #d7dbdc;
+    border-radius: 0.45rem;
+    color: #252a2b;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    padding: 0.75rem;
+    resize: vertical;
+    width: 100%;
+}
+
+.application-review textarea:focus {
+    border-color: #4ac1c1;
+    outline: 3px solid rgba(74, 193, 193, 0.22);
+}
+
+.application-review textarea[aria-invalid="true"] {
+    border-color: #b83c4b;
+    outline: 3px solid rgba(184, 60, 75, 0.14);
+}
+
+.application-review-validation,
+.application-review-error {
+    color: #a12f3d;
+    display: block;
+    font-size: 0.75rem;
+    margin: 0.35rem 0 0;
+}
+
+.application-review-actions {
+    display: flex;
+    gap: 0.65rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.application-review-actions button {
+    background: #363c3d;
+    border: 1px solid #363c3d;
+    border-radius: 0.45rem;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    min-height: 2.65rem;
+    padding: 0.6rem 1rem;
+}
+
+.application-review-actions button:hover,
+.application-review-actions button:focus-visible {
+    background: #252a2b;
+}
+
+.application-review-actions .application-reject-button {
+    background: #b42318;
+    border: 0;
+    color: #fff;
+}
+
+.application-review-actions .application-reject-button:hover,
+.application-review-actions .application-reject-button:focus-visible {
+    background: #8f1d14;
+    color: #fff;
+}
+
+.application-reject-modal {
+    background: #fff;
+    border: 0;
+    border-radius: 0.65rem;
+    box-shadow: 0 1.25rem 3rem rgba(25, 30, 32, 0.24);
+    color: #252a2b;
+    max-width: min(30rem, calc(100vw - 2rem));
+    padding: 1.5rem;
+    width: 100%;
+}
+
+.application-reject-modal::backdrop {
+    background: rgba(20, 23, 24, 0.56);
+}
+
+.application-reject-modal h2 {
+    font-size: 1.15rem;
+    margin: 0 0 0.65rem;
+}
+
+.application-reject-modal p {
+    color: #646a6b;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.application-reject-modal-actions {
+    display: flex;
+    gap: 0.65rem;
+    justify-content: flex-end;
+    margin-top: 1.35rem;
+}
+
+.application-reject-modal-actions button {
+    border-radius: 0.45rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    min-height: 2.65rem;
+    padding: 0.6rem 1rem;
+}
+
+.application-modal-cancel {
+    background: #fff;
+    border: 1px solid #d7dbdc;
+    color: #363c3d;
+}
+
+.application-modal-cancel:hover,
+.application-modal-cancel:focus-visible {
+    background: #f3f5f5;
+}
+
+.application-modal-confirm {
+    background: #b42318;
+    border: 0;
+    color: #fff;
+}
+
+.application-modal-confirm:hover,
+.application-modal-confirm:focus-visible {
+    background: #8f1d14;
+}
+
+@media (max-width: 767.98px) {
+    .application-details-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .application-field-grid,
+    .application-module-list {
+        grid-template-columns: 1fr;
+    }
+
+    .application-form-section-heading {
+        padding: 1rem 1.1rem;
+    }
+
+    .application-form-section-content {
+        padding: 1rem 1.1rem 1.1rem;
+    }
+
+    .application-reject-modal-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+    }
+}

@@ -1,6 +1,7 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Pages.Administrator.Admin;
+using BC_CampusLearn.Services.Tutors;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -53,6 +54,47 @@ public class AdminApplicationsTests
         Assert.Equal("Pending Candidate", page.Candidates[0].DisplayName);
     }
 
+    [Theory]
+    [InlineData("applications")]
+    [InlineData("shortlist")]
+    [InlineData("interview")]
+    [InlineData("placement")]
+    public async Task ApplicationTablesExcludeRejectedTutorsRegardlessOfStage(
+        string stage)
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        context.BcUsers.Add(CreateUser(1, "Rejected Candidate", "ST1004"));
+        Tutor rejected = CreateTutor(1, TutorStatus.Rejected);
+        rejected.ApplicationStage = stage switch
+        {
+            "shortlist" => TutorApplicationStage.Shortlisted,
+            "interview" => TutorApplicationStage.Interview,
+            "placement" => TutorApplicationStage.Placement,
+            _ => TutorApplicationStage.Submitted
+        };
+        context.Tutors.Add(rejected);
+        await context.SaveChangesAsync();
+
+        var page = new ApplicationsModel(context) { Stage = stage };
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Empty(page.Candidates);
+        Assert.Equal(0, page.ApplicationCount);
+        Assert.Equal(0, page.ShortlistCount);
+        Assert.Equal(0, page.InterviewCount);
+        Assert.Equal(0, page.PlacementCount);
+    }
+
     [Fact]
     public async Task ClosedSettingDoesNotHideApplicationsFromAdministrator()
     {
@@ -90,7 +132,7 @@ public class AdminApplicationsTests
     }
 
     [Fact]
-    public async Task ReachingShortlistTargetRejectsUncheckedApplications()
+    public async Task ShortlistingCandidatesLeavesUncheckedApplicationsOpen()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -119,8 +161,10 @@ public class AdminApplicationsTests
         await context.SaveChangesAsync();
 
         var page = new ApplicationsModel(context);
-        await page.OnPostShortlistAsync(1, false, CancellationToken.None);
-        await page.OnPostShortlistAsync(2, true, CancellationToken.None);
+        await page.OnPostShortlistAsync(
+            1, "Strong academic results", CancellationToken.None);
+        await page.OnPostShortlistAsync(
+            2, "Clear tutoring motivation", CancellationToken.None);
 
         Tutor first = await context.Tutors.FindAsync(1)
             ?? throw new InvalidOperationException();
@@ -131,12 +175,26 @@ public class AdminApplicationsTests
 
         Assert.Equal(TutorApplicationStage.Shortlisted, first.ApplicationStage);
         Assert.Equal(TutorApplicationStage.Shortlisted, second.ApplicationStage);
-        Assert.Equal(TutorStatus.Rejected, uncheckedCandidate.Status);
-        Assert.NotNull(uncheckedCandidate.ReviewedAt);
+        Assert.Equal("Strong academic results", first.ShortlistReason);
+        Assert.Equal(2, await context.UserNotifications.CountAsync());
+        Assert.Equal(TutorStatus.Pending, uncheckedCandidate.Status);
+        Assert.Equal(
+            TutorApplicationStage.Submitted,
+            uncheckedCandidate.ApplicationStage);
+
+        page.Stage = "applications";
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Equal(1, page.ApplicationCount);
+        Assert.Single(page.Candidates);
+
+        page.Stage = "shortlist";
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Equal(2, page.ShortlistCount);
+        Assert.Equal(2, page.Candidates.Count);
     }
 
     [Fact]
-    public async Task FinalShortlistPlaceRequiresExplicitConfirmation()
+    public async Task AdministratorCanRejectApplicationWithReasonAndNotification()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -158,17 +216,57 @@ public class AdminApplicationsTests
         });
         await context.SaveChangesAsync();
 
-        var page = new ApplicationsModel(context);
-        await page.OnPostShortlistAsync(1, false, CancellationToken.None);
+        ShortlistResult result = await TutorApplicationReview.RejectAsync(
+            context,
+            1,
+            "The application does not meet the academic requirements.",
+            CancellationToken.None);
 
-        Tutor candidate = await context.Tutors.FindAsync(1)
-            ?? throw new InvalidOperationException();
-        Assert.Equal(TutorApplicationStage.Submitted, candidate.ApplicationStage);
-        Assert.Contains("Confirm", page.PageError);
+        Assert.True(result.Succeeded);
+        Assert.Null(await context.Tutors.FindAsync(1));
+        UserNotification notification = await context.UserNotifications
+            .SingleAsync();
+        Assert.Equal(1, notification.RecipientBcUserId);
+        Assert.Contains("not moved", notification.Message);
+        Assert.Contains(
+            "The application does not meet the academic requirements.",
+            notification.Message);
     }
 
     [Fact]
-    public async Task OpenCycleWithoutTargetAllowsUnlimitedShortlisting()
+    public async Task AdministratorCanRejectApplicationWithoutReason()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Diploma in IT"
+        });
+        context.BcUsers.Add(CreateUser(1, "Rejected Candidate", "ST4002"));
+        context.Tutors.Add(CreateTutor(1, TutorStatus.Pending));
+        await context.SaveChangesAsync();
+
+        ShortlistResult result = await TutorApplicationReview.RejectAsync(
+            context,
+            1,
+            null,
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Null(await context.Tutors.FindAsync(1));
+        UserNotification notification = await context.UserNotifications
+            .SingleAsync();
+        Assert.Equal(
+            "Your tutor application was not moved to the shortlist.",
+            notification.Message);
+    }
+
+    [Fact]
+    public async Task OpeningCycleSavesTargetAndApplicationDates()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -189,13 +287,16 @@ public class AdminApplicationsTests
         await context.SaveChangesAsync();
 
         var page = new ApplicationsModel(context);
+        DateTime openDate = DateTime.UtcNow.Date;
+        DateTime closeDate = openDate.AddMonths(1);
         await page.OnPostSettingsAsync(
             true,
-            null,
-            true,
-            true,
+            2,
+            openDate,
+            closeDate,
             CancellationToken.None);
-        await page.OnPostShortlistAsync(1, false, CancellationToken.None);
+        await page.OnPostShortlistAsync(
+            1, "Meets the criteria", CancellationToken.None);
 
         TutorApplicationSettings settings = await context
             .TutorApplicationSettings.SingleAsync();
@@ -206,11 +307,133 @@ public class AdminApplicationsTests
 
         Assert.True(settings.IsOpen);
         Assert.True(settings.NotifyStudents);
-        Assert.Null(settings.ShortlistLimit);
+        Assert.Equal(2, settings.ShortlistLimit);
+        Assert.Equal(openDate, settings.OpenDate);
+        Assert.Equal(closeDate, settings.CloseDate);
+        Assert.False(settings.ContinueAfterShortlistLimit);
         Assert.Equal(
             TutorApplicationStage.Shortlisted,
             shortlisted.ApplicationStage);
+        UserNotification notification = await context.UserNotifications
+            .SingleAsync();
+        Assert.Equal(shortlisted.BcUserId, notification.RecipientBcUserId);
+        Assert.Contains("Meets the criteria", notification.Message);
         Assert.Equal(TutorStatus.Pending, uncheckedCandidate.Status);
+    }
+
+    [Fact]
+    public async Task ShortlistingRequiresAReasonBeforeChangingTheApplication()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        context.BcUsers.Add(CreateUser(
+            1,
+            "Unreviewed Candidate",
+            "ST5501"));
+        context.Tutors.Add(CreateTutor(1, TutorStatus.Pending));
+        context.TutorApplicationSettings.Add(new TutorApplicationSettings
+        {
+            IsOpen = true,
+            UpdatedAt = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        var page = new ApplicationsModel(context);
+        await page.OnPostShortlistAsync(
+            1,
+            "   ",
+            CancellationToken.None);
+
+        Tutor candidate = await context.Tutors.FindAsync(1)
+            ?? throw new InvalidOperationException();
+        Assert.Equal(
+            TutorApplicationStage.Submitted,
+            candidate.ApplicationStage);
+        Assert.Null(candidate.ShortlistReason);
+        Assert.Empty(context.UserNotifications);
+        Assert.Contains(
+            "reason",
+            page.PageError,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ShortlistTargetRequiresAdministratorConfirmationBeforeContinuing()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        context.BcUsers.AddRange(
+            CreateUser(1, "Target Candidate", "ST5601"),
+            CreateUser(2, "Extra Candidate", "ST5602"));
+        context.Tutors.AddRange(
+            CreateTutor(1, TutorStatus.Pending),
+            CreateTutor(2, TutorStatus.Pending));
+        context.TutorApplicationSettings.Add(new TutorApplicationSettings
+        {
+            IsOpen = true,
+            ShortlistLimit = 1,
+            OpenDate = DateTime.UtcNow.Date,
+            CloseDate = DateTime.UtcNow.Date.AddDays(7),
+            UpdatedAt = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        ShortlistResult targetResult = await TutorApplicationReview.ShortlistAsync(
+            context, 1, "Meets the target", CancellationToken.None);
+        ShortlistResult blockedResult = await TutorApplicationReview.ShortlistAsync(
+            context, 2, "Also suitable", CancellationToken.None);
+
+        Assert.True(targetResult.Succeeded);
+        Assert.True(targetResult.ShortlistLimitReached);
+        Assert.False(blockedResult.Succeeded);
+        Assert.True(blockedResult.RequiresContinuation);
+        Assert.Equal(
+            TutorApplicationStage.Submitted,
+            (await context.Tutors.FindAsync(2))!.ApplicationStage);
+
+        var page = new ApplicationsModel(context);
+        await page.OnPostContinueShortlistingAsync(CancellationToken.None);
+        ShortlistResult continuedResult = await TutorApplicationReview.ShortlistAsync(
+            context, 2, "Also suitable", CancellationToken.None);
+
+        Assert.True(continuedResult.Succeeded);
+        Assert.Equal(
+            TutorApplicationStage.Shortlisted,
+            (await context.Tutors.FindAsync(2))!.ApplicationStage);
+    }
+
+    [Fact]
+    public void ApplicationCycleOnlyAcceptsSubmissionsInsideConfiguredDates()
+    {
+        DateTime today = new(2026, 9, 15, 12, 0, 0, DateTimeKind.Utc);
+        var settings = new TutorApplicationSettings
+        {
+            IsOpen = true,
+            OpenDate = today.Date,
+            CloseDate = today.Date.AddDays(7)
+        };
+
+        Assert.True(settings.IsAcceptingApplications(today));
+        Assert.False(settings.IsAcceptingApplications(today.AddDays(-1)));
+        Assert.False(settings.IsAcceptingApplications(today.AddDays(8)));
+        settings.IsOpen = false;
+        Assert.False(settings.IsAcceptingApplications(today));
     }
 
     [Fact]

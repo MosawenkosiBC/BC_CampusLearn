@@ -86,6 +86,39 @@ public class AdminTutorsTests
         Assert.Equal(1, page.TutorPage);
     }
 
+    [Fact]
+    public async Task TutorDirectoryExcludesRejectedApplications()
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var rejectedApplicant = new Tutor
+        {
+            TutorId = 19,
+            BcUser = new BcUser
+            {
+                BcUserId = 19,
+                PersonnelNumber = "S19",
+                DisplayName = "Rejected Applicant"
+            },
+            ProgrammeId = 1,
+            YearOfStudy = 2,
+            ReasonForTutoring = "Reason",
+            TeachingStyle = "Style",
+            PreviousTutoringExperience = "Experience",
+            CampusOfStudy = "Pretoria",
+            DemonstrationVideoUrl = "",
+            Status = TutorStatus.Rejected
+        };
+        context.Tutors.Add(rejectedApplicant);
+        await context.SaveChangesAsync();
+
+        var page = new IndexModel(context) { SearchName = "Rejected Applicant" };
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Empty(page.Tutors);
+        Assert.Equal(0, page.TotalTutors);
+    }
+
     [Theory]
     [InlineData("PRG")]
     [InlineData("Programming")]

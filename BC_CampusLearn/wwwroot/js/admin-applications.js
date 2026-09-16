@@ -3,18 +3,22 @@
         "[data-application-settings-form]");
     const toggle = settingsForm?.querySelector(
         "[data-applications-toggle]");
-    const limitModal = document.querySelector(
-        "[data-shortlist-limit-modal]");
-    const finalModal = document.querySelector(
-        "[data-final-shortlist-modal]");
+    const settingsModal = document.querySelector(
+        "[data-application-settings-modal]");
+    const thresholdModal = document.querySelector(
+        "[data-shortlist-threshold-modal]");
+    const reviewResultModal = document.querySelector(
+        "[data-review-result-modal]");
+    const cycleForm = settingsModal?.querySelector(
+        "[data-cycle-settings-form]");
+    const cycleOpenDate = cycleForm?.querySelector(
+        "[data-cycle-open-date]");
+    const cycleCloseDate = cycleForm?.querySelector(
+        "[data-cycle-close-date]");
+    const cycleValidation = cycleForm?.querySelector(
+        "[data-cycle-validation]");
     const addTutorModal = document.querySelector(
         "[data-add-tutor-modal]");
-    const limitForm = limitModal?.querySelector(
-        "[data-shortlist-limit-form]");
-    const limitInput = limitForm?.querySelector(
-        "[name='shortlistLimit']");
-    const limitValidation = limitForm?.querySelector(
-        "[data-shortlist-limit-validation]");
     const studentPicker = document.querySelector("[data-student-picker]");
     const studentSearch = studentPicker?.querySelector(
         "[data-student-search]");
@@ -88,48 +92,37 @@
         }
     });
 
-    const clearLimitValidation = () => {
-        if (limitValidation) {
-            limitValidation.textContent = "";
-        }
-        limitInput?.removeAttribute("aria-invalid");
-    };
-
-    limitInput?.addEventListener("input", clearLimitValidation);
-
-    limitForm?.addEventListener("submit", event => {
-        if (event.submitter?.name === "openWithoutTarget") {
-            clearLimitValidation();
-            return;
-        }
-
-        const target = Number(limitInput?.value);
-        const isValid = limitInput?.value.trim() &&
-            Number.isInteger(target) &&
-            target > 0;
-
-        if (isValid) {
-            clearLimitValidation();
-            return;
-        }
-
-        event.preventDefault();
-        if (limitValidation) {
-            limitValidation.textContent =
-                "Enter a whole number greater than 0.";
-        }
-        limitInput?.setAttribute("aria-invalid", "true");
-        limitInput?.focus();
-    });
-
     toggle?.addEventListener("change", () => {
         if (toggle.checked) {
-            limitModal?.showModal();
-            limitModal?.querySelector("input[type='number']")?.focus();
+            toggle.checked = false;
+            settingsModal?.showModal();
             return;
         }
-
         settingsForm.requestSubmit();
+    });
+
+    const syncClosingDate = () => {
+        if (!cycleOpenDate || !cycleCloseDate) {
+            return;
+        }
+        cycleCloseDate.min = cycleOpenDate.value;
+    };
+
+    cycleOpenDate?.addEventListener("change", syncClosingDate);
+    syncClosingDate();
+
+    cycleForm?.addEventListener("submit", event => {
+        if (!cycleOpenDate?.value || !cycleCloseDate?.value ||
+            cycleCloseDate.value >= cycleOpenDate.value) {
+            return;
+        }
+        event.preventDefault();
+        if (cycleValidation) {
+            cycleValidation.textContent =
+                "The closing date must be on or after the opening date.";
+        }
+        cycleCloseDate.setAttribute("aria-invalid", "true");
+        cycleCloseDate.focus();
     });
 
     document.querySelectorAll("[data-admin-modal-close]")
@@ -138,34 +131,6 @@
                 const modal = button.closest("dialog");
                 modal?.close();
 
-                if (modal === limitModal && toggle) {
-                    toggle.checked = false;
-                    clearLimitValidation();
-                }
-            });
-        });
-
-    document.querySelectorAll("[data-final-shortlist]")
-        .forEach(button => {
-            button.addEventListener("click", () => {
-                if (!finalModal) {
-                    return;
-                }
-
-                const idInput = finalModal.querySelector(
-                    "[data-final-candidate-id]");
-                const name = finalModal.querySelector(
-                    "[data-final-candidate-name]");
-
-                if (idInput) {
-                    idInput.value = button.dataset.candidateId ?? "";
-                }
-                if (name) {
-                    name.textContent = button.dataset.candidateName ??
-                        "this candidate";
-                }
-
-                finalModal.showModal();
             });
         });
 
@@ -173,6 +138,18 @@
         ?.addEventListener("click", () => {
             addTutorModal?.showModal();
         });
+
+    if (thresholdModal?.dataset.show === "true") {
+        thresholdModal.showModal();
+    }
+
+    if (settingsModal?.dataset.show === "true") {
+        settingsModal.showModal();
+    }
+
+    if (reviewResultModal?.dataset.show === "true") {
+        reviewResultModal.showModal();
+    }
 
     document.addEventListener("click", event => {
         if (studentPicker && !studentPicker.contains(event.target)) {
@@ -183,15 +160,12 @@
         }
     });
 
-    [limitModal, finalModal, addTutorModal].forEach(modal => {
+    [addTutorModal, settingsModal, thresholdModal, reviewResultModal]
+        .forEach(modal => {
         modal?.addEventListener("click", event => {
             if (event.target === modal) {
                 modal.close();
-                if (modal === limitModal && toggle) {
-                    toggle.checked = false;
-                    clearLimitValidation();
-                }
             }
         });
-    });
+        });
 })();
