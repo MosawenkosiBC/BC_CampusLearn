@@ -34,7 +34,8 @@
             @foreach (var notification in Model.Notifications)
             {
                 <a class="message-notification-item"
-                   href="/Notifications/Open/@notification.UserNotificationId">
+                   asp-page="/Notifications/Index"
+                   asp-route-notificationId="@notification.UserNotificationId">
                     <span class="message-notification-sender">@notification.Title</span>
                     <span class="message-notification-preview">@notification.Message</span>
                     <time datetime="@notification.CreatedAt.ToString("O")">
@@ -47,5 +48,8 @@
         {
             <p class="message-notification-empty">You have no unread notifications.</p>
         }
+        <div class="user-notification-footer">
+            <a asp-page="/Notifications/Index">View all notifications</a>
+        </div>
     </div>
 </div>

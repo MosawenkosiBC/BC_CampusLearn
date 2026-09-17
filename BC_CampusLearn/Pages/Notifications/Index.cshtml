@@ -1,0 +1,147 @@
+@page "/Notifications"
+@model BC_CampusLearn.Pages.Notifications.IndexModel
+
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/Dashboard.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/components/pagination.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/notifications.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/components/navigation-drawer.css"
+          asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<main class="notifications-page" aria-labelledby="notifications-title">
+    <header class="notifications-header">
+        <h1 id="notifications-title">Notifications</h1>
+        @if (Model.UnreadCount > 0)
+        {
+            <form method="post" asp-page-handler="MarkAllRead">
+                <input type="hidden"
+                       name="currentPage"
+                       value="@Model.CurrentPage" />
+                <button type="submit" class="notifications-mark-all">
+                    Mark all as read
+                </button>
+            </form>
+        }
+    </header>
+
+    @if (Model.Notifications.Count == 0)
+    {
+        <section class="notifications-empty" aria-live="polite">
+            <span aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+                </svg>
+            </span>
+            <h2>No notifications</h2>
+            <p>There is nothing to show here yet.</p>
+        </section>
+    }
+    else
+    {
+        <ol class="notifications-list">
+            @foreach (var notification in Model.Notifications)
+            {
+                DateTimeOffset localCreatedAt = notification.CreatedAt
+                    .ToOffset(TimeSpan.FromHours(2));
+                bool isUnread = !notification.ReadAt.HasValue;
+                <li class="notification-row @(isUnread ? "is-unread" : "is-read")">
+                    <time class="notification-date"
+                          datetime="@notification.CreatedAt.ToString("O")">
+                        @localCreatedAt.ToString("dd/MM/yyyy")
+                    </time>
+                    <a class="notification-card"
+                       asp-page="/Notifications/Index"
+                       asp-route-notificationId="@notification.NotificationId"
+                       aria-label="Open @notification.Title notification">
+                        <span class="notification-card-content">
+                            <span class="notification-card-copy">
+                                <strong>@notification.Title</strong>
+                                <span>@notification.Message</span>
+                            </span>
+                            <time datetime="@notification.CreatedAt.ToString("O")">
+                                @localCreatedAt.ToString("HH:mm")
+                            </time>
+                        </span>
+                        @if (isUnread)
+                        {
+                            <span class="notification-unread-dot"
+                                  aria-label="Unread"></span>
+                        }
+                    </a>
+                </li>
+            }
+        </ol>
+
+        @if (Model.TotalPages > 1)
+        {
+            @await Component.InvokeAsync(
+                "Pagination",
+                new
+                {
+                    currentPage = Model.CurrentPage,
+                    totalPages = Model.TotalPages,
+                    ariaLabel = "Notifications pages",
+                    pageRouteValueName = "CurrentPage"
+                })
+        }
+    }
+</main>
+
+@if (Model.SelectedNotification is not null)
+{
+    DateTimeOffset selectedLocalCreatedAt = Model.SelectedNotification.CreatedAt
+        .ToOffset(TimeSpan.FromHours(2));
+    <dialog class="notification-modal"
+            data-notification-modal
+            aria-labelledby="notification-modal-title">
+        <div class="notification-modal-header">
+            <h2 id="notification-modal-title">
+                @Model.SelectedNotification.Title
+            </h2>
+            <button type="button"
+                    class="notification-modal-close"
+                    data-notification-modal-close
+                    aria-label="Close notification">
+                &times;
+            </button>
+        </div>
+        <div class="notification-modal-body">
+            <time datetime="@Model.SelectedNotification.CreatedAt.ToString("O")">
+                @selectedLocalCreatedAt.ToString("dd MMMM yyyy 'at' HH:mm")
+            </time>
+            <p>@Model.SelectedNotification.Message</p>
+        </div>
+        <div class="notification-modal-footer">
+            <button type="button"
+                    class="notification-modal-dismiss"
+                    data-notification-modal-close>
+                Close
+            </button>
+            <a class="notification-modal-action"
+               href="/Notifications/Open/@Model.SelectedNotification.NotificationId">
+                View related page
+            </a>
+        </div>
+    </dialog>
+}
+
+@section Scripts {
+    <script src="~/js/components/navigation-drawer.js"
+            asp-append-version="true"></script>
+    <script src="~/js/notifications.js" asp-append-version="true"></script>
+}

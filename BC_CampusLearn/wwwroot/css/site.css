@@ -44,12 +44,12 @@ textarea {
   border-radius: 999px;
   color: #fff;
   display: inline-flex;
-  font-size: 0.62rem;
+  font-size: 12px;
   font-weight: 700;
-  height: 1.15rem;
+  height: 20px;
   justify-content: center;
-  min-width: 1.15rem;
-  padding: 0 0.22rem;
+  min-width: 20px;
+  padding: 0 4px;
   position: absolute;
   right: -0.28rem;
   top: -0.28rem;
@@ -59,10 +59,15 @@ textarea {
   border: 0;
   border-radius: 0.7rem;
   box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.14);
+  flex-direction: column;
   max-height: min(31rem, 75vh);
-  overflow-y: auto;
+  overflow: hidden;
   padding: 0;
   width: min(24rem, calc(100vw - 1.5rem));
+}
+
+.message-notification-menu.show {
+  display: flex;
 }
 
 .message-notification-heading {
@@ -75,17 +80,19 @@ textarea {
 
 .message-notification-heading strong {
   color: #252525;
-  font-size: 1rem;
+  font-size: 18px;
 }
 
 .message-notification-heading span {
   color: #727272;
-  font-size: 0.78rem;
+  font-size: 12px;
 }
 
 .message-notification-list {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .message-notification-item {
@@ -93,7 +100,7 @@ textarea {
   color: #252525;
   display: grid;
   gap: 0.18rem;
-  padding: 0.8rem 1rem;
+  padding: 1rem;
   text-decoration: none;
 }
 
@@ -105,13 +112,13 @@ textarea {
 }
 
 .message-notification-sender {
-  font-size: 0.9rem;
+  font-size: 16px;
   font-weight: 700;
 }
 
 .message-notification-preview {
   display: -webkit-box;
-  font-size: 0.82rem;
+  font-size: 16px;
   line-height: 1.35;
   overflow: hidden;
   -webkit-box-orient: vertical;
@@ -120,15 +127,37 @@ textarea {
 
 .message-notification-item time {
   color: #7a7a7a;
-  font-size: 0.72rem;
+  font-size: 12px;
 }
 
 .message-notification-empty {
   color: #707070;
-  font-size: 0.85rem;
+  font-size: 16px;
   margin: 0;
   padding: 1.35rem 1rem;
   text-align: center;
+}
+
+.user-notification-footer {
+  background: #fff;
+  border-top: 1px solid #ececec;
+  flex: 0 0 auto;
+  padding: 0.7rem 1rem;
+  text-align: center;
+}
+
+.user-notification-footer a {
+  color: #363c3d;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.user-notification-footer a:hover,
+.user-notification-footer a:focus-visible {
+  color: #8f0043;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
 }
 
 @media (max-width: 575.98px) {
