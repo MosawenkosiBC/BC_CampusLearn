@@ -81,6 +81,74 @@ public class ApplicationDbContext : DbContext
     public DbSet<ResourceComment> ResourceComments =>
         Set<ResourceComment>();
 
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        SynchronizeTutorRoles();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override async Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
+        await SynchronizeTutorRolesAsync(cancellationToken);
+        return await base.SaveChangesAsync(
+            acceptAllChangesOnSuccess,
+            cancellationToken);
+    }
+
+    private void SynchronizeTutorRoles()
+    {
+        ChangeTracker.DetectChanges();
+        foreach (var tutorEntry in ChangedTutorEntries())
+        {
+            BcUser? user = tutorEntry.Entity.BcUser ??
+                BcUsers.Local.FirstOrDefault(item =>
+                    item.BcUserId == tutorEntry.Entity.BcUserId) ??
+                BcUsers.Find(tutorEntry.Entity.BcUserId);
+            ApplyTutorRole(user, tutorEntry);
+        }
+    }
+
+    private async Task SynchronizeTutorRolesAsync(
+        CancellationToken cancellationToken)
+    {
+        ChangeTracker.DetectChanges();
+        foreach (var tutorEntry in ChangedTutorEntries())
+        {
+            BcUser? user = tutorEntry.Entity.BcUser ??
+                BcUsers.Local.FirstOrDefault(item =>
+                    item.BcUserId == tutorEntry.Entity.BcUserId) ??
+                await BcUsers.FindAsync(
+                    [tutorEntry.Entity.BcUserId],
+                    cancellationToken);
+            ApplyTutorRole(user, tutorEntry);
+        }
+    }
+
+    private IReadOnlyList<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<Tutor>>
+        ChangedTutorEntries() => ChangeTracker.Entries<Tutor>()
+            .Where(entry => entry.State is EntityState.Added or
+                EntityState.Modified or EntityState.Deleted)
+            .ToList();
+
+    private static void ApplyTutorRole(
+        BcUser? user,
+        Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<Tutor> tutorEntry)
+    {
+        if (user is null ||
+            user.Role is not (BcUserRole.Student or BcUserRole.Tutor))
+        {
+            return;
+        }
+
+        bool isActiveTutor = tutorEntry.State != EntityState.Deleted &&
+            tutorEntry.Entity.Status == TutorStatus.Approved &&
+            tutorEntry.Entity.ApplicationStage == TutorApplicationStage.Placement &&
+            tutorEntry.Entity.IsActive;
+        user.Role = isActiveTutor ? BcUserRole.Tutor : BcUserRole.Student;
+    }
+
 
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)

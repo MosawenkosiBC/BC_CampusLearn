@@ -138,9 +138,14 @@
             shortlisting beyond this target?
         </p>
         <div class="admin-modal-actions">
-            <button type="button"
-                    class="admin-modal-no-target"
-                    data-admin-modal-close>Stop for now</button>
+            <form method="post" asp-page-handler="Settings">
+                <input type="hidden" name="Stage" value="applications" />
+                <input type="hidden" name="Search" value="@Model.Search" />
+                <input type="hidden" name="isOpen" value="false" />
+                <button type="submit" class="admin-modal-no-target">
+                    Close Applications
+                </button>
+            </form>
             <form method="post" asp-page-handler="ContinueShortlisting">
                 <input type="hidden" name="Search" value="@Model.Search" />
                 <button type="submit">Continue shortlisting</button>
@@ -320,6 +325,26 @@
                                 View
                             </button>
                         }
+                        else if (Model.Stage == "interview")
+                        {
+                            <button type="button"
+                                    class="candidate-view-link"
+                                    aria-label="Open the interview workspace for @candidate.DisplayName"
+                                    aria-haspopup="dialog"
+                                    data-interview-process-open
+                                    data-interview-process-modal-id="interview-candidate-@candidate.TutorId">
+                                View
+                            </button>
+                        }
+                        else if (Model.Stage == "placement")
+                        {
+                            <a asp-page="/Administrator/Tutors/Profile"
+                               asp-route-id="@candidate.TutorId"
+                               class="candidate-view-link"
+                               aria-label="View the tutor profile for @candidate.DisplayName">
+                                View
+                            </a>
+                        }
                         else
                         {
                             <a asp-page="/Administrator/Admin/ApplicationDetails"
@@ -352,7 +377,6 @@
                         aria-label="Close">&times;</button>
 
                 <header class="shortlist-review-header">
-                    <span>Shortlisted applicant</span>
                     <h2 id="shortlist-candidate-title-@candidate.TutorId">@candidate.DisplayName</h2>
                     <p>Submitted @candidate.SubmittedAt.ToString("dd MMMM yyyy")</p>
                 </header>
@@ -360,11 +384,11 @@
                 <section class="shortlist-modal-section" aria-labelledby="applicant-details-@candidate.TutorId">
                     <h3 id="applicant-details-@candidate.TutorId">Applicant details</h3>
 
-                    <details class="shortlist-detail-group">
+                    <details class="shortlist-detail-group"
+                             name="shortlist-applicant-details-@candidate.TutorId">
                         <summary>Personal and academic details</summary>
                         <dl class="shortlist-detail-grid">
                             <div><dt>Full name</dt><dd>@candidate.DisplayName</dd></div>
-                            <div><dt>Student number</dt><dd>@candidate.PersonnelNumber</dd></div>
                             <div><dt>Email address</dt><dd>@(candidate.Email ?? "Not provided")</dd></div>
                             <div><dt>Phone number</dt><dd>@(candidate.PhoneNumber ?? "Not provided")</dd></div>
                             <div><dt>Programme</dt><dd>@candidate.ProgrammeName</dd></div>
@@ -375,7 +399,8 @@
                         </dl>
                     </details>
 
-                    <details class="shortlist-detail-group">
+                    <details class="shortlist-detail-group"
+                             name="shortlist-applicant-details-@candidate.TutorId">
                         <summary>Motivation and teaching profile</summary>
                         <dl class="shortlist-written-answers">
                             <div>
@@ -408,7 +433,8 @@
                         </dl>
                     </details>
 
-                    <details class="shortlist-detail-group">
+                    <details class="shortlist-detail-group"
+                             name="shortlist-applicant-details-@candidate.TutorId">
                         <summary>Modules and documents</summary>
                         <div class="shortlist-detail-content">
                             <h4>Selected modules</h4>
@@ -455,123 +481,671 @@
                     </details>
                 </section>
 
-                <section class="shortlist-modal-section shortlist-decision-history"
-                         aria-labelledby="decision-history-@candidate.TutorId">
-                    <h3 id="decision-history-@candidate.TutorId">Decision history</h3>
-                    @if (candidate.DecisionHistory.Count == 0)
-                    {
-                        <p class="shortlist-history-empty">No decisions have been recorded.</p>
-                    }
-                    else
-                    {
-                        <ol class="shortlist-timeline">
-                            @foreach (var decision in candidate.DecisionHistory)
-                            {
-                                <li>
-                                    <span class="shortlist-timeline-marker" aria-hidden="true"></span>
-                                    <div>
-                                        <header>
-                                            <strong>@decision.Label</strong>
-                                            <time datetime="@decision.ReviewedAt.ToString("O")">
-                                                @decision.ReviewedAt.ToString("dd MMM yyyy 'at' HH:mm")
-                                            </time>
-                                        </header>
-                                        <p>@decision.Notes</p>
-                                        <small>By @decision.AdminName</small>
-                                    </div>
-                                </li>
-                            }
-                        </ol>
-                    }
-                </section>
+                <details class="shortlist-workflow-accordion">
+                    <summary>
+                        <h3 id="interview-preparation-@candidate.TutorId">Interview preparation and decision history</h3>
+                    </summary>
+                    <div class="shortlist-workflow-content">
+                        <section class="shortlist-workflow-preparation"
+                                 aria-labelledby="prepare-notes-@candidate.TutorId">
+                            <h4 id="prepare-notes-@candidate.TutorId">Prepare for interview</h4>
+                            <form method="post"
+                                  id="shortlist-action-form-@candidate.TutorId"
+                                  class="shortlist-interview-form"
+                                  data-shortlist-action-form>
+                                <input type="hidden" name="tutorId" value="@candidate.TutorId" />
+                                <input type="hidden" name="Search" value="@Model.Search" />
+                                <label for="interview-notes-@candidate.TutorId"
+                                       class="shortlist-notes-label">
+                                    <span>Interview preparation notes</span>
+                                    <small>These are internal notes and will not be shared with the applicant.</small>
+                                </label>
+                                <textarea id="interview-notes-@candidate.TutorId"
+                                          name="InterviewPreparation.Notes"
+                                          rows="4"
+                                          maxlength="1000"
+                                          placeholder="Add notes for the interview panel."></textarea>
 
-                <section class="shortlist-modal-section"
-                         aria-labelledby="interview-preparation-@candidate.TutorId">
-                    <h3 id="interview-preparation-@candidate.TutorId">Prepare for interview</h3>
-                    <form method="post"
-                          class="shortlist-interview-form"
-                          data-shortlist-action-form>
-                        <input type="hidden" name="tutorId" value="@candidate.TutorId" />
-                        <input type="hidden" name="Search" value="@Model.Search" />
-                        <label for="interview-notes-@candidate.TutorId">
-                            Interview preparation notes
+                                <div class="shortlist-notes-actions">
+                                    <button type="submit"
+                                            class="shortlist-save-button"
+                                            asp-page-handler="SaveInterviewPreparation">
+                                        Save notes
+                                    </button>
+                                </div>
+                            </form>
+                        </section>
+
+                        <section class="shortlist-workflow-history"
+                                 aria-labelledby="decision-history-@candidate.TutorId">
+                            <h4 id="decision-history-@candidate.TutorId">Decision history</h4>
+                            <div class="shortlist-workflow-history-scroll">
+                                @if (candidate.DecisionHistory.Count == 0)
+                                {
+                                    <p class="shortlist-history-empty">No decisions have been recorded.</p>
+                                }
+                                else
+                                {
+                                    <ol class="shortlist-timeline">
+                                        @foreach (var decision in candidate.DecisionHistory)
+                                        {
+                                            <li>
+                                                <span class="shortlist-timeline-marker" aria-hidden="true"></span>
+                                                <div>
+                                                    <header>
+                                                        <strong>@decision.Label</strong>
+                                                        <time datetime="@decision.ReviewedAt.ToString("O")">
+                                                            @decision.ReviewedAt.ToString("dd MMM yyyy 'at' HH:mm")
+                                                        </time>
+                                                    </header>
+                                                    <p>@decision.Notes</p>
+                                                    <small>By @decision.AdminName</small>
+                                                </div>
+                                            </li>
+                                        }
+                                    </ol>
+                                }
+                            </div>
+                        </section>
+                    </div>
+                </details>
+
+                <footer class="shortlist-modal-footer">
+                    <button type="button"
+                            class="shortlist-reject-button"
+                            aria-haspopup="dialog"
+                            data-shortlist-reject-open
+                            data-reject-modal-id="shortlist-reject-@candidate.TutorId">
+                        Reject
+                    </button>
+                    <button type="button"
+                            class="shortlist-communicate-button"
+                            aria-haspopup="dialog"
+                            data-communicate-open
+                            data-communication-modal-id="candidate-email-@candidate.TutorId">
+                        Communicate
+                    </button>
+                    <button type="button"
+                            class="shortlist-interview-button"
+                            aria-haspopup="dialog"
+                            data-interview-confirm-open
+                            data-interview-confirm-modal-id="shortlist-interview-confirm-@candidate.TutorId">
+                        Move to interview
+                    </button>
+                </footer>
+            </dialog>
+
+            <dialog id="candidate-email-@candidate.TutorId"
+                    class="admin-application-modal candidate-email-modal"
+                    data-candidate-email-modal
+                    data-return-modal-id="shortlist-candidate-@candidate.TutorId"
+                    data-student-name="@candidate.DisplayName"
+                    aria-labelledby="candidate-email-title-@candidate.TutorId">
+                <button type="button"
+                        class="admin-modal-close"
+                        data-communication-close
+                        aria-label="Close">&times;</button>
+
+                <header class="candidate-email-header">
+                    <h2 id="candidate-email-title-@candidate.TutorId">Compose email</h2>
+                    <p>Structure a clear message for @candidate.DisplayName.</p>
+                </header>
+
+                <form class="candidate-email-form" data-email-composer>
+                    <div class="candidate-email-field">
+                        <label for="candidate-email-recipient-@candidate.TutorId">Recipient</label>
+                        <input id="candidate-email-recipient-@candidate.TutorId"
+                               type="email"
+                               value="@(candidate.Email ?? "No email address available")"
+                               readonly />
+                    </div>
+
+                    <div class="candidate-email-field">
+                        <label for="candidate-email-template-@candidate.TutorId">Message template</label>
+                        <select id="candidate-email-template-@candidate.TutorId"
+                                data-email-template>
+                            <option value="interview">Interview invitation</option>
+                            <option value="availability">Request interview availability</option>
+                            <option value="information">Request additional information</option>
+                            <option value="custom">Custom message</option>
+                        </select>
+                    </div>
+
+                    <div class="candidate-email-subject-row">
+                        <div class="candidate-email-field">
+                            <label for="candidate-email-subject-@candidate.TutorId">Subject</label>
+                            <input id="candidate-email-subject-@candidate.TutorId"
+                                   type="text"
+                                   maxlength="200"
+                                   value="Tutor application interview invitation"
+                                   data-email-subject />
+                        </div>
+                        <button type="button"
+                                class="candidate-email-schedule-open"
+                                data-interview-schedule-open
+                                data-schedule-modal-id="candidate-interview-schedule-@candidate.TutorId">
+                            Set interview details
+                        </button>
+                    </div>
+
+                    <div class="candidate-email-field">
+                        <label for="candidate-email-body-@candidate.TutorId">Email message</label>
+                        <textarea id="candidate-email-body-@candidate.TutorId"
+                                  rows="12"
+                                  maxlength="5000"
+                                  data-email-body>Dear @candidate.DisplayName,
+
+We are pleased to let you know that your tutor application has been shortlisted. We would like to invite you to an interview.
+
+Interview details:
+Date: [Add date]
+Time: [Add time]
+Duration: [Add duration]
+Meeting link: [Add meeting link]
+
+Please reply to confirm that you are available.
+
+Kind regards,
+BC CampusLearn Tutor Team</textarea>
+                        <div class="candidate-email-helper">
+                            <span data-email-character-count>0 / 5000</span>
+                        </div>
+                    </div>
+
+                    <div class="candidate-email-actions">
+                        <button type="button"
+                                class="candidate-email-cancel"
+                                data-communication-close>
+                            Back
+                        </button>
+                        <button type="button"
+                                class="candidate-email-send"
+                                disabled>
+                            Send email
+                        </button>
+                    </div>
+                </form>
+            </dialog>
+
+            <dialog id="candidate-interview-schedule-@candidate.TutorId"
+                    class="admin-application-modal candidate-interview-schedule-modal"
+                    data-interview-schedule-modal
+                    data-return-modal-id="candidate-email-@candidate.TutorId"
+                    data-email-modal-id="candidate-email-@candidate.TutorId"
+                    aria-labelledby="candidate-interview-schedule-title-@candidate.TutorId">
+                <button type="button"
+                        class="admin-modal-close"
+                        data-interview-schedule-close
+                        aria-label="Close">&times;</button>
+
+                <header class="candidate-interview-schedule-header">
+                    <h2 id="candidate-interview-schedule-title-@candidate.TutorId">Set interview details</h2>
+                    <p>Add the schedule that should appear in the interview invitation.</p>
+                </header>
+
+                <div class="candidate-interview-schedule-form">
+                    <div class="candidate-interview-schedule-grid">
+                        <label>
+                            <span>Interview date</span>
+                            <input type="date"
+                                   data-interview-date
+                                   value="@candidate.InterviewScheduledAt?.ToString("yyyy-MM-dd")" />
                         </label>
-                        <textarea id="interview-notes-@candidate.TutorId"
-                                  name="InterviewPreparation.Notes"
-                                  rows="4"
-                                  maxlength="1000"
-                                  placeholder="Add optional notes for the interview panel.">@candidate.InterviewPreparationNotes</textarea>
+                        <label>
+                            <span>Time</span>
+                            <input type="text"
+                                   inputmode="numeric"
+                                   maxlength="5"
+                                   pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]"
+                                   placeholder="HH:mm"
+                                   aria-label="Interview time in 24-hour format"
+                                   data-interview-time
+                                   value="@candidate.InterviewScheduledAt?.ToString("HH:mm")" />
+                        </label>
+                        <label>
+                            <span>Duration</span>
+                            <select data-interview-duration>
+                                <option value="">Select duration</option>
+                                @foreach (int duration in new[] { 15, 30, 45, 60, 90, 120 })
+                                {
+                                    <option value="@duration"
+                                            selected="@(candidate.InterviewDurationMinutes == duration)">
+                                        @duration minutes
+                                    </option>
+                                }
+                            </select>
+                        </label>
+                        <label>
+                            <span>Meeting link</span>
+                            <input type="url"
+                                   maxlength="500"
+                                   data-interview-location
+                                   value="@candidate.InterviewLocation"
+                                   placeholder="https://..." />
+                        </label>
+                    </div>
 
-                        <div class="shortlist-schedule-grid">
-                            <label>
-                                <span>Interview date</span>
-                                <input type="date"
-                                       name="InterviewPreparation.ScheduledDate"
-                                       value="@candidate.InterviewScheduledAt?.ToString("yyyy-MM-dd")" />
-                            </label>
-                            <label>
-                                <span>Time</span>
-                                <input type="time"
-                                       name="InterviewPreparation.ScheduledTime"
-                                       value="@candidate.InterviewScheduledAt?.ToString("HH:mm")" />
-                            </label>
-                            <label>
-                                <span>Duration</span>
-                                <select name="InterviewPreparation.DurationMinutes">
-                                    <option value="">Select duration</option>
-                                    @foreach (int duration in new[] { 15, 30, 45, 60, 90, 120 })
+                    <div class="candidate-interview-schedule-actions">
+                        <button type="button"
+                                class="candidate-interview-schedule-cancel"
+                                data-interview-schedule-close>
+                            Cancel
+                        </button>
+                        <button type="button"
+                                class="candidate-interview-schedule-save"
+                                data-populate-interview-email>
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </dialog>
+
+            <dialog id="shortlist-reject-@candidate.TutorId"
+                    class="admin-application-modal shortlist-reject-modal"
+                    data-shortlist-reject-modal
+                    data-return-modal-id="shortlist-candidate-@candidate.TutorId"
+                    aria-labelledby="shortlist-reject-title-@candidate.TutorId">
+                <div>
+                    <h2 id="shortlist-reject-title-@candidate.TutorId">Reject this application?</h2>
+                    <p>
+                        @candidate.DisplayName will be marked as rejected and removed from active
+                        applications. They cannot submit another application during this cycle.
+                    </p>
+                    <div class="shortlist-reject-modal-actions">
+                        <button type="button"
+                                class="shortlist-reject-cancel"
+                                data-shortlist-reject-close>
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                form="shortlist-action-form-@candidate.TutorId"
+                                asp-page-handler="RejectShortlisted"
+                                class="shortlist-reject-confirm">
+                            Yes, reject application
+                        </button>
+                    </div>
+                </div>
+            </dialog>
+
+            <dialog id="shortlist-interview-confirm-@candidate.TutorId"
+                    class="admin-application-modal shortlist-interview-confirm-modal"
+                    data-interview-confirm-modal
+                    data-return-modal-id="shortlist-candidate-@candidate.TutorId"
+                    aria-labelledby="shortlist-interview-confirm-title-@candidate.TutorId">
+                <div>
+                    <h2 id="shortlist-interview-confirm-title-@candidate.TutorId">Move applicant to interview?</h2>
+                    <p>
+                        @candidate.DisplayName will be moved from the shortlist and moved to the
+                        Interview stage. The student will be notified of this decision.
+                    </p>
+                    <div class="shortlist-interview-confirm-actions">
+                        <button type="button"
+                                class="shortlist-interview-confirm-cancel"
+                                data-interview-confirm-close>
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                form="shortlist-action-form-@candidate.TutorId"
+                                asp-page-handler="MoveToInterview"
+                                class="shortlist-interview-confirm-submit">
+                            Yes, move to interview
+                        </button>
+                    </div>
+                </div>
+            </dialog>
+        }
+    }
+
+    @if (Model.Stage == "interview")
+    {
+        @foreach (var candidate in Model.Candidates)
+        {
+            <dialog id="interview-candidate-@candidate.TutorId"
+                    class="admin-application-modal shortlist-review-modal interview-process-modal"
+                    data-interview-process-modal
+                    aria-labelledby="interview-candidate-title-@candidate.TutorId">
+                <button type="button"
+                        class="admin-modal-close"
+                        data-admin-modal-close
+                        aria-label="Close">&times;</button>
+
+                <header class="shortlist-review-header interview-process-header">
+                    <h2 id="interview-candidate-title-@candidate.TutorId">@candidate.DisplayName</h2>
+                    <p>Interview stage · Submitted @candidate.SubmittedAt.ToString("dd MMMM yyyy")</p>
+                </header>
+
+                <div class="interview-process-body">
+                    <section class="shortlist-modal-section"
+                             aria-labelledby="interview-applicant-details-@candidate.TutorId">
+                    <h3 id="interview-applicant-details-@candidate.TutorId">Applicant details</h3>
+
+                    <details class="shortlist-detail-group"
+                             name="interview-applicant-details-@candidate.TutorId">
+                        <summary>Personal and academic details</summary>
+                        <dl class="shortlist-detail-grid">
+                            <div><dt>Full name</dt><dd>@candidate.DisplayName</dd></div>
+                            <div><dt>Email address</dt><dd>@(candidate.Email ?? "Not provided")</dd></div>
+                            <div><dt>Phone number</dt><dd>@(candidate.PhoneNumber ?? "Not provided")</dd></div>
+                            <div><dt>Programme</dt><dd>@candidate.ProgrammeName</dd></div>
+                            <div><dt>Year of study</dt><dd>@candidate.YearOfStudy</dd></div>
+                            <div><dt>Overall average</dt><dd>@candidate.OverallAverage.ToString("0.##")%</dd></div>
+                            <div><dt>Campus</dt><dd>@candidate.CampusOfStudy</dd></div>
+                            <div><dt>Preferred tutoring mode</dt><dd>@candidate.PreferredTutoringModeLabel</dd></div>
+                        </dl>
+                    </details>
+
+                    <details class="shortlist-detail-group"
+                             name="interview-applicant-details-@candidate.TutorId">
+                        <summary>Motivation and teaching profile</summary>
+                        <dl class="shortlist-written-answers">
+                            <div><dt>Why do you want to become a tutor?</dt><dd>@candidate.ReasonForTutoring</dd></div>
+                            <div><dt>How would you describe your teaching style?</dt><dd>@candidate.TeachingStyle</dd></div>
+                            <div><dt>Previous tutoring experience</dt><dd>@candidate.PreviousTutoringExperience</dd></div>
+                            <div>
+                                <dt>Demonstration video</dt>
+                                <dd>
+                                    @if (candidate.HasDemonstrationVideoLink)
                                     {
-                                        <option value="@duration"
-                                                selected="@(candidate.InterviewDurationMinutes == duration)">
-                                            @duration minutes
-                                        </option>
+                                        <a href="@candidate.DemonstrationVideoUrl"
+                                           target="_blank"
+                                           rel="noopener noreferrer">Open demonstration video</a>
                                     }
-                                </select>
-                            </label>
-                            <label>
-                                <span>Assigned interviewer</span>
-                                <input type="text"
-                                       name="InterviewPreparation.AssignedInterviewer"
-                                       maxlength="200"
-                                       value="@candidate.AssignedInterviewer"
-                                       placeholder="Name or interview panel" />
-                            </label>
-                            <label class="shortlist-schedule-wide">
-                                <span>Location or meeting link</span>
-                                <input type="text"
-                                       name="InterviewPreparation.LocationOrMeetingLink"
-                                       maxlength="500"
-                                       value="@candidate.InterviewLocation"
-                                       placeholder="Room, campus, or online meeting link" />
-                            </label>
-                        </div>
+                                    else
+                                    {
+                                        @candidate.DemonstrationVideoUrl
+                                    }
+                                </dd>
+                            </div>
+                        </dl>
+                    </details>
 
-                        <div class="shortlist-modal-actions">
-                            <button type="submit"
-                                    class="shortlist-reject-button"
-                                    asp-page-handler="RejectShortlisted"
-                                    data-reject-shortlisted>
-                                Reject
-                            </button>
+                    <details class="shortlist-detail-group"
+                             name="interview-applicant-details-@candidate.TutorId">
+                        <summary>Selected modules</summary>
+                        <div class="shortlist-detail-content">
+                            @if (candidate.Modules.Count == 0)
+                            {
+                                <p class="shortlist-empty-value">No modules were selected.</p>
+                            }
+                            else
+                            {
+                                <ul class="shortlist-module-list">
+                                    @foreach (var module in candidate.Modules)
+                                    {
+                                        <li><strong>@module.Code</strong><span>@module.Name</span></li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    </details>
+                    </section>
+
+                    <section class="interview-room-launch-card">
+                        <div class="interview-room-launch-copy">
+                            <span class="interview-room-launch-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path d="M8 7V5.8A2.8 2.8 0 0 1 10.8 3h2.4A2.8 2.8 0 0 1 16 5.8V7" />
+                                    <rect x="4" y="7" width="16" height="13" rx="2.5" />
+                                    <path d="M8 12h8M8 16h5" />
+                                </svg>
+                            </span>
+                            <div>
+                                <h3>Open Interview Room</h3>
+                                <p>Record private notes while interviewing @candidate.DisplayName.</p>
+                                @if (candidate.InterviewScheduledAt.HasValue)
+                                {
+                                    <small>
+                                        @candidate.InterviewScheduledAt.Value.ToString("dd MMM yyyy · HH:mm")
+                                        @if (candidate.InterviewDurationMinutes.HasValue)
+                                        {
+                                            <text> · @candidate.InterviewDurationMinutes minutes</text>
+                                        }
+                                    </small>
+                                }
+                            </div>
+                        </div>
+                        <div class="interview-room-launch-actions">
+                            @if (candidate.HasInterviewMeetingLink)
+                            {
+                                <a href="@candidate.InterviewLocation"
+                                   class="interview-teams-button"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    Join Teams meeting
+                                </a>
+                            }
+                            else
+                            {
+                                <button type="button"
+                                        class="interview-teams-button"
+                                        disabled>
+                                    Teams link unavailable
+                                </button>
+                            }
                             <button type="button"
-                                    class="shortlist-communicate-button"
-                                    aria-disabled="true"
-                                    title="Communication tools are coming soon">
-                                Communicate
-                            </button>
-                            <button type="submit"
-                                    class="shortlist-save-button"
-                                    asp-page-handler="SaveInterviewPreparation">
-                                Save notes
-                            </button>
-                            <button type="submit"
-                                    class="shortlist-interview-button"
-                                    asp-page-handler="MoveToInterview">
-                                Move to interview
+                                    class="interview-room-card-open"
+                                    data-interview-room-open
+                                    data-interview-room-modal-id="interview-room-@candidate.TutorId">
+                                Open Interview Room
                             </button>
                         </div>
-                    </form>
-                </section>
+                    </section>
+                </div>
+
+                <footer class="interview-process-footer">
+                    <button type="button"
+                            class="interview-reject-button"
+                            aria-haspopup="dialog"
+                            data-shortlist-reject-open
+                            data-reject-modal-id="interview-reject-@candidate.TutorId">
+                        Reject
+                    </button>
+                    <button type="button"
+                            class="interview-communicate-button"
+                            aria-haspopup="dialog"
+                            data-communicate-open
+                            data-communication-modal-id="interview-email-@candidate.TutorId">
+                        Communicate
+                    </button>
+                    <button type="button"
+                            class="interview-placement-button"
+                            aria-haspopup="dialog"
+                            data-interview-confirm-open
+                            data-interview-confirm-modal-id="interview-placement-confirm-@candidate.TutorId">
+                        Placement
+                    </button>
+                </footer>
+            </dialog>
+
+            <dialog id="interview-reject-@candidate.TutorId"
+                    class="admin-application-modal shortlist-reject-modal interview-reject-modal"
+                    data-shortlist-reject-modal
+                    data-return-modal-id="interview-candidate-@candidate.TutorId"
+                    aria-labelledby="interview-reject-title-@candidate.TutorId">
+                <form method="post" asp-page-handler="RejectInterviewed">
+                    <input type="hidden" name="tutorId" value="@candidate.TutorId" />
+                    <input type="hidden" name="Search" value="@Model.Search" />
+                    <h2 id="interview-reject-title-@candidate.TutorId">Reject this candidate?</h2>
+                    <p>
+                        @candidate.DisplayName will be removed from the interview stage and notified
+                        by notification and email that their tutor application was not approved.
+                    </p>
+                    <div class="shortlist-reject-modal-actions">
+                        <button type="button"
+                                class="shortlist-reject-cancel"
+                                data-shortlist-reject-close>
+                            Cancel
+                        </button>
+                        <button type="submit" class="shortlist-reject-confirm">
+                            Yes, reject candidate
+                        </button>
+                    </div>
+                </form>
+            </dialog>
+
+            <dialog id="interview-placement-confirm-@candidate.TutorId"
+                    class="admin-application-modal shortlist-interview-confirm-modal"
+                    data-interview-confirm-modal
+                    data-return-modal-id="interview-candidate-@candidate.TutorId"
+                    aria-labelledby="interview-placement-confirm-title-@candidate.TutorId">
+                <form method="post" asp-page-handler="MoveToPlacement">
+                    <input type="hidden" name="tutorId" value="@candidate.TutorId" />
+                    <input type="hidden" name="Search" value="@Model.Search" />
+                    <h2 id="interview-placement-confirm-title-@candidate.TutorId">
+                        Approve candidate as a tutor?
+                    </h2>
+                    <p>
+                        @candidate.DisplayName will move to Placement, their tutor profile will be
+                        activated, and they will receive an approval notification.
+                    </p>
+                    <div class="shortlist-interview-confirm-actions">
+                        <button type="button"
+                                class="shortlist-interview-confirm-cancel"
+                                data-interview-confirm-close>
+                            Cancel
+                        </button>
+                        <button type="submit" class="shortlist-interview-confirm-submit">
+                            Yes, approve tutor
+                        </button>
+                    </div>
+                </form>
+            </dialog>
+
+            <dialog id="interview-email-@candidate.TutorId"
+                    class="admin-application-modal candidate-email-modal"
+                    data-candidate-email-modal
+                    data-return-modal-id="interview-candidate-@candidate.TutorId"
+                    data-student-name="@candidate.DisplayName"
+                    aria-labelledby="interview-email-title-@candidate.TutorId">
+                <button type="button"
+                        class="admin-modal-close"
+                        data-communication-close
+                        aria-label="Close">&times;</button>
+
+                <header class="candidate-email-header">
+                    <h2 id="interview-email-title-@candidate.TutorId">Compose email</h2>
+                    <p>Structure a clear message for @candidate.DisplayName.</p>
+                </header>
+
+                <form class="candidate-email-form" data-email-composer>
+                    <div class="candidate-email-field">
+                        <label for="interview-email-recipient-@candidate.TutorId">Recipient</label>
+                        <input id="interview-email-recipient-@candidate.TutorId"
+                               type="email"
+                               value="@(candidate.Email ?? "No email address available")"
+                               readonly />
+                    </div>
+
+                    <div class="candidate-email-field">
+                        <label for="interview-email-template-@candidate.TutorId">Message template</label>
+                        <select id="interview-email-template-@candidate.TutorId"
+                                data-email-template>
+                            <option value="followup">Interview follow-up</option>
+                            <option value="information">Request additional information</option>
+                            <option value="custom">Custom message</option>
+                        </select>
+                    </div>
+
+                    <div class="candidate-email-field">
+                        <label for="interview-email-subject-@candidate.TutorId">Subject</label>
+                        <input id="interview-email-subject-@candidate.TutorId"
+                               type="text"
+                               maxlength="200"
+                               value="Thank you for attending your tutor interview"
+                               data-email-subject />
+                    </div>
+
+                    <div class="candidate-email-field">
+                        <label for="interview-email-body-@candidate.TutorId">Email message</label>
+                        <textarea id="interview-email-body-@candidate.TutorId"
+                                  rows="12"
+                                  maxlength="5000"
+                                  data-email-body>Dear @candidate.DisplayName,
+
+Thank you for taking the time to attend your tutor interview. We appreciate the opportunity to learn more about your experience and interest in tutoring.
+
+We will contact you once the interview review has been completed.
+
+Kind regards,
+BC CampusLearn Tutor Team</textarea>
+                        <div class="candidate-email-helper">
+                            <span data-email-character-count>0 / 5000</span>
+                        </div>
+                    </div>
+
+                    <div class="candidate-email-actions">
+                        <button type="button"
+                                class="candidate-email-cancel"
+                                data-communication-close>
+                            Back
+                        </button>
+                        <button type="button"
+                                class="candidate-email-send"
+                                disabled>
+                            Send email
+                        </button>
+                    </div>
+                </form>
+            </dialog>
+
+            <dialog id="interview-room-@candidate.TutorId"
+                    class="admin-application-modal interview-room-modal"
+                    data-interview-room-modal
+                    data-parent-modal-id="interview-candidate-@candidate.TutorId"
+                    data-show="@((Model.OpenInterviewRoomCandidateId == candidate.TutorId).ToString().ToLowerInvariant())"
+                    aria-labelledby="interview-room-title-@candidate.TutorId">
+                <button type="button"
+                        class="admin-modal-close"
+                        data-admin-modal-close
+                        aria-label="Close">&times;</button>
+
+                <header class="interview-room-header">
+                    <h2 id="interview-room-title-@candidate.TutorId">Interview Room</h2>
+                    <p>@candidate.DisplayName · @candidate.ProgrammeName</p>
+                </header>
+
+                <form method="post"
+                      asp-page-handler="SaveInterviewNotes"
+                      class="interview-room-form">
+                    <input type="hidden" name="tutorId" value="@candidate.TutorId" />
+                    <input type="hidden" name="Search" value="@Model.Search" />
+
+                    @if (Model.OpenInterviewRoomCandidateId == candidate.TutorId &&
+                        !string.IsNullOrWhiteSpace(Model.InterviewRoomMessage))
+                    {
+                        <div class="interview-room-success" role="status">
+                            <span aria-hidden="true">&#10003;</span>
+                            @Model.InterviewRoomMessage
+                        </div>
+                    }
+
+                    <label for="interview-notes-@candidate.TutorId">
+                        <span>Interview notes</span>
+                        <small>Internal notes recorded during the interview.</small>
+                    </label>
+                    <textarea id="interview-notes-@candidate.TutorId"
+                              name="InterviewNotes"
+                              maxlength="4000"
+                              rows="14"
+                              data-interview-notes
+                              data-character-count-id="interview-notes-count-@candidate.TutorId"
+                              placeholder="Record the candidate's responses, strengths, concerns and follow-up points...">@candidate.InterviewNotes</textarea>
+                    <div class="interview-room-note-meta">
+                        <span>Only administrators can view these notes.</span>
+                        <span id="interview-notes-count-@candidate.TutorId">@((candidate.InterviewNotes?.Length ?? 0).ToString()) / 4000</span>
+                    </div>
+
+                    <footer class="interview-room-footer">
+                        <button type="button"
+                                class="interview-room-back"
+                                data-interview-room-back>
+                            Back to candidate
+                        </button>
+                        <button type="submit" class="interview-room-save">
+                            Save notes
+                        </button>
+                    </footer>
+                </form>
             </dialog>
         }
     }
@@ -587,7 +1161,10 @@
                     aria-label="Close">&times;</button>
             <h2 id="add-tutor-title">Add tutor</h2>
             <p>Select a student and enter the details needed to create their tutor profile.</p>
-            <form method="post" asp-page-handler="AddTutor">
+            <form method="post"
+                  asp-page-handler="AddTutor"
+                  novalidate
+                  data-manual-tutor-form>
                 <div class="admin-add-tutor-grid">
                     <div class="admin-add-tutor-field admin-add-tutor-field--full">
                         <label for="manual-student-search">Student</label>
@@ -600,9 +1177,6 @@
                                    aria-controls="eligible-student-results"
                                    aria-expanded="false"
                                    data-student-search />
-                            <input asp-for="ManualTutor.BcUserId"
-                                   type="hidden"
-                                   data-student-id />
                             <span id="eligible-student-results"
                                   class="admin-student-results"
                                   role="listbox"
@@ -610,13 +1184,16 @@
                                   hidden>
                                 @foreach (SelectListItem student in Model.StudentOptions)
                                 {
-                                    <button type="button"
-                                            role="option"
-                                            data-student-option
-                                            data-student-id="@student.Value"
-                                            data-search-text="@student.Text.ToLowerInvariant()">
-                                        @student.Text
-                                    </button>
+                                    <label role="option"
+                                           data-student-option
+                                           data-student-id="@student.Value"
+                                           data-search-text="@student.Text.ToLowerInvariant()">
+                                        <input type="radio"
+                                               name="ManualTutor.BcUserId"
+                                               value="@student.Value"
+                                               data-student-choice />
+                                        <span>@student.Text</span>
+                                    </label>
                                 }
                                 <span class="admin-student-empty"
                                       data-student-empty
@@ -630,26 +1207,33 @@
                         <span>Programme</span>
                         <select asp-for="ManualTutor.ProgrammeId"
                                 asp-items="Model.ProgrammeOptions"
-                                required>
+                                data-manual-programme>
                             <option value="">Select a programme</option>
                         </select>
                     </label>
                     <label class="admin-add-tutor-field">
                         <span>Year of study</span>
                         <input asp-for="ManualTutor.YearOfStudy"
-                               type="number" min="1" max="4" required />
+                               type="number"
+                               data-manual-year />
                     </label>
                     <label class="admin-add-tutor-field">
                         <span>Overall average</span>
                         <input asp-for="ManualTutor.OverallAverage"
-                               type="number" min="0" max="100" step="0.01" required />
+                               type="number" step="0.01" />
                     </label>
                     <label class="admin-add-tutor-field">
                         <span>Campus</span>
-                        <input asp-for="ManualTutor.CampusOfStudy" required />
+                        <select asp-for="ManualTutor.CampusOfStudy">
+                            <option value="">Select a campus</option>
+                            @foreach (string campus in ApplicationsModel.ManualTutorCampuses)
+                            {
+                                <option value="@campus">@campus</option>
+                            }
+                        </select>
                     </label>
                     <label class="admin-add-tutor-field">
-                        <span>Phone number</span>
+                        <span>Phone number <small>(optional)</small></span>
                         <input asp-for="ManualTutor.PhoneNumber" type="tel" />
                     </label>
                     <label class="admin-add-tutor-field admin-add-tutor-field--full">
@@ -657,6 +1241,39 @@
                         <select asp-for="ManualTutor.PreferredTutoringMode"
                                 asp-items="Html.GetEnumSelectList<PreferredTutoringMode>()"></select>
                     </label>
+                    <fieldset class="admin-manual-modules admin-add-tutor-field--full">
+                        <legend>Modules to teach</legend>
+                        <p>Select the programme and year of study to see eligible modules.</p>
+                        <label class="admin-manual-module-search">
+                            <span class="visually-hidden">Search modules</span>
+                            <input type="search"
+                                   placeholder="Search modules by code or name"
+                                   autocomplete="off"
+                                   data-manual-module-search />
+                        </label>
+                        <div class="admin-manual-module-list" data-manual-module-list>
+                            @foreach (var module in Model.ManualTutorModuleOptions)
+                            {
+                                <label data-manual-module
+                                       data-programme-id="@module.ProgrammeId"
+                                       data-module-year="@module.YearOfStudy"
+                                       data-module-search="@($"{module.Code} {module.Name}".ToLowerInvariant())"
+                                       hidden>
+                                    <input type="checkbox"
+                                           name="ManualTutor.ProgrammeModuleIds"
+                                           value="@module.ProgrammeModuleId" />
+                                    <span>
+                                        <strong>@module.Code</strong>
+                                        @module.Name
+                                        <small>Year @module.YearOfStudy</small>
+                                    </span>
+                                </label>
+                            }
+                        </div>
+                        <p class="admin-manual-module-empty" data-manual-module-empty>
+                            Choose a programme and year first.
+                        </p>
+                    </fieldset>
                 </div>
                 <div class="admin-modal-actions">
                     <button type="submit">Add tutor</button>

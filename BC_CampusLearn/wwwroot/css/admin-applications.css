@@ -617,7 +617,9 @@
 }
 
 .admin-add-tutor-modal {
+    max-height: min(52rem, calc(100dvh - 2rem));
     max-width: min(42rem, calc(100vw - 2rem));
+    overflow-y: auto;
 }
 
 .admin-add-tutor-grid {
@@ -674,7 +676,7 @@
     display: none;
 }
 
-.admin-student-results button {
+.admin-student-results label {
     background: #fff;
     border: 0;
     border-bottom: 1px solid #eef0f0;
@@ -684,9 +686,130 @@
     text-align: left;
 }
 
-.admin-student-results button:hover,
-.admin-student-results button:focus-visible {
+.admin-add-tutor-field > span small {
+    color: #747b7c;
+    font-weight: 500;
+}
+
+.admin-student-results label:hover,
+.admin-student-results label:focus-within {
     background: #f3f5f5;
+}
+
+.admin-student-results label {
+    cursor: pointer;
+    display: block;
+    position: relative;
+}
+
+.admin-student-results input[type="radio"] {
+    height: 1px;
+    opacity: 0;
+    position: absolute;
+    width: 1px;
+}
+
+.admin-manual-modules {
+    border: 0;
+    margin: 0;
+    min-width: 0;
+    padding: 0;
+}
+
+.admin-manual-modules legend {
+    color: #252a2b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+}
+
+.admin-manual-modules > p {
+    color: #747b7c;
+    font-size: 0.7rem;
+    margin: 0 0 0.65rem;
+}
+
+.admin-manual-module-search {
+    display: block;
+    margin: 0 0 0.7rem;
+}
+
+.admin-manual-module-search input {
+    background: #f2f4f4;
+    border: 0;
+    border-radius: 0.45rem;
+    color: #252a2b;
+    font: inherit;
+    font-size: 0.76rem;
+    padding: 0.7rem 0.8rem;
+    width: 100%;
+}
+
+.admin-manual-module-search input:focus {
+    box-shadow: 0 0.3rem 0.85rem rgba(25, 30, 32, 0.12);
+    outline: 2px solid #2f8586;
+    outline-offset: 1px;
+}
+
+.admin-manual-module-list {
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 13rem;
+    overflow-y: auto;
+    padding: 0.15rem;
+}
+
+.admin-manual-module-list label {
+    align-items: flex-start;
+    background: #f2f4f4;
+    border-radius: 0.45rem;
+    cursor: pointer;
+    display: flex;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0.7rem;
+}
+
+.admin-manual-module-list label[hidden] {
+    display: none;
+}
+
+.admin-manual-module-list label:has(input:checked) {
+    background: #dcebea;
+    box-shadow: inset 0 0 0 2px #2f8586;
+}
+
+.admin-manual-module-list input {
+    accent-color: #2f8586;
+    flex: 0 0 auto;
+    margin-top: 0.15rem;
+}
+
+.admin-manual-module-list span {
+    color: #384041;
+    display: grid;
+    font-size: 0.72rem;
+    gap: 0.15rem;
+    line-height: 1.35;
+}
+
+.admin-manual-module-list strong {
+    color: #252a2b;
+    font-size: 0.76rem;
+}
+
+.admin-manual-module-list small {
+    color: #747b7c;
+    font-size: 0.65rem;
+}
+
+.admin-manual-modules .admin-manual-module-empty {
+    background: #f2f4f4;
+    border-radius: 0.42rem;
+    color: #666d6e;
+    margin: 0;
+    padding: 0.7rem 0.8rem;
 }
 
 .admin-student-empty {
@@ -821,13 +944,17 @@ button.candidate-view-link {
     padding: 0;
 }
 
-.shortlist-review-modal::backdrop {
+.shortlist-review-modal::backdrop,
+.candidate-email-modal::backdrop,
+.candidate-interview-schedule-modal::backdrop {
     -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
     background: rgba(24, 29, 30, 0.52);
 }
 
-.shortlist-review-modal > .admin-modal-close {
+.shortlist-review-modal > .admin-modal-close,
+.candidate-email-modal > .admin-modal-close,
+.candidate-interview-schedule-modal > .admin-modal-close {
     align-items: center;
     background: #f3f5f5;
     border: 0;
@@ -843,24 +970,18 @@ button.candidate-view-link {
 }
 
 .shortlist-review-modal > .admin-modal-close:hover,
-.shortlist-review-modal > .admin-modal-close:focus-visible {
+.shortlist-review-modal > .admin-modal-close:focus-visible,
+.candidate-email-modal > .admin-modal-close:hover,
+.candidate-email-modal > .admin-modal-close:focus-visible,
+.candidate-interview-schedule-modal > .admin-modal-close:hover,
+.candidate-interview-schedule-modal > .admin-modal-close:focus-visible {
     background: #e8ebeb;
-    color: var(--shortlist-admin-ink);
+    color: #252a2b;
 }
 
 .shortlist-review-header {
     background: #fff;
     padding: 1.4rem 4rem 1.25rem 1.65rem;
-}
-
-.shortlist-review-header > span {
-    color: var(--shortlist-admin-accent);
-    display: block;
-    font-size: 0.68rem;
-    font-weight: 750;
-    letter-spacing: 0.075em;
-    margin-bottom: 0.35rem;
-    text-transform: uppercase;
 }
 
 .shortlist-review-modal .shortlist-review-header h2 {
@@ -905,6 +1026,484 @@ button.candidate-view-link {
     flex: 0 0 0.25rem;
     height: 1rem;
     width: 0.25rem;
+}
+
+.shortlist-workflow-accordion {
+    background: #fff;
+    border-radius: 0.55rem;
+    box-shadow: 0 0.4rem 1.15rem rgba(25, 30, 32, 0.09);
+    margin: 1rem 1.65rem 0;
+    overflow: hidden;
+}
+
+.shortlist-workflow-accordion:last-of-type {
+    margin-bottom: 0;
+}
+
+.shortlist-workflow-accordion > summary {
+    align-items: center;
+    color: var(--shortlist-admin-ink);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    list-style: none;
+    padding: 1rem 1.2rem;
+}
+
+.shortlist-workflow-accordion > summary::-webkit-details-marker {
+    display: none;
+}
+
+.shortlist-workflow-accordion > summary::after {
+    border-bottom: 2px solid #73797a;
+    border-right: 2px solid #73797a;
+    content: "";
+    height: 0.5rem;
+    transform: rotate(45deg);
+    transition: transform 160ms ease;
+    width: 0.5rem;
+}
+
+.shortlist-workflow-accordion[open] > summary::after {
+    transform: rotate(225deg);
+}
+
+.shortlist-workflow-accordion > summary:focus-visible {
+    outline: 2px solid var(--shortlist-admin-accent);
+    outline-offset: -2px;
+}
+
+.shortlist-workflow-accordion > summary h3 {
+    font-size: 0.82rem;
+    margin: 0;
+}
+
+.shortlist-workflow-content {
+    display: grid;
+    gap: 1rem;
+    padding: 0 1.2rem 1.2rem;
+}
+
+.shortlist-workflow-preparation h4,
+.shortlist-workflow-history h4 {
+    color: var(--shortlist-admin-ink);
+    font-size: 0.76rem;
+    margin: 0 0 0.7rem;
+}
+
+.shortlist-workflow-history {
+    background: #f3f5f5;
+    border-radius: 0.45rem;
+    padding: 0.9rem;
+}
+
+.shortlist-workflow-history-scroll {
+    max-height: 14rem;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
+.interview-preparation-summary {
+    background: #f2f4f4;
+    border-radius: 0.45rem;
+    padding: 1rem;
+}
+
+.interview-preparation-summary h4 {
+    color: var(--shortlist-admin-ink);
+    font-size: 0.78rem;
+    margin: 0 0 0.45rem;
+}
+
+.interview-preparation-summary p {
+    color: #565d5e;
+    font-size: 0.8rem;
+    line-height: 1.65;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.interview-process-footer {
+    align-items: center;
+    display: flex;
+    gap: 0.65rem;
+    justify-content: flex-end;
+    padding: 1rem 1.65rem 1.65rem;
+}
+
+.interview-process-footer button {
+    background: var(--shortlist-admin-ink);
+    border: 0;
+    border-radius: 0.42rem;
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 0.72rem 1.15rem;
+}
+
+.interview-process-footer button:hover {
+    background: #22292b;
+}
+
+.interview-process-footer button:focus-visible {
+    outline: 2px solid var(--shortlist-admin-accent);
+    outline-offset: 3px;
+}
+
+.interview-process-modal {
+    border-radius: 0.8rem 0 0 0.8rem;
+    height: 100vh;
+    height: 100dvh;
+    inset: 0 0 0 auto;
+    margin: 0;
+    max-height: 100vh;
+    max-height: 100dvh;
+    max-width: min(36rem, 100vw);
+    overflow: hidden;
+    position: fixed;
+    width: min(36rem, 100vw);
+}
+
+.interview-process-modal[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.interview-process-header {
+    flex: 0 0 auto;
+}
+
+.interview-process-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+.interview-process-modal .interview-process-footer {
+    background: #fff;
+    box-shadow: 0 -0.45rem 1.25rem rgba(25, 30, 32, 0.08);
+    flex: 0 0 auto;
+    margin-top: auto;
+    padding-bottom: max(1.65rem, env(safe-area-inset-bottom));
+    position: relative;
+    z-index: 2;
+}
+
+.interview-process-footer .interview-reject-button {
+    background: #b4232f;
+    color: #fff;
+}
+
+.interview-process-footer .interview-reject-button:hover {
+    background: #941d27;
+}
+
+.interview-process-footer .interview-placement-button {
+    background: var(--shortlist-admin-accent);
+}
+
+.interview-process-footer .interview-placement-button:hover {
+    background: #286f70;
+}
+
+.interview-process-footer .interview-communicate-button {
+    background: var(--shortlist-admin-ink);
+    color: #fff;
+}
+
+.interview-process-footer .interview-communicate-button:hover {
+    background: #161b1c;
+}
+
+.interview-room-launch-card {
+    background: #fff;
+    border-radius: 0.55rem;
+    box-shadow: 0 0.45rem 1.25rem rgba(25, 30, 32, 0.09);
+    margin: 1rem 1.65rem;
+    padding: 1.15rem;
+}
+
+.interview-room-launch-copy {
+    align-items: flex-start;
+    display: flex;
+    gap: 0.85rem;
+}
+
+.interview-room-launch-icon {
+    align-items: center;
+    background: #dcebea;
+    border-radius: 0.5rem;
+    color: #2f8586;
+    display: inline-flex;
+    flex: 0 0 2.55rem;
+    height: 2.55rem;
+    justify-content: center;
+}
+
+.interview-room-launch-icon svg {
+    height: 1.35rem;
+    width: 1.35rem;
+}
+
+.interview-room-launch-copy h3 {
+    color: var(--shortlist-admin-ink);
+    font-size: 0.86rem;
+    margin: 0.1rem 0 0.3rem;
+}
+
+.interview-room-launch-copy p {
+    color: var(--shortlist-admin-muted);
+    font-size: 0.75rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.interview-room-launch-copy small {
+    color: #4f5758;
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    margin-top: 0.55rem;
+}
+
+.interview-room-launch-actions {
+    display: grid;
+    gap: 0.6rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 1rem;
+}
+
+.interview-room-launch-actions a,
+.interview-room-launch-actions button {
+    align-items: center;
+    border: 0;
+    border-radius: 0.42rem;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-size: 0.73rem;
+    font-weight: 700;
+    justify-content: center;
+    min-height: 2.65rem;
+    padding: 0.65rem 0.8rem;
+    text-align: center;
+    text-decoration: none;
+}
+
+.interview-teams-button {
+    background: #252a2b;
+    color: #fff;
+}
+
+.interview-teams-button:hover:not(:disabled) {
+    background: #161b1c;
+}
+
+.interview-teams-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
+}
+
+.interview-room-card-open {
+    background: #2f8586;
+    color: #fff;
+}
+
+.interview-room-card-open:hover {
+    background: #286f70;
+}
+
+.interview-room-launch-actions a:focus-visible,
+.interview-room-launch-actions button:focus-visible {
+    outline: 2px solid var(--shortlist-admin-accent);
+    outline-offset: 3px;
+}
+
+.interview-reject-modal label {
+    color: #353b3c;
+    display: block;
+    font-size: 0.76rem;
+    font-weight: 700;
+    margin: 1rem 0 0.45rem;
+}
+
+.interview-reject-modal label small {
+    color: #747b7c;
+    font-weight: 500;
+}
+
+.interview-reject-modal textarea {
+    background: #f1f3f3;
+    border: 0;
+    border-radius: 0.45rem;
+    color: #252a2b;
+    font: inherit;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    padding: 0.8rem;
+    resize: vertical;
+    width: 100%;
+}
+
+.interview-reject-modal textarea:focus {
+    outline: 2px solid #b4232f;
+    outline-offset: 2px;
+}
+
+.interview-room-modal {
+    --interview-room-accent: #2f8586;
+    --interview-room-ink: #252a2b;
+    background: #eef1f1;
+    border: 0;
+    border-radius: 0.8rem;
+    max-width: min(48rem, calc(100vw - 2rem));
+    padding: 0;
+    width: 100%;
+}
+
+.interview-room-modal::backdrop {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    background: rgba(24, 29, 30, 0.52);
+}
+
+.interview-room-modal > .admin-modal-close {
+    align-items: center;
+    background: #f3f5f5;
+    border: 0;
+    border-radius: 50%;
+    color: #4c5354;
+    cursor: pointer;
+    display: flex;
+    height: 2rem;
+    justify-content: center;
+    position: absolute;
+    right: 1.25rem;
+    top: 1.15rem;
+    width: 2rem;
+}
+
+.interview-room-header {
+    background: #fff;
+    padding: 1.4rem 4rem 1.25rem 1.65rem;
+}
+
+.interview-room-modal .interview-room-header h2 {
+    color: var(--interview-room-ink);
+    font-size: 1.4rem;
+    margin: 0 0 0.25rem;
+}
+
+.interview-room-modal .interview-room-header p {
+    color: #6d7475;
+    font-size: 0.78rem;
+    margin: 0;
+}
+
+.interview-room-form {
+    padding: 1.35rem 1.65rem 1.65rem;
+}
+
+.interview-room-success {
+    align-items: center;
+    background: #dcebea;
+    border-radius: 0.48rem;
+    color: #285f60;
+    display: flex;
+    font-size: 0.76rem;
+    font-weight: 700;
+    gap: 0.55rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem 0.85rem;
+}
+
+.interview-room-success span {
+    align-items: center;
+    background: #2f8586;
+    border-radius: 50%;
+    color: #fff;
+    display: inline-flex;
+    flex: 0 0 1.25rem;
+    height: 1.25rem;
+    justify-content: center;
+}
+
+.interview-room-form label span,
+.interview-room-form label small {
+    display: block;
+}
+
+.interview-room-form label span {
+    color: var(--interview-room-ink);
+    font-size: 0.85rem;
+    margin-bottom: 0.2rem;
+}
+
+.interview-room-form label small {
+    color: #6d7475;
+    font-size: 0.72rem;
+    font-weight: 500;
+}
+
+.interview-room-form textarea {
+    background: #fff;
+    border: 0;
+    border-radius: 0.55rem;
+    box-shadow: 0 0.45rem 1.25rem rgba(25, 30, 32, 0.09);
+    color: var(--interview-room-ink);
+    font: inherit;
+    font-size: 0.84rem;
+    line-height: 1.6;
+    margin-top: 0.75rem;
+    min-height: 18rem;
+    padding: 1rem;
+    resize: vertical;
+    width: 100%;
+}
+
+.interview-room-form textarea:focus {
+    outline: 2px solid var(--interview-room-accent);
+    outline-offset: 2px;
+}
+
+.interview-room-note-meta {
+    color: #727879;
+    display: flex;
+    font-size: 0.68rem;
+    justify-content: space-between;
+    margin-top: 0.6rem;
+}
+
+.interview-room-footer {
+    align-items: center;
+    display: flex;
+    gap: 0.65rem;
+    justify-content: flex-end;
+    margin-top: 1.25rem;
+}
+
+.interview-room-footer button {
+    border: 0;
+    border-radius: 0.42rem;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 0.72rem 1.05rem;
+}
+
+.interview-room-back {
+    background: #dfe3e3;
+    color: #343a3b;
+}
+
+.interview-room-save {
+    background: var(--interview-room-accent);
+    color: #fff;
 }
 
 .shortlist-detail-group {
@@ -1167,6 +1766,20 @@ button.candidate-view-link {
     margin-bottom: 0.4rem;
 }
 
+.shortlist-notes-label span {
+    display: block;
+    font-weight: 700;
+}
+
+.shortlist-notes-label small {
+    color: var(--shortlist-admin-muted);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 500;
+    line-height: 1.45;
+    margin-top: 0.2rem;
+}
+
 .shortlist-interview-form {
     background: #f3f5f5;
     border-radius: 0.45rem;
@@ -1191,26 +1804,6 @@ button.candidate-view-link {
     outline-offset: 1px;
 }
 
-.shortlist-schedule-grid {
-    display: grid;
-    gap: 0.8rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-top: 0.9rem;
-}
-
-.shortlist-review-modal .shortlist-schedule-grid label {
-    margin: 0;
-}
-
-.shortlist-schedule-grid label > span {
-    display: block;
-    margin-bottom: 0.4rem;
-}
-
-.shortlist-schedule-wide {
-    grid-column: 1 / -1;
-}
-
 .shortlist-review-modal .shortlist-interview-form input,
 .shortlist-review-modal .shortlist-interview-form select {
     background: #fff;
@@ -1230,15 +1823,14 @@ button.candidate-view-link {
     outline-offset: 1px;
 }
 
-.shortlist-modal-actions {
+.shortlist-notes-actions {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
     justify-content: flex-end;
     margin-top: 1rem;
 }
 
-.shortlist-modal-actions button {
+.shortlist-notes-actions button,
+.shortlist-modal-footer button {
     border-radius: 0.4rem;
     font-size: 0.75rem;
     font-weight: 700;
@@ -1246,23 +1838,39 @@ button.candidate-view-link {
     padding: 0.55rem 0.85rem;
 }
 
+.shortlist-modal-footer {
+    align-items: center;
+    background: #fff;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    padding: 1rem 1.65rem 1.2rem;
+}
+
 .shortlist-reject-button {
-    background: #fff1f0;
+    background: #b42318;
     border: 0;
-    color: #b42318;
+    color: #fff;
     margin-right: auto;
 }
 
 .shortlist-reject-button:hover,
 .shortlist-reject-button:focus-visible {
-    background: #fff1f0;
+    background: #8f1d14;
 }
 
 .shortlist-communicate-button {
     background: #e9ecec;
     border: 0;
     color: #555c5d;
-    cursor: not-allowed;
+}
+
+.shortlist-communicate-button:hover,
+.shortlist-communicate-button:focus-visible {
+    background: #dce1e1;
+    color: #252a2b;
 }
 
 .shortlist-save-button {
@@ -1285,6 +1893,351 @@ button.candidate-view-link {
 .shortlist-interview-button:hover,
 .shortlist-interview-button:focus-visible {
     background: #111516;
+}
+
+.candidate-email-modal {
+    --email-admin-accent: #2f8586;
+    --email-admin-ink: #252a2b;
+    --email-admin-muted: #6d7475;
+    background: #eef1f1;
+    border: 0;
+    border-radius: 0.65rem;
+    box-shadow: 0 1.4rem 3.5rem rgba(25, 30, 32, 0.22);
+    max-height: min(88vh, 54rem);
+    max-width: min(44rem, calc(100vw - 2rem));
+    overflow-y: auto;
+    padding: 0;
+}
+
+.candidate-email-header {
+    background: #fff;
+    padding: 1.4rem 4rem 1.25rem 1.65rem;
+}
+
+.candidate-email-modal .candidate-email-header h2 {
+    color: var(--email-admin-ink);
+    font-size: 1.4rem;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.25rem;
+}
+
+.candidate-email-modal .candidate-email-header p {
+    color: var(--email-admin-muted);
+    font-size: 0.76rem;
+    margin: 0;
+}
+
+.candidate-email-form {
+    background: #fff;
+    border-radius: 0.55rem;
+    display: grid;
+    gap: 1rem;
+    margin: 1rem 1.65rem 1.65rem;
+    padding: 1.2rem;
+}
+
+.candidate-email-field {
+    min-width: 0;
+}
+
+.candidate-email-modal .candidate-email-field label {
+    color: var(--email-admin-ink);
+    font-size: 0.74rem;
+    margin-bottom: 0.4rem;
+}
+
+.candidate-email-field input,
+.candidate-email-field select,
+.candidate-email-field textarea {
+    background: #f3f5f5;
+    border: 0;
+    border-radius: 0.4rem;
+    color: var(--email-admin-ink);
+    font: inherit;
+    font-size: 0.78rem;
+    padding: 0.7rem 0.75rem;
+    width: 100%;
+}
+
+.candidate-email-field input,
+.candidate-email-field select {
+    min-height: 2.7rem;
+}
+
+.candidate-email-field input[readonly] {
+    color: var(--email-admin-muted);
+}
+
+.candidate-email-field textarea {
+    line-height: 1.55;
+    resize: vertical;
+}
+
+.candidate-email-subject-row {
+    align-items: end;
+    display: grid;
+    gap: 0.7rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.candidate-email-schedule-open {
+    background: #363c3d;
+    border: 0;
+    border-radius: 0.4rem;
+    color: #fff;
+    font-size: 0.74rem;
+    font-weight: 700;
+    min-height: 2.7rem;
+    padding: 0.55rem 0.8rem;
+    white-space: nowrap;
+}
+
+.candidate-email-schedule-open:hover,
+.candidate-email-schedule-open:focus-visible {
+    background: #252a2b;
+}
+
+.candidate-email-schedule-open[hidden] {
+    display: none;
+}
+
+.candidate-email-field input:focus,
+.candidate-email-field select:focus,
+.candidate-email-field textarea:focus {
+    outline: 2px solid var(--email-admin-accent);
+    outline-offset: 1px;
+}
+
+.candidate-email-helper {
+    color: var(--email-admin-muted);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.66rem;
+    gap: 0.35rem 1rem;
+    justify-content: flex-end;
+    margin-top: 0.4rem;
+}
+
+.candidate-email-actions {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: flex-end;
+}
+
+.candidate-email-actions button {
+    border: 0;
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-height: 2.55rem;
+    padding: 0.55rem 0.95rem;
+}
+
+.candidate-email-cancel {
+    background: #e9ecec;
+    color: #4f5657;
+}
+
+.candidate-email-cancel:hover,
+.candidate-email-cancel:focus-visible {
+    background: #dce1e1;
+}
+
+.candidate-email-send {
+    background: var(--email-admin-ink);
+    color: #fff;
+}
+
+.candidate-email-send:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.candidate-interview-schedule-modal {
+    --schedule-admin-accent: #2f8586;
+    --schedule-admin-ink: #252a2b;
+    --schedule-admin-muted: #6d7475;
+    background: #eef1f1;
+    border: 0;
+    border-radius: 0.65rem;
+    box-shadow: 0 1.4rem 3.5rem rgba(25, 30, 32, 0.22);
+    max-width: min(40rem, calc(100vw - 2rem));
+    padding: 0;
+}
+
+.candidate-interview-schedule-header {
+    background: #fff;
+    padding: 1.4rem 4rem 1.25rem 1.65rem;
+}
+
+.candidate-interview-schedule-modal .candidate-interview-schedule-header h2 {
+    color: var(--schedule-admin-ink);
+    font-size: 1.3rem;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.25rem;
+}
+
+.candidate-interview-schedule-modal .candidate-interview-schedule-header p {
+    color: var(--schedule-admin-muted);
+    font-size: 0.76rem;
+    margin: 0;
+}
+
+.candidate-interview-schedule-form {
+    background: #fff;
+    border-radius: 0.55rem;
+    margin: 1rem 1.65rem 1.65rem;
+    padding: 1.2rem;
+}
+
+.candidate-interview-schedule-grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.candidate-interview-schedule-modal .candidate-interview-schedule-grid label {
+    color: var(--schedule-admin-ink);
+    font-size: 0.72rem;
+    margin: 0;
+}
+
+.candidate-interview-schedule-grid label > span {
+    display: block;
+    margin-bottom: 0.4rem;
+}
+
+.candidate-interview-schedule-grid input,
+.candidate-interview-schedule-grid select {
+    background: #f3f5f5;
+    border: 0;
+    border-radius: 0.4rem;
+    color: var(--schedule-admin-ink);
+    font: inherit;
+    font-size: 0.76rem;
+    min-height: 2.65rem;
+    padding: 0.55rem 0.7rem;
+    width: 100%;
+}
+
+.candidate-interview-schedule-grid input:focus,
+.candidate-interview-schedule-grid select:focus {
+    outline: 2px solid var(--schedule-admin-accent);
+    outline-offset: 1px;
+}
+
+.candidate-interview-schedule-actions {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.candidate-interview-schedule-actions button {
+    border: 0;
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-height: 2.55rem;
+    padding: 0.55rem 0.95rem;
+}
+
+.candidate-interview-schedule-cancel {
+    background: #e9ecec;
+    color: #4f5657;
+}
+
+.candidate-interview-schedule-cancel:hover,
+.candidate-interview-schedule-cancel:focus-visible {
+    background: #dce1e1;
+}
+
+.candidate-interview-schedule-save {
+    background: var(--schedule-admin-ink);
+    color: #fff;
+}
+
+.candidate-interview-schedule-save:hover,
+.candidate-interview-schedule-save:focus-visible {
+    background: #111516;
+}
+
+.shortlist-reject-modal,
+.shortlist-interview-confirm-modal {
+    max-width: min(30rem, calc(100vw - 2rem));
+}
+
+.shortlist-reject-modal h2,
+.shortlist-interview-confirm-modal h2 {
+    color: #252a2b;
+    font-size: 1.15rem;
+    margin: 0 0 0.65rem;
+}
+
+.shortlist-reject-modal p,
+.shortlist-interview-confirm-modal p {
+    color: #646a6b;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.shortlist-reject-modal-actions,
+.shortlist-interview-confirm-actions {
+    display: flex;
+    gap: 0.65rem;
+    justify-content: flex-end;
+    margin-top: 1.35rem;
+}
+
+.shortlist-reject-modal-actions button,
+.shortlist-interview-confirm-actions button {
+    border: 0;
+    border-radius: 0.45rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    min-height: 2.65rem;
+    padding: 0.6rem 1rem;
+}
+
+.shortlist-reject-cancel {
+    background: #e9ecec;
+    color: #363c3d;
+}
+
+.shortlist-reject-cancel:hover,
+.shortlist-reject-cancel:focus-visible {
+    background: #dce1e1;
+}
+
+.shortlist-reject-confirm {
+    background: #b42318;
+    color: #fff;
+}
+
+.shortlist-reject-confirm:hover,
+.shortlist-reject-confirm:focus-visible {
+    background: #8f1d14;
+}
+
+.shortlist-interview-confirm-cancel {
+    background: #e9ecec;
+    color: #363c3d;
+}
+
+.shortlist-interview-confirm-cancel:hover,
+.shortlist-interview-confirm-cancel:focus-visible {
+    background: #dce1e1;
+}
+
+.shortlist-interview-confirm-submit {
+    background: #363c3d;
+    color: #fff;
+}
+
+.shortlist-interview-confirm-submit:hover,
+.shortlist-interview-confirm-submit:focus-visible {
+    background: #252a2b;
 }
 
 @media (max-width: 1199.98px) {
@@ -1374,11 +2327,32 @@ button.candidate-view-link {
         padding: 0;
     }
 
+    .candidate-email-modal {
+        padding: 0;
+    }
+
+    .candidate-interview-schedule-modal {
+        padding: 0;
+    }
+
     .shortlist-review-header {
         padding-left: 1.2rem;
     }
 
+    .candidate-email-header {
+        padding-left: 1.2rem;
+    }
+
+    .candidate-interview-schedule-header {
+        padding-left: 1.2rem;
+    }
+
     .shortlist-modal-section {
+        margin-left: 1.2rem;
+        margin-right: 1.2rem;
+    }
+
+    .shortlist-workflow-accordion {
         margin-left: 1.2rem;
         margin-right: 1.2rem;
     }
@@ -1388,14 +2362,25 @@ button.candidate-view-link {
         padding-right: 1.2rem;
     }
 
+    .candidate-email-form {
+        margin-left: 1.2rem;
+        margin-right: 1.2rem;
+    }
+
+    .candidate-interview-schedule-form {
+        margin-left: 1.2rem;
+        margin-right: 1.2rem;
+    }
+
     .shortlist-detail-grid,
     .shortlist-module-list,
-    .shortlist-schedule-grid {
+    .candidate-interview-schedule-grid {
         grid-template-columns: 1fr;
     }
 
-    .shortlist-schedule-wide {
-        grid-column: auto;
+    .candidate-email-subject-row {
+        align-items: stretch;
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1414,6 +2399,10 @@ button.candidate-view-link {
 
     .admin-add-tutor-field--full {
         grid-column: auto;
+    }
+
+    .admin-manual-module-list {
+        grid-template-columns: 1fr;
     }
 
     .application-stage-tabs {
@@ -1436,14 +2425,52 @@ button.candidate-view-link {
         padding: 1rem;
     }
 
-    .shortlist-modal-actions {
+    .shortlist-modal-footer {
         align-items: stretch;
         flex-direction: column;
     }
 
-    .shortlist-modal-actions button,
+    .shortlist-modal-footer button,
     .shortlist-reject-button {
         margin-right: 0;
+        width: 100%;
+    }
+
+    .candidate-email-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+    }
+
+    .candidate-email-actions button {
+        width: 100%;
+    }
+
+    .interview-process-footer {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .interview-process-footer button {
+        width: 100%;
+    }
+
+    .interview-process-footer .interview-placement-button {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+
+    .interview-room-launch-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .shortlist-reject-modal-actions,
+    .shortlist-interview-confirm-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+    }
+
+    .shortlist-reject-modal-actions button,
+    .shortlist-interview-confirm-actions button {
         width: 100%;
     }
 }

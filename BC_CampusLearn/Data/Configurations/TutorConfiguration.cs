@@ -35,10 +35,10 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
             .HasMaxLength(1000);
         builder.Property(tutor => tutor.InterviewPreparationNotes)
             .HasMaxLength(1000);
+        builder.Property(tutor => tutor.InterviewNotes)
+            .HasMaxLength(4000);
         builder.Property(tutor => tutor.InterviewLocation)
             .HasMaxLength(500);
-        builder.Property(tutor => tutor.AssignedInterviewer)
-            .HasMaxLength(200);
         builder.Property(tutor => tutor.IsActive).HasDefaultValue(false);
         builder.Property(tutor => tutor.SubmittedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         builder.Property(tutor => tutor.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");

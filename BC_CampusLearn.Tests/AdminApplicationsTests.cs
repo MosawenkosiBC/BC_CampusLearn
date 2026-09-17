@@ -176,7 +176,7 @@ public class AdminApplicationsTests
         Assert.Equal(TutorApplicationStage.Shortlisted, first.ApplicationStage);
         Assert.Equal(TutorApplicationStage.Shortlisted, second.ApplicationStage);
         Assert.Equal("Strong academic results", first.ShortlistReason);
-        Assert.Equal(2, await context.UserNotifications.CountAsync());
+        Assert.Empty(context.UserNotifications);
         Assert.Equal(TutorStatus.Pending, uncheckedCandidate.Status);
         Assert.Equal(
             TutorApplicationStage.Submitted,
@@ -294,8 +294,7 @@ public class AdminApplicationsTests
                 new DateTime(2026, 10, 12),
                 new TimeSpan(10, 30, 0),
                 45,
-                "Microsoft Teams",
-                "Interview Administrator"),
+                "Microsoft Teams"),
             CancellationToken.None,
             reviewerBcUserId: 2);
 
@@ -305,7 +304,6 @@ public class AdminApplicationsTests
             candidate.InterviewScheduledAt);
         Assert.Equal(45, candidate.InterviewDurationMinutes);
         Assert.Equal("Microsoft Teams", candidate.InterviewLocation);
-        Assert.Equal("Interview Administrator", candidate.AssignedInterviewer);
         TutorApplicationReviewDecision decision = await context
             .TutorApplicationReviewDecisions.SingleAsync();
         Assert.Equal(TutorApplicationStage.Shortlisted, decision.PreviousStage);
@@ -355,8 +353,7 @@ public class AdminApplicationsTests
                     new DateTime(2026, 10, 14),
                     new TimeSpan(14, 0, 0),
                     30,
-                    "Room B14",
-                    "Tutor Selection Panel"),
+                    "Room B14"),
                 CancellationToken.None,
                 reviewerBcUserId: 2);
 
@@ -373,6 +370,116 @@ public class AdminApplicationsTests
         Assert.Equal(TutorApplicationStage.Shortlisted, audit.PreviousStage);
         Assert.Equal(TutorApplicationStage.Shortlisted, audit.NewStage);
         Assert.Equal("Preparing Administrator", audit.AdminName);
+    }
+
+    [Fact]
+    public async Task SavingInterviewRoomNotesKeepsCandidateInInterviewStage()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        context.BcUsers.Add(CreateUser(1, "Interview Candidate", "ST3955"));
+        Tutor candidate = CreateTutor(1, TutorStatus.Pending);
+        candidate.ApplicationStage = TutorApplicationStage.Interview;
+        context.Tutors.Add(candidate);
+        await context.SaveChangesAsync();
+
+        var page = new ApplicationsModel(context)
+        {
+            InterviewNotes = "  Strong explanation with clear examples.  "
+        };
+
+        await page.OnPostSaveInterviewNotesAsync(1, CancellationToken.None);
+
+        Assert.Equal(
+            "Strong explanation with clear examples.",
+            candidate.InterviewNotes);
+        Assert.Equal(TutorApplicationStage.Interview, candidate.ApplicationStage);
+        Assert.Equal(1, page.OpenInterviewRoomCandidateId);
+        Assert.Null(page.PageMessage);
+        Assert.Equal("Interview notes saved.", page.InterviewRoomMessage);
+    }
+
+    [Fact]
+    public async Task MovingInterviewCandidateToPlacementApprovesAndNotifiesTutor()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        BcUser user = CreateUser(1, "Interview Candidate", "ST3956");
+        context.BcUsers.Add(user);
+        Tutor candidate = CreateTutor(1, TutorStatus.Pending);
+        candidate.ApplicationStage = TutorApplicationStage.Interview;
+        context.Tutors.Add(candidate);
+        await context.SaveChangesAsync();
+
+        ShortlistResult result = await TutorApplicationReview
+            .MoveInterviewToPlacementAsync(
+                context,
+                1,
+                CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(TutorStatus.Approved, candidate.Status);
+        Assert.Equal(TutorApplicationStage.Placement, candidate.ApplicationStage);
+        Assert.True(candidate.IsActive);
+        Assert.Equal(BcUserRole.Tutor, user.Role);
+        UserNotification notification = await context.UserNotifications
+            .SingleAsync();
+        Assert.Equal(candidate.BcUserId, notification.RecipientBcUserId);
+        Assert.Contains("now a BC CampusLearn tutor", notification.Message);
+    }
+
+    [Fact]
+    public async Task RejectingInterviewCandidateCreatesNotificationAndEmail()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        BcUser student = CreateUser(1, "Interview Candidate", "ST3957");
+        student.Email = "interview.candidate@example.com";
+        context.BcUsers.Add(student);
+        Tutor candidate = CreateTutor(1, TutorStatus.Pending);
+        candidate.ApplicationStage = TutorApplicationStage.Interview;
+        context.Tutors.Add(candidate);
+        await context.SaveChangesAsync();
+
+        var emailSender = new RecordingTutorApplicationEmailSender();
+        var page = new ApplicationsModel(context, emailSender: emailSender);
+
+        await page.OnPostRejectInterviewedAsync(
+            1,
+            CancellationToken.None);
+
+        Assert.Equal(TutorStatus.Rejected, candidate.Status);
+        Assert.Equal(TutorApplicationStage.Rejected, candidate.ApplicationStage);
+        Assert.False(candidate.IsActive);
+        UserNotification notification = await context.UserNotifications
+            .SingleAsync();
+        Assert.Contains("not approved", notification.Message);
+        Assert.Equal(student.Email, emailSender.RecipientEmail);
+        Assert.Equal(student.DisplayName, emailSender.RecipientName);
     }
 
     [Fact]
@@ -530,14 +637,18 @@ public class AdminApplicationsTests
         Assert.NotNull(await context.Tutors.FindAsync(1));
 
         var page = new ApplicationsModel(context);
-        await page.OnPostSettingsAsync(
+        page.Stage = "shortlist";
+        var closeRedirect = Assert.IsType<Microsoft.AspNetCore.Mvc.RedirectToPageResult>(
+            await page.OnPostSettingsAsync(
             false,
             null,
             null,
             null,
-            CancellationToken.None);
+            CancellationToken.None));
 
         Assert.Null(await context.Tutors.FindAsync(1));
+        Assert.False((await context.TutorApplicationSettings.SingleAsync()).IsOpen);
+        Assert.Equal("applications", closeRedirect.RouteValues!["Stage"]);
     }
 
     [Fact]
@@ -605,8 +716,13 @@ public class AdminApplicationsTests
             openDate,
             closeDate,
             CancellationToken.None);
-        await page.OnPostShortlistAsync(
-            1, "Meets the criteria", CancellationToken.None);
+        var shortlistRedirect = Assert.IsType<Microsoft.AspNetCore.Mvc.RedirectToPageResult>(
+            await page.OnPostShortlistAsync(
+                1,
+                "Meets the criteria",
+                CancellationToken.None));
+
+        Assert.Equal("applications", shortlistRedirect.RouteValues!["Stage"]);
 
         TutorApplicationSettings settings = await context
             .TutorApplicationSettings.SingleAsync();
@@ -624,10 +740,7 @@ public class AdminApplicationsTests
         Assert.Equal(
             TutorApplicationStage.Shortlisted,
             shortlisted.ApplicationStage);
-        UserNotification notification = await context.UserNotifications
-            .SingleAsync();
-        Assert.Equal(shortlisted.BcUserId, notification.RecipientBcUserId);
-        Assert.Contains("Meets the criteria", notification.Message);
+        Assert.Empty(context.UserNotifications);
         Assert.Equal(TutorStatus.Pending, uncheckedCandidate.Status);
     }
 
@@ -718,7 +831,9 @@ public class AdminApplicationsTests
             (await context.Tutors.FindAsync(2))!.ApplicationStage);
 
         var page = new ApplicationsModel(context);
-        await page.OnPostContinueShortlistingAsync(CancellationToken.None);
+        var continueRedirect = Assert.IsType<Microsoft.AspNetCore.Mvc.RedirectToPageResult>(
+            await page.OnPostContinueShortlistingAsync(CancellationToken.None));
+        Assert.Equal("applications", continueRedirect.RouteValues!["Stage"]);
         ShortlistResult continuedResult = await TutorApplicationReview.ShortlistAsync(
             context, 2, "Also suitable", CancellationToken.None);
 
@@ -759,6 +874,14 @@ public class AdminApplicationsTests
             Id = 1,
             Name = "Bachelor of Computing"
         });
+        context.ProgrammeModules.Add(new ProgrammeModule
+        {
+            ProgrammeModuleId = 101,
+            ProgrammeId = 1,
+            ModuleCode = "CMPG101",
+            ModuleName = "Introduction to Computing",
+            YearOfStudy = 1
+        });
         context.BcUsers.Add(CreateUser(1, "Manual Tutor", "ST6001"));
         await context.SaveChangesAsync();
 
@@ -770,11 +893,15 @@ public class AdminApplicationsTests
                 ProgrammeId = 1,
                 YearOfStudy = 3,
                 OverallAverage = 78,
-                CampusOfStudy = "Pretoria",
+                CampusOfStudy = "Pretoria Campus",
                 PhoneNumber = "0123456789",
-                PreferredTutoringMode = PreferredTutoringMode.Both
+                PreferredTutoringMode = PreferredTutoringMode.Both,
+                ProgrammeModuleIds = [101]
             }
         };
+        page.ModelState.AddModelError(
+            "InterviewPreparation.Notes",
+            "An unrelated form is invalid.");
 
         await page.OnPostAddTutorAsync(CancellationToken.None);
 
@@ -788,6 +915,137 @@ public class AdminApplicationsTests
             TutorApplicationStage.Placement,
             user.Tutor.ApplicationStage);
         Assert.True(user.Tutor.IsActive);
+        Assert.Single(user.Tutor.TutorCourseModules);
+        Assert.Equal(
+            101,
+            user.Tutor.TutorCourseModules.Single().ProgrammeModuleId);
+        Assert.Equal(string.Empty, user.Tutor.ReasonForTutoring);
+        Assert.Equal(string.Empty, user.Tutor.TeachingStyle);
+        Assert.Equal(string.Empty, user.Tutor.PreviousTutoringExperience);
+        Assert.Equal(string.Empty, user.Tutor.DemonstrationVideoUrl);
+    }
+
+    [Fact]
+    public void ManualTutorValidationRejectsInvalidYearAndCampus()
+    {
+        var input = new ApplicationsModel.ManualTutorInput
+        {
+            BcUserId = 1,
+            ProgrammeId = 1,
+            YearOfStudy = 5,
+            OverallAverage = 75,
+            CampusOfStudy = "Unknown Campus",
+            ProgrammeModuleIds = [101]
+        };
+        var results = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+
+        bool isValid = System.ComponentModel.DataAnnotations.Validator
+            .TryValidateObject(
+                input,
+                new System.ComponentModel.DataAnnotations.ValidationContext(input),
+                results,
+                validateAllProperties: true);
+
+        Assert.False(isValid);
+        Assert.Contains(results, result =>
+            result.MemberNames.Contains(nameof(input.YearOfStudy)));
+
+        input.YearOfStudy = 4;
+        results.Clear();
+        isValid = System.ComponentModel.DataAnnotations.Validator
+            .TryValidateObject(
+                input,
+                new System.ComponentModel.DataAnnotations.ValidationContext(input),
+                results,
+                validateAllProperties: true);
+
+        Assert.False(isValid);
+        Assert.Contains(results, result =>
+            result.MemberNames.Contains(nameof(input.CampusOfStudy)));
+
+        input.CampusOfStudy = "Online";
+        results.Clear();
+        isValid = System.ComponentModel.DataAnnotations.Validator
+            .TryValidateObject(
+                input,
+                new System.ComponentModel.DataAnnotations.ValidationContext(input),
+                results,
+                validateAllProperties: true);
+
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public async Task DeactivatingTutorRestoresStudentRole()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        BcUser user = CreateUser(1, "Active Tutor", "ST6002");
+        Tutor tutor = CreateTutor(1, TutorStatus.Approved);
+        tutor.ApplicationStage = TutorApplicationStage.Placement;
+        tutor.IsActive = true;
+        context.BcUsers.Add(user);
+        context.Tutors.Add(tutor);
+        await context.SaveChangesAsync();
+        Assert.Equal(BcUserRole.Tutor, user.Role);
+
+        tutor.IsActive = false;
+        await context.SaveChangesAsync();
+
+        Assert.Equal(BcUserRole.Student, user.Role);
+    }
+
+    [Fact]
+    public async Task RemovingTutorRestoresStudentRole()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        BcUser user = CreateUser(1, "Removed Tutor", "ST6003");
+        Tutor tutor = CreateTutor(1, TutorStatus.Approved);
+        tutor.ApplicationStage = TutorApplicationStage.Placement;
+        tutor.IsActive = true;
+        context.BcUsers.Add(user);
+        context.Tutors.Add(tutor);
+        await context.SaveChangesAsync();
+        Assert.Equal(BcUserRole.Tutor, user.Role);
+
+        context.Tutors.Remove(tutor);
+        await context.SaveChangesAsync();
+
+        Assert.Equal(BcUserRole.Student, user.Role);
+    }
+
+    private sealed class RecordingTutorApplicationEmailSender
+        : ITutorApplicationEmailSender
+    {
+        public string? RecipientEmail { get; private set; }
+        public string? RecipientName { get; private set; }
+
+        public Task SendInterviewRejectionAsync(
+            string recipientEmail,
+            string recipientName,
+            CancellationToken cancellationToken)
+        {
+            RecipientEmail = recipientEmail;
+            RecipientName = recipientName;
+            return Task.CompletedTask;
+        }
     }
 
     private static BcUser CreateUser(

@@ -85,16 +85,6 @@ public static class TutorApplicationReview
                 });
         }
 
-        context.UserNotifications.Add(new UserNotification
-        {
-            RecipientBcUserId = candidate.BcUserId,
-            Title = "Tutor application shortlisted",
-            Message = "Your tutor application has been reviewed and moved to the shortlist. " +
-                $"Reason: {normalizedReason}",
-            LinkUrl = "/Tutors/TutorApplication",
-            CreatedAt = DateTimeOffset.UtcNow
-        });
-
         await context.SaveChangesAsync(cancellationToken);
         bool shortlistLimitReached = settings.ShortlistLimit.HasValue &&
             shortlistedCount + 1 == settings.ShortlistLimit.Value &&
@@ -332,6 +322,124 @@ public static class TutorApplicationReview
         return ShortlistResult.Success("Candidate rejected.");
     }
 
+    public static async Task<ShortlistResult> MoveInterviewToPlacementAsync(
+        ApplicationDbContext context,
+        int tutorId,
+        CancellationToken cancellationToken,
+        int? reviewerBcUserId = null)
+    {
+        Tutor? candidate = await context.Tutors
+            .Include(tutor => tutor.BcUser)
+            .SingleOrDefaultAsync(
+                tutor => tutor.TutorId == tutorId,
+                cancellationToken);
+        if (candidate is null || candidate.Status != TutorStatus.Pending ||
+            candidate.ApplicationStage != TutorApplicationStage.Interview)
+        {
+            return ShortlistResult.Failure(
+                "This candidate is no longer in the interview stage.");
+        }
+
+        DateTime reviewedAt = DateTime.UtcNow;
+        candidate.Status = TutorStatus.Approved;
+        candidate.ApplicationStage = TutorApplicationStage.Placement;
+        candidate.IsActive = true;
+        candidate.ReviewedAt = reviewedAt;
+        candidate.UpdatedAt = reviewedAt;
+        candidate.BcUser.Role = BcUserRole.Tutor;
+
+        ShortlistResult auditResult = await AddReviewDecisionAsync(
+            context,
+            candidate,
+            reviewerBcUserId,
+            TutorApplicationStage.Interview,
+            TutorApplicationStage.Placement,
+            "Candidate approved as a tutor after interview.",
+            reviewedAt,
+            cancellationToken);
+        if (!auditResult.Succeeded)
+        {
+            return auditResult;
+        }
+
+        context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = candidate.BcUserId,
+            Title = "Tutor application approved",
+            Message = "Congratulations! Your tutor application has been approved. " +
+                "You are now a BC CampusLearn tutor.",
+            LinkUrl = "/Tutors/TutorApplication",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
+        await context.SaveChangesAsync(cancellationToken);
+        return ShortlistResult.Success(
+            "Candidate moved to placement and notified.");
+    }
+
+    public static async Task<ShortlistResult> RejectInterviewedAsync(
+        ApplicationDbContext context,
+        int tutorId,
+        string? reason,
+        CancellationToken cancellationToken,
+        int? reviewerBcUserId = null)
+    {
+        string normalizedReason = reason?.Trim() ?? string.Empty;
+        if (normalizedReason.Length > 1000)
+        {
+            return ShortlistResult.Failure(
+                "The rejection reason cannot exceed 1,000 characters.");
+        }
+
+        Tutor? candidate = await context.Tutors.SingleOrDefaultAsync(
+            tutor => tutor.TutorId == tutorId,
+            cancellationToken);
+        if (candidate is null || candidate.Status != TutorStatus.Pending ||
+            candidate.ApplicationStage != TutorApplicationStage.Interview)
+        {
+            return ShortlistResult.Failure(
+                "This candidate is no longer in the interview stage.");
+        }
+
+        DateTime reviewedAt = DateTime.UtcNow;
+        candidate.Status = TutorStatus.Rejected;
+        candidate.ApplicationStage = TutorApplicationStage.Rejected;
+        candidate.IsActive = false;
+        candidate.ReviewedAt = reviewedAt;
+        candidate.UpdatedAt = reviewedAt;
+
+        ShortlistResult auditResult = await AddReviewDecisionAsync(
+            context,
+            candidate,
+            reviewerBcUserId,
+            TutorApplicationStage.Interview,
+            TutorApplicationStage.Rejected,
+            string.IsNullOrEmpty(normalizedReason)
+                ? "Candidate rejected after interview."
+                : normalizedReason,
+            reviewedAt,
+            cancellationToken);
+        if (!auditResult.Succeeded)
+        {
+            return auditResult;
+        }
+
+        context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = candidate.BcUserId,
+            Title = "Tutor application reviewed",
+            Message = string.IsNullOrEmpty(normalizedReason)
+                ? "Your tutor application was not approved after the interview."
+                : "Your tutor application was not approved after the interview. " +
+                    $"Reason: {normalizedReason}",
+            LinkUrl = "/Tutors/TutorApplication",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
+        await context.SaveChangesAsync(cancellationToken);
+        return ShortlistResult.Success("Candidate rejected.");
+    }
+
     private static async Task<ShortlistResult> AddReviewDecisionAsync(
         ApplicationDbContext context,
         Tutor candidate,
@@ -383,8 +491,6 @@ public static class TutorApplicationReview
         normalizedNotes = preparation.Notes?.Trim() ?? string.Empty;
         string normalizedLocation =
             preparation.LocationOrMeetingLink?.Trim() ?? string.Empty;
-        string normalizedInterviewer =
-            preparation.AssignedInterviewer?.Trim() ?? string.Empty;
 
         if (normalizedNotes.Length > 1000)
         {
@@ -396,12 +502,6 @@ public static class TutorApplicationReview
         {
             return ShortlistResult.Failure(
                 "The interview location or meeting link cannot exceed 500 characters.");
-        }
-
-        if (normalizedInterviewer.Length > 200)
-        {
-            return ShortlistResult.Failure(
-                "The assigned interviewer cannot exceed 200 characters.");
         }
 
         if (preparation.DurationMinutes is < 15 or > 240)
@@ -417,22 +517,25 @@ public static class TutorApplicationReview
                 "Enter both an interview date and time, or leave both blank.");
         }
 
-        DateTime? scheduledAt = preparation.ScheduledDate.HasValue
-            ? preparation.ScheduledDate.Value.Date.Add(
-                preparation.ScheduledTime!.Value)
-            : null;
-
         candidate.InterviewPreparationNotes = string.IsNullOrEmpty(normalizedNotes)
             ? null
             : normalizedNotes;
-        candidate.InterviewScheduledAt = scheduledAt;
-        candidate.InterviewDurationMinutes = preparation.DurationMinutes;
-        candidate.InterviewLocation = string.IsNullOrEmpty(normalizedLocation)
-            ? null
-            : normalizedLocation;
-        candidate.AssignedInterviewer = string.IsNullOrEmpty(normalizedInterviewer)
-            ? null
-            : normalizedInterviewer;
+
+        bool hasScheduleInput = preparation.ScheduledDate.HasValue ||
+            preparation.ScheduledTime.HasValue ||
+            preparation.DurationMinutes.HasValue ||
+            !string.IsNullOrEmpty(normalizedLocation);
+        if (hasScheduleInput)
+        {
+            candidate.InterviewScheduledAt = preparation.ScheduledDate.HasValue
+                ? preparation.ScheduledDate.Value.Date.Add(
+                    preparation.ScheduledTime!.Value)
+                : null;
+            candidate.InterviewDurationMinutes = preparation.DurationMinutes;
+            candidate.InterviewLocation = string.IsNullOrEmpty(normalizedLocation)
+                ? null
+                : normalizedLocation;
+        }
 
         return ShortlistResult.Success(string.Empty);
     }
@@ -498,5 +601,4 @@ public sealed record InterviewPreparationDetails(
     DateTime? ScheduledDate,
     TimeSpan? ScheduledTime,
     int? DurationMinutes,
-    string? LocationOrMeetingLink,
-    string? AssignedInterviewer);
+    string? LocationOrMeetingLink);

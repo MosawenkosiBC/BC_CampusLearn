@@ -95,6 +95,13 @@ builder.Services.AddScoped<
     ITutorService,
     TutorService>();
 
+builder.Services.Configure<TutorApplicationEmailOptions>(
+    builder.Configuration.GetSection(
+        TutorApplicationEmailOptions.SectionName));
+builder.Services.AddScoped<
+    ITutorApplicationEmailSender,
+    TutorApplicationEmailSender>();
+
 builder.Services.AddScoped<
     IBookingService,
     BookingService>();
