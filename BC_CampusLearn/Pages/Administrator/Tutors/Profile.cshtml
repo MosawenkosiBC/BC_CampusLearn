@@ -149,7 +149,10 @@
                 </div>
                 @if (Model.AverageRating.HasValue)
                 {
-                    <p>@Model.AverageRating.Value.ToString("0.0") out of 5 · @Model.ReviewCount reviews</p>
+                    <p>
+                        @Model.AverageRating.Value.ToString("0.0") out of 5 ·
+                        @Model.ReviewCount @(Model.ReviewCount == 1 ? "review" : "reviews")
+                    </p>
                 }
                 else
                 {

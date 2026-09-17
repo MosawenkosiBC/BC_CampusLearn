@@ -101,10 +101,10 @@ public class ProfileModel(ApplicationDbContext context) : PageModel
         ModuleChangeRequests = await context.TutorModuleChangeRequests.CountAsync(item => item.TutorId == id
             && item.Status == TutorAccountRequestStatus.Pending
             && item.SubmittedAt >= submittedStart && item.SubmittedAt < submittedEnd, cancellationToken);
-        var ratings = await context.SessionReviews.AsNoTracking()
-            .Where(item => item.Booking.TutorId == id && item.RevieweeBcUserId == tutor.BcUserId
-                && item.CreatedAt >= periodStart && item.CreatedAt < periodEnd)
-            .Select(item => (double)item.Rating).ToListAsync(cancellationToken);
+        var ratings = await completedBookings
+            .Where(item => item.StudentEvaluation != null)
+            .Select(item => (double)item.StudentEvaluation!.ModeRating)
+            .ToListAsync(cancellationToken);
         ReviewCount = ratings.Count;
         AverageRating = ratings.Count > 0 ? ratings.Average() : null;
         var topModules = await completedBookings

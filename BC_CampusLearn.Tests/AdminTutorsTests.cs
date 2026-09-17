@@ -155,10 +155,11 @@ public class AdminTutorsTests
                 Status = BookingStatus.Completed, CompletedAt = date.ToUniversalTime(), ScheduledStartTime = date.ToUniversalTime()
             };
             context.Bookings.Add(booking);
-            context.SessionReviews.Add(new SessionReview
+            context.StudentEvaluations.Add(new StudentEvaluation
             {
-                Booking = booking, ReviewerBcUserId = 2, RevieweeBcUserId = 1,
-                CreatedAt = date.ToUniversalTime(), Rating = date >= start && date < end ? (byte)5 : (byte)1
+                Booking = booking,
+                ModeRating = date >= start && date < end ? (byte)5 : (byte)1,
+                PlatformRating = 5
             });
             context.TutorModuleChangeRequests.Add(new TutorModuleChangeRequest
             {
@@ -174,7 +175,7 @@ public class AdminTutorsTests
         await page.OnGetAsync(1, CancellationToken.None);
         Assert.Null(page.DateFilterError);
         Assert.Equal(2, page.CompletedSessions);
-        Assert.Equal(2, page.PendingStudentReviews);
+        Assert.Equal(0, page.PendingStudentReviews);
         Assert.Equal(2, page.ModuleChangeRequests);
         Assert.Equal(2, page.ReviewCount);
         Assert.Equal(5d, page.AverageRating);
@@ -186,6 +187,8 @@ public class AdminTutorsTests
         await page.OnGetAsync(1, CancellationToken.None);
         Assert.Equal(1, page.CompletedSessions);
         Assert.Single(page.RecentSessions);
+        Assert.Equal(1, page.ReviewCount);
+        Assert.Equal(5d, page.AverageRating);
         page.StartDate = new DateOnly(2020, 1, 1);
         page.EndDate = page.StartDate;
         await page.OnGetAsync(1, CancellationToken.None);
