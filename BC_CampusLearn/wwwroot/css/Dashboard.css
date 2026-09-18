@@ -292,6 +292,47 @@
     font-size: 14px;
 }
 
+.dashboard-all-sessions .bookings-session-status-group {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.55rem;
+}
+
+.dashboard-all-sessions .bookings-pending-review-icon {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+    color: #c6003d;
+    display: inline-flex;
+    flex: 0 0 2.4rem;
+    height: 2.4rem;
+    justify-content: center;
+    text-decoration: none;
+    width: 2.4rem;
+}
+
+.dashboard-all-sessions .bookings-pending-review-icon:hover,
+.dashboard-all-sessions .bookings-pending-review-icon:focus-visible {
+    background: transparent;
+    color: #97002f;
+}
+
+.dashboard-all-sessions .bookings-pending-review-icon:focus-visible {
+    outline: 3px solid rgba(181, 0, 85, 0.22);
+    outline-offset: 2px;
+}
+
+.dashboard-all-sessions .bookings-pending-review-icon svg {
+    height: 1.2rem;
+    width: 1.2rem;
+}
+
+.dashboard-all-sessions .bookings-pending-review-icon--submitted,
+.dashboard-all-sessions .bookings-pending-review-icon--submitted:hover {
+    color: #246b2d;
+}
+
 .dashboard-all-sessions .tutor-sessions-table-wrap {
     overflow: visible;
 }
@@ -1239,6 +1280,7 @@
         font-size: 12px;
         grid-area: location;
         overflow: hidden;
+        padding-right: 3.5rem;
         padding-top: 0.25rem;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1247,6 +1289,19 @@
     .dashboard-all-sessions .tutor-sessions-table td:nth-child(5) {
         grid-area: status;
         text-align: left;
+    }
+
+    .dashboard-all-sessions .bookings-pending-review-icon {
+        bottom: 0.55rem;
+        height: 2.4rem;
+        position: absolute;
+        right: 0.65rem;
+        width: 2.4rem;
+    }
+
+    .dashboard-all-sessions .bookings-pending-review-icon svg {
+        height: 1.3rem;
+        width: 1.3rem;
     }
 
     .dashboard-all-sessions .tutor-sessions-table td:nth-child(6) {

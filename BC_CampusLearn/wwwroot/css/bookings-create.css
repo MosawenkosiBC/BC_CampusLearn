@@ -1242,7 +1242,6 @@ a.booking-added-item-label:focus-visible {
     padding-top: 0.75rem;
 }
 
-.pending-review-later,
 .pending-review-open-sessions {
     align-items: center;
     border-radius: 8px;
@@ -1252,12 +1251,6 @@ a.booking-added-item-label:focus-visible {
     min-height: 44px;
     padding: 0.65rem 1rem;
     text-decoration: none;
-}
-
-.pending-review-later {
-    background: #fff;
-    border: 1px solid #d7d7d7;
-    color: #333;
 }
 
 .pending-review-open-sessions {

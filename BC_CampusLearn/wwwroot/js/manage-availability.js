@@ -1,4 +1,14 @@
 (() => {
+    document.querySelectorAll(
+        ".specific-availability-modal, " +
+        ".availability-edit-modal, " +
+        ".availability-delete-modal")
+        .forEach((modal) => {
+            if (modal.parentElement !== document.body) {
+                document.body.append(modal);
+            }
+        });
+
     const calendar = document.querySelector(
         "[data-availability-calendar]");
 
