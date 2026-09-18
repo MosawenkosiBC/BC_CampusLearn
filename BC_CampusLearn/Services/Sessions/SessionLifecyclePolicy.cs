@@ -14,6 +14,16 @@ public static class SessionLifecyclePolicy
                 SessionSchedulingRules.LateStartWindow);
     }
 
+    public static bool CanJoin(
+        BookingStatus status,
+        DateTimeOffset scheduledStart,
+        DateTimeOffset now)
+    {
+        return status == BookingStatus.InProgress ||
+            status == BookingStatus.Confirmed &&
+            CanStart(scheduledStart, now);
+    }
+
     public static BookingStatus? GetAutomaticTransition(
         BookingStatus currentStatus,
         DateTimeOffset scheduledStart,

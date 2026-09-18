@@ -660,6 +660,10 @@
     margin-top: 1.25rem;
 }
 
+.dashboard-join-session-form {
+    display: contents;
+}
+
 .tutor-next-session-actions button,
 .tutor-next-session-actions a {
     align-items: center;
@@ -701,6 +705,14 @@
     background-color: #900044;
     border-color: #900044;
     outline: none;
+}
+
+.tutor-next-session-actions .tutor-join-session:disabled,
+.tutor-next-session-actions .tutor-join-session:disabled:hover {
+    background-color: #a9a9a9;
+    border-color: #a9a9a9;
+    color: #fff;
+    cursor: not-allowed;
 }
 
 .tutor-next-session-empty {

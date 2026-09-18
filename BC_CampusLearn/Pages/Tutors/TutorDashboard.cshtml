@@ -304,15 +304,24 @@
                             </a>
                             @if (!string.IsNullOrWhiteSpace(Model.NextSession.MeetingLink))
                             {
-                                <a href="@Model.NextSession.MeetingLink"
-                                   class="tutor-join-session"
-                                   target="_blank"
-                                   rel="noopener noreferrer">
-                                    <iconify-icon
-                                        icon="mdi:microsoft-teams"
-                                        aria-hidden="true"></iconify-icon>
-                                    Join Meeting
-                                </a>
+                                <form method="post"
+                                      asp-page="/Tutors/SessionDetails"
+                                      asp-page-handler="Join"
+                                      asp-route-bookingId="@Model.NextSession.BookingId"
+                                      class="dashboard-join-session-form"
+                                      target="_blank" rel="noopener noreferrer">
+                                    <button type="submit"
+                                            class="tutor-join-session"
+                                            data-dashboard-join-trigger
+                                            data-session-start="@Model.NextSession.ScheduledStartTime.ToString("O")"
+                                            disabled="@(!Model.NextSession.CanJoin)"
+                                            title="@(Model.NextSession.CanJoin ? "Join meeting" : "Available 5 minutes before the session")">
+                                        <iconify-icon
+                                            icon="mdi:microsoft-teams"
+                                            aria-hidden="true"></iconify-icon>
+                                        Join Meeting
+                                    </button>
+                                </form>
                             }
                             else
                             {

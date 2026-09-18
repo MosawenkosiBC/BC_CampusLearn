@@ -11,14 +11,10 @@
 
 .session-details-content-background::before {
     background-color: #fff;
-    background-image:
-        linear-gradient(
-            rgba(255, 255, 255, 0.88),
-            rgba(255, 255, 255, 0.88)),
-        url("/Media/common/backgroundNew.jpg");
+    background-image: url("/Media/common/backgroundNew.png");
     background-position: center top;
     background-repeat: repeat;
-    background-size: auto, 890px 360px;
+    background-size: 890px 360px;
     bottom: 0;
     content: "";
     left: 50%;
@@ -67,6 +63,10 @@
     display: grid;
     gap: 1.4rem;
     min-width: 0;
+}
+
+.tutor-session-details-page .session-overview-layout:not(:has(> .session-top-sidebar)) {
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .manage-session-card {
@@ -1705,9 +1705,20 @@ body.tutor-evaluation-panel-open {
 
 .session-status-start-remaining {
     border-left: 1px solid rgba(35, 116, 93, 0.35);
+    display: inline-flex;
     font-weight: 600;
     margin-left: 0.2rem;
     padding-left: 0.55rem;
+    white-space: nowrap;
+}
+
+.session-status-badge:not(.status-confirmed) .session-status-start-remaining {
+    display: none;
+}
+
+.student-session-details-page .session-status-badge.status-confirmed {
+    flex-wrap: nowrap;
+    width: max-content;
 }
 
 .session-status-badge.status-inprogress {
@@ -1727,6 +1738,11 @@ body.tutor-evaluation-panel-open {
 .session-status-card {
     margin-top: 0;
     padding: 1rem 1.1rem;
+}
+
+.session-information-status-control {
+    margin: 0;
+    padding: 0;
 }
 
 .session-top-sidebar {
@@ -2313,6 +2329,11 @@ button.review-status-row:focus-visible {
     width: 100%;
 }
 
+.session-join-button:disabled {
+    background: #a9a9a9;
+    border-color: #a9a9a9;
+}
+
 .confirmed-session-workspace .session-countdown-card {
     align-items: center;
     display: flex;
@@ -2458,6 +2479,14 @@ button.review-status-row:focus-visible {
 
 .student-meeting-panel .session-meeting-card {
     grid-template-columns: 1fr;
+}
+
+.student-session-details-page .student-meeting-panel .session-meeting-card dl {
+    margin-top: 0.45rem;
+}
+
+.student-session-details-page .student-meeting-panel .session-meeting-card dd {
+    font-size: 14px !important;
 }
 
 .student-meeting-panel .session-meeting-card form {
@@ -2829,34 +2858,12 @@ button.review-status-row:focus-visible {
         width: 1.3rem;
     }
 
-    .session-top-sidebar:has(> .completed-session-countdown) {
-        align-items: start;
-        column-gap: 0.75rem;
-        grid-template-areas:
-            "manage-heading countdown"
-            "manage-card countdown"
-            ". reviews";
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        row-gap: 0.7rem;
-    }
-
-    .session-top-sidebar:has(> .completed-session-countdown) > .manage-card-heading {
-        grid-area: manage-heading;
-    }
-
-    .session-top-sidebar:has(> .completed-session-countdown) > .session-status-card {
-        grid-area: manage-card;
-        width: 100%;
-    }
-
     .session-top-sidebar:has(> .completed-session-countdown) > .completed-session-countdown {
-        grid-area: countdown;
         margin-top: 0;
         width: 100%;
     }
 
     .session-top-sidebar:has(> .completed-session-countdown) > .completed-session-reviews {
-        grid-area: reviews;
         width: 100%;
     }
 
@@ -2864,30 +2871,10 @@ button.review-status-row:focus-visible {
         width: 100%;
     }
 
-    .student-session-details-page .session-top-sidebar:has(> .student-meeting-panel) {
-        align-items: start;
-        column-gap: 0.75rem;
-        grid-template-areas:
-            "details-heading meeting"
-            "details-card meeting";
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        row-gap: 0.7rem;
-    }
-
-    .student-session-details-page .session-top-sidebar:has(> .student-meeting-panel) > .manage-card-heading {
-        grid-area: details-heading;
-    }
-
-    .student-session-details-page .session-top-sidebar:has(> .student-meeting-panel) > .session-status-card {
-        grid-area: details-card;
-        width: 100%;
-    }
-
     .student-session-details-page .session-top-sidebar:has(> .student-meeting-panel) > .student-meeting-panel {
         align-self: stretch;
         display: flex;
         flex-direction: column;
-        grid-area: meeting;
         margin-top: 0;
         min-width: 0;
         width: 100%;

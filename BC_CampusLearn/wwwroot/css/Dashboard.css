@@ -9,14 +9,10 @@
 
 .dashboard-content-background::before {
     background-color: #fff;
-    background-image:
-        linear-gradient(
-            rgba(255, 255, 255, 0.88),
-            rgba(255, 255, 255, 0.88)),
-        url("/Media/common/backgroundNew.jpg");
+    background-image: url("/Media/common/backgroundNew.png");
     background-position: center top;
     background-repeat: repeat;
-    background-size: auto, 890px 360px;
+    background-size: 890px 360px;
     bottom: 0;
     content: "";
     left: 50%;
@@ -76,8 +72,9 @@
 }
 
 .dashboard-summary .tutor-stat-card h2 {
-    font-size: max(12px, 0.9rem);
+    font-size: 16px;
     grid-area: heading;
+    letter-spacing: 0.02em;
     margin: 0;
     min-width: 0;
     overflow-wrap: break-word;
@@ -1239,6 +1236,20 @@
     }
 }
 
+@media (min-width: 576px) and (max-width: 1199.98px) {
+    .dashboard-summary .tutor-stat-main {
+        column-gap: 0.75rem;
+        grid-template-areas:
+            "icon heading ."
+            "value value value";
+        grid-template-columns: 3rem minmax(0, 1fr) 3rem;
+    }
+
+    .dashboard-summary .tutor-stat-card h2 {
+        text-align: center;
+    }
+}
+
 @media (max-width: 767.98px) {
     .dashboard-all-sessions .tutor-sessions-table-wrap {
         overflow: visible;
@@ -1335,7 +1346,10 @@
 
     .dashboard-summary .tutor-stat-main {
         column-gap: 0.35rem;
-        grid-template-columns: 2.5rem minmax(0, 1fr);
+        grid-template-areas:
+            "icon heading ."
+            "value value value";
+        grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem;
     }
 
     .dashboard-summary .tutor-stat-icon {
@@ -1349,8 +1363,8 @@
     }
 
     .dashboard-summary .tutor-stat-card h2 {
-        font-size: 12px;
-        letter-spacing: -0.02em;
+        font-size: 13px;
+        text-align: center;
     }
 
     .dashboard-support-card {
@@ -1425,7 +1439,6 @@
 
 /* Student dashboard typography: body copy is 16px or larger; only
    supporting labels and metadata use the 12px minimum. */
-.dashboard-page .dashboard-summary .tutor-stat-card h2,
 .dashboard-page .dashboard-section-heading a,
 .dashboard-page .dashboard-tutor-content p,
 .dashboard-page .dashboard-find-tutor,
@@ -1439,9 +1452,12 @@
 .dashboard-page .dashboard-session-action-menu .dropdown-item,
 .dashboard-page .dashboard-resources-empty p,
 .dashboard-page .dashboard-resources-heading a,
-.dashboard-page .dashboard-resource-preview-grid .student-resource-topic,
 .dashboard-page .dashboard-resource-preview-grid .student-resource-summary {
     font-size: 16px;
+}
+
+.dashboard-page .dashboard-resource-preview-grid .student-resource-topic {
+    font-size: 14px;
 }
 
 .dashboard-page .dashboard-section-title,
@@ -1533,6 +1549,12 @@
 }
 
 @media (max-width: 575.98px) {
+    .dashboard-page .dashboard-tutor-content p {
+        font-size: 14px;
+        letter-spacing: 0.02em;
+        line-height: 1.5;
+    }
+
     .dashboard-subscriptions-panel .offcanvas-header {
         padding: 1.25rem 1rem 1rem;
     }

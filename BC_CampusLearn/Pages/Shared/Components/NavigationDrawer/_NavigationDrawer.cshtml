@@ -53,7 +53,7 @@
             data-drawer-open
             aria-controls="campus-navigation-drawer"
             aria-expanded="false"
-            aria-label="Open quick navigation">
+            aria-label="Open navigation menu">
         <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24">
             <path d="M5 12h14M13 6l6 6l-6 6"
                   fill="none"
@@ -84,14 +84,13 @@
                      aria-hidden="true" />
                 <div>
                     <h2 id="navigation-drawer-title">Campus Learn</h2>
-                    <p>Quick navigation</p>
                 </div>
             </div>
 
             <button type="button"
                     class="navigation-drawer-close"
                     data-drawer-close
-                    aria-label="Close quick navigation">
+                    aria-label="Close navigation menu">
                 <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24">
                     <path d="M5 5l14 14M19 5L5 19"
                           fill="none"
@@ -102,7 +101,7 @@
             </button>
         </div>
 
-        <nav class="navigation-drawer-links" aria-label="Quick navigation">
+        <nav class="navigation-drawer-links" aria-label="Main navigation">
             <a asp-page="/Index"
                class="navigation-drawer-link @(isHome ? "is-active" : null)"
                aria-current="@(isHome ? "page" : null)">

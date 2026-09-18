@@ -61,7 +61,12 @@
                     <div class="tutor-stat-icon tutor-stat-icon--magenta">
                         <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24">
                             <path d="M0 0h24v24H0z" fill="none" />
-                            <path fill="currentColor" d="M18.25 3h-.75V2H16v1H8V2H6.5v1h-.75A2.755 2.755 0 0 0 3 5.75v12.5A2.755 2.755 0 0 0 5.75 21h12.5A2.755 2.755 0 0 0 21 18.25V5.75A2.755 2.755 0 0 0 18.25 3M5.75 4.5h.75V6H8V4.5h8V6h1.5V4.5h.75c.69 0 1.25.56 1.25 1.25V7.5h-15V5.75c0-.69.56-1.25 1.25-1.25m12.5 15H5.75c-.69 0-1.25-.56-1.25-1.25V9h15v9.25c0 .69-.56 1.25-1.25 1.25" />
+                            <path fill="none"
+                                  stroke="currentColor"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="1.25"
+                                  d="M7 2v3m10-3v3M4 8h16M5.5 3.5h13A1.5 1.5 0 0 1 20 5v14a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19V5a1.5 1.5 0 0 1 1.5-1.5" />
                         </svg>
                     </div>
                     <div>
@@ -206,15 +211,24 @@
                             </a>
                             @if (!string.IsNullOrWhiteSpace(Model.NextSession.MeetingLink))
                             {
-                                <a href="@Model.NextSession.MeetingLink"
-                                   class="tutor-join-session"
-                                   target="_blank"
-                                   rel="noopener noreferrer">
-                                    <iconify-icon
-                                        icon="mdi:microsoft-teams"
-                                        aria-hidden="true"></iconify-icon>
-                                    Join Meeting
-                                </a>
+                                <form method="post"
+                                      asp-page="/Bookings/SessionDetails"
+                                      asp-page-handler="Join"
+                                      asp-route-bookingId="@Model.NextSession.BookingId"
+                                      class="dashboard-join-session-form"
+                                      target="_blank" rel="noopener noreferrer">
+                                    <button type="submit"
+                                            class="tutor-join-session"
+                                            data-dashboard-join-trigger
+                                            data-session-start="@Model.NextSession.AvailableTime.ToString("O")"
+                                            disabled="@(!Model.NextSession.CanJoin)"
+                                            title="@(Model.NextSession.CanJoin ? "Join meeting" : "Available 5 minutes before the session")">
+                                        <iconify-icon
+                                            icon="mdi:microsoft-teams"
+                                            aria-hidden="true"></iconify-icon>
+                                        Join Meeting
+                                    </button>
+                                </form>
                             }
                             else
                             {

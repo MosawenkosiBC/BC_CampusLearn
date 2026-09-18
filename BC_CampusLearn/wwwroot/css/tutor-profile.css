@@ -40,11 +40,7 @@
 }
 
 .profile-content-background::before {
-    background:
-        linear-gradient(
-            rgba(255, 255, 255, 0.9),
-            rgba(255, 255, 255, 0.9)),
-        url("/Media/common/backgroundNew.jpg") center top / 56rem auto repeat;
+    background: url("/Media/common/backgroundNew.png") center top / 56rem auto repeat;
     content: "";
     inset: 0 calc(50% - 50vw);
     pointer-events: none;

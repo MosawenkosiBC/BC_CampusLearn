@@ -5,14 +5,10 @@
 
 .booking-create-content-background::before {
     background-color: #fff;
-    background-image:
-        linear-gradient(
-            rgba(255, 255, 255, 0.88),
-            rgba(255, 255, 255, 0.88)),
-        url("/Media/common/backgroundNew.jpg");
+    background-image: url("/Media/common/backgroundNew.png");
     background-position: center top;
     background-repeat: repeat;
-    background-size: auto, 890px 360px;
+    background-size: 890px 360px;
     bottom: 0;
     content: "";
     left: 50%;
@@ -1197,6 +1193,40 @@ a.booking-added-item-label:focus-visible {
 @media (max-width: 575.98px) {
     .booking-create-page .booking-stage-header p {
         display: none;
+    }
+
+    .booking-create-page .booking-form-actions .booking-mobile-back,
+    .booking-create-page .booking-mobile-stage-actions .booking-mobile-back {
+        background: #fff;
+        border: 0;
+        box-shadow: 0 0.35rem 0.9rem rgba(31, 38, 45, 0.18);
+        flex: 0 0 3rem;
+        padding-inline: 0.65rem;
+        width: 3rem;
+    }
+
+    .booking-create-page .booking-form-actions .booking-mobile-back:hover,
+    .booking-create-page .booking-mobile-stage-actions .booking-mobile-back:hover {
+        background: #fff;
+        border: 0;
+        box-shadow: 0 0.45rem 1rem rgba(31, 38, 45, 0.22);
+    }
+
+    .booking-create-page .booking-form-actions .booking-mobile-back,
+    .booking-create-page .booking-form-actions .booking-mobile-next,
+    .booking-create-page .booking-mobile-stage-actions .booking-mobile-back,
+    .booking-create-page .booking-mobile-stage-actions .booking-mobile-next,
+    .booking-create-page .booking-mobile-stage-actions button[type="submit"] {
+        box-sizing: border-box;
+        height: 2.75rem;
+        min-height: 2.75rem;
+    }
+
+    .booking-confirm-stage
+    .booking-mobile-stage-actions
+    button[type="submit"] {
+        flex: 1 1 0;
+        width: auto;
     }
 }
 

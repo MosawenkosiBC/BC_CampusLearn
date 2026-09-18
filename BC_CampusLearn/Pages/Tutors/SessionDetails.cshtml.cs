@@ -118,10 +118,9 @@ public class SessionDetailsModel : PageModel
         SessionStartRemainingText = FormatTimeUntilStart(
             session.ScheduledStartTime - now);
         CanStartSession = session.Status == BookingStatus.Confirmed &&
-            now >= session.ScheduledStartTime.Subtract(
-                SessionSchedulingRules.EarlyStartWindow) &&
-            now < session.ScheduledStartTime.Add(
-                SessionSchedulingRules.LateStartWindow);
+            SessionLifecyclePolicy.CanStart(
+                session.ScheduledStartTime,
+                now);
         if (session.Status is BookingStatus.Cancelled or
             BookingStatus.Declined)
         {
@@ -275,7 +274,7 @@ public class SessionDetailsModel : PageModel
             cancellationToken);
         SessionActionError = !result.Succeeded;
         SessionActionMessage = result.Succeeded
-            ? "Session started."
+            ? null
             : result.ErrorMessage;
         return RedirectToPage(new { bookingId });
     }

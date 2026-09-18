@@ -9,6 +9,8 @@
 
         const sessionStart =
             new Date(countdown.dataset.sessionStart);
+        const joinButton = document.querySelector(
+            "[data-dashboard-join-trigger]");
 
         if (Number.isNaN(sessionStart.getTime())) {
             return;
@@ -66,8 +68,16 @@
         };
 
         const updateCountdown = () => {
-            countdown.textContent = formatCountdown(
-                sessionStart.getTime() - Date.now());
+            const remainingMilliseconds =
+                sessionStart.getTime() - Date.now();
+            countdown.textContent = formatCountdown(remainingMilliseconds);
+            if (joinButton) {
+                const canJoin = remainingMilliseconds <= 5 * 60 * 1000;
+                joinButton.disabled = !canJoin;
+                joinButton.title = canJoin
+                    ? "Join meeting"
+                    : "Available 5 minutes before the session";
+            }
         };
 
         updateCountdown();

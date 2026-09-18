@@ -92,7 +92,7 @@
                     : CampusAlertVariant.Success))
     }
 
-    <div class="manage-session-layout">
+    <div class="manage-session-layout session-overview-layout">
         <div class="manage-session-primary">
             <section class="session-information-section is-mobile-collapsed" aria-labelledby="session-information-title">
                 <header class="manage-card-heading">
@@ -161,6 +161,47 @@
                                            value="@((int)Model.Session.Duration) hour"
                                            readonly />
                                 </div>
+                            </div>
+
+                            <div class="session-information-grid session-date-grid">
+                                <div class="session-readonly-field">
+                                    <label for="session-date">Session Date</label>
+                                    <input id="session-date"
+                                           type="text"
+                                           value="@start.ToString("dd MMM yyyy, HH:mm")"
+                                           readonly />
+                                </div>
+                            </div>
+
+                            <div class="session-status-card session-information-status-control"
+                                 data-session-status-control>
+                                <label for="session-status-action">Change Status</label>
+                                <select id="session-status-action" data-session-status-select
+                                        data-system-dropdown
+                                        disabled="@(Model.Session.Status is not (BC_CampusLearn.Models.Entities.BookingStatus.Pending or BC_CampusLearn.Models.Entities.BookingStatus.Confirmed))">
+                                    <option value="">@Model.Session.Status.ToDisplayText()</option>
+                                    @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending)
+                                    {
+                                        <option value="confirm">Confirmed</option>
+                                        <option value="decline">Declined</option>
+                                    }
+                                    else if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Confirmed)
+                                    {
+                                        <option value="cancel">Cancelled</option>
+                                    }
+                                </select>
+
+                                @if (Model.Session.Status is BC_CampusLearn.Models.Entities.BookingStatus.Pending or
+                                    BC_CampusLearn.Models.Entities.BookingStatus.Confirmed)
+                                {
+                                    <button type="button" class="session-status-save" data-session-status-save>
+                                        Save
+                                    </button>
+                                }
+
+                                <form method="post" asp-page-handler="Decline" data-session-decline-form hidden>
+                                    <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                                </form>
                             </div>
 
                             <div class="session-information-grid">
@@ -240,61 +281,9 @@
 
         </div>
 
+        @if (!string.IsNullOrWhiteSpace(Model.LatestStatusReason) || hasSessionCountdown)
+        {
         <aside class="manage-session-sidebar session-top-sidebar @(hasSessionCountdown ? "has-session-countdown" : null)" aria-label="Session status">
-            <header class="manage-card-heading">
-                <h2>Manage Session</h2>
-            </header>
-            <section class="manage-session-card session-status-card" data-session-status-control>
-                <div class="session-status-dates">
-                    <div>
-                        <span>Date Booked</span>
-                        <strong>
-                            <span class="session-status-date-line">@Model.Session.DateBooked.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy")</span>
-                            <span class="session-status-date-line">
-                                @Model.Session.DateBooked.ToOffset(TimeSpan.FromHours(2)).ToString("HH:mm")
-                            </span>
-                        </strong>
-                    </div>
-                    <div>
-                        <span>Session Date</span>
-                        <strong>
-                            <span class="session-status-date-line">@start.ToString("dd MMM yyyy")</span>
-                            <span class="session-status-date-line">
-                                @start.ToString("HH:mm")
-                            </span>
-                        </strong>
-                    </div>
-                </div>
-
-                <label for="session-status-action">Change Status</label>
-                <select id="session-status-action" data-session-status-select
-                        data-system-dropdown
-                        disabled="@(Model.Session.Status is not (BC_CampusLearn.Models.Entities.BookingStatus.Pending or BC_CampusLearn.Models.Entities.BookingStatus.Confirmed))">
-                    <option value="">@Model.Session.Status.ToDisplayText()</option>
-                    @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending)
-                    {
-                        <option value="confirm">Confirmed</option>
-                        <option value="decline">Declined</option>
-                    }
-                    else if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Confirmed)
-                    {
-                        <option value="cancel">Cancelled</option>
-                    }
-                </select>
-
-                @if (Model.Session.Status is BC_CampusLearn.Models.Entities.BookingStatus.Pending or
-                    BC_CampusLearn.Models.Entities.BookingStatus.Confirmed)
-                {
-                    <button type="button" class="session-status-save" data-session-status-save>
-                        Save
-                    </button>
-                }
-
-                <form method="post" asp-page-handler="Decline" data-session-decline-form hidden>
-                    <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
-                </form>
-            </section>
-
             @if (!string.IsNullOrWhiteSpace(Model.LatestStatusReason))
             {
                 <section class="session-status-reason">
@@ -359,12 +348,15 @@
                                  BC_CampusLearn.Models.Entities.BookingStatus.InProgress)
                             {
                                 <form method="post" asp-page-handler="Join" class="session-countdown-join"
+                                      data-session-join-form
                                       target="_blank" rel="noopener noreferrer">
                                     <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
                                     <button type="submit"
                                             class="session-join-button"
                                             data-session-start-trigger
-                                            disabled="@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Confirmed && !Model.CanStartSession)">
+                                            data-session-join-trigger
+                                            data-meeting-link-available="@(!string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url) ? "true" : "false")"
+                                            disabled="@(string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url) || (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Confirmed && !Model.CanStartSession))">
                                         <i class="bi bi-microsoft-teams" aria-hidden="true"></i>
                                         Join Meeting
                                     </button>
@@ -436,6 +428,7 @@
                 }
             }
         </aside>
+        }
     </div>
 
     <div class="manage-session-layout session-lower-layout">

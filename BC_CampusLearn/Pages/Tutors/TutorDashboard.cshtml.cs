@@ -154,6 +154,14 @@ public class TutorDashboardModel : PageModel
                 })
             .FirstOrDefaultAsync(cancellationToken);
 
+        if (NextSession is not null)
+        {
+            NextSession.CanJoin = SessionLifecyclePolicy.CanJoin(
+                BookingStatus.Confirmed,
+                NextSession.ScheduledStartTime,
+                now);
+        }
+
         Sessions = await _context.Bookings
             .AsNoTracking()
             .Where(booking =>

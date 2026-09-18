@@ -26,6 +26,26 @@ public class SessionLifecyclePolicyTests
         Assert.Equal(expected, actual);
     }
 
+    [Theory]
+    [InlineData(BookingStatus.Confirmed, -6, false)]
+    [InlineData(BookingStatus.Confirmed, -5, true)]
+    [InlineData(BookingStatus.Confirmed, 14, true)]
+    [InlineData(BookingStatus.Confirmed, 15, false)]
+    [InlineData(BookingStatus.InProgress, -30, true)]
+    [InlineData(BookingStatus.Completed, 0, false)]
+    public void CanJoin_EnforcesFiveMinuteOpening(
+        BookingStatus status,
+        int offsetMinutes,
+        bool expected)
+    {
+        bool actual = SessionLifecyclePolicy.CanJoin(
+            status,
+            ScheduledStart,
+            ScheduledStart.AddMinutes(offsetMinutes));
+
+        Assert.Equal(expected, actual);
+    }
+
     [Fact]
     public void PendingAtStart_IsAutomaticallyDeclined()
     {
