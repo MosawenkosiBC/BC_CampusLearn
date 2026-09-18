@@ -373,6 +373,67 @@
                         </div>
                     </div>
                 </section>
+
+                @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Completed)
+                {
+                    bool studentReviewCompleted =
+                        Model.Session.StudentEvaluation is not null;
+                    bool tutorReviewCompleted =
+                        Model.Session.TutorEvaluation is not null;
+
+                    <section class="completed-session-reviews"
+                             aria-labelledby="completed-session-reviews-title">
+                        <div class="completed-session-reviews-heading">
+                            <h2 id="completed-session-reviews-title">
+                                Review status
+                            </h2>
+                        </div>
+                        <div class="manage-session-card session-review-status-card">
+                            <div class="review-status-row @(studentReviewCompleted ? "is-completed" : "is-pending")"
+                                 role="status"
+                                 aria-label="Student review @(studentReviewCompleted ? "completed" : "not completed")">
+                                <span class="review-status-check"
+                                      aria-hidden="true"></span>
+                                <span class="review-status-label">
+                                    Student review
+                                </span>
+                                <strong>
+                                    @(studentReviewCompleted
+                                        ? "Completed"
+                                        : "Not completed")
+                                </strong>
+                            </div>
+                            @if (tutorReviewCompleted)
+                            {
+                                <div class="review-status-row is-completed"
+                                     role="status"
+                                     aria-label="Tutor review completed">
+                                    <span class="review-status-check"
+                                          aria-hidden="true"></span>
+                                    <span class="review-status-label">
+                                        Tutor review
+                                    </span>
+                                    <strong>Completed</strong>
+                                </div>
+                            }
+                            else
+                            {
+                                <button type="button"
+                                        class="review-status-row is-pending is-action"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#review-session-modal"
+                                        aria-label="Complete tutor review">
+                                    <span class="review-status-check"
+                                          aria-hidden="true"></span>
+                                    <span class="review-status-label">
+                                        Tutor review
+                                    </span>
+                                    <strong>Not completed</strong>
+                                </button>
+                            }
+                        </div>
+                    </section>
+                }
             }
         </aside>
     </div>
