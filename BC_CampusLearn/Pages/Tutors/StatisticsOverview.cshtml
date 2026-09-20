@@ -24,6 +24,9 @@
           href="~/css/components/system-dropdown.css"
           asp-append-version="true" />
     <link rel="stylesheet"
+          href="~/css/components/pagination.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
           href="~/css/tutor-profile.css"
           asp-append-version="true" />
     <link rel="stylesheet"
@@ -250,11 +253,37 @@
                             <dd>@Model.Statistics.CompletedSessions</dd>
                         </div>
                         <div>
-                            <dt>Pending student review</dt>
+                            <dt>
+                                <button type="button" class="tutor-pending-review-trigger"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#pending-student-reviews-modal"
+                                        aria-label="View @Model.Statistics.PendingStudentReviews sessions pending student review">
+                                    <span>Pending student review</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
+                                         viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M0 0h24v24H0z" fill="none" />
+                                        <path fill="currentColor"
+                                              d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1-1Z" />
+                                    </svg>
+                                </button>
+                            </dt>
                             <dd>@Model.Statistics.PendingStudentReviews</dd>
                         </div>
                         <div>
-                            <dt>Pending tutor review</dt>
+                            <dt>
+                                <button type="button" class="tutor-pending-review-trigger"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#pending-tutor-reviews-modal"
+                                        aria-label="View @Model.Statistics.PendingTutorReviews sessions pending tutor review">
+                                    <span>Pending tutor review</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
+                                         viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M0 0h24v24H0z" fill="none" />
+                                        <path fill="currentColor"
+                                              d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1-1Z" />
+                                    </svg>
+                                </button>
+                            </dt>
                             <dd>@Model.Statistics.PendingTutorReviews</dd>
                         </div>
                         @if (Model.Statistics.StudentReviewCount >= 2)
@@ -270,7 +299,7 @@
                                         <span aria-hidden="true">★★★★★</span>
                                     </span>
                                     <span class="tutor-session-rating-number">
-                                        <strong>@averageStudentRating</strong><span>/5</span>
+                                        @(averageStudentRating)/5
                                     </span>
                                 </dd>
                             </div>
@@ -293,6 +322,69 @@
     </div>
     </div>
 </section>
+
+@foreach (var reviewType in new[]
+{
+    new { Id = "pending-student-reviews-modal", Title = "Pending student reviews",
+        Sessions = Model.PendingStudentReviewSessions },
+    new { Id = "pending-tutor-reviews-modal", Title = "Pending tutor reviews",
+        Sessions = Model.PendingTutorReviewSessions }
+})
+{
+    <div class="modal fade tutor-account-modal tutor-pending-reviews-modal"
+         id="@reviewType.Id" tabindex="-1"
+         aria-labelledby="@(reviewType.Id)-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title" id="@(reviewType.Id)-title">@reviewType.Title</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    @if (reviewType.Sessions.Count == 0)
+                    {
+                        <p class="tutor-pending-reviews-empty">No sessions are awaiting this review in the selected period.</p>
+                    }
+                    else
+                    {
+                        <div class="tutor-pending-reviews-table-wrap">
+                            <table id="@(reviewType.Id)-table"
+                                   class="table table-striped table-hover tutor-pending-reviews-table mb-0">
+                                <thead>
+                                    <tr><th scope="col">Student</th><th scope="col">Module</th><th scope="col">Date completed</th><th scope="col">Action</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var session in reviewType.Sessions)
+                                    {
+                                        <tr data-pagination-row>
+                                            <td>@session.StudentName</td>
+                                            <td>@session.ModuleCode</td>
+                                            <td>@(session.CompletedAt.HasValue
+                                                ? session.CompletedAt.Value.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
+                                                : "Not recorded")</td>
+                                            <td><a asp-page="/Tutors/SessionDetails"
+                                                   asp-route-bookingId="@session.BookingId">View session</a></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        @await Component.InvokeAsync("Pagination", new
+                        {
+                            targetId = $"{reviewType.Id}-table",
+                            mobilePageSize = 4,
+                            defaultPageSize = 6,
+                            ariaLabel = $"{reviewType.Title} table pages"
+                        })
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 <div class="modal fade tutor-account-modal"
      id="statistics-custom-date-modal"
@@ -355,6 +447,8 @@
     <script src="~/js/components/navigation-drawer.js"
             asp-append-version="true"></script>
     <script src="~/js/components/system-dropdown.js"
+            asp-append-version="true"></script>
+    <script src="~/js/components/pagination.js"
             asp-append-version="true"></script>
     <script src="~/js/tutor-statistics.js"
             asp-append-version="true"></script>

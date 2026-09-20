@@ -1,3 +1,4 @@
+using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Tutors;
 using Microsoft.AspNetCore.Authorization;
@@ -30,7 +31,7 @@ public class IndexModel : PageModel
     public string? SearchModule { get; set; }
 
     [BindProperty(SupportsGet = true)]
-    public List<int> Years { get; set; } = new();
+    public PreferredTutoringMode? TutoringMode { get; set; }
 
     public IReadOnlyList<TutorCardViewModel> Tutors
     { get; private set; }
@@ -104,10 +105,10 @@ public class IndexModel : PageModel
                 tutor.ProgrammeId == ProgrammeId.Value);
         }
 
-        if (Years.Count > 0)
+        if (TutoringMode.HasValue)
         {
             filtered = filtered.Where(tutor =>
-                Years.Contains(tutor.YearOfStudy));
+                tutor.PreferredTutoringMode == TutoringMode.Value);
         }
 
         Tutors = filtered.ToList();

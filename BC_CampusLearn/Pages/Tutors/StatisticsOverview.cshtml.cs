@@ -53,6 +53,12 @@ public class StatisticsOverviewModel : PageModel
 
     public TutorStatisticsViewModel Statistics { get; private set; } = new();
 
+    public IReadOnlyList<PendingReviewSession> PendingStudentReviewSessions
+    { get; private set; } = Array.Empty<PendingReviewSession>();
+
+    public IReadOnlyList<PendingReviewSession> PendingTutorReviewSessions
+    { get; private set; } = Array.Empty<PendingReviewSession>();
+
     public async Task<IActionResult> OnGetAsync(
         CancellationToken cancellationToken)
     {
@@ -99,6 +105,8 @@ public class StatisticsOverviewModel : PageModel
                 .Where(booking => booking.TutorId == tutor.TutorId)
                 .Select(booking => new StatisticsBookingRow
                 {
+                    BookingId = booking.BookingId,
+                    StudentName = booking.StudentName,
                     StudentBcUserId = booking.StudentBcUserId,
                     ModuleCode = booking.ProgrammeModule.ModuleCode,
                     Status = booking.Status,
@@ -107,6 +115,7 @@ public class StatisticsOverviewModel : PageModel
                         ? null
                         : booking.StudentEvaluation.ModeRating,
                     HasTutorReview = booking.TutorEvaluation != null,
+                    CompletedAt = booking.CompletedAt,
                     ScheduledStartTime = booking.ScheduledStartTime
                 })
                 .ToListAsync(cancellationToken);
@@ -121,6 +130,14 @@ public class StatisticsOverviewModel : PageModel
             .ToList();
 
         Statistics = BuildStatistics(periodBookings);
+
+        List<StatisticsBookingRow> completedBookings = periodBookings
+            .Where(booking => booking.Status == BookingStatus.Completed)
+            .ToList();
+        PendingStudentReviewSessions = BuildPendingReviewSessions(
+            completedBookings.Where(booking => !booking.HasStudentReview));
+        PendingTutorReviewSessions = BuildPendingReviewSessions(
+            completedBookings.Where(booking => !booking.HasTutorReview));
 
         return Page();
     }
@@ -191,6 +208,16 @@ public class StatisticsOverviewModel : PageModel
         return statistics;
     }
 
+    private static IReadOnlyList<PendingReviewSession> BuildPendingReviewSessions(
+        IEnumerable<StatisticsBookingRow> bookings) => bookings
+            .OrderByDescending(booking => booking.CompletedAt)
+            .Select(booking => new PendingReviewSession(
+                booking.BookingId,
+                booking.StudentName,
+                booking.ModuleCode,
+                booking.CompletedAt))
+            .ToList();
+
     private (DateOnly Start, DateOnly End) ResolveDateRange(DateOnly today)
     {
         switch (Range.ToLowerInvariant())
@@ -248,6 +275,10 @@ public class StatisticsOverviewModel : PageModel
 
     private sealed class StatisticsBookingRow
     {
+        public int BookingId { get; set; }
+
+        public string StudentName { get; set; } = string.Empty;
+
         public int? StudentBcUserId { get; set; }
 
         public string ModuleCode { get; set; } = string.Empty;
@@ -262,5 +293,13 @@ public class StatisticsOverviewModel : PageModel
 
         public DateTimeOffset ScheduledStartTime { get; set; }
 
+        public DateTimeOffset? CompletedAt { get; set; }
+
     }
+
+    public sealed record PendingReviewSession(
+        int BookingId,
+        string StudentName,
+        string ModuleCode,
+        DateTimeOffset? CompletedAt);
 }

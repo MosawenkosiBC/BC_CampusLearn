@@ -1,3 +1,5 @@
+using BC_CampusLearn.Models.Entities;
+
 namespace BC_CampusLearn.Models.ViewModels;
 
 public class TutorCardViewModel
@@ -17,6 +19,8 @@ public class TutorCardViewModel
     public string ProgrammeName { get; set; } = string.Empty;
 
     public int YearOfStudy { get; set; }
+
+    public PreferredTutoringMode PreferredTutoringMode { get; set; }
 
     public int UpcomingAvailabilityCount { get; set; }
 
