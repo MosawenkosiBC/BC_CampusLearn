@@ -41,6 +41,7 @@
         case "/Administrator/Tutors/SessionDetails":
             breadcrumbs.Add(("Dashboard", "/Administrator/Admin/Dashboard"));
             breadcrumbs.Add(("Tutors", "/Administrator/Tutors/Index"));
+            breadcrumbs.Add(("Tutor Profile", "/Administrator/Tutors/Profile"));
             breadcrumbs.Add(("Session Information", null));
             break;
         case "/Student/Dashboard":
@@ -181,7 +182,16 @@
                     }>
                     @if (!string.IsNullOrWhiteSpace(breadcrumb.Page))
                     {
-                        <a asp-page="@breadcrumb.Page" title="@breadcrumb.Label">@breadcrumb.Label</a>
+                        if (breadcrumb.Page == "/Administrator/Tutors/Profile" &&
+                            ViewData["AdminTutorProfileId"] is int tutorId)
+                        {
+                            <a asp-page="@breadcrumb.Page" asp-route-id="@tutorId"
+                               title="@breadcrumb.Label">@breadcrumb.Label</a>
+                        }
+                        else
+                        {
+                            <a asp-page="@breadcrumb.Page" title="@breadcrumb.Label">@breadcrumb.Label</a>
+                        }
                     }
                     else
                     {

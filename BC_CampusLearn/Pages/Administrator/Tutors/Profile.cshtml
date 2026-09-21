@@ -108,7 +108,7 @@
                 <h2 id="recent-sessions-title">Recent sessions</h2>
                 <div class="admin-profile-table-wrap" role="region" aria-label="Recent sessions table" tabindex="0">
                     <table class="admin-profile-table">
-                        <thead><tr><th scope="col">Student</th><th scope="col">Module</th><th scope="col">Date</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead>
+                        <thead><tr><th scope="col">Student</th><th scope="col">Module</th><th scope="col">Date</th><th scope="col">Status</th><th scope="col">Admin Approval</th><th scope="col">Action</th></tr></thead>
                         <tbody>
                             @foreach (var session in Model.RecentSessions)
                             {
@@ -117,12 +117,13 @@
                                     <td>@session.ProgrammeModule.ModuleCode</td>
                                     <td>@session.ScheduledStartTime.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")</td>
                                     <td><span class="admin-tutor-status @(session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Cancelled ? "admin-session-cancelled" : null)">@session.Status</span></td>
+                                    <td>@(session.AdminSessionReview is not null ? "Yes" : "No")</td>
                                     <td><a asp-page="SessionDetails" asp-route-id="@session.BookingId" class="admin-session-details-link" aria-label="View details for @session.StudentName">View details</a></td>
                                 </tr>
                             }
                             @if (Model.RecentSessions.Count == 0)
                             {
-                                <tr><td colspan="5" class="admin-profile-empty">No sessions in this period.</td></tr>
+                                <tr><td colspan="6" class="admin-profile-empty">No sessions in this period.</td></tr>
                             }
                         </tbody>
                     </table>

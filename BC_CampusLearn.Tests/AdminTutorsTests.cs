@@ -1,13 +1,109 @@
+using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Pages.Administrator.Tutors;
+using BC_CampusLearn.Models.ViewModels;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Mvc.ViewFeatures.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Xunit;
 
 namespace BC_CampusLearn.Tests;
 
 public class AdminTutorsTests
 {
+    [Fact]
+    public async Task AdminReviewSavesFiveAnswersAndRecordingTime()
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        TutorCourseModule assignment = await context.TutorCourseModules.FirstAsync();
+        Booking booking = new()
+        {
+            TutorId = assignment.TutorId,
+            TutorCourseModule = assignment,
+            ProgrammeModuleId = assignment.ProgrammeModuleId,
+            Status = BookingStatus.Completed,
+            StudentEvaluation = new StudentEvaluation(),
+            TutorEvaluation = new TutorStudentEvaluation()
+        };
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+
+        DateTimeOffset recordedAt = new(2026, 9, 21, 10, 30, 0, TimeSpan.Zero);
+        var page = new SessionDetailsModel(
+            context, new TestWebHostEnvironment(), new TestCurrentUserService(),
+            new TestTimeProvider(recordedAt))
+        {
+            AdminReviewInput = new AdminSessionReviewInput
+            {
+                AllReviewsSubmitted = true,
+                HeadConfirmedSession = false,
+                HeadConfirmedQuality = false,
+                ConcernsResolvedOrDocumented = true,
+                EvidenceSupportsApproval = false
+            }
+        };
+        SetPageContext(page);
+
+        Assert.IsType<RedirectToPageResult>(
+            await page.OnPostAdminReviewAsync(booking.BookingId, CancellationToken.None));
+
+        AdminSessionReview saved = await context.AdminSessionReviews.SingleAsync();
+        Assert.Equal(booking.BookingId, saved.BookingId);
+        Assert.Equal(1, saved.ReviewerBcUserId);
+        Assert.True(saved.AllReviewsSubmitted);
+        Assert.False(saved.HeadConfirmedSession);
+        Assert.False(saved.HeadConfirmedQuality);
+        Assert.True(saved.ConcernsResolvedOrDocumented);
+        Assert.False(saved.EvidenceSupportsApproval);
+        Assert.Equal(recordedAt, saved.RecordedAt);
+    }
+
+    [Fact]
+    public async Task ProfilePaginatesSessionsByReviewCompletenessBeforeDate()
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        TutorCourseModule assignment = await context.TutorCourseModules.FirstAsync();
+        DateTimeOffset now = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(2));
+        DateTimeOffset date = new(now.Year, now.Month, 15, 12, 0, 0, now.Offset);
+        Booking[] bookings =
+        [
+            new() { ScheduledStartTime = date.AddHours(5) },
+            new() { ScheduledStartTime = date.AddHours(4), TutorEvaluation = new TutorStudentEvaluation() },
+            new() { ScheduledStartTime = date.AddHours(1), StudentEvaluation = new StudentEvaluation(), TutorEvaluation = new TutorStudentEvaluation() },
+            new() { ScheduledStartTime = date.AddHours(3), StudentEvaluation = new StudentEvaluation() },
+            new() { ScheduledStartTime = date.AddHours(2), StudentEvaluation = new StudentEvaluation(), TutorEvaluation = new TutorStudentEvaluation() },
+            new() { ScheduledStartTime = date }
+        ];
+        foreach (Booking booking in bookings)
+        {
+            booking.TutorId = assignment.TutorId;
+            booking.TutorCourseModule = assignment;
+            booking.ProgrammeModuleId = assignment.ProgrammeModuleId;
+            booking.Status = BookingStatus.Completed;
+        }
+        context.Bookings.AddRange(bookings);
+        await context.SaveChangesAsync();
+
+        var page = new ProfileModel(context);
+        await page.OnGetAsync(assignment.TutorId, CancellationToken.None);
+        Assert.Equal(new[] { bookings[4], bookings[2], bookings[1], bookings[3], bookings[0] }
+            .Select(item => item.BookingId), page.RecentSessions.Select(item => item.BookingId));
+
+        page.SessionPage = 2;
+        await page.OnGetAsync(assignment.TutorId, CancellationToken.None);
+        Assert.Equal(bookings[5].BookingId, Assert.Single(page.RecentSessions).BookingId);
+    }
+
     [Theory]
     [InlineData("day")]
     [InlineData("week")]
@@ -45,7 +141,9 @@ public class AdminTutorsTests
         Assert.Equal(27, page.PendingStudentReviews);
         Assert.Equal(5, page.RecentSessions.Count);
         Assert.All(page.RecentSessions, item => Assert.Contains(item.Status, new[] { BookingStatus.Completed, BookingStatus.Cancelled }));
-        var details = new SessionDetailsModel(context);
+        var details = new SessionDetailsModel(
+            context, new TestWebHostEnvironment(),
+            new TestCurrentUserService(), TimeProvider.System);
         Assert.IsType<Microsoft.AspNetCore.Mvc.RazorPages.PageResult>(await details.OnGetAsync(existingBooking.BookingId, CancellationToken.None));
         Assert.IsType<Microsoft.AspNetCore.Mvc.NotFoundResult>(await details.OnGetAsync(hiddenBooking.BookingId, CancellationToken.None));
         Assert.IsType<Microsoft.AspNetCore.Mvc.NotFoundResult>(await details.OnGetAsync(int.MaxValue, CancellationToken.None));
@@ -352,5 +450,50 @@ public class AdminTutorsTests
             });
         }
         await context.SaveChangesAsync();
+    }
+
+    private sealed class TestWebHostEnvironment : IWebHostEnvironment
+    {
+        public string ApplicationName { get; set; } = "BC_CampusLearn.Tests";
+        public IFileProvider WebRootFileProvider { get; set; } = new NullFileProvider();
+        public string WebRootPath { get; set; } = string.Empty;
+        public string EnvironmentName { get; set; } = "Testing";
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+    }
+
+    private sealed class TestCurrentUserService : ICurrentUserService
+    {
+        public bool IsAuthenticated => true;
+
+        public CurrentUser GetRequiredUser() =>
+            new(1, "A1", "Administrator", null, BcUserRole.Admin);
+    }
+
+    private static void SetPageContext(SessionDetailsModel page)
+    {
+        var httpContext = new DefaultHttpContext();
+        page.PageContext = new PageContext
+        {
+            HttpContext = httpContext,
+            ViewData = new ViewDataDictionary(
+                new EmptyModelMetadataProvider(), new ModelStateDictionary())
+        };
+        page.TempData = new TempDataDictionary(
+            httpContext, new TestTempDataProvider());
+    }
+
+    private sealed class TestTempDataProvider : ITempDataProvider
+    {
+        public IDictionary<string, object> LoadTempData(HttpContext context) =>
+            new Dictionary<string, object>();
+
+        public void SaveTempData(
+            HttpContext context, IDictionary<string, object> values) { }
+    }
+
+    private sealed class TestTimeProvider(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
     }
 }

@@ -117,8 +117,13 @@ public class ProfileModel(ApplicationDbContext context) : PageModel
         var sessionCount = await visibleSessions.CountAsync(cancellationToken);
         TotalSessionPages = Math.Max(1, (int)Math.Ceiling(sessionCount / (double)SessionPageSize));
         SessionPage = Math.Clamp(SessionPage, 1, TotalSessionPages);
-        RecentSessions = await visibleSessions.Include(item => item.ProgrammeModule)
-            .OrderByDescending(item => item.ScheduledStartTime).ThenByDescending(item => item.BookingId)
+        // Tutor Head reviews are not persisted yet, so the three-review tier is currently empty.
+        RecentSessions = await visibleSessions
+            .Include(item => item.ProgrammeModule)
+            .Include(item => item.AdminSessionReview)
+            .OrderByDescending(item => item.StudentEvaluation != null && item.TutorEvaluation != null)
+            .ThenByDescending(item => item.StudentEvaluation != null || item.TutorEvaluation != null)
+            .ThenByDescending(item => item.ScheduledStartTime).ThenByDescending(item => item.BookingId)
             .Skip((SessionPage - 1) * SessionPageSize)
             .Take(SessionPageSize).ToListAsync(cancellationToken);
         return Page();

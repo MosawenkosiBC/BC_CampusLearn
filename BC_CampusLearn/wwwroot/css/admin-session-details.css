@@ -1,18 +1,68 @@
 .admin-session-information { color: #111; }
-.admin-session-information .admin-dashboard-header a { display: inline-block; margin-top: .75rem; color: #414849; }
-.admin-session-information .admin-dashboard-header p { color: #626b78; font-size: .85rem; margin-top: .75rem; }
 .admin-session-information h2 { font-size: 1rem; font-weight: 600; margin: 0 0 .65rem; }
 .admin-session-information h3 { font-size: .9rem; font-weight: 600; margin: 1rem 0 .5rem; }
 .admin-session-card { background: #fff; border-radius: .5rem; box-shadow: 0 .25rem .8rem rgba(25,30,38,.1); padding: 1.25rem; min-height: 240px; font-size: .9rem; overflow-wrap: anywhere; }
-.admin-session-summary { margin-bottom: 2rem; }
+.admin-session-summary { display: block; }
+.admin-session-summary .admin-session-card { border-radius: 0 0 .5rem .5rem; box-shadow: none; min-height: 0; }
+.admin-session-summary > summary { border-bottom: 1px solid #edf0f3; }
+.admin-session-summary:not([open]) > summary { border-bottom: 0; }
+.admin-session-review-action { align-items: flex-end; display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1rem; }
+.admin-session-review-action button { background: #363c3d; border: 0; border-radius: .5rem; color: #fff; font-weight: 600; min-height: 2.5rem; padding: .5rem 1.25rem; }
+.admin-session-review-action button:hover { background: #242a2b; }
+.admin-session-review-action button:focus-visible { box-shadow: 0 0 0 3px rgba(79,135,165,.35); outline: none; }
+.admin-session-review-action .admin-session-review-message { color: #2b6843; font-weight: 600; margin: 0; }
+.admin-session-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem 2rem; margin: 0; }
+.admin-session-summary-grid > div { min-width: 0; }
+.admin-session-summary-grid dt { color: #626b78; font-size: .78rem; font-weight: 600; margin-bottom: .3rem; }
+.admin-session-summary-grid dd { margin: 0; overflow-wrap: anywhere; }
+.admin-session-summary-grid .admin-session-summary-wide { border-top: 1px solid #edf0f3; grid-column: 1 / -1; padding-top: 1rem; }
+.admin-session-summary-grid .admin-session-summary-attachment { border-top: 1px solid #edf0f3; padding-top: 1rem; }
+.admin-session-attachments { list-style: none; margin: 0; padding: 0; }
+.admin-session-attachments li + li { margin-top: .4rem; }
+.admin-session-summary-grid a { color: #ad0151; overflow-wrap: anywhere; }
 .admin-session-review-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 2rem; align-items: start; }
+.admin-session-review-accordion { background: #fff; border-radius: .5rem; box-shadow: 0 .25rem .8rem rgba(25,30,38,.1); min-width: 0; overflow: hidden; }
+.admin-session-review-accordion > summary { align-items: center; cursor: pointer; display: flex; gap: 1rem; justify-content: space-between; list-style: none; padding: 1.2rem 1.25rem; }
+.admin-session-review-accordion > summary::-webkit-details-marker { display: none; }
+.admin-session-review-accordion > summary::after { border-right: 2px solid #626b78; border-bottom: 2px solid #626b78; content: ""; flex: 0 0 auto; height: .55rem; transform: rotate(45deg); width: .55rem; }
+.admin-session-review-accordion[open] > summary::after { transform: rotate(225deg); }
+.admin-session-review-accordion > summary:focus-visible { background: #f3f5f6; outline: none; }
+.admin-session-review-accordion > summary h2 { margin: 0; }
+.admin-session-review-count { color: #626b78; font-size: .8rem; margin-left: auto; }
+.admin-session-review-body { border-top: 1px solid #edf0f3; padding: 1.25rem; }
+.admin-session-review-body > p { margin: 0; }
 .admin-session-prose { white-space: pre-wrap; }
 .admin-session-answers { margin: 0; display: grid; gap: 1rem; }
-.admin-session-answers dt { font-weight: 600; }
-.admin-session-answers dd { margin: .25rem 0 0; white-space: pre-wrap; }
-.admin-session-approval .admin-session-card { min-height: 0; padding: 1rem; }
-.admin-session-approval p { margin: 0; }
-.admin-session-status { display: inline-block; border-radius: 1rem; background: #eef2f7; padding: .2rem .6rem; margin-left: .5rem; }
+.admin-session-answers > div { border-bottom: 1px solid #f0f1f3; padding-bottom: 1rem; }
+.admin-session-answers > div[hidden] { display: none; }
+.admin-session-answers dt,
+.admin-session-review-form legend { color: #414849; font-family: var(--campus-font-family); font-size: 1rem; font-weight: 600; line-height: inherit; }
+.admin-session-answers dd { margin: .4rem 0 0; white-space: pre-wrap; }
+.admin-session-review-pagination { align-items: center; display: flex; gap: .75rem; justify-content: space-between; margin-top: 1.25rem; }
+.admin-session-review-pagination[hidden] { display: none; }
+.admin-session-review-pagination button { border: 0; border-radius: .5rem; font-weight: 600; min-height: 2.5rem; padding: .4rem .9rem; }
+.admin-session-review-pagination [data-review-previous] { background: #fff; box-shadow: 0 .3rem .85rem rgba(25,30,38,.18); color: #363c3d; }
+.admin-session-review-pagination [data-review-previous]:hover:not(:disabled) { box-shadow: 0 .45rem 1rem rgba(25,30,38,.24); }
+.admin-session-review-pagination [data-review-next] { background: #363c3d; color: #fff; }
+.admin-session-review-pagination [data-review-next]:hover:not(:disabled) { background: #242a2b; }
+.admin-session-review-pagination button:focus-visible { box-shadow: 0 0 0 3px rgba(79,135,165,.35); outline: none; }
+.admin-session-review-pagination button:disabled { cursor: not-allowed; opacity: .55; }
+.admin-session-review-pagination [data-review-previous]:disabled { opacity: 1; color: #92999b; }
+.admin-session-review-pagination span { color: #626b78; font-size: .82rem; text-align: center; }
+.admin-session-review-panel { --bs-offcanvas-width: min(100vw, 700px); color: #111; font-family: var(--campus-font-family); font-size: 1rem; }
+.admin-session-review-panel .offcanvas-header { border-bottom: 1px solid #edf0f3; }
+.admin-session-review-panel .offcanvas-title { font-size: 1.1rem; font-weight: 600; }
+.admin-session-review-panel .admin-session-recorded-at { color: #2b6843; font-weight: 600; margin-bottom: .75rem; }
+.admin-session-review-form { display: grid; gap: .35rem; }
+.admin-session-review-form fieldset { border: 0; border-bottom: 1px solid #edf0f3; margin: 0; padding: .7rem 0; }
+.admin-session-review-form legend { float: none; margin: 0 0 .25rem; width: 100%; }
+.admin-session-review-options { display: flex; flex-wrap: wrap; gap: .85rem; }
+.admin-session-review-options label { align-items: center; color: #111; display: inline-flex; font-family: var(--campus-font-family); font-size: 1rem; font-weight: 400; gap: .4rem; min-height: 1.5rem; }
+.admin-session-review-options input { accent-color: #363c3d; }
+.admin-session-review-form > button { background: #363c3d; border: 0; border-radius: .5rem; color: #fff; font-weight: 600; justify-self: start; margin-top: .65rem; min-height: 2.5rem; padding: .5rem 1.25rem; }
+.admin-session-review-form > button:hover { background: #242a2b; }
+.admin-session-review-form > button:focus-visible { box-shadow: 0 0 0 3px rgba(79,135,165,.35); outline: none; }
+.admin-session-status { display: inline-block; border-radius: 1rem; background: #eef2f7; padding: .2rem .6rem; }
 .admin-session-status.is-cancelled { color: #b42318; background: #fde8e8; }
-.admin-session-submitted-review { border-top: 1px solid #edf0f3; margin-top: 1rem; }
-@media (max-width:767.98px) { .admin-session-review-grid { grid-template-columns: 1fr; } }
+@media (max-width:991.98px) { .admin-session-review-grid { grid-template-columns: 1fr; } }
+@media (max-width:767.98px) { .admin-session-summary-grid { grid-template-columns: 1fr; } }

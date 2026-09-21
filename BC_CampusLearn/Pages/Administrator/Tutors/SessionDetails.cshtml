@@ -6,6 +6,9 @@
     var session = Model.Session;
     var student = session.StudentEvaluation;
     var tutor = session.TutorEvaluation;
+    var tutorUser = session.TutorCourseModule.Tutor.BcUser;
+    string tutorName = string.IsNullOrWhiteSpace(tutorUser.DisplayName)
+        ? tutorUser.PersonnelNumber : tutorUser.DisplayName;
     string Answer(string? value) => string.IsNullOrWhiteSpace(value) ? "Not provided" : value;
 }
 @section Styles {
@@ -15,74 +18,165 @@
 <section class="admin-dashboard admin-session-information" aria-labelledby="session-information-title">
     <header class="admin-dashboard-header">
         <h1 id="session-information-title">Session Information</h1>
-        <a asp-page="Profile" asp-route-id="@session.TutorId">Back to tutor profile</a>
-        <p>@session.StudentName · @session.ProgrammeModule.ModuleCode · @session.ScheduledStartTime.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
-            <span class="admin-session-status @(session.Status == BookingStatus.Cancelled ? "is-cancelled" : null)">@session.Status</span>
-        </p>
     </header>
-    <section class="admin-session-summary" aria-labelledby="session-summary-title">
-        <h2 id="session-summary-title">Session Summary</h2>
+    <div class="admin-session-review-action">
+        <button type="button" data-bs-toggle="offcanvas" data-bs-target="#administrator-review-panel"
+                aria-controls="administrator-review-panel">Administrator Review</button>
+        @if (!string.IsNullOrWhiteSpace(Model.AdminReviewMessage))
+        {
+            <p class="admin-session-review-message" role="status">@Model.AdminReviewMessage</p>
+        }
+    </div>
+    <div class="admin-session-review-grid">
+    <details class="admin-session-summary admin-session-review-accordion">
+        <summary><h2 id="session-summary-title">Session Summary</h2></summary>
         <div class="admin-session-card">
-            <p class="admin-session-prose">@(string.IsNullOrWhiteSpace(session.Summary) ? "No session summary provided." : session.Summary)</p>
+            <dl class="admin-session-summary-grid">
+                <div><dt>Student name</dt><dd>@Answer(session.StudentName)</dd></div>
+                <div><dt>Student email</dt><dd>@Answer(session.StudentEmail)</dd></div>
+                <div><dt>Tutor</dt><dd>@tutorName</dd></div>
+                <div><dt>Module</dt><dd>@session.ProgrammeModule.ModuleCode · @session.ProgrammeModule.ModuleName</dd></div>
+                <div><dt>Date and time</dt><dd>@session.ScheduledStartTime.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")</dd></div>
+                <div><dt>Duration</dt><dd>@((int)session.Duration) hour@(session.Duration == SessionDuration.OneHour ? "" : "s")</dd></div>
+                <div><dt>Location</dt><dd>@Answer(session.Location)</dd></div>
+                <div><dt>Status</dt><dd><span class="admin-session-status @(session.Status == BookingStatus.Cancelled ? "is-cancelled" : null)">@session.Status</span></dd></div>
+                <div><dt>Date booked</dt><dd>@session.DateBooked.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")</dd></div>
+                <div><dt>Date completed</dt><dd>@(session.CompletedAt?.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm") ?? "Not recorded")</dd></div>
+                <div class="admin-session-summary-wide">
+                    <dt>Session summary</dt>
+                    <dd class="admin-session-prose">@(string.IsNullOrWhiteSpace(session.Summary) ? "No session summary provided." : session.Summary)</dd>
+                </div>
+                <div class="admin-session-summary-attachment">
+                    <dt>Preparation links</dt>
+                    <dd>
+                        @if (session.PreparationLinks.Count == 0) { <span>None added</span> }
+                        else
+                        {
+                            <ul class="admin-session-attachments">
+                                @foreach (var link in session.PreparationLinks.OrderBy(item => item.Position))
+                                {
+                                    <li><a href="@link.Url" target="_blank" rel="noopener noreferrer">@link.Url</a></li>
+                                }
+                            </ul>
+                        }
+                    </dd>
+                </div>
+                <div class="admin-session-summary-attachment">
+                    <dt>Documents</dt>
+                    <dd>
+                        @if (session.Documents.Count == 0) { <span>None uploaded</span> }
+                        else
+                        {
+                            <ul class="admin-session-attachments">
+                                @foreach (var document in session.Documents.OrderBy(item => item.Position))
+                                {
+                                    <li><a asp-page-handler="Document" asp-route-id="@session.BookingId"
+                                           asp-route-documentId="@document.BookingDocumentId">@document.OriginalFileName</a></li>
+                                }
+                            </ul>
+                        }
+                    </dd>
+                </div>
+                @if (session.MeetingLink is not null)
+                {
+                    <div class="admin-session-summary-wide"><dt>Meeting link</dt><dd><a href="@session.MeetingLink.Url" target="_blank" rel="noopener noreferrer">@session.MeetingLink.Url</a></dd></div>
+                }
             @if (session.Status == BookingStatus.Cancelled)
             {
-                <h3>Cancellation reason</h3><p class="admin-session-prose">@Answer(session.CancellationReason)</p>
+                <div class="admin-session-summary-wide"><dt>Cancellation reason</dt><dd class="admin-session-prose">@Answer(session.CancellationReason)</dd></div>
             }
+            </dl>
         </div>
-    </section>
-    <div class="admin-session-review-grid">
-        <section aria-labelledby="student-review-title">
-            <h2 id="student-review-title">Student Review</h2>
-            <div class="admin-session-card">
-                @if (student is null) { <p>No student review submitted.</p> }
-                else
-                {
-                    <dl class="admin-session-answers">
-                        @foreach (var field in new[] {
-                            ("Tutoring mode", student.TutoringMode), ("Platform experience", student.PlatformExperience),
-                            ("Mode rating", $"{student.ModeRating}/5"), ("Tutor response", student.TutorResponse),
-                            ("Tutor interest", student.TutorInterest), ("Friendliness", student.TutorFriendliness),
-                            ("Explanation", student.TutorExplanation), ("Participation", student.TutorParticipation),
-                            ("Punctuality", student.TutorPunctuality), ("Advice", student.TutorAdvice),
-                            ("Help", student.TutorHelp), ("Topic", student.TutorTopic),
-                            ("Tutoring service", student.TutoringService), ("Programme improvements", student.ImproveBCProgramme),
-                            ("Platform rating", $"{student.PlatformRating}/5") })
-                        { <div><dt>@field.Item1</dt><dd>@Answer(field.Item2)</dd></div> }
-                    </dl>
-                }
-                @foreach (var review in session.SessionReviews.Where(item => item.ReviewerBcUserId == session.StudentBcUserId))
-                { <div class="admin-session-submitted-review"><h3>Session rating: @review.Rating/5</h3><p class="admin-session-prose">@Answer(review.Comment)</p></div> }
+    </details>
+        @foreach (var review in new[] {
+            new { Id = "student-review", Title = "Student Review", Answers = Model.StudentReviewAnswers },
+            new { Id = "tutor-review", Title = "Tutor Review", Answers = Model.TutorReviewAnswers }
+        })
+        {
+            <details class="admin-session-review-accordion">
+                <summary>
+                    <h2 id="@(review.Id)-title">@review.Title</h2>
+                    <span class="admin-session-review-count">@review.Answers.Count @(review.Answers.Count == 1 ? "answer" : "answers")</span>
+                </summary>
+                <div class="admin-session-review-body" aria-labelledby="@(review.Id)-title" data-review-pager>
+                    @if (review.Answers.Count == 0)
+                    {
+                        <p>No @review.Title.ToLowerInvariant() submitted.</p>
+                    }
+                    else
+                    {
+                        <dl class="admin-session-answers">
+                            @foreach (var answer in review.Answers)
+                            {
+                                <div data-review-answer>
+                                    <dt>@answer.Question</dt>
+                                    <dd>@answer.Value</dd>
+                                </div>
+                            }
+                        </dl>
+                        <nav class="admin-session-review-pagination" aria-label="@review.Title pages" hidden>
+                            <button type="button" data-review-previous>Previous</button>
+                            <span data-review-page-status aria-live="polite"></span>
+                            <button type="button" data-review-next>Next</button>
+                        </nav>
+                    }
+                </div>
+            </details>
+        }
+        <details class="admin-session-review-accordion">
+            <summary><h2 id="head-review-title">Tutor Head Review</h2></summary>
+            <div class="admin-session-review-body" aria-labelledby="head-review-title">
+                <p>No Tutor Head review submitted.</p>
             </div>
-        </section>
-        <section aria-labelledby="tutor-review-title">
-            <h2 id="tutor-review-title">Tutor Review</h2>
-            <div class="admin-session-card">
-                @if (tutor is null) { <p>No tutor review submitted.</p> }
-                else
-                {
-                    <dl class="admin-session-answers">
-                        @foreach (var field in new[] {
-                            ("Session planned", tutor.SessionPlan ? "Yes" : "No"),
-                            ("Preparation information provided", tutor.StudentPreparationInfo ? "Yes" : "No"),
-                            ("Student punctual", tutor.StudentPunctuality ? "Yes" : "No"),
-                            ("Student prepared", tutor.StudentPrepared ? "Yes" : "No"),
-                            ("Previous homework", tutor.PreviousHomework), ("Student interaction", tutor.StudentInteract),
-                            ("Student focus", tutor.StudentFocus), ("Student issues", tutor.StudentIssues),
-                            ("Tutor comments", tutor.TutorComments), ("Recording", tutor.RecordingLink) })
-                        { <div><dt>@field.Item1</dt><dd>@Answer(field.Item2)</dd></div> }
-                    </dl>
-                }
-                @foreach (var review in session.SessionReviews.Where(item => item.ReviewerBcUserId == session.TutorCourseModule.Tutor.BcUserId))
-                { <div class="admin-session-submitted-review"><h3>Session rating: @review.Rating/5</h3><p class="admin-session-prose">@Answer(review.Comment)</p></div> }
-            </div>
-        </section>
-        <section class="admin-session-approval" aria-labelledby="head-review-title">
-            <h2 id="head-review-title">Tutor Head Review</h2>
-            <div class="admin-session-card"><p><strong>Approved:</strong> Not recorded</p><p><strong>Date approved:</strong> —</p></div>
-        </section>
-        <section class="admin-session-approval" aria-labelledby="admin-approval-title">
-            <h2 id="admin-approval-title">Administrator Approval</h2>
-            <div class="admin-session-card"><p><strong>Approved:</strong> Not recorded</p><p><strong>Date approved:</strong> —</p></div>
-        </section>
+        </details>
     </div>
 </section>
+<aside class="offcanvas offcanvas-end admin-session-review-panel" tabindex="-1"
+       id="administrator-review-panel" aria-labelledby="administrator-review-title"
+       data-open-on-error="@(!ViewData.ModelState.IsValid ? "true" : "false")">
+    <div class="offcanvas-header">
+        <h2 class="offcanvas-title" id="administrator-review-title">Administrator Review</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        @if (session.AdminSessionReview is { } savedReview)
+        {
+            <p class="admin-session-recorded-at">
+                Review recorded @savedReview.RecordedAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
+            </p>
+        }
+        @if (Model.CanRecordAdminReview)
+        {
+            <form method="post" asp-page-handler="AdminReview" asp-route-id="@session.BookingId"
+                  class="admin-session-review-form">
+                <div asp-validation-summary="All" class="text-danger"></div>
+                @foreach (var question in new[] {
+                    new { Number = 1, Name = "AllReviewsSubmitted", Text = "Have the student, tutor, and Tutor Head reviews all been submitted?", Answer = Model.AdminReviewInput.AllReviewsSubmitted },
+                    new { Number = 2, Name = "HeadConfirmedSession", Text = "Has the Tutor Head confirmed that the session took place as recorded?", Answer = Model.AdminReviewInput.HeadConfirmedSession },
+                    new { Number = 3, Name = "HeadConfirmedQuality", Text = "Has the Tutor Head confirmed that the tutoring met the expected standard for explanation, participation, and support?", Answer = Model.AdminReviewInput.HeadConfirmedQuality },
+                    new { Number = 4, Name = "ConcernsResolvedOrDocumented", Text = "Have concerns raised in any of the three reviews been resolved or documented for follow-up?", Answer = Model.AdminReviewInput.ConcernsResolvedOrDocumented },
+                    new { Number = 5, Name = "EvidenceSupportsApproval", Text = "Taken together, do the three reviews provide enough evidence to approve this session as completed?", Answer = Model.AdminReviewInput.EvidenceSupportsApproval }
+                })
+                {
+                    <fieldset>
+                        <legend>@question.Number. @question.Text</legend>
+                        <div class="admin-session-review-options">
+                            <label><input type="radio" name="AdminReviewInput.@question.Name" value="true"
+                                          checked="@(question.Answer == true)" required /> Yes</label>
+                            <label><input type="radio" name="AdminReviewInput.@question.Name" value="false"
+                                          checked="@(question.Answer == false)" /> No</label>
+                        </div>
+                    </fieldset>
+                }
+                <button type="submit">Save review</button>
+            </form>
+        }
+        else
+        {
+            <p>The administrator review is available after the completed session has both a student and tutor review.</p>
+        }
+    </div>
+</aside>
+@section Scripts {
+    <script src="~/js/admin-session-details.js" asp-append-version="true"></script>
+}

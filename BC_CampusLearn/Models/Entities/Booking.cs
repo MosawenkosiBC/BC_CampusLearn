@@ -56,6 +56,8 @@ public class Booking
 
     public StudentEvaluation? StudentEvaluation { get; set; }
 
+    public AdminSessionReview? AdminSessionReview { get; set; }
+
     public ICollection<BookingPreparationLink> PreparationLinks
     { get; set; } = new List<BookingPreparationLink>();
 
