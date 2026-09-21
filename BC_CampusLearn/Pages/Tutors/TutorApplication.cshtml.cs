@@ -3,6 +3,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Tutors;
+using BC_CampusLearn.Services.Students;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -32,15 +33,18 @@ public class TutorApplicationModel : PageModel
     private readonly ApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly IWebHostEnvironment _environment;
+    private readonly IStudentDetailsService _studentDetailsService;
 
     public TutorApplicationModel(
         ApplicationDbContext context,
         ICurrentUserService currentUserService,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        IStudentDetailsService studentDetailsService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _environment = environment;
+        _studentDetailsService = studentDetailsService;
     }
 
     [BindProperty]
@@ -56,6 +60,9 @@ public class TutorApplicationModel : PageModel
     public string LastName { get; private set; } = string.Empty;
     public string StudentNumber { get; private set; } = string.Empty;
     public string EmailAddress { get; private set; } = string.Empty;
+    public string ProgrammeName { get; private set; } = string.Empty;
+    public bool StudentDetailsVerified { get; private set; }
+    public string? StudentDetailsErrorMessage { get; private set; }
     public bool ApplicationsOpen { get; private set; }
     public bool ShowClosedApplicationsModal { get; private set; }
 
@@ -91,14 +98,26 @@ public class TutorApplicationModel : PageModel
             return Page();
         }
 
-        InitialStep = 3;
-
         if (!string.IsNullOrWhiteSpace(ExistingApplicationMessage))
         {
+            InitialStep = 0;
             ModelState.AddModelError(
                 string.Empty,
                 ExistingApplicationMessage);
+            return Page();
         }
+
+        if (!StudentDetailsVerified)
+        {
+            InitialStep = 1;
+            ModelState.AddModelError(
+                string.Empty,
+                StudentDetailsErrorMessage ??
+                    "Your student information could not be verified.");
+            return Page();
+        }
+
+        InitialStep = 3;
 
         if (Input.ProgrammeId.HasValue &&
             !await _context.ProgrammesOfStudy
@@ -391,6 +410,63 @@ public class TutorApplicationModel : PageModel
                 "Please contact Student Support for assistance.",
             _ => null
         };
+
+        if (!ApplicationsOpen || existingApplication is not null)
+        {
+            return;
+        }
+
+        StudentDetailsResult studentDetailsResult =
+            await _studentDetailsService.GetAsync(
+                currentUser.PersonnelNumber,
+                cancellationToken);
+
+        if (studentDetailsResult is
+            { Status: StudentDetailsStatus.Success, Details: not null })
+        {
+            StudentDetails details = studentDetailsResult.Details;
+            SelectListItem? programme = ProgrammeOptions.SingleOrDefault(
+                item => string.Equals(
+                    item.Text.Trim(),
+                    details.Programme,
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (programme is null ||
+                !int.TryParse(programme.Value, out int programmeId))
+            {
+                StudentDetailsErrorMessage =
+                    "Your registered programme is not currently supported by the tutor application. Please contact Student Support.";
+            }
+            else
+            {
+                FirstName = details.PreferredName ?? details.FirstName;
+                LastName = details.Surname;
+                StudentNumber = details.StudentNumber;
+                EmailAddress = details.Email;
+                ProgrammeName = programme.Text;
+                Input.ProgrammeId = programmeId;
+                Input.YearOfStudy = details.YearOfStudy;
+                ProfileInput.CampusOfStudy = details.Campus;
+                StudentDetailsVerified = true;
+
+                ModelState.Remove("Input.ProgrammeId");
+                ModelState.Remove("Input.YearOfStudy");
+                ModelState.Remove("ProfileInput.CampusOfStudy");
+            }
+        }
+        else
+        {
+            StudentDetailsErrorMessage = studentDetailsResult.Status switch
+            {
+                StudentDetailsStatus.NotFound =>
+                    "We could not find student information for your account. Please contact Student Support.",
+                StudentDetailsStatus.InvalidResponse =>
+                    "Your student information could not be verified. Please contact Student Support.",
+                _ =>
+                    "Student information is temporarily unavailable. Please try again later."
+            };
+        }
+
     }
 
     private void ValidateDocument(IFormFile? document, string modelKey)

@@ -5,6 +5,7 @@ using BC_CampusLearn.Services.Bookings;
 using BC_CampusLearn.Services.Availability;
 using BC_CampusLearn.Services.Tutors;
 using BC_CampusLearn.Services.Sessions;
+using BC_CampusLearn.Services.Students;
 using BC_CampusLearn.Hubs;
 using BC_CampusLearn.Models.Entities;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -90,6 +91,35 @@ builder.Services.AddScoped<IClaimsTransformation, BcUserClaimsTransformation>();
 builder.Services.AddScoped<
     ICurrentUserService,
     ClaimsCurrentUserService>();
+
+builder.Services.AddOptions<StudentDetailsApiOptions>()
+    .Bind(builder.Configuration.GetSection(
+        StudentDetailsApiOptions.SectionName))
+    .ValidateOnStart();
+builder.Services.AddSingleton<
+    Microsoft.Extensions.Options.IValidateOptions<StudentDetailsApiOptions>,
+    StudentDetailsApiOptionsValidator>();
+builder.Services.AddHttpClient<
+    IStudentDetailsService,
+    StudentDetailsService>((serviceProvider, client) =>
+    {
+        StudentDetailsApiOptions options = serviceProvider
+            .GetRequiredService<
+                Microsoft.Extensions.Options.IOptions<StudentDetailsApiOptions>>()
+            .Value;
+
+        if (Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out Uri? baseUri))
+        {
+            client.BaseAddress = baseUri;
+        }
+
+        client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        client.MaxResponseContentBufferSize = 64 * 1024;
+    })
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AllowAutoRedirect = false
+    });
 
 builder.Services.AddScoped<
     ITutorService,
