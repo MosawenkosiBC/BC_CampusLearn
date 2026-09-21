@@ -23,7 +23,9 @@
                     status === "confirmed" &&
                     remainingMilliseconds <= 5 * 60 * 1000 &&
                     remainingMilliseconds > -15 * 60 * 1000;
-                trigger.disabled = !linkIsAvailable || !joinWindowIsOpen;
+                trigger.setAttribute(
+                    "aria-disabled",
+                    String(!linkIsAvailable || !joinWindowIsOpen));
             });
 
             if (remainingMilliseconds <= 0) {

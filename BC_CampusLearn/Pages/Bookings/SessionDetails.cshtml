@@ -6,7 +6,6 @@
 @{
     ViewData["Title"] = "Session details";
     DateTimeOffset start = Model.Session.ScheduledStartTime.ToOffset(TimeSpan.FromHours(2));
-    DateTimeOffset end = start.AddHours((int)Model.Session.Duration);
     bool hasAttachedLinks = Model.Session.PreparationLinks.Count > 0;
     bool hasAttachedDocuments = Model.Session.Documents.Count > 0;
     bool chatIsClosed = SessionCommunicationPolicy.IsClosed(
@@ -278,23 +277,16 @@
                 <section class="confirmed-session-panel student-meeting-panel">
                     <h2>Microsoft Teams meeting</h2>
                     <div class="manage-session-card session-meeting-card">
-                        <div>
-                            <h3>Session with @Model.TutorName</h3>
-                            <strong>@Model.Session.ProgrammeModule.ModuleCode: @Model.Session.ProgrammeModule.ModuleName</strong>
-                        </div>
-                        <dl>
-                            <div><dt>Scheduled:</dt><dd>@start.ToString("dd MMM yyyy, HH:mm")&ndash;@end.ToString("HH:mm")</dd></div>
-                            <div><dt>Location:</dt><dd>@Model.Session.Location</dd></div>
-                        </dl>
                         <form method="post" asp-page-handler="Join"
                               target="_blank" rel="noopener noreferrer">
                             <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
                             <button type="submit" class="session-join-button"
                                     data-session-join-trigger
+                                    data-join-meeting-trigger
                                     data-session-start="@Model.Session.ScheduledStartTime.ToString("O")"
                                     data-session-status="@Model.Session.Status.ToString().ToLowerInvariant()"
                                     data-meeting-link-available="@(!string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url) ? "true" : "false")"
-                                    disabled="@(string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url) || !Model.CanJoinSession)">
+                                    aria-disabled="@(string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url) || !Model.CanJoinSession ? "true" : "false")">
                                 <i class="bi bi-microsoft-teams" aria-hidden="true"></i>
                                 Join Meeting
                             </button>
@@ -434,6 +426,8 @@
         </div>
     </div>
 </main>
+
+<partial name="_JoinMeetingUnavailableModal" />
 
 @if (Model.Session.Status is BookingStatus.Pending or BookingStatus.Confirmed)
 {

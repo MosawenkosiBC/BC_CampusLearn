@@ -73,7 +73,7 @@
             countdown.textContent = formatCountdown(remainingMilliseconds);
             if (joinButton) {
                 const canJoin = remainingMilliseconds <= 5 * 60 * 1000;
-                joinButton.disabled = !canJoin;
+                joinButton.setAttribute("aria-disabled", String(!canJoin));
                 joinButton.title = canJoin
                     ? "Join meeting"
                     : "Available 5 minutes before the session";

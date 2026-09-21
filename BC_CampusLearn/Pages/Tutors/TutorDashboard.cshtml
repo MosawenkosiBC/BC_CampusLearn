@@ -313,12 +313,13 @@
                                     <button type="submit"
                                             class="tutor-join-session"
                                             data-dashboard-join-trigger
+                                            data-join-meeting-trigger
+                                            data-meeting-link-available="true"
                                             data-session-start="@Model.NextSession.ScheduledStartTime.ToString("O")"
-                                            disabled="@(!Model.NextSession.CanJoin)"
+                                            aria-disabled="@(!Model.NextSession.CanJoin ? "true" : "false")"
                                             title="@(Model.NextSession.CanJoin ? "Join meeting" : "Available 5 minutes before the session")">
-                                        <iconify-icon
-                                            icon="mdi:microsoft-teams"
-                                            aria-hidden="true"></iconify-icon>
+                                        <i class="bi bi-microsoft-teams"
+                                           aria-hidden="true"></i>
                                         Join Meeting
                                     </button>
                                 </form>
@@ -327,7 +328,9 @@
                             {
                                 <button type="button"
                                         class="tutor-join-session"
-                                        disabled>
+                                        data-join-meeting-trigger
+                                        data-meeting-link-available="false"
+                                        aria-disabled="true">
                                     Meeting link pending
                                 </button>
                             }
@@ -795,6 +798,8 @@
 </section>
 
 @section Modals {
+<partial name="_JoinMeetingUnavailableModal" />
+
 <div class="modal fade bookings-action-modal" id="tutor-confirm-session-modal"
      tabindex="-1" aria-labelledby="tutor-confirm-session-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

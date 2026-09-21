@@ -2326,9 +2326,12 @@ button.review-status-row:focus-visible {
     width: 100%;
 }
 
-.session-join-button:disabled {
-    background: #a9a9a9;
-    border-color: #a9a9a9;
+.session-join-button:disabled,
+.session-join-button[aria-disabled="true"] {
+    background: #7d003b;
+    border-color: #7d003b;
+    color: #fff;
+    cursor: not-allowed;
 }
 
 .confirmed-session-workspace .session-countdown-card {
@@ -2476,6 +2479,8 @@ button.review-status-row:focus-visible {
 
 .student-meeting-panel .session-meeting-card {
     grid-template-columns: 1fr;
+    min-height: 0;
+    padding: 1.1rem 1.25rem;
 }
 
 .student-session-details-page .student-meeting-panel .session-meeting-card dl {

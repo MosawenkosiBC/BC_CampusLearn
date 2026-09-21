@@ -702,7 +702,8 @@
     gap: 0.4rem;
 }
 
-.tutor-next-session-actions .tutor-join-session iconify-icon {
+.tutor-next-session-actions .tutor-join-session iconify-icon,
+.tutor-next-session-actions .tutor-join-session .bi {
     font-size: 1rem;
 }
 
@@ -720,9 +721,11 @@
 }
 
 .tutor-next-session-actions .tutor-join-session:disabled,
-.tutor-next-session-actions .tutor-join-session:disabled:hover {
-    background-color: #a9a9a9;
-    border-color: #a9a9a9;
+.tutor-next-session-actions .tutor-join-session:disabled:hover,
+.tutor-next-session-actions .tutor-join-session[aria-disabled="true"],
+.tutor-next-session-actions .tutor-join-session[aria-disabled="true"]:hover {
+    background-color: #7d003b;
+    border-color: #7d003b;
     color: #fff;
     cursor: not-allowed;
 }

@@ -358,8 +358,9 @@
                                             class="session-join-button"
                                             data-session-start-trigger
                                             data-session-join-trigger
+                                            data-join-meeting-trigger
                                             data-meeting-link-available="@(!string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url) ? "true" : "false")"
-                                            disabled="@(string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url) || (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Confirmed && !Model.CanStartSession))">
+                                            aria-disabled="@(string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url) || (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Confirmed && !Model.CanStartSession) ? "true" : "false")">
                                         <i class="bi bi-microsoft-teams" aria-hidden="true"></i>
                                         Join Meeting
                                     </button>
@@ -619,6 +620,8 @@
         </div>
     </div>
 </div>
+
+<partial name="_JoinMeetingUnavailableModal" />
 
 @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending)
 {

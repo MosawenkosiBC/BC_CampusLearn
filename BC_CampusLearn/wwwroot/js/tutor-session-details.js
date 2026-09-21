@@ -297,8 +297,16 @@
                 const meetingLinkIsUnavailable =
                     trigger.matches("[data-session-join-trigger]") &&
                     trigger.dataset.meetingLinkAvailable !== "true";
-                trigger.disabled =
+                const isUnavailable =
                     !startWindowIsOpen || meetingLinkIsUnavailable;
+                if (trigger.matches("[data-session-join-trigger]")) {
+                    trigger.disabled = false;
+                    trigger.setAttribute(
+                        "aria-disabled",
+                        String(isUnavailable));
+                } else {
+                    trigger.disabled = isUnavailable;
+                }
             });
 
             if (remainingMilliseconds <= 0) {
@@ -317,7 +325,12 @@
         if (sessionIsLocked) {
             startRemaining.textContent = "Session completed";
             startTriggers.forEach((trigger) => {
-                trigger.disabled = true;
+                if (trigger.matches("[data-session-join-trigger]")) {
+                    trigger.disabled = false;
+                    trigger.setAttribute("aria-disabled", "true");
+                } else {
+                    trigger.disabled = true;
+                }
             });
         } else if (sessionIsActive) {
             startRemaining.textContent = "Session active";
