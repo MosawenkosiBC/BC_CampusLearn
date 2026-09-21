@@ -10,10 +10,13 @@
         : isTutor
             ? "/Tutors/TutorDashboard"
             : "/Student/Dashboard";
+    var dashboardLabel = !isAdministrator && isTutor
+        ? "Tutor Dashboard"
+        : "Dashboard";
 
     void AddDashboard()
     {
-        breadcrumbs.Add(("Dashboard", pagePath == dashboardPage ? null : dashboardPage));
+        breadcrumbs.Add((dashboardLabel, pagePath == dashboardPage ? null : dashboardPage));
     }
 
     if (!pagePath.Equals(dashboardPage, StringComparison.OrdinalIgnoreCase))
@@ -72,7 +75,7 @@
             breadcrumbs.Add(("Tutor Application", null));
             break;
         case "/Tutors/TutorDashboard":
-            breadcrumbs.Add(("Dashboard", null));
+            breadcrumbs.Add((dashboardLabel, null));
             break;
         case "/Tutors/Sessions":
             breadcrumbs.Add(("All Sessions", null));
