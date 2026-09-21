@@ -190,7 +190,8 @@ public class SessionsModel : PageModel
                 Location = booking.Location,
                 ScheduledStartTime = booking.ScheduledStartTime,
                 Duration = booking.Duration,
-                Status = booking.Status
+                Status = booking.Status,
+                TutorReviewSubmitted = booking.TutorEvaluation != null
             })
             .ToListAsync(cancellationToken);
 

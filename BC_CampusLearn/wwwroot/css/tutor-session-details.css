@@ -1805,24 +1805,17 @@ body.tutor-evaluation-panel-open {
     width: 4.75rem;
 }
 
-@media (min-width: 992px) {
-    .manage-session-layout:has(.session-top-sidebar.has-session-countdown) {
-        align-items: stretch;
-    }
-
-    .session-top-sidebar.has-session-countdown {
-        display: flex;
-        flex-direction: column;
-    }
-
+@media (min-width: 768px) {
     .session-top-sidebar.has-session-countdown .completed-session-countdown {
-        display: flex;
-        flex: 1;
-        flex-direction: column;
+        align-self: center;
+        width: min(100%, 30rem);
     }
 
     .session-top-sidebar.has-session-countdown .session-countdown-card {
-        flex: 1;
+        flex: none;
+        height: 300px;
+        max-height: 300px;
+        min-height: 300px;
     }
 }
 
@@ -1977,7 +1970,7 @@ body.tutor-evaluation-panel-open {
 
 .review-status-label {
     color: #171717;
-    font-size: 0.87rem;
+    font-size: 14px;
     font-weight: 600;
 }
 

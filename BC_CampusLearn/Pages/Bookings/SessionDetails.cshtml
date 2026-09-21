@@ -150,35 +150,6 @@
                                 </div>
                             </div>
 
-                            <div class="session-status-card session-information-status-control"
-                                 data-student-session-status-control
-                                 data-cancellation-reason-required="@(Model.Session.Status == BookingStatus.Confirmed ? "true" : "false")">
-                                <label for="student-session-status-action">Change Status</label>
-                                <select id="student-session-status-action"
-                                        data-system-dropdown
-                                        data-student-session-status-select
-                                        disabled="@(Model.Session.Status is not (BookingStatus.Pending or BookingStatus.Confirmed))">
-                                    <option value="">@Model.Session.Status.ToDisplayText()</option>
-                                    @if (Model.Session.Status is BookingStatus.Pending or BookingStatus.Confirmed)
-                                    {
-                                        <option value="cancel">Cancelled</option>
-                                    }
-                                </select>
-
-                                @if (Model.Session.Status is BookingStatus.Pending or BookingStatus.Confirmed)
-                                {
-                                    <button type="button" class="session-status-save"
-                                            data-student-session-status-save>
-                                        Save
-                                    </button>
-
-                                    <form method="post" asp-page-handler="Cancel"
-                                          data-student-session-cancel-form hidden>
-                                        <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
-                                    </form>
-                                }
-                            </div>
-
                             <div class="session-information-grid">
                                 <div class="session-readonly-field">
                                     <label for="session-module-code">Module</label>
@@ -249,6 +220,35 @@
                                     </div>
                                 }
                             </section>
+
+                            <div class="session-status-card session-information-status-control"
+                                 data-student-session-status-control
+                                 data-cancellation-reason-required="@(Model.Session.Status == BookingStatus.Confirmed ? "true" : "false")">
+                                <label for="student-session-status-action">Change Session Status</label>
+                                <select id="student-session-status-action"
+                                        data-system-dropdown
+                                        data-student-session-status-select
+                                        disabled="@(Model.Session.Status is not (BookingStatus.Pending or BookingStatus.Confirmed))">
+                                    <option value="">@Model.Session.Status.ToDisplayText()</option>
+                                    @if (Model.Session.Status is BookingStatus.Pending or BookingStatus.Confirmed)
+                                    {
+                                        <option value="cancel">Cancelled</option>
+                                    }
+                                </select>
+
+                                @if (Model.Session.Status is BookingStatus.Pending or BookingStatus.Confirmed)
+                                {
+                                    <button type="button" class="session-status-save"
+                                            data-student-session-status-save>
+                                        Save
+                                    </button>
+
+                                    <form method="post" asp-page-handler="Cancel"
+                                          data-student-session-cancel-form hidden>
+                                        <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                                    </form>
+                                }
+                            </div>
                         </div>
                     </div>
                 </div>

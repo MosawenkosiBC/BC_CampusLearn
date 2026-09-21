@@ -39,6 +39,9 @@
     evaluationPanel?.addEventListener(
         "hidden.bs.modal",
         () => setEvaluationScrollLock(false));
+    if (evaluationPanel?.dataset.openOnLoad === "true" && window.bootstrap) {
+        bootstrap.Modal.getOrCreateInstance(evaluationPanel).show();
+    }
 
     const evaluationForm = evaluationPanel?.querySelector(
         "[data-tutor-evaluation-form]");

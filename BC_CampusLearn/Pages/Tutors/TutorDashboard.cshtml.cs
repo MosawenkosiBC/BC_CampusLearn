@@ -181,7 +181,9 @@ public class TutorDashboardModel : PageModel
                     ScheduledStartTime =
                         booking.ScheduledStartTime,
                     Duration = booking.Duration,
-                    Status = booking.Status
+                    Status = booking.Status,
+                    TutorReviewSubmitted =
+                        booking.TutorEvaluation != null
                 })
             .Take(5)
             .ToListAsync(cancellationToken);

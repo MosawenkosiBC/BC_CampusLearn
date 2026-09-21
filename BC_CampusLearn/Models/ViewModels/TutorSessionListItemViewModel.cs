@@ -22,4 +22,6 @@ public class TutorSessionListItemViewModel
         ScheduledStartTime.AddHours((int)Duration);
 
     public BookingStatus Status { get; set; }
+
+    public bool TutorReviewSubmitted { get; set; }
 }
