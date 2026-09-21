@@ -222,8 +222,7 @@
                             </section>
 
                             <div class="session-status-card session-information-status-control"
-                                 data-student-session-status-control
-                                 data-cancellation-reason-required="@(Model.Session.Status == BookingStatus.Confirmed ? "true" : "false")">
+                                 data-student-session-status-control>
                                 <label for="student-session-status-action">Change Session Status</label>
                                 <select id="student-session-status-action"
                                         data-system-dropdown
@@ -243,10 +242,6 @@
                                         Save
                                     </button>
 
-                                    <form method="post" asp-page-handler="Cancel"
-                                          data-student-session-cancel-form hidden>
-                                        <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
-                                    </form>
                                 }
                             </div>
                         </div>
@@ -440,7 +435,7 @@
     </div>
 </main>
 
-@if (Model.Session.Status == BookingStatus.Confirmed)
+@if (Model.Session.Status is BookingStatus.Pending or BookingStatus.Confirmed)
 {
     <div class="modal fade meeting-link-modal" id="student-cancel-session-modal" tabindex="-1"
          aria-labelledby="student-cancel-session-title" aria-hidden="true">
@@ -451,15 +446,25 @@
                     <div class="modal-header">
                         <div>
                             <h2 id="student-cancel-session-title">Cancel session</h2>
-                            <p>Tell @Model.TutorName why this confirmed session is being cancelled.</p>
+                            @if (Model.Session.Status == BookingStatus.Pending)
+                            {
+                                <p>Cancel this pending session with @Model.TutorName? This action cannot be undone.</p>
+                            }
+                            else
+                            {
+                                <p>Tell @Model.TutorName why this confirmed session is being cancelled. This action cannot be undone.</p>
+                            }
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-                        <label asp-for="CancellationReason">Reason</label>
-                        <textarea asp-for="CancellationReason" rows="4"
-                                  minlength="5" maxlength="1000" required></textarea>
-                    </div>
+                    @if (Model.Session.Status == BookingStatus.Confirmed)
+                    {
+                        <div class="modal-body">
+                            <label asp-for="CancellationReason">Reason</label>
+                            <textarea asp-for="CancellationReason" rows="4"
+                                      minlength="5" maxlength="1000" required></textarea>
+                        </div>
+                    }
                     <div class="modal-footer">
                         <button type="button" class="meeting-link-modal-cancel"
                                 data-bs-dismiss="modal">Keep session</button>

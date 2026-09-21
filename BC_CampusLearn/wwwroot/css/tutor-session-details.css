@@ -223,6 +223,10 @@
     padding-left: 1rem;
 }
 
+.meeting-link-modal {
+    z-index: 1060;
+}
+
 .meeting-link-modal .modal-content {
     border: 0;
     border-radius: 0.65rem;

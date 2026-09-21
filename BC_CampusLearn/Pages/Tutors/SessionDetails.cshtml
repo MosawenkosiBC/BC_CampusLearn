@@ -280,9 +280,6 @@
                                     </button>
                                 }
 
-                                <form method="post" asp-page-handler="Decline" data-session-decline-form hidden>
-                                    <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
-                                </form>
                             </div>
                         </div>
                     </div>
@@ -623,6 +620,31 @@
     </div>
 </div>
 
+@if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending)
+{
+    <div class="modal fade meeting-link-modal" id="decline-pending-session-modal" tabindex="-1"
+         aria-labelledby="decline-pending-session-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="Decline">
+                    <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                    <div class="modal-header">
+                        <div>
+                            <h2 id="decline-pending-session-title">Decline pending session</h2>
+                            <p>Decline this pending session with @Model.Session.StudentName? This action cannot be undone.</p>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="meeting-link-modal-cancel" data-bs-dismiss="modal">Keep session</button>
+                        <button type="submit" class="meeting-link-modal-save">Decline session</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
 <div class="modal fade meeting-link-modal" id="decline-session-modal" tabindex="-1"
      aria-labelledby="decline-session-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -630,7 +652,7 @@
             <form method="post" asp-page-handler="Cancel">
                 <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
                 <div class="modal-header">
-                    <div><h2 id="decline-session-title">Cancel session</h2><p>Tell the student why this confirmed session is being cancelled.</p></div>
+                    <div><h2 id="decline-session-title">Cancel session</h2><p>Tell the student why this confirmed session is being cancelled. This action cannot be undone.</p></div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">

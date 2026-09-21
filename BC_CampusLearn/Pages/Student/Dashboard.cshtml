@@ -430,16 +430,12 @@
                                                 }
                                                 @if (booking.Status == BookingStatus.Pending)
                                                 {
-                                                    <form method="post"
-                                                          asp-page-handler="CancelSession">
-                                                        <input type="hidden"
-                                                               name="bookingId"
-                                                               value="@booking.BookingId" />
-                                                        <button type="submit"
-                                                                class="dropdown-item">
-                                                            Cancel session
-                                                        </button>
-                                                    </form>
+                                                    <button type="button"
+                                                            class="dropdown-item"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#cancel-session-modal-@booking.BookingId">
+                                                        Cancel session
+                                                    </button>
                                                 }
                                                 else if (booking.Status == BookingStatus.Confirmed)
                                                 {
@@ -741,7 +737,7 @@
 
 @section Modals {
     @foreach (var booking in Model.Sessions.Where(item =>
-        item.Status == BookingStatus.Confirmed))
+        item.Status is BookingStatus.Pending or BookingStatus.Confirmed))
     {
         <div class="modal fade dashboard-cancel-session-modal"
              id="cancel-session-modal-@booking.BookingId"
@@ -760,8 +756,14 @@
                                     Cancel session
                                 </h2>
                                 <p>
-                                    Tell @booking.TutorName why this confirmed
-                                    session is being cancelled.
+                                    @if (booking.Status == BookingStatus.Pending)
+                                    {
+                                        <text>Cancel this pending session with @booking.TutorName? This action cannot be undone.</text>
+                                    }
+                                    else
+                                    {
+                                        <text>Tell @booking.TutorName why this confirmed session is being cancelled. This action cannot be undone.</text>
+                                    }
                                 </p>
                             </div>
                             <button type="button"
@@ -769,17 +771,20 @@
                                     data-bs-dismiss="modal"
                                     aria-label="Close"></button>
                         </div>
-                        <div class="modal-body">
-                            <label for="cancellation-reason-@booking.BookingId">
-                                Reason
-                            </label>
-                            <textarea id="cancellation-reason-@booking.BookingId"
-                                      name="cancellationReason"
-                                      rows="4"
-                                      minlength="5"
-                                      maxlength="1000"
-                                      required></textarea>
-                        </div>
+                        @if (booking.Status == BookingStatus.Confirmed)
+                        {
+                            <div class="modal-body">
+                                <label for="cancellation-reason-@booking.BookingId">
+                                    Reason
+                                </label>
+                                <textarea id="cancellation-reason-@booking.BookingId"
+                                          name="cancellationReason"
+                                          rows="4"
+                                          minlength="5"
+                                          maxlength="1000"
+                                          required></textarea>
+                            </div>
+                        }
                         <div class="modal-footer">
                             <button type="button"
                                     class="dashboard-cancel-modal-dismiss"
