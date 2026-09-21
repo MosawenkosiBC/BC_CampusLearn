@@ -295,6 +295,10 @@
     outline: none;
 }
 
+.bookings-action-modal {
+    z-index: 1060;
+}
+
 .bookings-action-modal .modal-content {
     border: 0;
     border-radius: 0.65rem;

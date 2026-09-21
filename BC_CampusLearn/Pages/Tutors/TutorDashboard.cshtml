@@ -313,12 +313,13 @@
                                     <button type="submit"
                                             class="tutor-join-session"
                                             data-dashboard-join-trigger
+                                            data-join-meeting-trigger
+                                            data-meeting-link-available="true"
                                             data-session-start="@Model.NextSession.ScheduledStartTime.ToString("O")"
-                                            disabled="@(!Model.NextSession.CanJoin)"
+                                            aria-disabled="@(!Model.NextSession.CanJoin ? "true" : "false")"
                                             title="@(Model.NextSession.CanJoin ? "Join meeting" : "Available 5 minutes before the session")">
-                                        <iconify-icon
-                                            icon="mdi:microsoft-teams"
-                                            aria-hidden="true"></iconify-icon>
+                                        <i class="bi bi-microsoft-teams"
+                                           aria-hidden="true"></i>
                                         Join Meeting
                                     </button>
                                 </form>
@@ -327,7 +328,9 @@
                             {
                                 <button type="button"
                                         class="tutor-join-session"
-                                        disabled>
+                                        data-join-meeting-trigger
+                                        data-meeting-link-available="false"
+                                        aria-disabled="true">
                                     Meeting link pending
                                 </button>
                             }
@@ -795,6 +798,8 @@
 </section>
 
 @section Modals {
+<partial name="_JoinMeetingUnavailableModal" />
+
 <div class="modal fade bookings-action-modal" id="tutor-confirm-session-modal"
      tabindex="-1" aria-labelledby="tutor-confirm-session-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -831,12 +836,16 @@
 </div>
 
 <div class="modal fade bookings-action-modal" id="tutor-decline-booking-modal"
-     tabindex="-1" aria-label="Decline booking" aria-hidden="true">
+     tabindex="-1" aria-labelledby="tutor-decline-booking-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form method="post" asp-page-handler="Decline" data-tutor-decline-form>
                 <input type="hidden" name="bookingId" data-tutor-decline-booking-id />
                 <div class="modal-header">
+                    <div>
+                        <h2 id="tutor-decline-booking-title">Decline pending session</h2>
+                        <p>This action cannot be undone.</p>
+                    </div>
                     <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                 </div>

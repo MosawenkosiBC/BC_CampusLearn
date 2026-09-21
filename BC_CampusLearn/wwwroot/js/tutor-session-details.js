@@ -297,8 +297,16 @@
                 const meetingLinkIsUnavailable =
                     trigger.matches("[data-session-join-trigger]") &&
                     trigger.dataset.meetingLinkAvailable !== "true";
-                trigger.disabled =
+                const isUnavailable =
                     !startWindowIsOpen || meetingLinkIsUnavailable;
+                if (trigger.matches("[data-session-join-trigger]")) {
+                    trigger.disabled = false;
+                    trigger.setAttribute(
+                        "aria-disabled",
+                        String(isUnavailable));
+                } else {
+                    trigger.disabled = isUnavailable;
+                }
             });
 
             if (remainingMilliseconds <= 0) {
@@ -317,7 +325,12 @@
         if (sessionIsLocked) {
             startRemaining.textContent = "Session completed";
             startTriggers.forEach((trigger) => {
-                trigger.disabled = true;
+                if (trigger.matches("[data-session-join-trigger]")) {
+                    trigger.disabled = false;
+                    trigger.setAttribute("aria-disabled", "true");
+                } else {
+                    trigger.disabled = true;
+                }
             });
         } else if (sessionIsActive) {
             startRemaining.textContent = "Session active";
@@ -334,16 +347,15 @@
             "[data-session-status-select]");
         const saveButton = statusControl.querySelector(
             "[data-session-status-save]");
-        const declineForm = statusControl.querySelector(
-            "[data-session-decline-form]");
-
         saveButton?.addEventListener("click", () => {
             const action = statusSelect?.value;
             const modalId = action === "confirm"
                 ? "meeting-link-modal"
                 : action === "cancel"
                     ? "decline-session-modal"
-                    : null;
+                    : action === "decline"
+                        ? "decline-pending-session-modal"
+                        : null;
 
             if (modalId) {
                 const modalElement = document.getElementById(modalId);
@@ -353,9 +365,6 @@
                 return;
             }
 
-            if (action === "decline") {
-                declineForm?.requestSubmit();
-            }
         });
     }
 

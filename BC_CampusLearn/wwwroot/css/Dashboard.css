@@ -410,6 +410,10 @@
     margin: 0;
 }
 
+.dashboard-cancel-session-modal {
+    z-index: 1060;
+}
+
 .dashboard-cancel-session-modal .modal-content {
     border: 0;
     border-radius: 0.65rem;

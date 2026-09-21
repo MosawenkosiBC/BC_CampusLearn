@@ -413,12 +413,16 @@
 </div>
 
 <div class="modal fade bookings-action-modal" id="tutor-decline-booking-modal"
-     tabindex="-1" aria-label="Decline booking" aria-hidden="true">
+     tabindex="-1" aria-labelledby="tutor-decline-booking-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form method="post" asp-page-handler="Decline" data-tutor-decline-form>
                 <input type="hidden" name="bookingId" data-tutor-decline-booking-id />
                 <div class="modal-header">
+                    <div>
+                        <h2 id="tutor-decline-booking-title">Decline pending session</h2>
+                        <p>This action cannot be undone.</p>
+                    </div>
                     <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                 </div>

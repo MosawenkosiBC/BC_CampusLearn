@@ -128,7 +128,13 @@ public class SessionDetailsModel : PageModel
                 .FirstOrDefault(item =>
                     item.NewStatus is BookingStatus.Cancelled or
                         BookingStatus.Declined);
-            LatestStatusReason = latestReason?.ReasonCode switch
+            bool isPendingStudentCancellation =
+                latestReason?.ReasonCode ==
+                    SessionLifecycleService.StudentCancelledReasonCode &&
+                latestReason.PreviousStatus == BookingStatus.Pending;
+            LatestStatusReason = isPendingStudentCancellation
+                ? "This session was cancelled by the student."
+                : latestReason?.ReasonCode switch
             {
                 SessionLifecycleService.UnreviewedReasonCode =>
                     "The booking expired because the tutor did not respond before the scheduled time.",

@@ -138,7 +138,13 @@ public class SessionDetailsModel : PageModel
             LatestStatusReasonIsUnreviewedWarning =
                 latestStatusReason?.ReasonCode ==
                     SessionLifecycleService.UnreviewedReasonCode;
-            LatestStatusReason = LatestStatusReasonIsUnreviewedWarning
+            bool isPendingStudentCancellation =
+                latestStatusReason?.ReasonCode ==
+                    SessionLifecycleService.StudentCancelledReasonCode &&
+                latestStatusReason.PreviousStatus == BookingStatus.Pending;
+            LatestStatusReason = isPendingStudentCancellation
+                ? "This session was cancelled by the student."
+                : LatestStatusReasonIsUnreviewedWarning
                 ? SessionLifecycleService.UnreviewedWarningMessage
                 : latestStatusReason?.ReasonCode switch
             {

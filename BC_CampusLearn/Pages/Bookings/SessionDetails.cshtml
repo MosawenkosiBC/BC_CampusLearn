@@ -6,7 +6,6 @@
 @{
     ViewData["Title"] = "Session details";
     DateTimeOffset start = Model.Session.ScheduledStartTime.ToOffset(TimeSpan.FromHours(2));
-    DateTimeOffset end = start.AddHours((int)Model.Session.Duration);
     bool hasAttachedLinks = Model.Session.PreparationLinks.Count > 0;
     bool hasAttachedDocuments = Model.Session.Documents.Count > 0;
     bool chatIsClosed = SessionCommunicationPolicy.IsClosed(
@@ -222,8 +221,7 @@
                             </section>
 
                             <div class="session-status-card session-information-status-control"
-                                 data-student-session-status-control
-                                 data-cancellation-reason-required="@(Model.Session.Status == BookingStatus.Confirmed ? "true" : "false")">
+                                 data-student-session-status-control>
                                 <label for="student-session-status-action">Change Session Status</label>
                                 <select id="student-session-status-action"
                                         data-system-dropdown
@@ -243,10 +241,6 @@
                                         Save
                                     </button>
 
-                                    <form method="post" asp-page-handler="Cancel"
-                                          data-student-session-cancel-form hidden>
-                                        <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
-                                    </form>
                                 }
                             </div>
                         </div>
@@ -283,23 +277,16 @@
                 <section class="confirmed-session-panel student-meeting-panel">
                     <h2>Microsoft Teams meeting</h2>
                     <div class="manage-session-card session-meeting-card">
-                        <div>
-                            <h3>Session with @Model.TutorName</h3>
-                            <strong>@Model.Session.ProgrammeModule.ModuleCode: @Model.Session.ProgrammeModule.ModuleName</strong>
-                        </div>
-                        <dl>
-                            <div><dt>Scheduled:</dt><dd>@start.ToString("dd MMM yyyy, HH:mm")&ndash;@end.ToString("HH:mm")</dd></div>
-                            <div><dt>Location:</dt><dd>@Model.Session.Location</dd></div>
-                        </dl>
                         <form method="post" asp-page-handler="Join"
                               target="_blank" rel="noopener noreferrer">
                             <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
                             <button type="submit" class="session-join-button"
                                     data-session-join-trigger
+                                    data-join-meeting-trigger
                                     data-session-start="@Model.Session.ScheduledStartTime.ToString("O")"
                                     data-session-status="@Model.Session.Status.ToString().ToLowerInvariant()"
                                     data-meeting-link-available="@(!string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url) ? "true" : "false")"
-                                    disabled="@(string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url) || !Model.CanJoinSession)">
+                                    aria-disabled="@(string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url) || !Model.CanJoinSession ? "true" : "false")">
                                 <i class="bi bi-microsoft-teams" aria-hidden="true"></i>
                                 Join Meeting
                             </button>
@@ -440,7 +427,9 @@
     </div>
 </main>
 
-@if (Model.Session.Status == BookingStatus.Confirmed)
+<partial name="_JoinMeetingUnavailableModal" />
+
+@if (Model.Session.Status is BookingStatus.Pending or BookingStatus.Confirmed)
 {
     <div class="modal fade meeting-link-modal" id="student-cancel-session-modal" tabindex="-1"
          aria-labelledby="student-cancel-session-title" aria-hidden="true">
@@ -451,15 +440,25 @@
                     <div class="modal-header">
                         <div>
                             <h2 id="student-cancel-session-title">Cancel session</h2>
-                            <p>Tell @Model.TutorName why this confirmed session is being cancelled.</p>
+                            @if (Model.Session.Status == BookingStatus.Pending)
+                            {
+                                <p>Cancel this pending session with @Model.TutorName? This action cannot be undone.</p>
+                            }
+                            else
+                            {
+                                <p>Tell @Model.TutorName why this confirmed session is being cancelled. This action cannot be undone.</p>
+                            }
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-                        <label asp-for="CancellationReason">Reason</label>
-                        <textarea asp-for="CancellationReason" rows="4"
-                                  minlength="5" maxlength="1000" required></textarea>
-                    </div>
+                    @if (Model.Session.Status == BookingStatus.Confirmed)
+                    {
+                        <div class="modal-body">
+                            <label asp-for="CancellationReason">Reason</label>
+                            <textarea asp-for="CancellationReason" rows="4"
+                                      minlength="5" maxlength="1000" required></textarea>
+                        </div>
+                    }
                     <div class="modal-footer">
                         <button type="button" class="meeting-link-modal-cancel"
                                 data-bs-dismiss="modal">Keep session</button>

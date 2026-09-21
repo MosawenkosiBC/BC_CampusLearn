@@ -352,3 +352,52 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+.join-meeting-unavailable-modal {
+  z-index: 1060;
+}
+
+.join-meeting-unavailable-modal .modal-content {
+  border: 0;
+  border-radius: 0.65rem;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.2);
+}
+
+.join-meeting-unavailable-modal .modal-header {
+  align-items: flex-start;
+  border-bottom: 1px solid #e7e7e7;
+  padding: 1.25rem 1.35rem;
+}
+
+.join-meeting-unavailable-modal .modal-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.join-meeting-unavailable-modal .modal-header p {
+  color: #666;
+  font-size: 16px;
+  margin: 0.4rem 0 0;
+}
+
+.join-meeting-unavailable-modal .modal-footer {
+  border-top: 0;
+  padding: 1rem 1.35rem;
+}
+
+.join-meeting-unavailable-dismiss {
+  background: #ad0151;
+  border: 1px solid #ad0151;
+  border-radius: 0.35rem;
+  color: #fff;
+  font-size: 16px;
+  min-height: 2.6rem;
+  padding: 0.5rem 1rem;
+}
+
+.join-meeting-unavailable-dismiss:hover,
+.join-meeting-unavailable-dismiss:focus-visible {
+  background: #900044;
+  border-color: #900044;
+}
