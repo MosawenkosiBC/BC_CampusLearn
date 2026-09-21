@@ -17,17 +17,20 @@ public class SessionDetailsModel : PageModel
     private readonly ICurrentUserService _currentUserService;
     private readonly IWebHostEnvironment _environment;
     private readonly ISessionLifecycleService _lifecycleService;
+    private readonly TimeProvider _timeProvider;
 
     public SessionDetailsModel(
         ApplicationDbContext context,
         ICurrentUserService currentUserService,
         IWebHostEnvironment environment,
-        ISessionLifecycleService lifecycleService)
+        ISessionLifecycleService lifecycleService,
+        TimeProvider timeProvider)
     {
         _context = context;
         _currentUserService = currentUserService;
         _environment = environment;
         _lifecycleService = lifecycleService;
+        _timeProvider = timeProvider;
     }
 
     public Booking Session { get; private set; } = null!;
@@ -43,6 +46,10 @@ public class SessionDetailsModel : PageModel
     public string? LatestStatusReason { get; private set; }
 
     public string? LatestStatusReasonTitle { get; private set; }
+
+    public string SessionStartRemainingText { get; private set; } = string.Empty;
+
+    public bool CanJoinSession { get; private set; }
 
     public bool OpenReviewPanel { get; private set; }
 
@@ -91,6 +98,13 @@ public class SessionDetailsModel : PageModel
         }
 
         Session = session;
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+        SessionStartRemainingText = FormatTimeUntilStart(
+            session.ScheduledStartTime - now);
+        CanJoinSession = SessionLifecyclePolicy.CanJoin(
+            session.Status,
+            session.ScheduledStartTime,
+            now);
         CurrentBcUserId = student.BcUserId;
         TutorName = string.IsNullOrWhiteSpace(
             session.TutorCourseModule.Tutor.BcUser.DisplayName)
@@ -149,6 +163,19 @@ public class SessionDetailsModel : PageModel
         return Page();
     }
 
+    private static string FormatTimeUntilStart(TimeSpan remaining)
+    {
+        if (remaining <= TimeSpan.Zero)
+        {
+            return "Starts now";
+        }
+
+        int totalHours = (int)remaining.TotalHours;
+        return totalHours > 0
+            ? $"{totalHours}h {remaining.Minutes}m Left"
+            : $"{Math.Max(1, remaining.Minutes)}m Left";
+    }
+
     public async Task<IActionResult> OnPostJoinAsync(
         int bookingId,
         CancellationToken cancellationToken)
@@ -160,6 +187,7 @@ public class SessionDetailsModel : PageModel
             .Select(booking => new
             {
                 booking.Status,
+                booking.ScheduledStartTime,
                 MeetingLink = booking.MeetingLink == null
                     ? null
                     : booking.MeetingLink.Url
@@ -171,13 +199,22 @@ public class SessionDetailsModel : PageModel
             return NotFound();
         }
 
-        if (session.Status is not (BookingStatus.Confirmed or
-            BookingStatus.InProgress) ||
-            string.IsNullOrWhiteSpace(session.MeetingLink))
+        if (string.IsNullOrWhiteSpace(session.MeetingLink))
         {
             SessionActionError = true;
             SessionActionMessage =
                 "The meeting link is not available for this session.";
+            return RedirectToPage(new { bookingId });
+        }
+
+        if (!SessionLifecyclePolicy.CanJoin(
+                session.Status,
+                session.ScheduledStartTime,
+                _timeProvider.GetUtcNow()))
+        {
+            SessionActionError = true;
+            SessionActionMessage =
+                "You can join the session from 5 minutes before its scheduled time.";
             return RedirectToPage(new { bookingId });
         }
 

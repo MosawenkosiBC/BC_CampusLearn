@@ -1,6 +1,10 @@
 (() => {
     "use strict";
 
+    document.querySelectorAll(
+        ".tutor-pending-reviews-modal, #statistics-custom-date-modal"
+    ).forEach(modal => document.body.appendChild(modal));
+
     const periodForm = document.querySelector("[data-statistics-period-form]");
 
     if (periodForm) {

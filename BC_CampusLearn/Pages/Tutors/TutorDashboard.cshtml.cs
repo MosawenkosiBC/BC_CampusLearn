@@ -154,6 +154,14 @@ public class TutorDashboardModel : PageModel
                 })
             .FirstOrDefaultAsync(cancellationToken);
 
+        if (NextSession is not null)
+        {
+            NextSession.CanJoin = SessionLifecyclePolicy.CanJoin(
+                BookingStatus.Confirmed,
+                NextSession.ScheduledStartTime,
+                now);
+        }
+
         Sessions = await _context.Bookings
             .AsNoTracking()
             .Where(booking =>
@@ -173,7 +181,9 @@ public class TutorDashboardModel : PageModel
                     ScheduledStartTime =
                         booking.ScheduledStartTime,
                     Duration = booking.Duration,
-                    Status = booking.Status
+                    Status = booking.Status,
+                    TutorReviewSubmitted =
+                        booking.TutorEvaluation != null
                 })
             .Take(5)
             .ToListAsync(cancellationToken);

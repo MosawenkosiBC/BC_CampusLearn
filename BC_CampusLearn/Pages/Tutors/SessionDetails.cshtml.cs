@@ -41,6 +41,8 @@ public class SessionDetailsModel : PageModel
 
     public bool CanStartSession { get; private set; }
 
+    public bool OpenReviewPanel { get; private set; }
+
     public string? LatestStatusReason { get; private set; }
 
     public string? LatestStatusReasonTitle { get; private set; }
@@ -75,6 +77,7 @@ public class SessionDetailsModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(
         int bookingId,
+        bool openReview,
         CancellationToken cancellationToken)
     {
         await _lifecycleService.ProcessDueTransitionsAsync(cancellationToken);
@@ -118,10 +121,12 @@ public class SessionDetailsModel : PageModel
         SessionStartRemainingText = FormatTimeUntilStart(
             session.ScheduledStartTime - now);
         CanStartSession = session.Status == BookingStatus.Confirmed &&
-            now >= session.ScheduledStartTime.Subtract(
-                SessionSchedulingRules.EarlyStartWindow) &&
-            now < session.ScheduledStartTime.Add(
-                SessionSchedulingRules.LateStartWindow);
+            SessionLifecyclePolicy.CanStart(
+                session.ScheduledStartTime,
+                now);
+        OpenReviewPanel = openReview &&
+            session.Status == BookingStatus.Completed &&
+            session.TutorEvaluation is null;
         if (session.Status is BookingStatus.Cancelled or
             BookingStatus.Declined)
         {
@@ -275,7 +280,7 @@ public class SessionDetailsModel : PageModel
             cancellationToken);
         SessionActionError = !result.Succeeded;
         SessionActionMessage = result.Succeeded
-            ? "Session started."
+            ? null
             : result.ErrorMessage;
         return RedirectToPage(new { bookingId });
     }

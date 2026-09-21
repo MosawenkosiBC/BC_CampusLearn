@@ -58,6 +58,7 @@ public class TutorService : ITutorService
                 ProgrammeId = tutor.ProgrammeId,
                 ProgrammeName = tutor.Programme?.Name ?? "Belgium Campus programme",
                 YearOfStudy = tutor.YearOfStudy,
+                PreferredTutoringMode = tutor.PreferredTutoringMode,
                 UpcomingAvailabilityCount = tutor.TutorAvailabilities.Count(slot =>
                     slot.AvailableTime > DateTimeOffset.UtcNow),
                 NextAvailableAt = tutor.TutorAvailabilities

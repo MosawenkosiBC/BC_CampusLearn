@@ -417,10 +417,10 @@
         display: grid;
         grid-template-areas:
             "student status action"
-            "module status action"
+            "module module module"
             "datetime datetime datetime"
             "location location location";
-        grid-template-columns: minmax(0, 1fr) auto 2.25rem;
+        grid-template-columns: minmax(0, 1fr) auto 44px;
         height: auto;
         padding: 0.75rem;
         row-gap: 0.2rem;
@@ -446,14 +446,14 @@
 
     .tutor-sessions-table td:nth-child(2) {
         color: #252525;
-        font-size: 0.68rem;
+        font-size: 15px;
         font-weight: 600;
         grid-area: module;
     }
 
     .tutor-sessions-table td:nth-child(3) {
         color: #747c87;
-        font-size: 0.68rem;
+        font-size: 14px;
         grid-area: datetime;
         white-space: nowrap;
     }
@@ -461,7 +461,7 @@
     .tutor-sessions-table td:nth-child(4) {
         color: #535b66;
         display: block;
-        font-size: 0.68rem;
+        font-size: 14px;
         grid-area: location;
     }
 
@@ -470,14 +470,26 @@
     }
 
     .tutor-sessions-table td:nth-child(6) {
+        align-self: center;
         grid-area: action;
+        margin-block: -0.5rem;
         text-align: center;
     }
 
     .tutor-session-action {
         cursor: pointer;
-        height: 2.25rem;
-        width: 2.25rem;
+        height: 44px;
+        width: 44px;
+    }
+
+    .bookings-session-action-menu {
+        justify-content: center;
+        width: 44px;
+    }
+
+    .tutor-session-action-dots {
+        height: 1.5rem;
+        width: 1.5rem;
     }
 
     .tutor-session-action iconify-icon {
@@ -660,6 +672,10 @@
     margin-top: 1.25rem;
 }
 
+.dashboard-join-session-form {
+    display: contents;
+}
+
 .tutor-next-session-actions button,
 .tutor-next-session-actions a {
     align-items: center;
@@ -701,6 +717,14 @@
     background-color: #900044;
     border-color: #900044;
     outline: none;
+}
+
+.tutor-next-session-actions .tutor-join-session:disabled,
+.tutor-next-session-actions .tutor-join-session:disabled:hover {
+    background-color: #a9a9a9;
+    border-color: #a9a9a9;
+    color: #fff;
+    cursor: not-allowed;
 }
 
 .tutor-next-session-empty {
@@ -1900,10 +1924,14 @@
         font-size: 16px;
     }
 
-    .tutor-dashboard-page .tutor-sessions-table td:nth-child(2),
+    .tutor-dashboard-page .tutor-sessions-table td:nth-child(2) {
+        font-size: 15px;
+        line-height: 1.4;
+    }
+
     .tutor-dashboard-page .tutor-sessions-table td:nth-child(3),
     .tutor-dashboard-page .tutor-sessions-table td:nth-child(4) {
-        font-size: 12px;
+        font-size: 14px;
         line-height: 1.4;
     }
 

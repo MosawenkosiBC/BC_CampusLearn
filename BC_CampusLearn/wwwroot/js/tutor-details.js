@@ -101,6 +101,9 @@
     const saveButton = root.querySelector("[data-save-session]");
     const termsModal = document.querySelector(
         "[data-mobile-booking-terms-modal]");
+    if (termsModal && termsModal.parentElement !== document.body) {
+        document.body.append(termsModal);
+    }
     const termsForm = termsModal?.querySelector(
         "[data-mobile-booking-terms-form]");
     const termsSlotInput = termsModal?.querySelector(
@@ -346,14 +349,15 @@
                 (slot) => !slot.isBooked).length;
             const bookedSlotCount =
                 daySlots.length - availableSlotCount;
-            const bookedRatio = daySlots.length === 0
+            const availableRatio = daySlots.length === 0
                 ? 0
-                : bookedSlotCount / daySlots.length;
+                : availableSlotCount / daySlots.length;
             const hasAvailableSlots = availableSlotCount > 0;
             const isDisplayedMonth =
                 date.getMonth() === visibleMonth;
-            const isFutureDate =
-                startOfDay(date) >= today;
+            const isPastDate = startOfDay(date) < today;
+            const isToday = startOfDay(date).getTime() === today.getTime();
+            const isFutureDate = !isPastDate;
             const isSelectable =
                 isDisplayedMonth && isFutureDate;
             const button = document.createElement("button");
@@ -381,6 +385,10 @@
             button.classList.toggle(
                 "is-outside",
                 !isDisplayedMonth);
+            button.classList.toggle("is-past", isPastDate);
+            button.classList.toggle(
+                "is-today",
+                isToday && (!selectedDateKey || dateKey === selectedDateKey));
             button.classList.toggle(
                 "is-weekend",
                 date.getDay() === 0 || date.getDay() === 6);
@@ -400,7 +408,7 @@
             button.disabled = !isSelectable;
             button.style.setProperty(
                 "--booking-fill",
-                `${bookedRatio * 100}%`);
+                `${availableRatio * 100}%`);
 
             if (isSelectable) {
                 button.addEventListener("click", () => {
@@ -435,7 +443,7 @@
             empty.textContent = !selectedDateKey
                 ? "Choose a date."
                 : allSlotsBooked
-                    ? "All time slots for this date are booked."
+                    ? "No available booking slot"
                     : "No time slots are available for this date.";
             slotOptions.append(empty);
             return;
@@ -721,8 +729,10 @@
                 const dateKey = toDateKey(date);
                 const hasAvailability = availableDates.has(dateKey);
                 const isDisplayedMonth = date.getMonth() === visibleMonth;
+                const isPastDate = startOfDay(date) < today;
+                const isToday = startOfDay(date).getTime() === today.getTime();
                 const isSelectable = isDisplayedMonth &&
-                    startOfDay(date) >= today && hasAvailability;
+                    !isPastDate && hasAvailability;
                 const day = document.createElement("button");
                 const dayNumber = document.createElement("span");
 
@@ -732,6 +742,10 @@
                 day.classList.toggle(
                     "is-outside",
                     !isDisplayedMonth);
+                day.classList.toggle("is-past", isPastDate);
+                day.classList.toggle(
+                    "is-today",
+                    isToday && (!selectedDateKey || dateKey === selectedDateKey));
                 day.classList.toggle(
                     "is-weekend",
                     date.getDay() === 0 || date.getDay() === 6);

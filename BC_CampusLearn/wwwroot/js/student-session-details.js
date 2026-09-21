@@ -5,6 +5,44 @@
         }
     });
 
+    const startRemaining = document.querySelector(
+        "[data-session-start-remaining]");
+    if (startRemaining) {
+        const scheduledStart = new Date(startRemaining.dataset.sessionStart);
+        const joinTriggers = document.querySelectorAll(
+            "[data-session-join-trigger]");
+        const renderStartRemaining = () => {
+            const remainingMilliseconds =
+                scheduledStart.getTime() - Date.now();
+
+            joinTriggers.forEach((trigger) => {
+                const status = trigger.dataset.sessionStatus;
+                const linkIsAvailable =
+                    trigger.dataset.meetingLinkAvailable === "true";
+                const joinWindowIsOpen = status === "inprogress" ||
+                    status === "confirmed" &&
+                    remainingMilliseconds <= 5 * 60 * 1000 &&
+                    remainingMilliseconds > -15 * 60 * 1000;
+                trigger.disabled = !linkIsAvailable || !joinWindowIsOpen;
+            });
+
+            if (remainingMilliseconds <= 0) {
+                startRemaining.textContent = "Starts now";
+                return;
+            }
+
+            const totalSeconds = Math.ceil(remainingMilliseconds / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            startRemaining.textContent = hours > 0
+                ? `${hours}h ${minutes}m Left`
+                : `${Math.max(1, minutes)}m Left`;
+        };
+
+        renderStartRemaining();
+        window.setInterval(renderStartRemaining, 1000);
+    }
+
     const statusControl = document.querySelector(
         "[data-student-session-status-control]");
     if (statusControl) {
@@ -450,6 +488,17 @@
             showError("");
         } catch (exception) {
             showError(exception.message || "The message could not be sent.");
+        }
+    });
+
+    input?.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || event.shiftKey || event.isComposing) {
+            return;
+        }
+
+        event.preventDefault();
+        if (input.value.trim()) {
+            form?.requestSubmit();
         }
     });
 

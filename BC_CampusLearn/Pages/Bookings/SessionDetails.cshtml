@@ -86,7 +86,7 @@
                     : CampusAlertVariant.Success))
     }
 
-    <div class="manage-session-layout">
+    <div class="manage-session-layout session-overview-layout">
         <div class="manage-session-primary">
             <section class="session-information-section is-mobile-collapsed" aria-labelledby="session-information-title">
                 <header class="manage-card-heading">
@@ -109,7 +109,13 @@
                     </div>
 
                     <span class="session-status-badge status-@Model.Session.Status.ToString().ToLowerInvariant()">
-                        @Model.Session.Status.ToDisplayText()
+                        <span>@Model.Session.Status.ToDisplayText()</span>
+                        <span class="session-status-start-remaining"
+                              data-session-start-remaining
+                              data-session-start="@Model.Session.ScheduledStartTime.ToString("O")"
+                              aria-live="polite">
+                            @Model.SessionStartRemainingText
+                        </span>
                     </span>
 
                     <div class="session-information-content" id="student-session-information-details">
@@ -133,6 +139,14 @@
                                 <div class="session-readonly-field">
                                     <label for="session-duration">Duration</label>
                                     <input id="session-duration" type="text" value="@((int)Model.Session.Duration) hour" readonly />
+                                </div>
+                            </div>
+
+                            <div class="session-information-grid session-date-grid">
+                                <div class="session-readonly-field">
+                                    <label for="session-date">Session Date</label>
+                                    <input id="session-date" type="text"
+                                           value="@start.ToString("dd MMM yyyy, HH:mm")" readonly />
                                 </div>
                             </div>
 
@@ -206,62 +220,45 @@
                                     </div>
                                 }
                             </section>
+
+                            <div class="session-status-card session-information-status-control"
+                                 data-student-session-status-control
+                                 data-cancellation-reason-required="@(Model.Session.Status == BookingStatus.Confirmed ? "true" : "false")">
+                                <label for="student-session-status-action">Change Session Status</label>
+                                <select id="student-session-status-action"
+                                        data-system-dropdown
+                                        data-student-session-status-select
+                                        disabled="@(Model.Session.Status is not (BookingStatus.Pending or BookingStatus.Confirmed))">
+                                    <option value="">@Model.Session.Status.ToDisplayText()</option>
+                                    @if (Model.Session.Status is BookingStatus.Pending or BookingStatus.Confirmed)
+                                    {
+                                        <option value="cancel">Cancelled</option>
+                                    }
+                                </select>
+
+                                @if (Model.Session.Status is BookingStatus.Pending or BookingStatus.Confirmed)
+                                {
+                                    <button type="button" class="session-status-save"
+                                            data-student-session-status-save>
+                                        Save
+                                    </button>
+
+                                    <form method="post" asp-page-handler="Cancel"
+                                          data-student-session-cancel-form hidden>
+                                        <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                                    </form>
+                                }
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
         </div>
 
+        @if (!string.IsNullOrWhiteSpace(Model.LatestStatusReason) ||
+             Model.Session.Status is BookingStatus.Confirmed or BookingStatus.InProgress)
+        {
         <aside class="manage-session-sidebar session-top-sidebar" aria-label="Session status">
-            <header class="manage-card-heading">
-                <h2>Session Details</h2>
-            </header>
-            <section class="manage-session-card session-status-card"
-                     data-student-session-status-control
-                     data-cancellation-reason-required="@(Model.Session.Status == BookingStatus.Confirmed ? "true" : "false")">
-                <div class="session-status-dates">
-                    <div>
-                        <span>Date Booked</span>
-                        <strong>
-                            <span class="session-status-date-line">@Model.Session.DateBooked.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy")</span>
-                            <span class="session-status-date-line">@Model.Session.DateBooked.ToOffset(TimeSpan.FromHours(2)).ToString("HH:mm")</span>
-                        </strong>
-                    </div>
-                    <div>
-                        <span>Session Date</span>
-                        <strong>
-                            <span class="session-status-date-line">@start.ToString("dd MMM yyyy")</span>
-                            <span class="session-status-date-line">@start.ToString("HH:mm")</span>
-                        </strong>
-                    </div>
-                </div>
-
-                <label for="student-session-status-action">Change Status</label>
-                <select id="student-session-status-action"
-                        data-system-dropdown
-                        data-student-session-status-select
-                        disabled="@(Model.Session.Status is not (BookingStatus.Pending or BookingStatus.Confirmed))">
-                    <option value="">@Model.Session.Status.ToDisplayText()</option>
-                    @if (Model.Session.Status is BookingStatus.Pending or BookingStatus.Confirmed)
-                    {
-                        <option value="cancel">Cancelled</option>
-                    }
-                </select>
-
-                @if (Model.Session.Status is BookingStatus.Pending or BookingStatus.Confirmed)
-                {
-                    <button type="button" class="session-status-save"
-                            data-student-session-status-save>
-                        Save
-                    </button>
-
-                    <form method="post" asp-page-handler="Cancel"
-                          data-student-session-cancel-form hidden>
-                        <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
-                    </form>
-                }
-            </section>
-
             @if (!string.IsNullOrWhiteSpace(Model.LatestStatusReason))
             {
                 <section class="session-status-reason">
@@ -298,7 +295,11 @@
                               target="_blank" rel="noopener noreferrer">
                             <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
                             <button type="submit" class="session-join-button"
-                                    disabled="@string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url)">
+                                    data-session-join-trigger
+                                    data-session-start="@Model.Session.ScheduledStartTime.ToString("O")"
+                                    data-session-status="@Model.Session.Status.ToString().ToLowerInvariant()"
+                                    data-meeting-link-available="@(!string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url) ? "true" : "false")"
+                                    disabled="@(string.IsNullOrWhiteSpace(Model.Session.MeetingLink?.Url) || !Model.CanJoinSession)">
                                 <i class="bi bi-microsoft-teams" aria-hidden="true"></i>
                                 Join Meeting
                             </button>
@@ -308,6 +309,7 @@
             }
 
         </aside>
+        }
     </div>
 
     <div class="manage-session-layout session-lower-layout student-session-chat-layout">

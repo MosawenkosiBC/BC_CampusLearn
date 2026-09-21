@@ -39,6 +39,9 @@
     evaluationPanel?.addEventListener(
         "hidden.bs.modal",
         () => setEvaluationScrollLock(false));
+    if (evaluationPanel?.dataset.openOnLoad === "true" && window.bootstrap) {
+        bootstrap.Modal.getOrCreateInstance(evaluationPanel).show();
+    }
 
     const evaluationForm = evaluationPanel?.querySelector(
         "[data-tutor-evaluation-form]");
@@ -195,6 +198,22 @@
             });
     };
 
+    const renderCountdownValue = (totalSeconds) => {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        const parts = [hours, minutes, seconds]
+            .map((value) => String(value).padStart(2, "0"));
+        renderRingProgress(totalSeconds);
+        if (hoursOutput && minutesOutput && secondsOutput) {
+            hoursOutput.textContent = parts[0];
+            minutesOutput.textContent = parts[1];
+            secondsOutput.textContent = parts[2];
+        } else if (runtimeOutput) {
+            runtimeOutput.textContent = parts.join(":");
+        }
+    };
+
     if (runtime &&
         runtimeOutput &&
         runtime.dataset.countdownMode === "session-completion") {
@@ -206,19 +225,7 @@
                 0,
                 countdownTarget.getTime() - Date.now());
             const totalSeconds = Math.ceil(remaining / 1000);
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            const parts = [hours, minutes, seconds]
-                .map((value) => String(value).padStart(2, "0"));
-            renderRingProgress(totalSeconds);
-            if (hoursOutput && minutesOutput && secondsOutput) {
-                hoursOutput.textContent = parts[0];
-                minutesOutput.textContent = parts[1];
-                secondsOutput.textContent = parts[2];
-            } else {
-                runtimeOutput.textContent = parts.join(":");
-            }
+            renderCountdownValue(totalSeconds);
 
             if (remaining === 0 &&
                 !completionReloaded) {
@@ -240,6 +247,37 @@
         }
     }
 
+    const joinForm = document.querySelector("[data-session-join-form]");
+    joinForm?.addEventListener("submit", () => {
+        const joinButton = joinForm.querySelector(
+            "[data-session-join-trigger]");
+        const shouldStartCountdown =
+            runtime?.dataset.countdownMode === "idle" &&
+            !joinButton?.disabled;
+        if (!shouldStartCountdown) {
+            return;
+        }
+
+        runtime.dataset.countdownMode = "session-completion";
+        const countdownStartedAt = Date.now();
+        const caption = runtime.querySelector(".session-countdown-caption");
+        if (caption) {
+            caption.textContent = "Time remaining";
+        }
+
+        const renderJoinedSessionCountdown = () => {
+            const elapsedSeconds = Math.floor(
+                (Date.now() - countdownStartedAt) / 1000);
+            renderCountdownValue(Math.max(
+                0,
+                countdownDurationSeconds - elapsedSeconds));
+        };
+
+        renderJoinedSessionCountdown();
+        window.setInterval(renderJoinedSessionCountdown, 1000);
+        window.setTimeout(() => window.location.reload(), 2000);
+    });
+
     const startRemaining = document.querySelector(
         "[data-session-start-remaining]");
     if (startRemaining) {
@@ -256,7 +294,11 @@
                 remainingMilliseconds <= 5 * 60 * 1000 &&
                 remainingMilliseconds > -15 * 60 * 1000;
             startTriggers.forEach((trigger) => {
-                trigger.disabled = !startWindowIsOpen;
+                const meetingLinkIsUnavailable =
+                    trigger.matches("[data-session-join-trigger]") &&
+                    trigger.dataset.meetingLinkAvailable !== "true";
+                trigger.disabled =
+                    !startWindowIsOpen || meetingLinkIsUnavailable;
             });
 
             if (remainingMilliseconds <= 0) {
@@ -575,6 +617,17 @@
             showError("");
         } catch (exception) {
             showError(exception.message || "The message could not be sent.");
+        }
+    });
+
+    input?.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || event.shiftKey || event.isComposing) {
+            return;
+        }
+
+        event.preventDefault();
+        if (input.value.trim()) {
+            form?.requestSubmit();
         }
     });
 

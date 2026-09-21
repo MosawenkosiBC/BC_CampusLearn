@@ -156,6 +156,14 @@ public class DashboardModel : PageModel
                     })
                 .FirstOrDefaultAsync(cancellationToken);
 
+        if (NextSession is not null)
+        {
+            NextSession.CanJoin = SessionLifecyclePolicy.CanJoin(
+                NextSession.Status,
+                NextSession.AvailableTime,
+                now);
+        }
+
         Sessions =
             await studentBookings
                 .OrderByDescending(booking =>

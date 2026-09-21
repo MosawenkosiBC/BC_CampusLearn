@@ -2,15 +2,26 @@
     var pagePath = ViewContext.RouteData.Values["Page"]?.ToString() ?? "/Index";
     var pageTitle = ViewData["Title"]?.ToString();
     var breadcrumbs = new List<(string Label, string? Page)>();
+    var isAdministrator = pagePath.StartsWith("/Administrator/", StringComparison.OrdinalIgnoreCase);
+    var isTutor = User.IsInRole(nameof(BcUserRole.Tutor)) ||
+        User.IsInRole(nameof(BcUserRole.HeadOfTutors));
+    var dashboardPage = isAdministrator
+        ? "/Administrator/Admin/Dashboard"
+        : isTutor
+            ? "/Tutors/TutorDashboard"
+            : "/Student/Dashboard";
+    var dashboardLabel = !isAdministrator && isTutor
+        ? "Tutor Dashboard"
+        : "Dashboard";
 
-    void AddHome()
+    void AddDashboard()
     {
-        breadcrumbs.Add(("Home", pagePath == "/Index" ? null : "/Index"));
+        breadcrumbs.Add((dashboardLabel, pagePath == dashboardPage ? null : dashboardPage));
     }
 
-    if (!pagePath.StartsWith("/Administrator/", StringComparison.OrdinalIgnoreCase))
+    if (!pagePath.Equals(dashboardPage, StringComparison.OrdinalIgnoreCase))
     {
-        AddHome();
+        AddDashboard();
     }
 
     switch (pagePath)
@@ -21,25 +32,20 @@
             breadcrumbs.Add(("Dashboard", null));
             break;
         case "/Administrator/Admin/Applications":
-            breadcrumbs.Add(("Dashboard", "/Administrator/Admin/Dashboard"));
             breadcrumbs.Add(("Applications", null));
             break;
         case "/Administrator/Admin/ApplicationDetails":
-            breadcrumbs.Add(("Dashboard", "/Administrator/Admin/Dashboard"));
             breadcrumbs.Add(("Applications", "/Administrator/Admin/Applications"));
             breadcrumbs.Add(("Application Details", null));
             break;
         case "/Administrator/Tutors/Index":
-            breadcrumbs.Add(("Dashboard", "/Administrator/Admin/Dashboard"));
             breadcrumbs.Add(("Tutors", null));
             break;
         case "/Administrator/Tutors/Profile":
-            breadcrumbs.Add(("Dashboard", "/Administrator/Admin/Dashboard"));
             breadcrumbs.Add(("Tutors", "/Administrator/Tutors/Index"));
             breadcrumbs.Add(("Tutor Profile", null));
             break;
         case "/Administrator/Tutors/SessionDetails":
-            breadcrumbs.Add(("Dashboard", "/Administrator/Admin/Dashboard"));
             breadcrumbs.Add(("Tutors", "/Administrator/Tutors/Index"));
             breadcrumbs.Add(("Tutor Profile", "/Administrator/Tutors/Profile"));
             breadcrumbs.Add(("Session Information", null));
@@ -48,11 +54,9 @@
             breadcrumbs.Add(("Dashboard", null));
             break;
         case "/Bookings/Index":
-            breadcrumbs.Add(("Dashboard", "/Student/Dashboard"));
             breadcrumbs.Add(("All Sessions", null));
             break;
         case "/Bookings/SessionDetails":
-            breadcrumbs.Add(("Dashboard", "/Student/Dashboard"));
             breadcrumbs.Add(("All Sessions", "/Bookings/Index"));
             breadcrumbs.Add(("Session Details", null));
             break;
@@ -72,45 +76,36 @@
             breadcrumbs.Add(("Tutor Application", null));
             break;
         case "/Tutors/TutorDashboard":
-            breadcrumbs.Add(("Tutor Dashboard", null));
+            breadcrumbs.Add((dashboardLabel, null));
             break;
         case "/Tutors/Sessions":
-            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
             breadcrumbs.Add(("All Sessions", null));
             break;
         case "/Tutors/SessionDetails":
-            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
             breadcrumbs.Add(("All Sessions", "/Tutors/Sessions"));
             breadcrumbs.Add(("Session Details", null));
             break;
         case "/Tutors/ManageAvailability":
-            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
             breadcrumbs.Add(("Manage Availability", null));
             break;
         case "/Tutors/ManageResources":
-            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
             breadcrumbs.Add(("Manage Resources", null));
             break;
         case "/Tutors/Profile":
-            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
             breadcrumbs.Add(("Personal Details", null));
             break;
         case "/Tutors/PublicProfile":
-            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
             breadcrumbs.Add(("Personal Details", "/Tutors/Profile"));
             breadcrumbs.Add(("Public Profile", null));
             break;
         case "/Tutors/StatisticsOverview":
-            breadcrumbs.Add(("Tutor Dashboard", "/Tutors/TutorDashboard"));
             breadcrumbs.Add(("Personal Details", "/Tutors/Profile"));
             breadcrumbs.Add(("Statistics Overview", null));
             break;
         case "/LearningResources/Index":
-            breadcrumbs.Add(("Dashboard", "/Student/Dashboard"));
             breadcrumbs.Add(("Learning Resources", null));
             break;
         case "/LearningResources/Details":
-            breadcrumbs.Add(("Dashboard", "/Student/Dashboard"));
             breadcrumbs.Add(("Learning Resources", "/LearningResources/Index"));
             breadcrumbs.Add(("Resource Details", null));
             break;

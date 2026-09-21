@@ -18,14 +18,10 @@
 
 .tutor-directory-content-background::before {
   background-color: #fff;
-  background-image:
-    linear-gradient(
-      rgba(255, 255, 255, 0.9),
-      rgba(255, 255, 255, 0.9)),
-    url("/Media/common/backgroundNew.jpg");
+  background-image: url("/Media/common/backgroundNew.png");
   background-position: center top;
   background-repeat: repeat;
-  background-size: auto, 890px 360px;
+  background-size: 890px 360px;
   bottom: 0;
   content: "";
   left: 50%;
@@ -94,7 +90,7 @@
   margin-bottom: 0;
 }
 
-.course-filter + .year-filter {
+.course-filter + .tutoring-mode-filter {
   margin-top: 0.75rem;
 }
 
@@ -522,19 +518,7 @@
 }
 
 .tutor-directory-content-background::before {
-  background-image:
-    linear-gradient(
-      rgba(255, 255, 255, 0.88),
-      rgba(255, 255, 255, 0.91)),
-    radial-gradient(
-      circle at 12% 18%,
-      rgba(191, 0, 80, 0.055),
-      transparent 24rem),
-    radial-gradient(
-      circle at 88% 48%,
-      rgba(74, 193, 193, 0.07),
-      transparent 28rem),
-    url("/Media/common/backgroundNew.jpg");
+  background-image: url("/Media/common/backgroundNew.png");
 }
 
 .tutors-intro h1 {
@@ -853,6 +837,10 @@
 @media (max-width: 991.98px) {
   body.tutor-filter-open {
     overflow: hidden;
+  }
+
+  body.tutor-filter-open .tutor-directory-content-background {
+    z-index: 1100;
   }
 
   .results-toolbar {

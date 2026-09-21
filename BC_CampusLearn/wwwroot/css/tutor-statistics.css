@@ -114,6 +114,26 @@
     overflow: hidden;
     padding: 1rem;
     position: relative;
+    transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+@media (hover: hover) {
+    .tutor-stat-card-premium:hover {
+        box-shadow:
+            0 0.9rem 2rem rgba(22, 24, 29, 0.13),
+            0 0.15rem 0.45rem rgba(22, 24, 29, 0.06);
+        transform: translateY(-0.15rem);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tutor-stat-card-premium {
+        transition: none;
+    }
+
+    .tutor-stat-card-premium:hover {
+        transform: none;
+    }
 }
 
 .tutor-stat-card-premium.is-magenta {
@@ -293,17 +313,59 @@
 .tutor-session-rating-number {
     align-items: baseline;
     display: inline-flex;
-}
-
-.tutor-session-rating-number strong {
-    color: #111;
-    font-size: 1.25rem;
-}
-
-.tutor-session-rating-number > span {
     color: #111;
     font-size: 1.25rem;
     font-weight: 700;
+}
+
+.tutor-pending-review-trigger {
+    align-items: center;
+    background: none;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    gap: 0.25rem;
+    padding: 0;
+    text-align: left;
+}
+
+.tutor-pending-review-trigger span {
+    text-decoration: underline;
+    text-decoration-color: currentColor;
+    text-underline-offset: 0.18em;
+}
+
+.tutor-pending-review-trigger svg {
+    color: inherit;
+    flex: 0 0 auto;
+    height: 1em;
+    width: 1em;
+}
+
+.tutor-pending-review-trigger:focus-visible {
+    border-radius: 2px;
+    outline: 2px solid #ad0151;
+    outline-offset: 3px;
+}
+
+.tutor-pending-reviews-table-wrap {
+    overflow-x: auto;
+}
+
+.tutor-pending-reviews-table {
+    min-width: 32rem;
+}
+
+.tutor-pending-reviews-table a {
+    color: #ad0151;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.tutor-pending-reviews-empty {
+    margin: 0;
 }
 
 .tutor-session-rating-stars {

@@ -8,7 +8,7 @@
         !string.IsNullOrWhiteSpace(Model.SearchModule) ||
         Model.ProgrammeId.HasValue ||
         Model.ProgrammeModuleId.HasValue ||
-        Model.Years.Count > 0;
+        Model.TutoringMode.HasValue;
 }
 
 @section Styles {
@@ -80,25 +80,13 @@
                     </select>
                 </div>
 
-                <fieldset class="filter-group year-filter">
-                    <legend>Year of study</legend>
-                    @for (int year = 2; year <= 4; year++)
-                    {
-                        <label class="year-option">
-                            <input type="checkbox"
-                                   name="Years"
-                                   value="@year"
-                                   checked="@(Model.Years.Contains(year) ? "checked" : null)" />
-                            <span>@(year switch
-                            {
-                                1 => "First year",
-                                2 => "Second year",
-                                3 => "Third year",
-                                _ => "Fourth year"
-                            })</span>
-                        </label>
-                    }
-                </fieldset>
+                <div class="filter-group tutoring-mode-filter">
+                    <label asp-for="TutoringMode">Tutoring mode</label>
+                    <select asp-for="TutoringMode"
+                            asp-items="Html.GetEnumSelectList<PreferredTutoringMode>()">
+                        <option value="">All tutoring modes</option>
+                    </select>
+                </div>
 
                 <button type="submit" class="apply-filters">
                     Apply filters
