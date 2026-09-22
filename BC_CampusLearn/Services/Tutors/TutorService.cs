@@ -17,6 +17,7 @@ public class TutorService : ITutorService
     public async Task<IReadOnlyList<TutorCardViewModel>>
         GetTutorsAsync(
             int? programmeModuleId,
+            string? preferredCampus,
             CancellationToken cancellationToken = default)
     {
         IQueryable<Tutor> query =
@@ -34,14 +35,30 @@ public class TutorService : ITutorService
                     programmeModuleId.Value));
         }
 
-        List<Tutor> tutors = await query
+        query = query
             .Include(tutor => tutor.TutorCourseModules)
                 .ThenInclude(item => item.ProgrammeModule)
             .Include(tutor => tutor.Programme)
             .Include(tutor => tutor.BcUser)
-            .Include(tutor => tutor.TutorAvailabilities)
-            .OrderBy(tutor => tutor.TutorId)
-            .ToListAsync(cancellationToken);
+            .Include(tutor => tutor.TutorAvailabilities);
+
+        List<Tutor> tutors;
+        if (string.IsNullOrWhiteSpace(preferredCampus))
+        {
+            tutors = await query
+                .OrderBy(tutor => tutor.TutorId)
+                .ToListAsync(cancellationToken);
+        }
+        else
+        {
+            string normalizedCampus = preferredCampus.Trim();
+            tutors = await query
+                .OrderByDescending(tutor =>
+                    tutor.CampusOfStudy == normalizedCampus)
+                .ThenBy(tutor => tutor.TutorId)
+                .ToListAsync(cancellationToken);
+        }
+
         return tutors
             .Select(tutor => new TutorCardViewModel
             {
@@ -58,6 +75,7 @@ public class TutorService : ITutorService
                 ProgrammeId = tutor.ProgrammeId,
                 ProgrammeName = tutor.Programme?.Name ?? "Belgium Campus programme",
                 YearOfStudy = tutor.YearOfStudy,
+                CampusOfStudy = tutor.CampusOfStudy,
                 PreferredTutoringMode = tutor.PreferredTutoringMode,
                 UpcomingAvailabilityCount = tutor.TutorAvailabilities.Count(slot =>
                     slot.AvailableTime > DateTimeOffset.UtcNow),
@@ -168,6 +186,22 @@ public class TutorService : ITutorService
         return await _context.ProgrammesOfStudy
             .AsNoTracking()
             .OrderBy(programme => programme.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<string>>
+        GetCampusesAsync(
+            CancellationToken cancellationToken = default)
+    {
+        return await _context.Tutors
+            .AsNoTracking()
+            .Where(tutor =>
+                tutor.Status == TutorStatus.Approved &&
+                tutor.IsActive &&
+                tutor.CampusOfStudy != string.Empty)
+            .Select(tutor => tutor.CampusOfStudy)
+            .Distinct()
+            .OrderBy(campus => campus)
             .ToListAsync(cancellationToken);
     }
 

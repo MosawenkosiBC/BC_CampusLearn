@@ -8,7 +8,8 @@
         !string.IsNullOrWhiteSpace(Model.SearchModule) ||
         Model.ProgrammeId.HasValue ||
         Model.ProgrammeModuleId.HasValue ||
-        Model.TutoringMode.HasValue;
+        Model.TutoringMode.HasValue ||
+        !string.IsNullOrWhiteSpace(Model.Campus);
 }
 
 @section Styles {
@@ -47,7 +48,7 @@
                 </button>
             </div>
 
-            <form method="get">
+            <form id="tutor-filter-form" method="get">
                 <div class="filter-group">
                     <label asp-for="SearchName">Search by name</label>
                     <div class="filter-search">
@@ -123,9 +124,14 @@
                     </svg>
                     <span>Filter</span>
                 </button>
-                <div class="campus-select" aria-label="Selected campus">
-                    Pretoria campus
-                </div>
+                <select asp-for="Campus"
+                        asp-items="Model.CampusOptions"
+                        class="campus-select"
+                        form="tutor-filter-form"
+                        aria-label="Filter tutors by campus"
+                        onchange="this.form.submit()">
+                    <option value="">All campuses</option>
+                </select>
             </div>
 
             @if (Model.Tutors.Count == 0)
@@ -142,13 +148,16 @@
                 <div class="tutor-grid">
                     @foreach (var tutor in Model.Tutors)
                     {
-                        string yearLabel = tutor.YearOfStudy switch
+                        string tutoringModeLabel =
+                            tutor.PreferredTutoringMode switch
                         {
-                            1 => "1st year",
-                            2 => "2nd year",
-                            3 => "3rd year",
-                            4 => "4th year",
-                            _ => "Tutor"
+                            PreferredTutoringMode.FaceToFace =>
+                                "Face-to-face",
+                            PreferredTutoringMode.Online =>
+                                "Online",
+                            PreferredTutoringMode.Both =>
+                                "Face-to-face & online",
+                            _ => "Tutoring mode unavailable"
                         };
 
                         <article class="tutor-card">
@@ -177,7 +186,7 @@
                                     <h2>@tutor.DisplayName</h2>
                                     <div class="tutor-academic-meta">
                                         <p class="tutor-programme">@tutor.ProgrammeName</p>
-                                        <p class="tutor-year">@yearLabel</p>
+                                        <p class="tutor-mode">@tutoringModeLabel</p>
                                     </div>
 
                                     <div class="module-tags" aria-label="Modules taught">

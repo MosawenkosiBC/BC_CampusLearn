@@ -8,6 +8,7 @@ public interface ITutorService
     Task<IReadOnlyList<TutorCardViewModel>>
         GetTutorsAsync(
             int? programmeModuleId,
+            string? preferredCampus,
             CancellationToken cancellationToken = default);
 
     Task<TutorDetailsViewModel?>
@@ -21,5 +22,9 @@ public interface ITutorService
 
     Task<IReadOnlyList<ProgrammeOfStudy>>
         GetProgrammesAsync(
+            CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<string>>
+        GetCampusesAsync(
             CancellationToken cancellationToken = default);
 }

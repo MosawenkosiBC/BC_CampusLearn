@@ -20,6 +20,8 @@ public class TutorCardViewModel
 
     public int YearOfStudy { get; set; }
 
+    public string CampusOfStudy { get; set; } = string.Empty;
+
     public PreferredTutoringMode PreferredTutoringMode { get; set; }
 
     public int UpcomingAvailabilityCount { get; set; }

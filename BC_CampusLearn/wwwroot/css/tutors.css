@@ -244,6 +244,8 @@
   color: #111;
   font-size: 1.05rem;
   font-weight: 500;
+  border: 1px solid #dfe2e7;
+  cursor: pointer;
 }
 
 .tutor-grid {
@@ -342,7 +344,7 @@
   line-height: 1.3;
 }
 
-.tutor-year {
+.tutor-mode {
   margin: 0;
   color: #999;
   font-size: 0.82rem;
@@ -416,7 +418,7 @@
 .campus-select,
 .tutor-card-body h2,
 .tutor-programme,
-.tutor-year,
+.tutor-mode,
 .module-tags span,
 .empty-tutors h2,
 .empty-tutors p,
@@ -719,7 +721,7 @@
   color: #30343a;
 }
 
-.tutor-year {
+.tutor-mode {
   color: #7d838c;
 }
 
