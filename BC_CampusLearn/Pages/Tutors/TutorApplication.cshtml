@@ -52,6 +52,14 @@
                 new CampusAlertViewModel(Model.SubmissionMessage))
         }
 
+        @if (!string.IsNullOrWhiteSpace(Model.StudentDetailsErrorMessage))
+        {
+            @await Html.PartialAsync("_CampusAlert",
+                new CampusAlertViewModel(
+                    Model.StudentDetailsErrorMessage,
+                    CampusAlertVariant.Warning))
+        }
+
         <div class="orientation-introduction">
             <h2>What is peer tutoring?</h2>
             <p>
@@ -260,7 +268,10 @@
             </div>
             <button type="button"
                     class="orientation-agree-button"
-                    data-application-agree>
+                    data-application-agree
+                    disabled="@(Model.ApplicationsOpen &&
+                        string.IsNullOrWhiteSpace(Model.ExistingApplicationMessage) &&
+                        !Model.StudentDetailsVerified)">
                 I Agree, Start Application
             </button>
         </footer>
@@ -451,23 +462,18 @@
 
                     <div class="tutor-application-field">
                         <label asp-for="Input.YearOfStudy" data-required></label>
-                        <select asp-for="Input.YearOfStudy" required>
-                            <option value="">Select year of study</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                        </select>
+                        <input asp-for="Input.YearOfStudy"
+                               type="number"
+                               readonly />
                         <span asp-validation-for="Input.YearOfStudy"></span>
                     </div>
 
                     <div class="tutor-application-field">
                         <label asp-for="Input.ProgrammeId" data-required></label>
-                        <select asp-for="Input.ProgrammeId"
-                                required
-                                asp-items="Model.ProgrammeOptions">
-                            <option value="">Select programme</option>
-                        </select>
+                        <input type="text"
+                               value="@Model.ProgrammeName"
+                               readonly />
+                        <input asp-for="Input.ProgrammeId" type="hidden" />
                         <span asp-validation-for="Input.ProgrammeId"></span>
                     </div>
                 </div>
@@ -580,12 +586,9 @@
 
                         <div class="tutor-application-field">
                             <label asp-for="ProfileInput.CampusOfStudy" data-required></label>
-                            <select asp-for="ProfileInput.CampusOfStudy" required>
-                                <option value="">Select campus</option>
-                                <option value="Pretoria Campus">Pretoria Campus</option>
-                                <option value="Kempton Park Campus">Kempton Park Campus</option>
-                                <option value="Stellenbosch Campus">Stellenbosch Campus</option>
-                            </select>
+                            <input asp-for="ProfileInput.CampusOfStudy"
+                                   type="text"
+                                   readonly />
                             <span asp-validation-for="ProfileInput.CampusOfStudy"></span>
                         </div>
 

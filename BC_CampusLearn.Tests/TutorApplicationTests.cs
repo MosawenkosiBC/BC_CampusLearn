@@ -3,6 +3,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Pages.Tutors;
+using BC_CampusLearn.Services.Students;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +16,58 @@ namespace BC_CampusLearn.Tests;
 
 public class TutorApplicationTests
 {
+    [Fact]
+    public async Task ApplicationUsesVerifiedStudentDetails()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        context.TutorApplicationSettings.Add(new TutorApplicationSettings
+        {
+            IsOpen = true,
+            ShortlistLimit = 2,
+            OpenDate = DateTime.UtcNow.Date.AddDays(-1),
+            CloseDate = DateTime.UtcNow.Date.AddDays(7),
+            UpdatedAt = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        var currentUser = new CurrentUser(
+            1,
+            "600001",
+            "Unverified Login Name",
+            "login@example.test");
+        var page = new TutorApplicationModel(
+            context,
+            new TestCurrentUserService(currentUser),
+            new TestWebHostEnvironment(Path.GetTempPath()),
+            new TestStudentDetailsService(new StudentDetails(
+                "600001",
+                "Lebo",
+                "Lee",
+                "Nkosi",
+                "600001@student.belgiumcampus.ac.za",
+                "Bachelor of Computing",
+                3,
+                "Pretoria Campus")));
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.True(page.StudentDetailsVerified);
+        Assert.Equal("Lee", page.FirstName);
+        Assert.Equal("Nkosi", page.LastName);
+        Assert.Equal("600001@student.belgiumcampus.ac.za", page.EmailAddress);
+        Assert.Equal(1, page.Input.ProgrammeId);
+        Assert.Equal(3, page.Input.YearOfStudy);
+        Assert.Equal("Pretoria Campus", page.ProfileInput.CampusOfStudy);
+    }
+
     [Fact]
     public async Task RejectedStudentCannotReapplyWhileCycleIsOpen()
     {
@@ -100,7 +153,16 @@ public class TutorApplicationTests
                     user.PersonnelNumber,
                     user.DisplayName,
                     user.Email)),
-                new TestWebHostEnvironment(contentRoot))
+                new TestWebHostEnvironment(contentRoot),
+                new TestStudentDetailsService(new StudentDetails(
+                    user.PersonnelNumber,
+                    "Returning",
+                    null,
+                    "Applicant",
+                    user.Email!,
+                    programme.Name,
+                    2,
+                    "Pretoria")))
             {
                 Input = new TutorApplicationStageOneInput
                 {
@@ -168,6 +230,15 @@ public class TutorApplicationTests
     {
         public bool IsAuthenticated => true;
         public CurrentUser GetRequiredUser() => user;
+    }
+
+    private sealed class TestStudentDetailsService(StudentDetails details)
+        : IStudentDetailsService
+    {
+        public Task<StudentDetailsResult> GetAsync(
+            string personnelNumber,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(StudentDetailsResult.Success(details));
     }
 
     private sealed class TestWebHostEnvironment(string contentRoot)

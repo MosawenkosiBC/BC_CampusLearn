@@ -23,7 +23,9 @@
                     status === "confirmed" &&
                     remainingMilliseconds <= 5 * 60 * 1000 &&
                     remainingMilliseconds > -15 * 60 * 1000;
-                trigger.disabled = !linkIsAvailable || !joinWindowIsOpen;
+                trigger.setAttribute(
+                    "aria-disabled",
+                    String(!linkIsAvailable || !joinWindowIsOpen));
             });
 
             if (remainingMilliseconds <= 0) {
@@ -50,24 +52,16 @@
             "[data-student-session-status-select]");
         const saveButton = statusControl.querySelector(
             "[data-student-session-status-save]");
-        const cancelForm = statusControl.querySelector(
-            "[data-student-session-cancel-form]");
-
         saveButton?.addEventListener("click", () => {
             if (statusSelect?.value !== "cancel") {
                 return;
             }
 
-            if (statusControl.dataset.cancellationReasonRequired === "true") {
-                const modalElement = document.getElementById(
-                    "student-cancel-session-modal");
-                if (modalElement && window.bootstrap) {
-                    bootstrap.Modal.getOrCreateInstance(modalElement).show();
-                }
-                return;
+            const modalElement = document.getElementById(
+                "student-cancel-session-modal");
+            if (modalElement && window.bootstrap) {
+                bootstrap.Modal.getOrCreateInstance(modalElement).show();
             }
-
-            cancelForm?.requestSubmit();
         });
     }
 
