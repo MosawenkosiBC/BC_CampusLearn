@@ -1,0 +1,183 @@
+using System.Security.Claims;
+using BC_CampusLearn.Data;
+using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Pages.Administrator.Modules;
+using BC_CampusLearn.Services.Tutors;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.EntityFrameworkCore;
+using Xunit;
+
+namespace BC_CampusLearn.Tests;
+
+public class AdminModulesTests
+{
+    [Fact]
+    public async Task CreateNormalizesCodeAndRejectsDuplicateWithinProgramme()
+    {
+        await using var db = await Seed();
+        var page = Setup(new IndexModel(db));
+        page.Input = new() { ProgrammeId = 1, ModuleCode = " new101 ", ModuleName = " New module ", YearOfStudy = 2 };
+        Assert.IsType<RedirectToPageResult>(await page.OnPostCreateAsync(default));
+        var module = await db.ProgrammeModules.SingleAsync(m => m.ModuleCode == "NEW101");
+        Assert.Equal("New module", module.ModuleName);
+        Assert.Equal(2, module.YearOfStudy);
+        var duplicate = Setup(new IndexModel(db));
+        duplicate.Input = new() { ProgrammeId = 1, ModuleCode = "new101", ModuleName = "Duplicate", YearOfStudy = 1 };
+        Assert.IsType<PageResult>(await duplicate.OnPostCreateAsync(default));
+        Assert.False(duplicate.ModelState.IsValid);
+        Assert.Equal(2, await db.ProgrammeModules.CountAsync());
+    }
+
+    [Fact]
+    public async Task ApproveAddsAssignmentNotifiesTutorAndCannotReviewTwice()
+    {
+        await using var db = await Seed();
+        var request = new TutorModuleChangeRequest { TutorId = 1, ProgrammeModuleId = 1, RequestType = TutorModuleChangeRequestType.Add, SubmittedAt = DateTime.UtcNow };
+        db.TutorModuleChangeRequests.Add(request); await db.SaveChangesAsync();
+        var page = Setup(new IndexModel(db));
+        Assert.IsType<RedirectToPageResult>(await page.OnPostReviewAsync(request.TutorModuleChangeRequestId, true, "Approved", default));
+        Assert.True((await db.TutorCourseModules.SingleAsync()).IsActive);
+        Assert.Equal(TutorAccountRequestStatus.Approved, request.Status);
+        Assert.Equal("Test Admin", request.ReviewedBy);
+        Assert.NotNull(request.ReviewedAt);
+        Assert.Single(db.UserNotifications);
+        Assert.IsType<PageResult>(await page.OnPostReviewAsync(request.TutorModuleChangeRequestId, false, "Second decision", default));
+        Assert.Equal(TutorAccountRequestStatus.Approved, request.Status);
+        Assert.Single(db.UserNotifications);
+    }
+
+    [Fact]
+    public async Task DeclineRequiresReasonAndLeavesAssignmentUnchanged()
+    {
+        await using var db = await Seed();
+        var request = new TutorModuleChangeRequest { TutorId = 1, ProgrammeModuleId = 1 };
+        db.TutorModuleChangeRequests.Add(request); await db.SaveChangesAsync();
+        var page = Setup(new IndexModel(db));
+        Assert.IsType<PageResult>(await page.OnPostReviewAsync(request.TutorModuleChangeRequestId, false, " ", default));
+        Assert.Equal(TutorAccountRequestStatus.Pending, request.Status);
+        Assert.IsType<RedirectToPageResult>(await page.OnPostReviewAsync(request.TutorModuleChangeRequestId, false, "Not qualified yet", default));
+        Assert.Empty(db.TutorCourseModules);
+        Assert.Equal(TutorAccountRequestStatus.Declined, request.Status);
+        Assert.Contains("Not qualified yet", (await db.UserNotifications.SingleAsync()).Message);
+    }
+
+    [Theory]
+    [InlineData(BookingStatus.Pending)]
+    [InlineData(BookingStatus.Confirmed)]
+    [InlineData(BookingStatus.InProgress)]
+    public async Task RemovalBlocksOutstandingSessions(BookingStatus status)
+    {
+        await using var db = await Seed();
+        db.TutorCourseModules.Add(new() { TutorId = 1, ProgrammeModuleId = 1 });
+        db.Bookings.Add(new() { TutorId = 1, ProgrammeModuleId = 1, Status = status });
+        await db.SaveChangesAsync();
+        var error = await new AdminModuleManagement(db).ChangeAssignmentAsync(1, 1, false, default);
+        Assert.Contains("outstanding", error);
+        Assert.True((await db.TutorCourseModules.SingleAsync()).IsActive);
+    }
+
+    [Fact]
+    public async Task RemovalPreservesHistoryAndReassignmentReusesExistingRow()
+    {
+        await using var db = await Seed();
+        db.TutorCourseModules.Add(new() { TutorId = 1, ProgrammeModuleId = 1 });
+        db.Bookings.Add(new() { TutorId = 1, ProgrammeModuleId = 1, Status = BookingStatus.Completed });
+        await db.SaveChangesAsync();
+        var management = new AdminModuleManagement(db);
+        Assert.Null(await management.ChangeAssignmentAsync(1, 1, false, default));
+        await db.SaveChangesAsync();
+        Assert.False((await db.TutorCourseModules.SingleAsync()).IsActive);
+        var booking = await db.Bookings.Include(b => b.TutorCourseModule).SingleAsync();
+        Assert.NotNull(booking.TutorCourseModule);
+        Assert.Null(await management.ChangeAssignmentAsync(1, 1, true, default));
+        await db.SaveChangesAsync();
+        Assert.True((await db.TutorCourseModules.SingleAsync()).IsActive);
+        Assert.Single(db.Bookings);
+    }
+
+    [Fact]
+    public async Task AssignmentRejectsDifferentProgrammeAndInactiveTutor()
+    {
+        await using var db = await Seed();
+        var tutor = await db.Tutors.SingleAsync();
+        tutor.ProgrammeId = 2;
+        var management = new AdminModuleManagement(db);
+        Assert.Contains("programme", await management.ChangeAssignmentAsync(1, 1, true, default));
+        tutor.ProgrammeId = 1; tutor.IsActive = false;
+        Assert.Contains("active", await management.ChangeAssignmentAsync(1, 1, true, default));
+        Assert.Empty(db.TutorCourseModules);
+    }
+
+    [Fact]
+    public async Task DirectAssignmentResolvesPendingRequestAndUpdatesCounts()
+    {
+        await using var db = await Seed();
+        var request = new TutorModuleChangeRequest { TutorId = 1, ProgrammeModuleId = 1 };
+        db.TutorModuleChangeRequests.Add(request); await db.SaveChangesAsync();
+        var page = Setup(new DetailsModel(db));
+        Assert.IsType<RedirectToPageResult>(await page.OnPostAssignmentAsync(1, 1, true, default));
+        Assert.Equal(TutorAccountRequestStatus.Approved, request.Status);
+        var catalogue = Setup(new IndexModel(db));
+        await catalogue.OnGetAsync(default);
+        Assert.Equal(1, Assert.Single(catalogue.Modules).TutorCount);
+        Assert.Equal(0, catalogue.PendingRequests);
+        Assert.Equal(0, catalogue.UncoveredModules);
+        Assert.IsType<RedirectToPageResult>(await page.OnPostAssignmentAsync(1, 1, false, default));
+        await catalogue.OnGetAsync(default);
+        Assert.Equal(0, Assert.Single(catalogue.Modules).TutorCount);
+        Assert.Equal(1, catalogue.UncoveredModules);
+    }
+
+    [Fact]
+    public async Task CatalogueFiltersByProgrammeYearAndCoverage()
+    {
+        await using var db = await Seed();
+        db.ProgrammesOfStudy.Add(new() { Id = 2, Name = "Another programme" });
+        db.ProgrammeModules.Add(new() { ProgrammeModuleId = 2, ProgrammeId = 2, ModuleCode = "TWO", ModuleName = "Other", YearOfStudy = 2 });
+        db.TutorCourseModules.Add(new() { TutorId = 1, ProgrammeModuleId = 1 });
+        await db.SaveChangesAsync();
+        var page = Setup(new IndexModel(db) { ProgrammeId = 2, Year = 2, Search = "TWO", Unassigned = true });
+        await page.OnGetAsync(default);
+        Assert.Equal(2, Assert.Single(page.Modules).Id);
+        page.ProgrammeId = 1;
+        await page.OnGetAsync(default);
+        Assert.Empty(page.Modules);
+    }
+
+    [Fact]
+    public async Task InactiveAssignmentsAreHiddenFromTutorDirectoryAndProfile()
+    {
+        await using var db = await Seed();
+        db.TutorCourseModules.Add(new() { TutorId = 1, ProgrammeModuleId = 1, IsActive = false });
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        var service = new TutorService(db);
+        Assert.Empty(await service.GetTutorsAsync(1));
+        Assert.Empty((await service.GetTutorDetailsAsync(1))!.Modules);
+    }
+
+    private static T Setup<T>(T page) where T : PageModel
+    {
+        var http = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, "Test Admin")], "Test")) };
+        page.PageContext = new PageContext { HttpContext = http };
+        page.TempData = new TempDataDictionary(http, new MemoryTempData());
+        return page;
+    }
+    private sealed class MemoryTempData : ITempDataProvider
+    {
+        public IDictionary<string, object> LoadTempData(HttpContext context) => new Dictionary<string, object>();
+        public void SaveTempData(HttpContext context, IDictionary<string, object> values) { }
+    }
+    private static async Task<ApplicationDbContext> Seed()
+    {
+        var db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+        db.ProgrammesOfStudy.Add(new() { Id = 1, Name = "Computing" });
+        db.ProgrammeModules.Add(new() { ProgrammeModuleId = 1, ProgrammeId = 1, ModuleCode = "PRG101", ModuleName = "Programming", YearOfStudy = 1 });
+        db.Tutors.Add(new() { TutorId = 1, ProgrammeId = 1, BcUser = new() { BcUserId = 1, PersonnelNumber = "T1", DisplayName = "Test Tutor" }, Status = TutorStatus.Approved, IsActive = true, ApplicationStage = TutorApplicationStage.Placement, ReasonForTutoring = "Reason", TeachingStyle = "Style", PreviousTutoringExperience = "None", CampusOfStudy = "Campus", DemonstrationVideoUrl = "" });
+        await db.SaveChangesAsync();
+        return db;
+    }
+}

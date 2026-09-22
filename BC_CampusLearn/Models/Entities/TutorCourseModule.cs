@@ -2,6 +2,7 @@ namespace BC_CampusLearn.Models.Entities;
 
 public class TutorCourseModule
 {
+    public bool IsActive { get; set; } = true;
     public int TutorId { get; set; }  //foreign key to the Tutor entity.
 
     public Tutor Tutor { get; set; } = null!;

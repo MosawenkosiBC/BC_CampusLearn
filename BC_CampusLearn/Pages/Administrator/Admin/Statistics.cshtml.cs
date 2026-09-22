@@ -82,7 +82,7 @@ public class StatisticsModel(ApplicationDbContext context, TimeProvider timeProv
                 Name = module.ModuleName
             })
             .ToListAsync(cancellationToken);
-        var tutorCounts = await context.TutorCourseModules.AsNoTracking()
+        var tutorCounts = await context.TutorCourseModules.AsNoTracking().Where(a => a.IsActive)
             .Where(assignment => assignment.Tutor.Status == TutorStatus.Approved &&
                 assignment.Tutor.IsActive)
             .GroupBy(assignment => assignment.ProgrammeModuleId)

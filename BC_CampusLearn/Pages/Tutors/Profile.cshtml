@@ -232,6 +232,17 @@
                             }
                         </div>
                     }
+                    @if (Model.ReviewedModuleRequests.Count > 0)
+                    {
+                        <details class="tutor-pending-module-requests">
+                            <summary>Recent module decisions</summary>
+                            @foreach (var request in Model.ReviewedModuleRequests)
+                            {
+                                <p><strong>@request.RequestType @request.ProgrammeModule.ModuleCode — @request.Status</strong><br />
+                                    @request.ReviewedAt?.ToLocalTime().ToString("dd MMM yyyy")<br />@request.ReviewNote</p>
+                            }
+                        </details>
+                    }
                 </div>
             </dl>
 
