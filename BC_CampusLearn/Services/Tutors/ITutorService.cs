@@ -8,7 +8,7 @@ public interface ITutorService
     Task<IReadOnlyList<TutorCardViewModel>>
         GetTutorsAsync(
             int? programmeModuleId,
-            string? preferredCampus,
+            string? preferredCampus = null,
             CancellationToken cancellationToken = default);
 
     Task<TutorDetailsViewModel?>

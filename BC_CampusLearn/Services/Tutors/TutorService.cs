@@ -17,6 +17,7 @@ public class TutorService : ITutorService
     public async Task<IReadOnlyList<TutorCardViewModel>>
         GetTutorsAsync(
             int? programmeModuleId,
+            string? preferredCampus = null,
             CancellationToken cancellationToken = default)
     {
         IQueryable<Tutor> query =
@@ -40,7 +41,12 @@ public class TutorService : ITutorService
             .Include(tutor => tutor.Programme)
             .Include(tutor => tutor.BcUser)
             .Include(tutor => tutor.TutorAvailabilities)
-            .OrderBy(tutor => tutor.TutorId)
+            .OrderBy(tutor =>
+                !string.IsNullOrWhiteSpace(preferredCampus) &&
+                tutor.CampusOfStudy == preferredCampus.Trim()
+                    ? 0
+                    : 1)
+            .ThenBy(tutor => tutor.TutorId)
             .ToListAsync(cancellationToken);
         return tutors
             .Select(tutor => new TutorCardViewModel
@@ -58,6 +64,7 @@ public class TutorService : ITutorService
                 ProgrammeId = tutor.ProgrammeId,
                 ProgrammeName = tutor.Programme?.Name ?? "Belgium Campus programme",
                 YearOfStudy = tutor.YearOfStudy,
+                CampusOfStudy = tutor.CampusOfStudy,
                 PreferredTutoringMode = tutor.PreferredTutoringMode,
                 UpcomingAvailabilityCount = tutor.TutorAvailabilities.Count(slot =>
                     slot.AvailableTime > DateTimeOffset.UtcNow),
@@ -169,6 +176,26 @@ public class TutorService : ITutorService
             .AsNoTracking()
             .OrderBy(programme => programme.Name)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<string>>
+        GetCampusesAsync(
+            CancellationToken cancellationToken = default)
+    {
+        List<string> campuses = await _context.Tutors
+            .AsNoTracking()
+            .Where(tutor =>
+                tutor.Status == TutorStatus.Approved &&
+                tutor.IsActive)
+            .Select(tutor => tutor.CampusOfStudy)
+            .ToListAsync(cancellationToken);
+
+        return campuses
+            .Select(campus => campus.Trim())
+            .Where(campus => !string.IsNullOrWhiteSpace(campus))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(campus => campus, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private static string? GetSafeExternalUrl(string? url)
