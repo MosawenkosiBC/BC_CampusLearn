@@ -50,7 +50,9 @@ public class CreateModel : PageModel
 
         if (preview is null)
         {
-            return NotFound();
+            return RedirectToPage(
+                "/Bookings/Unavailable",
+                new { reason = "unavailable" });
         }
 
         if (preview.TutorBcUserId ==
@@ -152,7 +154,8 @@ public class CreateModel : PageModel
 
             return await ReloadPageAsync(
                 Input.TutorAvailabilityId,
-                cancellationToken);
+                cancellationToken,
+                bookingAttemptFailed: true);
         }
 
         TempData["SuccessMessage"] =
@@ -177,7 +180,8 @@ public class CreateModel : PageModel
 
     private async Task<IActionResult> ReloadPageAsync(
         int slotId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool bookingAttemptFailed = false)
     {
         BookingPreviewViewModel? preview =
             await _bookingService.GetBookingPreviewAsync(
@@ -186,7 +190,14 @@ public class CreateModel : PageModel
 
         if (preview is null)
         {
-            return NotFound();
+            return RedirectToPage(
+                "/Bookings/Unavailable",
+                new
+                {
+                    reason = bookingAttemptFailed
+                        ? "booked"
+                        : "unavailable"
+                });
         }
 
         Preview = preview;

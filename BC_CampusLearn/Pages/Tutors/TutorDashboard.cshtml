@@ -898,7 +898,8 @@
      tabindex="-1" aria-labelledby="tutor-cancel-session-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form method="post" asp-page-handler="Cancel" data-tutor-cancel-form>
+            <form method="post" asp-page-handler="Cancel" novalidate
+                  data-tutor-cancel-form>
                 <input type="hidden" name="bookingId" data-tutor-cancel-booking-id />
                 <div class="modal-header">
                     <div>
@@ -914,8 +915,22 @@
                     <label for="dashboard-cancellation-reason">Reason</label>
                     <textarea id="dashboard-cancellation-reason"
                               name="cancellationReason"
-                              rows="4" minlength="5" maxlength="1000"
-                              required data-tutor-cancel-reason></textarea>
+                              rows="4"
+                              aria-describedby="dashboard-cancellation-reason-error"
+                              data-tutor-cancel-reason></textarea>
+                    <p id="dashboard-cancellation-reason-error"
+                       class="bookings-modal-validation-error"
+                       data-tutor-cancel-reason-error
+                       role="alert" hidden></p>
+                    <label class="bookings-cancel-reopen"
+                           for="dashboard-reopen-availability">
+                        <input id="dashboard-reopen-availability"
+                               type="checkbox"
+                               name="reopenAvailability"
+                               value="true"
+                               data-tutor-cancel-reopen />
+                        <span>Reopen this time as availability if it does not conflict</span>
+                    </label>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light"

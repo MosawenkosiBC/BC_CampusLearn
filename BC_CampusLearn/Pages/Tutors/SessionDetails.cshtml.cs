@@ -64,7 +64,7 @@ public class SessionDetailsModel : PageModel
     public string? DeclineReason { get; set; }
 
     [BindProperty]
-    public bool ReopenAvailability { get; set; }
+    public bool ReopenAvailability { get; set; } = true;
 
     [BindProperty]
     public TutorStudentEvaluationInput EvaluationInput { get; set; } = new();

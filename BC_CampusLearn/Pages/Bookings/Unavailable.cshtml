@@ -1,0 +1,61 @@
+@page
+@model BC_CampusLearn.Pages.Bookings.UnavailableModel
+
+@{
+    ViewData["Title"] = Model.WasBooked
+        ? "Session already booked"
+        : "Session unavailable";
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/bookings-create.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/components/navigation-drawer.css"
+          asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<main class="container booking-unavailable-page">
+    <section class="booking-unavailable-card" role="status">
+        <div class="booking-unavailable-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M8.5 12h7"></path>
+            </svg>
+        </div>
+
+        <p class="booking-unavailable-label">Booking update</p>
+
+        @if (Model.WasBooked)
+        {
+            <h1>This session has already been booked</h1>
+            <p>
+                Another student reserved this time before your booking could
+                be completed. No booking was created for you.
+            </p>
+        }
+        else
+        {
+            <h1>This session is no longer available</h1>
+            <p>
+                This time may have just been booked by another student or
+                withdrawn by the tutor. Please choose another available session.
+            </p>
+        }
+
+        <div class="booking-unavailable-actions">
+            <a asp-page="/Tutors/Index"
+               class="booking-unavailable-primary">
+                Choose another session
+            </a>
+            <a asp-page="/Bookings/Index"
+               class="booking-unavailable-secondary">
+                View my sessions
+            </a>
+        </div>
+    </section>
+</main>
