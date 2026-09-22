@@ -141,6 +141,19 @@
                      class="tutor-profile-validation"></div>
 
                 <div class="tutor-profile-field">
+                    <label for="tutor-public-email">Email address</label>
+                    <input id="tutor-public-email"
+                           type="email"
+                           value="@Model.EmailAddress"
+                           readonly
+                           aria-describedby="tutor-public-email-help" />
+                    <small id="tutor-public-email-help">
+                        This account email is shown on your public profile so
+                        students can contact you.
+                    </small>
+                </div>
+
+                <div class="tutor-profile-field">
                     <label asp-for="Input.Biography"></label>
                     <textarea asp-for="Input.Biography"
                               rows="7"

@@ -102,9 +102,27 @@
                         @if (!string.IsNullOrWhiteSpace(
                                  Model.Tutor.LinkedInUrl) ||
                              !string.IsNullOrWhiteSpace(
-                                 Model.Tutor.GitHubUrl))
+                                 Model.Tutor.GitHubUrl) ||
+                             !string.IsNullOrWhiteSpace(
+                                 Model.Tutor.Email))
                         {
                             <div class="tutor-social-links">
+                                @if (!string.IsNullOrWhiteSpace(
+                                         Model.Tutor.Email))
+                                {
+                                    <a href="mailto:@Model.Tutor.Email">
+                                        <svg viewBox="0 0 24 24"
+                                             aria-hidden="true">
+                                            <path fill="currentColor"
+                                                  d="M3 5h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2m9 7L3.5 7.25v9.5h17v-9.5z" />
+                                        </svg>
+                                        <span>
+                                            <strong>Email</strong>
+                                            @Model.Tutor.Email
+                                        </span>
+                                    </a>
+                                }
+
                                 @if (!string.IsNullOrWhiteSpace(
                                          Model.Tutor.LinkedInUrl))
                                 {

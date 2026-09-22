@@ -27,6 +27,8 @@ public class PublicProfileModel : PageModel
 
     public string StudentNumber { get; private set; } = string.Empty;
 
+    public string EmailAddress { get; private set; } = string.Empty;
+
     public string? ProfileImagePath { get; private set; }
 
     [BindProperty]
@@ -48,6 +50,7 @@ public class PublicProfileModel : PageModel
             {
                 item.BcUser.DisplayName,
                 item.BcUser.PersonnelNumber,
+                item.BcUser.Email,
                 item.ProfileImagePath,
                 item.Biography,
                 item.PreferredTutoringMode,
@@ -64,8 +67,10 @@ public class PublicProfileModel : PageModel
         SetIdentity(
             tutor.DisplayName,
             tutor.PersonnelNumber,
+            tutor.Email,
             tutor.ProfileImagePath,
-            currentUser.DisplayName);
+            currentUser.DisplayName,
+            currentUser.Email);
 
         Input = new TutorPublicProfileInput
         {
@@ -112,8 +117,10 @@ public class PublicProfileModel : PageModel
             SetIdentity(
                 tutor.BcUser.DisplayName,
                 tutor.BcUser.PersonnelNumber,
+                tutor.BcUser.Email,
                 tutor.ProfileImagePath,
-                currentUser.DisplayName);
+                currentUser.DisplayName,
+                currentUser.Email);
             return Page();
         }
 
@@ -155,8 +162,10 @@ public class PublicProfileModel : PageModel
     private void SetIdentity(
         string storedDisplayName,
         string personnelNumber,
+        string? storedEmail,
         string? profileImagePath,
-        string currentDisplayName)
+        string currentDisplayName,
+        string? currentEmail)
     {
         DisplayName = !string.IsNullOrWhiteSpace(storedDisplayName)
             ? storedDisplayName
@@ -164,6 +173,9 @@ public class PublicProfileModel : PageModel
                 ? currentDisplayName
                 : "Tutor";
         StudentNumber = personnelNumber;
+        EmailAddress = !string.IsNullOrWhiteSpace(storedEmail)
+            ? storedEmail.Trim()
+            : currentEmail?.Trim() ?? string.Empty;
         ProfileImagePath = profileImagePath;
 
         string[] nameParts = DisplayName.Split(

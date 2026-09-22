@@ -2,6 +2,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Mail;
 
 namespace BC_CampusLearn.Services.Tutors;
 
@@ -129,7 +130,7 @@ public class TutorService : ITutorService
             DisplayName = string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName)
                 ? tutor.BcUser.PersonnelNumber
                 : tutor.BcUser.DisplayName,
-            Email = tutor.BcUser.Email ?? string.Empty,
+            Email = GetSafeEmail(tutor.BcUser.Email),
             Biography = tutor.Biography ?? string.Empty,
             ProfileImagePath = tutor.ProfileImagePath,
             Initials = GetInitials(
@@ -219,6 +220,31 @@ public class TutorService : ITutorService
         }
 
         return uri.AbsoluteUri;
+    }
+
+    private static string GetSafeEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return string.Empty;
+        }
+
+        string normalizedEmail = email.Trim();
+
+        try
+        {
+            var address = new MailAddress(normalizedEmail);
+            return string.Equals(
+                address.Address,
+                normalizedEmail,
+                StringComparison.OrdinalIgnoreCase)
+                ? normalizedEmail
+                : string.Empty;
+        }
+        catch (FormatException)
+        {
+            return string.Empty;
+        }
     }
 
     private static string GetInitials(string displayName)
