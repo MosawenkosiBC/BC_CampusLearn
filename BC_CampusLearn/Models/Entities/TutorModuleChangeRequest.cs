@@ -17,6 +17,8 @@ public class TutorModuleChangeRequest
     public DateTime SubmittedAt { get; set; }
 
     public DateTime? ReviewedAt { get; set; }
+    public string? ReviewedBy { get; set; }
+    public string? ReviewNote { get; set; }
 
     public Tutor Tutor { get; set; } = null!;
 

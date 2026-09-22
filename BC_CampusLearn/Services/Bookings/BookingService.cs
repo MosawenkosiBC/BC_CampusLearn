@@ -65,7 +65,7 @@ public class BookingService : IBookingService
                         ? slot.Tutor.BcUser.PersonnelNumber
                         : slot.Tutor.BcUser.DisplayName,
 
-                    Modules = slot.Tutor.TutorCourseModules
+                    Modules = slot.Tutor.TutorCourseModules.Where(a => a.IsActive)
                         .OrderBy(assignment =>
                             assignment.ProgrammeModule.ModuleCode)
                         .Select(assignment =>
@@ -91,6 +91,12 @@ public class BookingService : IBookingService
         CreateBookingAsync(
             CreateBookingInput input,
             CancellationToken cancellationToken = default)
+        => await _context.Database.CreateExecutionStrategy().ExecuteAsync(
+            () => CreateBookingCoreAsync(input, cancellationToken));
+
+    private async Task<BookingCreationResult> CreateBookingCoreAsync(
+        CreateBookingInput input,
+        CancellationToken cancellationToken)
     {
         CurrentUser student =
             _currentUserService.GetRequiredUser();
@@ -103,6 +109,12 @@ public class BookingService : IBookingService
                 "Complete your pending session review before booking another session.",
                 pendingReviewRequired: true);
         }
+
+        // Hold assignment reads until the booking is saved so an administrator cannot
+        // remove the assignment between eligibility validation and booking creation.
+        await using var assignmentTransaction = _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
+            : null;
 
         TutorAvailability? slot =
             await _context.TutorAvailabilities
@@ -135,7 +147,7 @@ public class BookingService : IBookingService
         }
 
         bool tutorCanTeachModule =
-            slot.Tutor.TutorCourseModules.Any(assignment =>
+            slot.Tutor.TutorCourseModules.Any(assignment => assignment.IsActive &&
                 assignment.ProgrammeModuleId ==
                     input.ProgrammeModuleId);
 
@@ -308,6 +320,9 @@ public class BookingService : IBookingService
         {
             await _context.SaveChangesAsync(
                 cancellationToken);
+
+            if (assignmentTransaction is not null)
+                await assignmentTransaction.CommitAsync(cancellationToken);
 
             return BookingCreationResult.Success(
                 booking.BookingId);

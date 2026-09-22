@@ -10,6 +10,7 @@ public class TutorCourseModuleConfiguration
     public void Configure(
         EntityTypeBuilder<TutorCourseModule> builder)
     {
+        builder.Property(item => item.IsActive).HasDefaultValue(true).IsConcurrencyToken();
         builder.HasKey(item => new
         {
             item.TutorId,

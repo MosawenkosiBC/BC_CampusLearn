@@ -29,13 +29,13 @@ public class TutorService : ITutorService
         if (programmeModuleId.HasValue)
         {
             query = query.Where(tutor =>
-                tutor.TutorCourseModules.Any(item =>
+                tutor.TutorCourseModules.Any(item => item.IsActive &&
                     item.ProgrammeModuleId ==
                     programmeModuleId.Value));
         }
 
         List<Tutor> tutors = await query
-            .Include(tutor => tutor.TutorCourseModules)
+            .Include(tutor => tutor.TutorCourseModules.Where(a => a.IsActive))
                 .ThenInclude(item => item.ProgrammeModule)
             .Include(tutor => tutor.Programme)
             .Include(tutor => tutor.BcUser)
@@ -92,7 +92,7 @@ public class TutorService : ITutorService
                 item.TutorId == tutorId &&
                 item.Status == TutorStatus.Approved &&
                 item.IsActive)
-            .Include(item => item.TutorCourseModules)
+            .Include(item => item.TutorCourseModules.Where(a => a.IsActive))
                 .ThenInclude(item =>
                     item.ProgrammeModule)
             .Include(item => item.TutorAvailabilities)

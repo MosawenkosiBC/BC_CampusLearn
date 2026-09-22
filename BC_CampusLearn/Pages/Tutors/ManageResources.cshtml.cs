@@ -150,7 +150,7 @@ public class ManageResourcesModel : PageModel
             return Forbid();
         }
 
-        bool ownsModule = await _context.TutorCourseModules
+        bool ownsModule = await _context.TutorCourseModules.Where(a => a.IsActive)
             .AsNoTracking()
             .AnyAsync(item =>
                 item.TutorId == tutorId.Value &&
@@ -345,7 +345,7 @@ public class ManageResourcesModel : PageModel
     {
         TutorDisplayName = _currentUserService.GetRequiredUser().DisplayName;
 
-        ModuleOptions = await _context.TutorCourseModules
+        ModuleOptions = await _context.TutorCourseModules.Where(a => a.IsActive)
             .AsNoTracking()
             .Where(item => item.TutorId == tutorId)
             .OrderBy(item => item.ProgrammeModule.ModuleCode)

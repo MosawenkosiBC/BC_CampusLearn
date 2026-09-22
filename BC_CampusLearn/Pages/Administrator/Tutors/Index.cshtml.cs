@@ -37,7 +37,7 @@ public class IndexModel(ApplicationDbContext context) : PageModel
         if (!string.IsNullOrWhiteSpace(SearchModule))
         {
             string module = SearchModule.Trim();
-            query = query.Where(tutor => tutor.TutorCourseModules.Any(item =>
+            query = query.Where(tutor => tutor.TutorCourseModules.Where(a => a.IsActive).Any(item =>
                 item.ProgrammeModule.ModuleCode.Contains(module) ||
                 item.ProgrammeModule.ModuleName.Contains(module)));
         }

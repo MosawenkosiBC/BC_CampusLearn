@@ -1,0 +1,44 @@
+@page "{id:int}"
+@model BC_CampusLearn.Pages.Administrator.Modules.DetailsModel
+@{ ViewData["Title"] = Model.Module.ModuleCode; }
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-modules.css" asp-append-version="true" />
+}
+<section class="admin-dashboard modules-workspace">
+    <a asp-page="Index">← All modules</a>
+    <header class="admin-dashboard-header"><div><h1>@Model.Module.ModuleCode · @Model.Module.ModuleName</h1><p>@Model.Module.Programme.Name · Year @Model.Module.YearOfStudy</p></div></header>
+    @if (TempData["ModuleSuccess"] is string success) { <div class="module-success" role="status">@success</div> }
+    <div asp-validation-summary="All" class="module-errors" role="alert"></div>
+    <details class="module-panel"><summary>Edit module details</summary>
+        <form method="post" asp-page-handler="Save" class="module-form">
+            <input type="hidden" asp-for="Input.ProgrammeId" />
+            <div><label asp-for="Input.ModuleCode">Module code</label><input asp-for="Input.ModuleCode" required maxlength="10" /></div>
+            <div><label asp-for="Input.ModuleName">Module name</label><input asp-for="Input.ModuleName" required maxlength="150" /></div>
+            <div><label asp-for="Input.YearOfStudy">Year of study</label><select asp-for="Input.YearOfStudy">@for (var year = 1; year <= 4; year++) { <option value="@year">Year @year</option> }</select></div>
+            <button type="submit">Save changes</button>
+        </form>
+    </details>
+    <div class="module-panel">
+        <h2>Assign a tutor</h2><p class="module-muted">Choose an active, approved tutor from this programme.</p>
+        @if (Model.AvailableTutors.Count == 0) { <p>No additional eligible tutors are available in this programme.</p> }
+        else
+        {
+            <form method="post" asp-page-handler="Assignment" class="module-filters">
+                <input type="hidden" name="add" value="true" />
+                <div><label for="tutorId">Tutor</label><select id="tutorId" name="tutorId" required><option value="">Select a tutor</option>@foreach (var tutor in Model.AvailableTutors) { <option value="@tutor.TutorId">@tutor.BcUser.DisplayName (@tutor.BcUser.PersonnelNumber)</option> }</select></div><button type="submit">Assign tutor</button>
+            </form>
+        }
+    </div>
+    <h2>Assigned tutors <span class="module-badge">@Model.Module.TutorCourseModules.Count</span></h2>
+    <p class="module-muted">Removing a tutor stops new bookings for this module. Outstanding sessions must be resolved first; past sessions are retained.</p>
+    <div class="module-table-wrap" tabindex="0" role="region" aria-label="Assigned tutors">
+        <table class="module-table"><thead><tr><th scope="col">Tutor</th><th scope="col">Email</th><th scope="col">Account status</th><th scope="col">Action</th></tr></thead><tbody>
+        @foreach (var assignment in Model.Module.TutorCourseModules.OrderBy(a => a.Tutor.BcUser.DisplayName))
+        {
+            <tr><th scope="row"><a asp-page="/Administrator/Tutors/Profile" asp-route-id="@assignment.TutorId">@assignment.Tutor.BcUser.DisplayName</a></th><td>@assignment.Tutor.BcUser.Email</td><td>@(assignment.Tutor.IsActive ? assignment.Tutor.Status.ToString() : "Inactive")</td><td><details><summary>Remove tutor</summary><form method="post" asp-page-handler="Assignment"><input type="hidden" name="tutorId" value="@assignment.TutorId" /><input type="hidden" name="add" value="false" /><p>Remove this tutor from @Model.Module.ModuleCode?</p><button type="submit" class="secondary">Confirm removal</button></form></details></td></tr>
+        }
+        @if (Model.Module.TutorCourseModules.Count == 0) { <tr><td colspan="4" class="module-empty">No tutors assigned. Use the form above to add one.</td></tr> }
+        </tbody></table>
+    </div>
+</section>

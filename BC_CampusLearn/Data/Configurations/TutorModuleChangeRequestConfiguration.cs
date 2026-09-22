@@ -11,7 +11,9 @@ public class TutorModuleChangeRequestConfiguration : IEntityTypeConfiguration<Tu
         builder.HasKey(request => request.TutorModuleChangeRequestId);
         builder.Property(request => request.RequestType).HasConversion<int>().IsRequired();
         builder.Property(request => request.Status).HasConversion<int>()
-            .HasDefaultValue(TutorAccountRequestStatus.Pending);
+            .HasDefaultValue(TutorAccountRequestStatus.Pending).IsConcurrencyToken();
+        builder.Property(request => request.ReviewedBy).HasMaxLength(256);
+        builder.Property(request => request.ReviewNote).HasMaxLength(500);
         builder.Property(request => request.Reason).HasMaxLength(500);
         builder.Property(request => request.SubmittedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         builder.HasIndex(request => new { request.TutorId, request.ProgrammeModuleId, request.Status });

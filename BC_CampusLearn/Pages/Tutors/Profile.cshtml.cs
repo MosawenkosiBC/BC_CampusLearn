@@ -66,6 +66,8 @@ public class ProfileModel : PageModel
     public IReadOnlyList<TutorPendingModuleRequestViewModel> PendingModuleRequests { get; private set; }
         = Array.Empty<TutorPendingModuleRequestViewModel>();
 
+    public IReadOnlyList<TutorModuleChangeRequest> ReviewedModuleRequests { get; private set; } = [];
+
     public async Task<IActionResult> OnGetAsync(
         CancellationToken cancellationToken)
     {
@@ -109,9 +111,17 @@ public class ProfileModel : PageModel
     }
 
     public async Task<IActionResult> OnPostRequestModuleChangeAsync(CancellationToken cancellationToken)
+        => await _context.Database.CreateExecutionStrategy().ExecuteAsync(
+            () => RequestModuleChangeCoreAsync(cancellationToken));
+
+    private async Task<IActionResult> RequestModuleChangeCoreAsync(CancellationToken cancellationToken)
     {
         RemoveModelStateEntriesExcept(nameof(ModuleRequestInput));
         OpenModuleRequestModal = true;
+
+        await using var requestTransaction = _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
+            : null;
 
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
         var tutor = await _context.Tutors
@@ -137,7 +147,7 @@ public class ProfileModel : PageModel
             module => module.ProgrammeModuleId == moduleId && module.ProgrammeId == tutor.ProgrammeId,
             cancellationToken);
         bool currentlyAssigned = await _context.TutorCourseModules.AnyAsync(
-            assignment => assignment.TutorId == tutor.TutorId &&
+            assignment => assignment.IsActive && assignment.TutorId == tutor.TutorId &&
                 assignment.ProgrammeModuleId == moduleId,
             cancellationToken);
 
@@ -191,6 +201,8 @@ public class ProfileModel : PageModel
         await _context.SaveChangesAsync(cancellationToken);
 
         TempData["ModuleRequestSaved"] = true;
+        if (requestTransaction is not null)
+            await requestTransaction.CommitAsync(cancellationToken);
         return RedirectToPage();
     }
 
@@ -325,7 +337,7 @@ public class ProfileModel : PageModel
                 ProgramOfStudy = item.Programme.Name,
                 item.ProfileImagePath,
                 item.PhoneNumber,
-                Modules = item.TutorCourseModules
+                Modules = item.TutorCourseModules.Where(a => a.IsActive)
                     .OrderBy(module => module.ProgrammeModule.ModuleName)
                     .Select(module => new TutorModuleOptionViewModel
                     {
@@ -380,6 +392,11 @@ public class ProfileModel : PageModel
                 RequestType = request.RequestType
             })
             .ToListAsync(cancellationToken);
+
+        ReviewedModuleRequests = await _context.TutorModuleChangeRequests.AsNoTracking()
+            .Include(request => request.ProgrammeModule)
+            .Where(request => request.TutorId == tutor.TutorId && request.Status != TutorAccountRequestStatus.Pending)
+            .OrderByDescending(request => request.ReviewedAt).Take(10).ToListAsync(cancellationToken);
 
         string[] nameParts = DisplayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         FirstName = nameParts.FirstOrDefault() ?? DisplayName;
