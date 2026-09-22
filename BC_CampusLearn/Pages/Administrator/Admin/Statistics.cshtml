@@ -1,0 +1,209 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Admin.StatisticsModel
+@using BC_CampusLearn.Models.Entities
+@{
+    ViewData["Title"] = "Statistics";
+    string StatusLabel(BookingStatus status) => status == BookingStatus.InProgress
+        ? "In progress" : status.ToString();
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-statistics.css" asp-append-version="true" />
+}
+
+<section class="admin-dashboard admin-statistics" aria-labelledby="admin-statistics-title">
+    <header class="admin-statistics-header">
+        <div>
+            <h1 id="admin-statistics-title">Statistics</h1>
+        </div>
+        <form method="get" class="admin-statistics-period" aria-label="Statistics filters">
+            <div>
+                <label asp-for="Period">Session period</label>
+                <select asp-for="Period">
+                    <option value="30">Past 30 days</option>
+                    <option value="90">Past 90 days</option>
+                    <option value="365">Past 12 months</option>
+                    <option value="all">All time</option>
+                </select>
+            </div>
+            <button type="submit">Apply</button>
+        </form>
+    </header>
+
+    <div class="admin-statistics-kpis" aria-label="Key platform figures">
+        <article class="admin-statistics-kpi">
+            <span class="admin-statistics-kpi-icon is-plum" aria-hidden="true"><svg viewBox="0 0 24 24">
+                    <path d="M0 0h24v24H0z" fill="none" stroke="none" />
+                    <path d="M8.5 3.708A2.5 2.5 0 0 0 6 8m-2.625 8.5C2.615 16.5 2 15.859 2 15.068c0-1.61 1.667-3.219 4.5-3.528m9-7.832A2.5 2.5 0 0 1 18 8m2.625 8.5c.76 0 1.375-.642 1.375-1.433c0-1.609-1.666-3.218-4.5-3.527M12 11.5a3 3 0 1 0 0-6a3 3 0 0 0 0 6Zm0 3c-3.75 0-6 2.143-6 4.286c0 .947.672 1.714 1.5 1.714h9c.828 0 1.5-.767 1.5-1.714c0-2.143-2.25-4.286-6-4.286Z" />
+                </svg></span>
+            <div><h2>Active tutors</h2><strong>@Model.ActiveTutorCount</strong></div>
+        </article>
+        <article class="admin-statistics-kpi">
+            <span class="admin-statistics-kpi-icon is-blue" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M0 0h24v24H0z" fill="none" stroke="none" />
+                <path d="M9.542 4.652L6.983 5.924C3.661 7.576 2 8.402 2 9.75s1.661 2.174 4.983 3.826l2.559 1.272c1.209.601 1.814.902 2.458.902s1.249-.3 2.458-.902l2.559-1.272C20.339 11.924 22 11.098 22 9.75s-1.661-2.174-4.983-3.826l-2.559-1.272C13.25 4.051 12.644 3.75 12 3.75s-1.249.3-2.458.902ZM6 13.25v3.807c0 .092 0 .137.002.18c.029.706.42 1.347 1.03 1.689a22 22 0 0 0 .813.407a9.88 9.88 0 0 0 8.31 0c.16-.074.325-.157.656-.325c.08-.041.12-.061.158-.082c.61-.342 1-.983 1.03-1.69l.001-.179V13.25m4-3.5v6.5" />
+            </svg></span>
+            <div><h2>Modules covered</h2><strong>@Model.CoveredModuleCount <span>/ @Model.TotalModuleCount</span></strong></div>
+        </article>
+        <article class="admin-statistics-kpi">
+            <span class="admin-statistics-kpi-icon is-green" aria-hidden="true"><i class="bi bi-check-circle"></i></span>
+            <div><h2>Completed sessions</h2><strong>@Model.CompletedSessionCount</strong></div>
+        </article>
+        <article class="admin-statistics-kpi">
+            <span class="admin-statistics-kpi-icon is-orange" aria-hidden="true"><i class="bi bi-mortarboard"></i></span>
+            <div><h2>Total students</h2><strong>@Model.TotalStudentCount</strong></div>
+        </article>
+    </div>
+
+    <div class="admin-statistics-panels">
+        <section class="admin-statistics-panel" aria-labelledby="assignment-title">
+            <div class="admin-statistics-panel-heading">
+                <h2 id="assignment-title">Tutors assigned by module</h2>
+                @if (Model.AssignedModules.Count > 0)
+                {
+                    <button type="button" class="admin-statistics-see-all" data-bs-toggle="modal"
+                            data-bs-target="#all-assigned-modules-modal">See all</button>
+                }
+            </div>
+            @if (Model.AssignedModules.Count == 0)
+            {
+                <p class="admin-statistics-empty">No modules currently have an active tutor.</p>
+            }
+            else
+            {
+                <ul class="admin-statistics-assignments">
+                    @foreach (var module in Model.TopAssignedModules)
+                    {
+                        <li>
+                            <div>
+                                <strong>@module.Name</strong>
+                                <small>@module.Code</small>
+                            </div>
+                            <span>@module.ActiveTutors @(module.ActiveTutors == 1 ? "tutor" : "tutors")</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+        <section class="admin-statistics-panel" aria-labelledby="booked-modules-title">
+            <div class="admin-statistics-panel-heading">
+                <h2 id="booked-modules-title">Most booked modules</h2>
+                @if (Model.BookedModules.Count > 0)
+                {
+                    <button type="button" class="admin-statistics-see-all" data-bs-toggle="modal"
+                            data-bs-target="#all-booked-modules-modal">See all</button>
+                }
+            </div>
+            @if (Model.TopBookedModules.Count == 0)
+            {
+                <p class="admin-statistics-empty">No modules were booked in this period.</p>
+            }
+            else
+            {
+                <div class="admin-statistics-pie-layout">
+                    <div class="admin-statistics-pie" style="background: @Model.TopPieGradient"
+                         role="img" aria-label="Most booked modules pie chart"></div>
+                    <ul class="admin-statistics-pie-legend">
+                        @foreach (var module in Model.TopBookedModules)
+                        {
+                            <li><span class="admin-statistics-pie-key" style="background-color: @module.Color"></span>
+                                <span class="admin-statistics-pie-name">@module.Name</span>
+                                <strong>@module.Count</strong></li>
+                        }
+                    </ul>
+                </div>
+            }
+        </section>
+    </div>
+
+    <section class="admin-statistics-panel admin-statistics-outcomes-panel" aria-labelledby="outcomes-title">
+        <div class="admin-statistics-panel-heading">
+            <h2 id="outcomes-title">Session outcomes</h2>
+        </div>
+        @if (Model.TotalSessionCount == 0)
+        {
+            <p class="admin-statistics-empty">No sessions in this period.</p>
+        }
+        else
+        {
+            <div class="admin-statistics-outcomes">
+                @foreach (var status in Model.SessionStatuses)
+                {
+                    <div class="admin-statistics-outcome">
+                        <div><span>@StatusLabel(status.Status)</span><strong>@status.Count</strong></div>
+                        <div class="admin-statistics-outcome-track"><span style="width: @(status.Count * 100d / Model.TotalSessionCount)%"></span></div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="admin-statistics-panel admin-statistics-review-panel" aria-labelledby="review-progress-title">
+        <div class="admin-statistics-panel-heading">
+            <div><h2 id="review-progress-title">Review progress</h2><p>Completed sessions in @Model.PeriodLabel.ToLowerInvariant()</p></div>
+        </div>
+        <div class="admin-statistics-review-grid">
+            <div><strong>@Model.BothReviewsCompleteCount</strong><span>student and tutor reviews complete</span></div>
+            <div><strong>@Model.PendingStudentReviewCount</strong><span>awaiting student review</span></div>
+            <div><strong>@Model.PendingTutorReviewCount</strong><span>awaiting tutor review</span></div>
+            <div><strong>@Model.AdminReviewsRecordedCount</strong><span>administrator reviews recorded</span></div>
+            <div><strong>@(Model.AverageStudentRating?.ToString("0.0") ?? "—")<small>@(Model.AverageStudentRating.HasValue ? " / 5" : "")</small></strong><span>average student rating</span></div>
+        </div>
+    </section>
+
+</section>
+<div class="modal fade" id="all-assigned-modules-modal" tabindex="-1"
+     aria-labelledby="all-assigned-modules-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content admin-statistics-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="all-assigned-modules-title">All tutor assignments by module</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="admin-statistics-assignments">
+                    @foreach (var module in Model.AssignedModules)
+                    {
+                        <li>
+                            <div><strong>@module.Name</strong><small>@module.Code</small></div>
+                            <span>@module.ActiveTutors @(module.ActiveTutors == 1 ? "tutor" : "tutors")</span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="all-booked-modules-modal" tabindex="-1"
+     aria-labelledby="all-booked-modules-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+        <div class="modal-content admin-statistics-modal">
+            <div class="modal-header">
+                <div><h2 class="modal-title" id="all-booked-modules-title">All booked modules</h2>
+                    <p>@Model.PeriodLabel · @Model.TotalBookedSessions bookings across @Model.BookedModules.Count modules</p></div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if (Model.BookedModules.Count == 0)
+                {
+                    <p class="admin-statistics-empty">No modules were booked in this period.</p>
+                }
+                else
+                {
+                    <div class="admin-statistics-pie-layout admin-statistics-pie-layout--all">
+                        <div class="admin-statistics-pie" style="background: @Model.AllPieGradient"
+                             role="img" aria-label="All booked modules pie chart"></div>
+                        <ul class="admin-statistics-pie-legend">
+                            @foreach (var module in Model.BookedModules)
+                            {
+                                <li><span class="admin-statistics-pie-key" style="background-color: @module.Color"></span>
+                                    <span class="admin-statistics-pie-name">@module.Name <small>@module.Code</small></span>
+                                    <strong>@module.Count</strong></li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

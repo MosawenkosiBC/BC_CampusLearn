@@ -1,0 +1,71 @@
+.admin-statistics { color: #252b30; }
+.admin-statistics-header { align-items: end; display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: space-between; margin-bottom: 1rem; }
+.admin-statistics-header h1 { color: #121318; font-size: clamp(1.8rem, 3vw, 2.35rem); font-weight: 700; letter-spacing: -.03em; margin: 0; }
+.admin-statistics-period { align-items: end; display: flex; gap: .65rem; }
+.admin-statistics-period label { color: #49545d; display: block; font-size: .78rem; font-weight: 600; margin-bottom: .35rem; }
+.admin-statistics-period select { background: #fff; border: 1px solid #d9dfe3; border-radius: .55rem; color: #252b30; min-height: 2.55rem; padding: .45rem .75rem; }
+.admin-statistics-period button { background: #363c3d; border: 0; border-radius: .55rem; color: #fff; font-weight: 600; min-height: 2.55rem; padding: .45rem 1.15rem; }
+.admin-statistics-period button:hover { background: #242a2b; }
+.admin-statistics-period :is(select, button):focus-visible { outline: 3px solid rgba(79,135,165,.35); outline-offset: 2px; }
+.admin-statistics-kpis { display: grid; gap: 1rem; grid-template-columns: repeat(4, minmax(0,1fr)); }
+.admin-statistics-kpi, .admin-statistics-panel { background: #fff; border: 1px solid #e8ecef; border-radius: .8rem; box-shadow: 0 .4rem 1.25rem rgba(25,30,38,.055); }
+.admin-statistics-kpi { align-items: flex-start; display: flex; gap: .9rem; min-width: 0; padding: 1.2rem; }
+.admin-statistics-kpi-icon { align-items: center; display: flex; flex: 0 0 2.75rem; font-size: 1.25rem; height: 2.75rem; justify-content: center; }
+.admin-statistics-kpi-icon svg { fill: none; height: 1.5rem; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; width: 1.5rem; }
+.admin-statistics-kpi-icon.is-plum { color: #ad3e73; }
+.admin-statistics-kpi-icon.is-blue { color: #4f87a5; }
+.admin-statistics-kpi-icon.is-green { color: #347550; }
+.admin-statistics-kpi-icon.is-orange { color: #b76b2d; }
+.admin-statistics-kpi h2 { color: #5c6670; font-size: .82rem; font-weight: 600; margin: 0 0 .55rem; }
+.admin-statistics-kpi strong { color: #171d22; display: block; font-size: clamp(1.6rem, 2vw, 2rem); line-height: 1; }
+.admin-statistics-kpi strong span { color: #879098; font-size: 1.05rem; font-weight: 500; }
+.admin-statistics-panels { display: grid; gap: 1.5rem; grid-template-columns: minmax(0,1.25fr) minmax(0,1fr); margin: 1.5rem 0; }
+.admin-statistics-panel { min-width: 0; padding: 1.35rem; }
+.admin-statistics-panel-heading { align-items: start; display: flex; flex-wrap: wrap; gap: .65rem; justify-content: space-between; margin-bottom: 1.3rem; }
+.admin-statistics-panel-heading h2 { color: #22282e; font-size: 1.1rem; font-weight: 650; margin: 0; }
+.admin-statistics-panel-heading p { color: #69727b; font-size: .8rem; margin: .35rem 0 0; }
+.admin-statistics-assignments { list-style: none; margin: 0; max-height: 22rem; overflow-y: auto; padding: 0; }
+.admin-statistics-assignments li { align-items: center; border-bottom: 1px solid #edf0f2; display: flex; gap: 1rem; justify-content: space-between; padding: .75rem .1rem; }
+.admin-statistics-assignments li:first-child { padding-top: 0; }
+.admin-statistics-assignments li:last-child { border-bottom: 0; padding-bottom: 0; }
+.admin-statistics-assignments li > div { min-width: 0; }
+.admin-statistics-assignments strong { color: #303941; display: block; font-size: .9rem; font-weight: 600; overflow-wrap: anywhere; }
+.admin-statistics-assignments small { color: #748089; display: block; font-size: .72rem; margin-top: .1rem; }
+.admin-statistics-assignments li > span { background: #f1f4f6; border-radius: 999px; color: #394650; flex: 0 0 auto; font-size: .79rem; font-weight: 600; padding: .35rem .7rem; white-space: nowrap; }
+.admin-statistics-see-all { background: transparent; border: 0; color: #a43b70; font-size: .82rem; font-weight: 650; padding: .1rem; text-decoration: underline; text-underline-offset: .2rem; }
+.admin-statistics-see-all:hover { color: #76294f; }
+.admin-statistics-see-all:focus-visible { border-radius: .2rem; outline: 3px solid rgba(164,59,112,.3); outline-offset: 3px; }
+.admin-statistics-pie-layout { align-items: center; display: grid; gap: 1.25rem; grid-template-columns: minmax(9rem,.8fr) minmax(0,1fr); }
+.admin-statistics-pie { aspect-ratio: 1; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.04); margin: auto; max-width: 15rem; width: 100%; }
+.admin-statistics-pie-legend { list-style: none; margin: 0; min-width: 0; padding: 0; }
+.admin-statistics-pie-legend li { align-items: center; display: grid; gap: .5rem; grid-template-columns: .7rem minmax(0,1fr) auto; padding: .4rem 0; }
+.admin-statistics-pie-key { border-radius: 2px; height: .7rem; width: .7rem; }
+.admin-statistics-pie-name { color: #4d5962; font-size: .79rem; overflow-wrap: anywhere; }
+.admin-statistics-pie-name small { color: #879199; display: block; font-size: .69rem; margin-top: .05rem; }
+.admin-statistics-pie-legend strong { color: #29343c; font-size: .8rem; font-weight: 650; }
+.admin-statistics-modal .modal-header { align-items: flex-start; }
+.admin-statistics-modal .modal-title { color: #22282e; font-size: 1.2rem; font-weight: 650; }
+.admin-statistics-modal .modal-header p { color: #69727b; font-size: .82rem; margin: .25rem 0 0; }
+.admin-statistics-modal .modal-body { padding: 1.5rem; }
+.admin-statistics-modal .admin-statistics-assignments { max-height: none; overflow: visible; }
+.admin-statistics-pie-layout--all { align-items: start; grid-template-columns: minmax(12rem,.8fr) minmax(0,1.2fr); }
+.admin-statistics-pie-layout--all .admin-statistics-pie { max-width: 20rem; position: sticky; top: 0; }
+.admin-statistics-pie-layout--all .admin-statistics-pie-legend { columns: 2; column-gap: 1rem; }
+.admin-statistics-pie-layout--all .admin-statistics-pie-legend li { break-inside: avoid; }
+.admin-statistics-outcomes-panel { margin-bottom: 1.5rem; }
+.admin-statistics-outcomes { display: grid; gap: 1rem 1.5rem; grid-template-columns: repeat(3,minmax(0,1fr)); }
+.admin-statistics-outcome > div:first-child { display: flex; font-size: .79rem; justify-content: space-between; margin-bottom: .26rem; }
+.admin-statistics-outcome > div:first-child strong { font-weight: 600; }
+.admin-statistics-outcome-track { background: #edf1f3; border-radius: 999px; height: .38rem; overflow: hidden; }
+.admin-statistics-outcome-track span { background: #6c8eaa; border-radius: inherit; display: block; height: 100%; }
+.admin-statistics-empty { color: #69727b; font-size: .88rem; margin: 2rem 0; text-align: center; }
+.admin-statistics-review-panel { margin-bottom: 1.5rem; }
+.admin-statistics-review-grid { display: grid; gap: 1rem; grid-template-columns: repeat(5, minmax(0,1fr)); }
+.admin-statistics-review-grid > div { border-left: 2px solid #e9d8e1; min-width: 0; padding-left: .85rem; }
+.admin-statistics-review-grid strong { color: #252b30; display: block; font-size: 1.5rem; line-height: 1.1; }
+.admin-statistics-review-grid strong small { color: #69727b; font-size: .85rem; font-weight: 500; }
+.admin-statistics-review-grid span { color: #66727a; display: block; font-size: .76rem; line-height: 1.35; margin-top: .35rem; }
+@media (max-width: 1199.98px) { .admin-statistics-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); } .admin-statistics-review-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width: 991.98px) { .admin-statistics-panels { grid-template-columns: 1fr; } .admin-statistics-outcomes { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 767.98px) { .admin-statistics-pie-layout--all { grid-template-columns: 1fr; } .admin-statistics-pie-layout--all .admin-statistics-pie { position: static; } .admin-statistics-pie-layout--all .admin-statistics-pie-legend { columns: 1; } }
+@media (max-width: 575.98px) { .admin-statistics-header { align-items: stretch; } .admin-statistics-period { width: 100%; } .admin-statistics-period > div { flex: 1; } .admin-statistics-period select { width: 100%; } .admin-statistics-kpis, .admin-statistics-review-grid, .admin-statistics-outcomes, .admin-statistics-pie-layout { grid-template-columns: 1fr; } .admin-statistics-panel { padding: 1rem; } }
