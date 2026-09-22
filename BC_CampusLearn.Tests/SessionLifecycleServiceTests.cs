@@ -186,6 +186,38 @@ public class SessionLifecycleServiceTests
     }
 
     [Fact]
+    public async Task Decline_ConfirmedFutureBooking_ReopensAvailabilityWhenRequested()
+    {
+        DateTimeOffset now = new(2026, 8, 31, 10, 0, 0, TimeSpan.Zero);
+        await using ApplicationDbContext context = CreateContext();
+        Booking booking = CreateBooking(now.AddHours(2));
+        booking.Status = BookingStatus.Confirmed;
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var service = new SessionLifecycleService(
+            context,
+            new TestTimeProvider(now));
+
+        SessionLifecycleResult result = await service.DeclineAsync(
+            booking.TutorId,
+            8,
+            booking.BookingId,
+            "Tutor is no longer available.",
+            reopenAvailability: true);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(BookingStatus.Cancelled, booking.Status);
+        BookingStatusHistory history = Assert.Single(booking.StatusHistory);
+        Assert.True(history.AvailabilityReopened);
+        TutorAvailability availability = Assert.Single(
+            context.TutorAvailabilities);
+        Assert.Equal(booking.TutorId, availability.TutorId);
+        Assert.Equal(
+            booking.ScheduledStartTime,
+            availability.AvailableTime);
+    }
+
+    [Fact]
     public async Task StudentCancel_PendingBooking_CancelsWithoutAReason()
     {
         DateTimeOffset now = new(2026, 8, 31, 10, 0, 0, TimeSpan.Zero);
@@ -208,8 +240,38 @@ public class SessionLifecycleServiceTests
         Assert.Equal(
             SessionLifecycleService.StudentCancelledReasonCode,
             history.ReasonCode);
+        Assert.True(history.AvailabilityReopened);
         Assert.Null(history.Reason);
         Assert.Null(booking.CancellationReason);
+        TutorAvailability availability = Assert.Single(
+            context.TutorAvailabilities);
+        Assert.Equal(booking.TutorId, availability.TutorId);
+        Assert.Equal(
+            booking.ScheduledStartTime,
+            availability.AvailableTime);
+    }
+
+    [Fact]
+    public async Task StudentCancel_PendingPastBooking_DoesNotReopenAvailability()
+    {
+        DateTimeOffset now = new(2026, 8, 31, 10, 0, 0, TimeSpan.Zero);
+        await using ApplicationDbContext context = CreateContext();
+        Booking booking = CreateBooking(now.AddMinutes(-1));
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var service = new SessionLifecycleService(
+            context,
+            new TestTimeProvider(now));
+
+        SessionLifecycleResult result = await service.CancelByStudentAsync(
+            booking.StudentBcUserId!.Value,
+            booking.BookingId,
+            reason: null);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(BookingStatus.Cancelled, booking.Status);
+        Assert.False(Assert.Single(booking.StatusHistory).AvailabilityReopened);
+        Assert.Empty(context.TutorAvailabilities);
     }
 
     [Fact]
@@ -242,6 +304,13 @@ public class SessionLifecycleServiceTests
         Assert.Equal(
             "I can no longer attend the session.",
             booking.CancellationReason);
+        Assert.True(history.AvailabilityReopened);
+        TutorAvailability availability = Assert.Single(
+            context.TutorAvailabilities);
+        Assert.Equal(booking.TutorId, availability.TutorId);
+        Assert.Equal(
+            booking.ScheduledStartTime,
+            availability.AvailableTime);
     }
 
     [Fact]

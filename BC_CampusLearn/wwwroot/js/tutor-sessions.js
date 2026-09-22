@@ -38,8 +38,58 @@
         "[data-tutor-cancel-booking-id]");
     const cancellationReasonInput = cancelForm?.querySelector(
         "[data-tutor-cancel-reason]");
+    const cancellationReasonError = cancelForm?.querySelector(
+        "[data-tutor-cancel-reason-error]");
+    const reopenAvailabilityInput = cancelForm?.querySelector(
+        "[data-tutor-cancel-reopen]");
     const cancelDescription = cancelModalElement?.querySelector(
         "[data-tutor-cancel-description]");
+
+    const setCancellationReasonError = (message) => {
+        if (!cancellationReasonInput || !cancellationReasonError) {
+            return;
+        }
+
+        const hasError = Boolean(message);
+        cancellationReasonInput.setAttribute(
+            "aria-invalid",
+            hasError.toString());
+        cancellationReasonError.textContent = message || "";
+        cancellationReasonError.hidden = !hasError;
+    };
+
+    const validateCancellationReason = () => {
+        if (!cancellationReasonInput) {
+            return false;
+        }
+
+        const reasonLength = cancellationReasonInput.value.trim().length;
+        let message = "";
+
+        if (reasonLength < 5) {
+            message = "A reason is required to cancel a confirmed session.";
+        } else if (reasonLength > 1000) {
+            message = "Please enter no more than 1000 characters.";
+        }
+
+        setCancellationReasonError(message);
+        return !message;
+    };
+
+    cancelForm?.addEventListener("submit", (event) => {
+        if (validateCancellationReason()) {
+            return;
+        }
+
+        event.preventDefault();
+        cancellationReasonInput?.focus();
+    });
+
+    cancellationReasonInput?.addEventListener("input", () => {
+        if (cancellationReasonInput.getAttribute("aria-invalid") === "true") {
+            validateCancellationReason();
+        }
+    });
 
     document.querySelectorAll("[data-tutor-cancel-session]")
         .forEach((button) => button.addEventListener("click", () => {
@@ -50,6 +100,10 @@
 
             cancelBookingIdInput.value = button.dataset.bookingId || "";
             cancellationReasonInput.value = "";
+            if (reopenAvailabilityInput) {
+                reopenAvailabilityInput.checked = true;
+            }
+            setCancellationReasonError("");
             const studentName = button.dataset.studentName || "the student";
             if (cancelDescription) {
                 cancelDescription.textContent =

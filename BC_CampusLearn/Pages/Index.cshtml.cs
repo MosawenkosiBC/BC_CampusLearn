@@ -20,6 +20,7 @@ public class IndexModel : PageModel
     {
         FeaturedTutors = (await _tutorService.GetTutorsAsync(
                 programmeModuleId: null,
+                preferredCampus: null,
                 cancellationToken))
             .Take(4)
             .ToList();

@@ -3,6 +3,134 @@
     position: relative;
 }
 
+.booking-unavailable-page {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: calc(100vh - 12rem);
+    padding-bottom: 4rem;
+    padding-top: 4rem;
+}
+
+.booking-unavailable-card {
+    background-color: #fff;
+    border-radius: 0.65rem;
+    box-shadow: var(--campus-card-shadow);
+    max-width: 640px;
+    padding: clamp(2rem, 5vw, 3.5rem);
+    text-align: center;
+    width: 100%;
+}
+
+.booking-unavailable-icon {
+    align-items: center;
+    background-color: #f9e6ef;
+    border-radius: 50%;
+    color: #ad0151;
+    display: inline-flex;
+    height: 4rem;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+    width: 4rem;
+}
+
+.booking-unavailable-icon svg {
+    height: 2rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-width: 1.8;
+    width: 2rem;
+}
+
+.booking-unavailable-label {
+    color: #ad0151;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin: 0 0 0.55rem;
+    text-transform: uppercase;
+}
+
+.booking-unavailable-card h1 {
+    color: #20242a;
+    font-size: clamp(1.65rem, 4vw, 2.2rem);
+    margin: 0;
+}
+
+.booking-unavailable-card > p:not(.booking-unavailable-label) {
+    color: #626971;
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 1rem auto 0;
+    max-width: 510px;
+}
+
+.booking-unavailable-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.booking-unavailable-actions a {
+    align-items: center;
+    border-radius: 0.35rem;
+    display: inline-flex;
+    font-size: 16px;
+    font-weight: 650;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0.7rem 1.15rem;
+    text-decoration: none;
+}
+
+.booking-unavailable-primary {
+    background-color: #ad0151;
+    border: 1px solid #ad0151;
+    color: #fff;
+}
+
+.booking-unavailable-primary:hover,
+.booking-unavailable-primary:focus-visible {
+    background-color: #8f0042;
+    border-color: #8f0042;
+    color: #fff;
+}
+
+.booking-unavailable-secondary {
+    background-color: #fff;
+    border: 1px solid #cbd1d8;
+    color: #303740;
+}
+
+.booking-unavailable-secondary:hover,
+.booking-unavailable-secondary:focus-visible {
+    background-color: #f5f6f7;
+    color: #303740;
+}
+
+@media (max-width: 575.98px) {
+    .booking-unavailable-page {
+        align-items: flex-start;
+        min-height: 0;
+        padding-bottom: 2rem;
+        padding-top: 2rem;
+    }
+
+    .booking-unavailable-card {
+        padding: 2rem 1.15rem;
+    }
+
+    .booking-unavailable-actions {
+        flex-direction: column;
+    }
+
+    .booking-unavailable-actions a {
+        width: 100%;
+    }
+}
+
 .booking-create-content-background::before {
     background-color: #fff;
     background-image: url("/Media/common/backgroundNew.png");

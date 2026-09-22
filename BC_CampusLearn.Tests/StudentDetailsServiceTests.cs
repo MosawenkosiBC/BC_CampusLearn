@@ -24,7 +24,7 @@ public class StudentDetailsServiceTests
                 Content = new StringContent(
                     """
                     {
-                      "StudentNumber": "600001",
+                      "StudentNumber": 600001,
                       "FirstName": "Lebo",
                       "PreferredName": "Lee",
                       "Surname": "Nkosi",
@@ -115,6 +115,52 @@ public class StudentDetailsServiceTests
         Assert.Equal(StudentDetailsStatus.InvalidResponse, result.Status);
         Assert.Null(result.Details);
     }
+
+    [Fact]
+    public async Task AcceptsSingleItemN8nArrayResponse()
+    {
+        var handler = new CallbackHandler(_ => Task.FromResult(
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """
+                    [{
+                      "StudentNumber": 600001,
+                      "FirstName": "Lebo",
+                      "PreferredName": "",
+                      "Surname": "Nkosi",
+                      "Email": "600001@student.belgiumcampus.ac.za",
+                      "Programme": "Bachelor of Computing",
+                      "YearOfStudy": "2",
+                      "Campus": "Pretoria Campus"
+                    }]
+                    """,
+                    Encoding.UTF8,
+                    "application/json")
+            }));
+        var service = CreateService(handler);
+
+        StudentDetailsResult result = await service.GetAsync("600001");
+
+        Assert.Equal(StudentDetailsStatus.Success, result.Status);
+        Assert.Equal(2, result.Details!.YearOfStudy);
+    }
+
+    private static StudentDetailsService CreateService(
+        HttpMessageHandler handler) => new(
+            new HttpClient(handler)
+            {
+                BaseAddress = new Uri("https://student-api.example/")
+            },
+            Options.Create(new StudentDetailsApiOptions
+            {
+                Enabled = true,
+                BaseUrl = "https://student-api.example/",
+                Username = "user",
+                Password = "password",
+                Token = "token"
+            }),
+            NullLogger<StudentDetailsService>.Instance);
 
     private sealed class CallbackHandler(
         Func<HttpRequestMessage, Task<HttpResponseMessage>> callback)

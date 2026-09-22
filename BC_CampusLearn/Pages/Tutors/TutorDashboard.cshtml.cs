@@ -281,6 +281,7 @@ public class TutorDashboardModel : PageModel
     public async Task<IActionResult> OnPostCancelAsync(
         int bookingId,
         string? cancellationReason,
+        bool reopenAvailability,
         CancellationToken cancellationToken)
     {
         CurrentUser currentUser =
@@ -299,7 +300,7 @@ public class TutorDashboardModel : PageModel
                 currentUser.BcUserId,
                 bookingId,
                 cancellationReason,
-                reopenAvailability: false,
+                reopenAvailability,
                 cancellationToken);
 
         if (result.Succeeded)

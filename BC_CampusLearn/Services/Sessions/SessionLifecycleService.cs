@@ -255,14 +255,30 @@ public class SessionLifecycleService : ISessionLifecycleService
                 "Provide a cancellation reason between 5 and 1000 characters.");
         }
 
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+        bool availabilityReopened = booking.ScheduledStartTime > now &&
+            !await HasScheduleConflictAsync(
+                booking,
+                cancellationToken);
         bool reasonIsRequired = booking.Status == BookingStatus.Confirmed;
         ChangeStatus(
             booking,
             BookingStatus.Cancelled,
-            _timeProvider.GetUtcNow(),
+            now,
             StudentCancelledReasonCode,
             reasonIsRequired ? actionReason : null,
-            studentBcUserId);
+            studentBcUserId,
+            availabilityReopened);
+
+        if (availabilityReopened)
+        {
+            _context.TutorAvailabilities.Add(new TutorAvailability
+            {
+                TutorId = booking.TutorId,
+                AvailableTime = booking.ScheduledStartTime
+            });
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
         return SessionLifecycleResult.Success();
     }
@@ -370,7 +386,8 @@ public class SessionLifecycleService : ISessionLifecycleService
         DateTimeOffset changedAt,
         string? reasonCode = null,
         string? reason = null,
-        int? changedByBcUserId = null)
+        int? changedByBcUserId = null,
+        bool availabilityReopened = false)
     {
         BookingStatus previousStatus = booking.Status;
         booking.Status = newStatus;
@@ -388,7 +405,8 @@ public class SessionLifecycleService : ISessionLifecycleService
             Reason = reason,
             ChangedByBcUserId = changedByBcUserId,
             ChangedBySystem = !changedByBcUserId.HasValue,
-            ChangedAt = changedAt
+            ChangedAt = changedAt,
+            AvailabilityReopened = availabilityReopened
         });
     }
 

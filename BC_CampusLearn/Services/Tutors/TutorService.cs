@@ -2,6 +2,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Mail;
 
 namespace BC_CampusLearn.Services.Tutors;
 
@@ -17,6 +18,7 @@ public class TutorService : ITutorService
     public async Task<IReadOnlyList<TutorCardViewModel>>
         GetTutorsAsync(
             int? programmeModuleId,
+            string? preferredCampus,
             CancellationToken cancellationToken = default)
     {
         IQueryable<Tutor> query =
@@ -34,14 +36,30 @@ public class TutorService : ITutorService
                     programmeModuleId.Value));
         }
 
-        List<Tutor> tutors = await query
+        query = query
             .Include(tutor => tutor.TutorCourseModules)
                 .ThenInclude(item => item.ProgrammeModule)
             .Include(tutor => tutor.Programme)
             .Include(tutor => tutor.BcUser)
-            .Include(tutor => tutor.TutorAvailabilities)
-            .OrderBy(tutor => tutor.TutorId)
-            .ToListAsync(cancellationToken);
+            .Include(tutor => tutor.TutorAvailabilities);
+
+        List<Tutor> tutors;
+        if (string.IsNullOrWhiteSpace(preferredCampus))
+        {
+            tutors = await query
+                .OrderBy(tutor => tutor.TutorId)
+                .ToListAsync(cancellationToken);
+        }
+        else
+        {
+            string normalizedCampus = preferredCampus.Trim();
+            tutors = await query
+                .OrderByDescending(tutor =>
+                    tutor.CampusOfStudy == normalizedCampus)
+                .ThenBy(tutor => tutor.TutorId)
+                .ToListAsync(cancellationToken);
+        }
+
         return tutors
             .Select(tutor => new TutorCardViewModel
             {
@@ -58,6 +76,7 @@ public class TutorService : ITutorService
                 ProgrammeId = tutor.ProgrammeId,
                 ProgrammeName = tutor.Programme?.Name ?? "Belgium Campus programme",
                 YearOfStudy = tutor.YearOfStudy,
+                CampusOfStudy = tutor.CampusOfStudy,
                 PreferredTutoringMode = tutor.PreferredTutoringMode,
                 UpcomingAvailabilityCount = tutor.TutorAvailabilities.Count(slot =>
                     slot.AvailableTime > DateTimeOffset.UtcNow),
@@ -111,7 +130,7 @@ public class TutorService : ITutorService
             DisplayName = string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName)
                 ? tutor.BcUser.PersonnelNumber
                 : tutor.BcUser.DisplayName,
-            Email = tutor.BcUser.Email ?? string.Empty,
+            Email = GetSafeEmail(tutor.BcUser.Email),
             Biography = tutor.Biography ?? string.Empty,
             ProfileImagePath = tutor.ProfileImagePath,
             Initials = GetInitials(
@@ -171,6 +190,22 @@ public class TutorService : ITutorService
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<string>>
+        GetCampusesAsync(
+            CancellationToken cancellationToken = default)
+    {
+        return await _context.Tutors
+            .AsNoTracking()
+            .Where(tutor =>
+                tutor.Status == TutorStatus.Approved &&
+                tutor.IsActive &&
+                tutor.CampusOfStudy != string.Empty)
+            .Select(tutor => tutor.CampusOfStudy)
+            .Distinct()
+            .OrderBy(campus => campus)
+            .ToListAsync(cancellationToken);
+    }
+
     private static string? GetSafeExternalUrl(string? url)
     {
         if (string.IsNullOrWhiteSpace(url) ||
@@ -185,6 +220,31 @@ public class TutorService : ITutorService
         }
 
         return uri.AbsoluteUri;
+    }
+
+    private static string GetSafeEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return string.Empty;
+        }
+
+        string normalizedEmail = email.Trim();
+
+        try
+        {
+            var address = new MailAddress(normalizedEmail);
+            return string.Equals(
+                address.Address,
+                normalizedEmail,
+                StringComparison.OrdinalIgnoreCase)
+                ? normalizedEmail
+                : string.Empty;
+        }
+        catch (FormatException)
+        {
+            return string.Empty;
+        }
     }
 
     private static string GetInitials(string displayName)
