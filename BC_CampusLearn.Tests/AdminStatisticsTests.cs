@@ -12,7 +12,7 @@ public class AdminStatisticsTests
         new(2026, 9, 21, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task StatisticsSeparateCurrentCoverageFromPeriodActivity()
+    public async Task StatisticsShowCurrentCoverageAndOverallActivity()
     {
         await using var context = CreateContext();
         ProgrammeOfStudy programme = new() { Id = 1, Name = "Computing" };
@@ -40,7 +40,8 @@ public class AdminStatisticsTests
         context.TutorCourseModules.AddRange(assignments);
         context.Bookings.AddRange(
             NewBooking(assignments[0], Today.AddDays(-5), BookingStatus.Completed, 101,
-                new StudentEvaluation { ModeRating = 5 }, new TutorStudentEvaluation()),
+                new StudentEvaluation { ModeRating = 5, PlatformRating = 4 }, new TutorStudentEvaluation(),
+                new AdminSessionReview { ReviewerBcUserId = 900 }),
             NewBooking(assignments[0], Today.AddDays(-3), BookingStatus.Completed, 102),
             NewBooking(assignments[1], Today.AddDays(-2), BookingStatus.Cancelled, 103),
             NewBooking(assignments[2], Today.AddDays(3), BookingStatus.Confirmed, 104),
@@ -52,26 +53,63 @@ public class AdminStatisticsTests
 
         Assert.Equal(3, page.TotalTutorCount);
         Assert.Equal(1, page.ActiveTutorCount);
+        var campus = Assert.Single(page.TutorsByCampus);
+        Assert.Equal("Pretoria", campus.Campus);
+        Assert.Equal(1, campus.TutorCount);
+        Assert.Equal(1, page.MaxCampusTutorCount);
         Assert.Equal(1, page.PendingApplicationCount);
         Assert.Equal(3, page.TotalModuleCount);
         Assert.Equal(1, page.CoveredModuleCount);
-        Assert.Equal(3, page.TotalSessionCount);
+        Assert.Equal(4, page.TotalSessionCount);
+        Assert.Equal(4, page.OutcomeSessionCount);
+        Assert.DoesNotContain(page.SessionStatuses,
+            status => status.Status == BookingStatus.Pending);
+        Assert.Equal("#7fbe8c", page.SessionStatuses
+            .Single(status => status.Status == BookingStatus.Confirmed).Color);
+        Assert.Equal("#75add0", page.SessionStatuses
+            .Single(status => status.Status == BookingStatus.Completed).Color);
+        Assert.Equal("#d85c5c", page.SessionStatuses
+            .Single(status => status.Status == BookingStatus.Cancelled).Color);
+        Assert.Equal("#d85c5c", page.SessionStatuses
+            .Single(status => status.Status == BookingStatus.Declined).Color);
+        Assert.Equal("#9b78bd", page.SessionStatuses
+            .Single(status => status.Status == BookingStatus.InProgress).Color);
         Assert.Equal(3, page.TotalBookedSessions);
-        Assert.Equal(new[] { ("A101", 2), ("B101", 1) },
+        Assert.Equal(new[] { ("A101", 3) },
             page.BookedModules.Select(module => (module.Code, module.Count)));
-        Assert.Equal(2, page.TopBookedModules.Count);
-        Assert.Equal(2, page.CompletedSessionCount);
+        Assert.Single(page.TopBookedModules);
+        Assert.Equal(3, page.CompletedSessionCount);
+        var topTutor = Assert.Single(page.TopCompletedTutors);
+        Assert.Equal(3, topTutor.Count);
+        Assert.Contains("100%", page.TopCompletedTutorPieGradient);
         Assert.Equal(1, page.CancelledSessionCount);
         Assert.Equal(3, page.TotalStudentCount);
         Assert.Equal("A101", Assert.Single(page.AssignedModules).Code);
         Assert.Equal(1, page.BothReviewsCompleteCount);
-        Assert.Equal(1, page.PendingStudentReviewCount);
-        Assert.Equal(1, page.PendingTutorReviewCount);
-        Assert.Equal(5d, page.AverageStudentRating);
-        Assert.Equal(2d / 3d * 100d, page.CompletionRate, 3);
-        page.Period = "all";
+        Assert.Equal(2, page.PendingStudentReviewCount);
+        Assert.Equal(2, page.PendingTutorReviewCount);
+        Assert.Equal(0, page.PendingTutorHeadReviewCount);
+        Assert.Equal(1, page.AwaitingAdminReviewCount);
+        Assert.Equal(3, page.UniqueBookingStudentCount);
+        Assert.Equal(5d, page.AverageTutorRating);
+        Assert.Equal(4d, page.AveragePlatformRating);
+        Assert.Equal(3d / 4d * 100d, page.CompletionRate, 3);
+
+        page.BookingPeriod = "weekly";
         await page.OnGetAsync(CancellationToken.None);
-        Assert.Equal(3, page.CompletedSessionCount);
+
+        Assert.Equal(3, page.TotalBookedSessions);
+        Assert.Equal(2, page.FilteredBookedSessionCount);
+        Assert.Equal(2, Assert.Single(page.BookedModules).Count);
+        Assert.Equal(2, Assert.Single(page.TopCompletedTutors).Count);
+        Assert.Equal("Past 7 days", page.BookingPeriodLabel);
+
+        page.ReviewPeriod = "weekly";
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(2, page.UniqueBookingStudentCount);
+        Assert.Equal(1, page.PendingTutorReviewCount);
+        Assert.Equal(1, page.AwaitingAdminReviewCount);
     }
 
     [Fact]
@@ -126,20 +164,21 @@ public class AdminStatisticsTests
     public async Task StatisticsHandleEmptyData()
     {
         await using var context = CreateContext();
-        var page = new StatisticsModel(context, new FixedTimeProvider())
-        {
-            Period = "invalid"
-        };
+        var page = new StatisticsModel(context, new FixedTimeProvider());
 
         await page.OnGetAsync(CancellationToken.None);
 
-        Assert.Equal("90", page.Period);
         Assert.Equal(0, page.TotalSessionCount);
         Assert.Equal(0, page.CompletionRate);
-        Assert.Null(page.AverageStudentRating);
+        Assert.Null(page.AverageTutorRating);
+        Assert.Null(page.AveragePlatformRating);
         Assert.Empty(page.AssignedModules);
         Assert.Empty(page.TopAssignedModules);
+        Assert.Empty(page.TutorsByCampus);
+        Assert.Equal(0, page.MaxCampusTutorCount);
         Assert.Empty(page.BookedModules);
+        Assert.Empty(page.TopCompletedTutors);
+        Assert.Equal("none", page.TopCompletedTutorPieGradient);
         Assert.Equal("none", page.TopPieGradient);
     }
 
@@ -165,7 +204,8 @@ public class AdminStatisticsTests
     private static Booking NewBooking(
         TutorCourseModule assignment, DateTimeOffset date, BookingStatus status,
         int studentId, StudentEvaluation? studentReview = null,
-        TutorStudentEvaluation? tutorReview = null) => new()
+        TutorStudentEvaluation? tutorReview = null,
+        AdminSessionReview? adminReview = null) => new()
     {
         TutorCourseModule = assignment,
         TutorId = assignment.Tutor.TutorId,
@@ -176,7 +216,8 @@ public class AdminStatisticsTests
         Status = status,
         StudentBcUserId = studentId,
         StudentEvaluation = studentReview,
-        TutorEvaluation = tutorReview
+        TutorEvaluation = tutorReview,
+        AdminSessionReview = adminReview
     };
 
     private sealed class FixedTimeProvider : TimeProvider
