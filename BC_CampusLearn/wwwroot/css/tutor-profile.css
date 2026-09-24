@@ -664,8 +664,128 @@ a.tutor-profile-nav-link:focus-visible {
 }
 
 .tutor-module-combobox-option[aria-selected="true"] {
-    color: #ad0151;
+    color: #303640;
+    font-weight: 500;
+}
+
+.tutor-module-combobox-option--multi {
+    padding-left: 2.35rem;
+    position: relative;
+}
+
+.tutor-module-combobox-option--multi::before {
+    background-color: #fff;
+    border: 1px solid #aeb4bc;
+    border-radius: 0.2rem;
+    content: "";
+    height: 1rem;
+    left: 0.75rem;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1rem;
+}
+
+.tutor-module-combobox-option--multi[aria-selected="true"]::before {
+    background-color: #5b626b;
+    border-color: #5b626b;
+}
+
+.tutor-module-combobox-option--multi[aria-selected="true"]::after {
+    border: solid #fff;
+    border-width: 0 0.12rem 0.12rem 0;
+    content: "";
+    height: 0.5rem;
+    left: 1.25rem;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -58%) rotate(45deg);
+    width: 0.27rem;
+}
+
+.tutor-selected-modules {
+    margin-top: 0.75rem;
+}
+
+.tutor-selected-modules[hidden] {
+    display: none;
+}
+
+.tutor-selected-modules-label {
+    color: #555c65;
+    display: block;
+    font-size: 0.78rem;
     font-weight: 700;
+    margin-bottom: 0.45rem;
+}
+
+.tutor-selected-module-chips {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.tutor-selected-module {
+    align-items: center;
+    background-color: #f0f2f4;
+    border: 0;
+    border-radius: 0.35rem;
+    color: #111;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 0.75rem;
+}
+
+.tutor-selected-module-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
+    min-width: 0;
+}
+
+.tutor-selected-module-copy strong {
+    color: #111;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.tutor-selected-module-copy span {
+    color: #111;
+    font-size: 1rem;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.tutor-account-modal .tutor-selected-module-remove {
+    align-items: center;
+    aspect-ratio: 1;
+    background-color: #fff;
+    border: 1px solid #d2d7db;
+    border-radius: 50%;
+    box-sizing: border-box;
+    color: #747b82;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 1.45rem;
+    justify-content: center;
+    min-height: 1.45rem;
+    min-width: 1.45rem;
+    padding: 0;
+    width: 1.45rem;
+}
+
+.tutor-selected-module-remove svg {
+    display: block;
+    height: 0.72rem;
+    width: 0.72rem;
+}
+
+.tutor-selected-module-remove:hover,
+.tutor-selected-module-remove:focus-visible {
+    background-color: #f1f2f3;
+    border-color: #b9bec3;
+    color: #555c63;
+    outline: none;
 }
 
 .tutor-module-combobox-empty {

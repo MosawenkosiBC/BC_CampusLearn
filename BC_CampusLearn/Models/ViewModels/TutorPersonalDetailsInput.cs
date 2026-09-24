@@ -17,10 +17,9 @@ public class TutorModuleChangeRequestInput
     [Display(Name = "Change type")]
     public TutorModuleChangeRequestType? RequestType { get; set; }
 
-    [Required(ErrorMessage = "Select a module.")]
-    [Range(1, int.MaxValue, ErrorMessage = "Select a module.")]
-    [Display(Name = "Module")]
-    public int? ProgrammeModuleId { get; set; }
+    [MinLength(1, ErrorMessage = "Select at least one module.")]
+    [Display(Name = "Modules")]
+    public List<int> ProgrammeModuleIds { get; set; } = [];
 
     [Required(ErrorMessage = "Enter a reason for the module change.")]
     [StringLength(
@@ -33,6 +32,7 @@ public class TutorModuleChangeRequestInput
 public class TutorModuleOptionViewModel
 {
     public int ProgrammeModuleId { get; set; }
+    public string ModuleCode { get; set; } = string.Empty;
     public string ModuleName { get; set; } = string.Empty;
 }
 

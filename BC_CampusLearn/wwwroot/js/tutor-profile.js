@@ -95,6 +95,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const requestType = modalElement.querySelector("[data-module-request-type]");
+    const changeTypeCombobox = modalElement.querySelector("[data-change-type-combobox]");
+    const changeTypeToggle = modalElement.querySelector("[data-change-type-toggle]");
+    const changeTypeMenu = modalElement.querySelector("[data-change-type-menu]");
+    const changeTypeSelected = modalElement.querySelector("[data-change-type-selected]");
+    const changeTypeOptions = Array.from(
+        modalElement.querySelectorAll("[data-change-type-option]"));
     const moduleSelector = modalElement.querySelector("[data-module-selector]");
     const moduleSearch = modalElement.querySelector("[data-module-search]");
     const moduleCombobox = modalElement.querySelector("[data-module-combobox]");
@@ -102,9 +108,35 @@ document.addEventListener("DOMContentLoaded", () => {
     const moduleMenu = modalElement.querySelector("[data-module-menu]");
     const moduleOptions = modalElement.querySelector("[data-module-options]");
     const moduleSelected = modalElement.querySelector("[data-module-selected]");
+    const selectedModuleList = modalElement.querySelector("[data-selected-module-list]");
+    const selectedModuleChips = modalElement.querySelector("[data-selected-module-chips]");
     const sourceOptions = moduleSelector
         ? Array.from(moduleSelector.querySelectorAll("option[data-request-type]"))
         : [];
+
+    const closeChangeTypeMenu = () => {
+        if (!changeTypeMenu || !changeTypeToggle) {
+            return;
+        }
+
+        changeTypeMenu.hidden = true;
+        changeTypeToggle.setAttribute("aria-expanded", "false");
+    };
+
+    const updateSelectedChangeType = () => {
+        if (!requestType || !changeTypeSelected) {
+            return;
+        }
+
+        const selectedOption = requestType.selectedOptions[0];
+        changeTypeSelected.textContent = selectedOption?.textContent.trim() ??
+            "Select a change type";
+        changeTypeOptions.forEach((option) => {
+            option.setAttribute(
+                "aria-selected",
+                String(option.dataset.value === requestType.value));
+        });
+    };
 
     const closeModuleMenu = () => {
         if (!moduleMenu || !moduleToggle) {
@@ -130,10 +162,66 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const selectedOption = moduleSelector.selectedOptions[0];
-        moduleSelected.textContent = selectedOption?.dataset.requestType
-            ? selectedOption.textContent.trim()
-            : "Select a module";
+        const selectedOptions = Array.from(moduleSelector.selectedOptions)
+            .filter((option) => option.dataset.requestType);
+
+        if (selectedOptions.length === 0) {
+            moduleSelected.textContent = "Select modules";
+        } else if (selectedOptions.length === 1) {
+            moduleSelected.textContent = selectedOptions[0].textContent.trim();
+        } else {
+            moduleSelected.textContent = `${selectedOptions.length} modules selected`;
+        }
+
+        if (!selectedModuleList || !selectedModuleChips) {
+            return;
+        }
+
+        selectedModuleChips.replaceChildren();
+        selectedModuleList.hidden = selectedOptions.length === 0;
+        selectedOptions.forEach((option) => {
+            const selectedModule = document.createElement("div");
+            const copy = document.createElement("div");
+            const code = document.createElement("strong");
+            const name = document.createElement("span");
+            const removeButton = document.createElement("button");
+
+            selectedModule.className = "tutor-selected-module";
+            copy.className = "tutor-selected-module-copy";
+            code.textContent = option.dataset.moduleCode ?? "Module";
+            name.textContent = option.dataset.moduleName ?? option.textContent.trim();
+            copy.append(code, name);
+
+            removeButton.type = "button";
+            removeButton.className = "tutor-selected-module-remove";
+            removeButton.setAttribute(
+                "aria-label",
+                `Remove ${option.textContent.trim()} from selected modules`);
+
+            const removeIcon = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "svg");
+            removeIcon.setAttribute("viewBox", "0 0 24 24");
+            removeIcon.setAttribute("aria-hidden", "true");
+            const removePath = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "path");
+            removePath.setAttribute("d", "M6 6l12 12M18 6L6 18");
+            removePath.setAttribute("fill", "none");
+            removePath.setAttribute("stroke", "currentColor");
+            removePath.setAttribute("stroke-linecap", "round");
+            removePath.setAttribute("stroke-width", "2");
+            removeIcon.append(removePath);
+            removeButton.append(removeIcon);
+            removeButton.addEventListener("click", () => {
+                option.selected = false;
+                moduleSelector.dispatchEvent(new Event("change", { bubbles: true }));
+                refreshModuleOptions();
+            });
+
+            selectedModule.append(copy, removeButton);
+            selectedModuleChips.append(selectedModule);
+        });
     };
 
     const refreshModuleOptions = () => {
@@ -143,13 +231,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const selectedType = requestType.value;
         const searchTerm = moduleSearch?.value.trim().toLocaleLowerCase() ?? "";
-        const selectedOption = moduleSelector.selectedOptions[0];
-        const selectedTypeIsValid = !selectedOption?.dataset.requestType ||
-            selectedOption.dataset.requestType === selectedType;
-
-        if (!selectedTypeIsValid) {
-            moduleSelector.value = "";
-        }
+        sourceOptions.forEach((option) => {
+            if (option.dataset.requestType !== selectedType) {
+                option.selected = false;
+            }
+        });
 
         const matches = sourceOptions.filter((option) =>
             option.dataset.requestType === selectedType &&
@@ -166,18 +252,18 @@ document.addEventListener("DOMContentLoaded", () => {
             matches.forEach((option) => {
                 const optionButton = document.createElement("button");
                 optionButton.type = "button";
-                optionButton.className = "tutor-module-combobox-option";
+                optionButton.className =
+                    "tutor-module-combobox-option tutor-module-combobox-option--multi";
                 optionButton.textContent = option.textContent.trim();
                 optionButton.setAttribute("role", "option");
                 optionButton.setAttribute(
                     "aria-selected",
-                    String(moduleSelector.value === option.value));
+                    String(option.selected));
                 optionButton.addEventListener("click", () => {
-                    moduleSelector.value = option.value;
+                    option.selected = !option.selected;
                     moduleSelector.dispatchEvent(new Event("change", { bubbles: true }));
+                    optionButton.setAttribute("aria-selected", String(option.selected));
                     updateSelectedModuleLabel();
-                    closeModuleMenu();
-                    moduleToggle?.focus();
                 });
                 moduleOptions.append(optionButton);
             });
@@ -186,15 +272,39 @@ document.addEventListener("DOMContentLoaded", () => {
         updateSelectedModuleLabel();
     };
 
+    changeTypeToggle?.addEventListener("click", () => {
+        if (changeTypeMenu?.hidden) {
+            closeModuleMenu();
+            changeTypeMenu.hidden = false;
+            changeTypeToggle.setAttribute("aria-expanded", "true");
+        } else {
+            closeChangeTypeMenu();
+        }
+    });
+    changeTypeOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+            if (!requestType) {
+                return;
+            }
+
+            requestType.value = option.dataset.value ?? "";
+            requestType.dispatchEvent(new Event("change", { bubbles: true }));
+            updateSelectedChangeType();
+            closeChangeTypeMenu();
+            changeTypeToggle?.focus();
+        });
+    });
     requestType?.addEventListener("change", () => {
         if (moduleSearch) {
             moduleSearch.value = "";
         }
+        updateSelectedChangeType();
         refreshModuleOptions();
     });
     moduleSearch?.addEventListener("input", refreshModuleOptions);
     moduleToggle?.addEventListener("click", () => {
         if (moduleMenu?.hidden) {
+            closeChangeTypeMenu();
             openModuleMenu();
         } else {
             closeModuleMenu();
@@ -210,8 +320,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (moduleCombobox && !moduleCombobox.contains(event.target)) {
             closeModuleMenu();
         }
+        if (changeTypeCombobox && !changeTypeCombobox.contains(event.target)) {
+            closeChangeTypeMenu();
+        }
     });
-    modalElement.addEventListener("hidden.bs.modal", closeModuleMenu);
+    modalElement.addEventListener("hidden.bs.modal", () => {
+        closeModuleMenu();
+        closeChangeTypeMenu();
+    });
+    updateSelectedChangeType();
     refreshModuleOptions();
 
 });

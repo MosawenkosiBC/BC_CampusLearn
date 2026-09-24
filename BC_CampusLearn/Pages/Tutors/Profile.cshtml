@@ -274,21 +274,57 @@
                     <div asp-validation-summary="ModelOnly" class="tutor-profile-validation"></div>
                     <div class="tutor-profile-field">
                         <label asp-for="ModuleRequestInput.RequestType"></label>
-                        <select asp-for="ModuleRequestInput.RequestType" data-module-request-type>
-                            <option value="@TutorModuleChangeRequestType.Add">Add a module</option>
-                            <option value="@TutorModuleChangeRequestType.Remove">Remove a module</option>
-                        </select>
+                        <div class="tutor-module-combobox" data-change-type-combobox>
+                            <button type="button"
+                                    class="tutor-module-combobox-toggle"
+                                    data-change-type-toggle
+                                    aria-haspopup="listbox"
+                                    aria-expanded="false">
+                                <span data-change-type-selected>Add a module</span>
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="m7 10l5 5l5-5" />
+                                </svg>
+                            </button>
+                            <div class="tutor-module-combobox-menu"
+                                 data-change-type-menu
+                                 hidden>
+                                <div class="tutor-module-combobox-options" role="listbox">
+                                    <button type="button"
+                                            class="tutor-module-combobox-option"
+                                            data-change-type-option
+                                            data-value="@TutorModuleChangeRequestType.Add"
+                                            role="option">
+                                        Add a module
+                                    </button>
+                                    <button type="button"
+                                            class="tutor-module-combobox-option"
+                                            data-change-type-option
+                                            data-value="@TutorModuleChangeRequestType.Remove"
+                                            role="option">
+                                        Remove a module
+                                    </button>
+                                </div>
+                            </div>
+                            <select asp-for="ModuleRequestInput.RequestType"
+                                    class="visually-hidden"
+                                    data-module-request-type
+                                    tabindex="-1"
+                                    aria-hidden="true">
+                                <option value="@TutorModuleChangeRequestType.Add">Add a module</option>
+                                <option value="@TutorModuleChangeRequestType.Remove">Remove a module</option>
+                            </select>
+                        </div>
                         <span asp-validation-for="ModuleRequestInput.RequestType"></span>
                     </div>
                     <div class="tutor-profile-field">
-                        <label asp-for="ModuleRequestInput.ProgrammeModuleId"></label>
+                        <label asp-for="ModuleRequestInput.ProgrammeModuleIds"></label>
                         <div class="tutor-module-combobox" data-module-combobox>
                             <button type="button"
                                     class="tutor-module-combobox-toggle"
                                     data-module-toggle
                                     aria-haspopup="listbox"
                                     aria-expanded="false">
-                                <span data-module-selected>Select a module</span>
+                                <span data-module-selected>Select modules</span>
                                 <svg viewBox="0 0 24 24" aria-hidden="true">
                                     <path d="m7 10l5 5l5-5" />
                                 </svg>
@@ -309,29 +345,44 @@
                                 </div>
                                 <div class="tutor-module-combobox-options"
                                      data-module-options
-                                     role="listbox"></div>
+                                     role="listbox"
+                                     aria-multiselectable="true"></div>
                             </div>
-                            <select asp-for="ModuleRequestInput.ProgrammeModuleId"
+                            <select asp-for="ModuleRequestInput.ProgrammeModuleIds"
                                     class="visually-hidden"
                                     data-module-selector
+                                    multiple
                                     tabindex="-1"
                                     aria-hidden="true">
-                                <option value="">Select a module</option>
                                 @foreach (var module in Model.ModulesAvailableToAdd)
                                 {
-                                    <option value="@module.ProgrammeModuleId" data-request-type="Add">
+                                    <option value="@module.ProgrammeModuleId"
+                                            data-request-type="Add"
+                                            data-module-code="@module.ModuleCode"
+                                            data-module-name="@module.ModuleName">
                                         @module.ModuleName
                                     </option>
                                 }
                                 @foreach (var module in Model.ModulesAllowedToTutor)
                                 {
-                                    <option value="@module.ProgrammeModuleId" data-request-type="Remove">
+                                    <option value="@module.ProgrammeModuleId"
+                                            data-request-type="Remove"
+                                            data-module-code="@module.ModuleCode"
+                                            data-module-name="@module.ModuleName">
                                         @module.ModuleName
                                     </option>
                                 }
                             </select>
                         </div>
-                        <span asp-validation-for="ModuleRequestInput.ProgrammeModuleId"></span>
+                        <div class="tutor-selected-modules"
+                             data-selected-module-list
+                             aria-live="polite"
+                             hidden>
+                            <span class="tutor-selected-modules-label">Selected modules</span>
+                            <div class="tutor-selected-module-chips"
+                                 data-selected-module-chips></div>
+                        </div>
+                        <span asp-validation-for="ModuleRequestInput.ProgrammeModuleIds"></span>
                     </div>
                     <div class="tutor-profile-field">
                         <label asp-for="ModuleRequestInput.Reason">

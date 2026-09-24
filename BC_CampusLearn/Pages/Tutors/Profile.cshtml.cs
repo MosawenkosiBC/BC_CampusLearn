@@ -141,45 +141,63 @@ public class ProfileModel : PageModel
             return await ReloadPageAsync(cancellationToken, populatePhoneInput: true);
         }
 
-        int moduleId = ModuleRequestInput.ProgrammeModuleId!.Value;
-        TutorModuleChangeRequestType requestType = ModuleRequestInput.RequestType!.Value;
-        bool belongsToProgramme = await _context.ProgrammeModules.AnyAsync(
-            module => module.ProgrammeModuleId == moduleId && module.ProgrammeId == tutor.ProgrammeId,
-            cancellationToken);
-        bool currentlyAssigned = await _context.TutorCourseModules.AnyAsync(
-            assignment => assignment.IsActive && assignment.TutorId == tutor.TutorId &&
-                assignment.ProgrammeModuleId == moduleId,
-            cancellationToken);
+        List<int> moduleIds = ModuleRequestInput.ProgrammeModuleIds
+            .Where(moduleId => moduleId > 0)
+            .Distinct()
+            .ToList();
+        ModuleRequestInput.ProgrammeModuleIds = moduleIds;
 
-        if (!belongsToProgramme)
+        if (moduleIds.Count == 0)
         {
             ModelState.AddModelError(
-                "ModuleRequestInput.ProgrammeModuleId",
-                "Select a module from your programme.");
+                "ModuleRequestInput.ProgrammeModuleIds",
+                "Select at least one module.");
+            return await ReloadPageAsync(cancellationToken, populatePhoneInput: true);
         }
-        else if (requestType == TutorModuleChangeRequestType.Add && currentlyAssigned)
+
+        TutorModuleChangeRequestType requestType = ModuleRequestInput.RequestType!.Value;
+        List<int> programmeModuleIds = await _context.ProgrammeModules
+            .Where(module => moduleIds.Contains(module.ProgrammeModuleId) &&
+                module.ProgrammeId == tutor.ProgrammeId)
+            .Select(module => module.ProgrammeModuleId)
+            .ToListAsync(cancellationToken);
+        List<int> assignedModuleIds = await _context.TutorCourseModules
+            .Where(assignment => assignment.IsActive &&
+                assignment.TutorId == tutor.TutorId &&
+                moduleIds.Contains(assignment.ProgrammeModuleId))
+            .Select(assignment => assignment.ProgrammeModuleId)
+            .ToListAsync(cancellationToken);
+
+        if (programmeModuleIds.Count != moduleIds.Count)
         {
             ModelState.AddModelError(
-                "ModuleRequestInput.ProgrammeModuleId",
-                "You are already approved to tutor this module.");
+                "ModuleRequestInput.ProgrammeModuleIds",
+                "Select modules from your programme.");
         }
-        else if (requestType == TutorModuleChangeRequestType.Remove && !currentlyAssigned)
+        else if (requestType == TutorModuleChangeRequestType.Add && assignedModuleIds.Count > 0)
         {
             ModelState.AddModelError(
-                "ModuleRequestInput.ProgrammeModuleId",
-                "You are not currently assigned to this module.");
+                "ModuleRequestInput.ProgrammeModuleIds",
+                "One or more selected modules are already approved for you to tutor.");
+        }
+        else if (requestType == TutorModuleChangeRequestType.Remove &&
+            assignedModuleIds.Distinct().Count() != moduleIds.Count)
+        {
+            ModelState.AddModelError(
+                "ModuleRequestInput.ProgrammeModuleIds",
+                "One or more selected modules are not currently assigned to you.");
         }
 
         bool duplicatePendingRequest = await _context.TutorModuleChangeRequests.AnyAsync(
             request => request.TutorId == tutor.TutorId &&
-                request.ProgrammeModuleId == moduleId &&
+                moduleIds.Contains(request.ProgrammeModuleId) &&
                 request.Status == TutorAccountRequestStatus.Pending,
             cancellationToken);
         if (duplicatePendingRequest)
         {
             ModelState.AddModelError(
-                "ModuleRequestInput.ProgrammeModuleId",
-                "A change request for this module is already pending.");
+                "ModuleRequestInput.ProgrammeModuleIds",
+                "A change request for one or more selected modules is already pending.");
         }
 
         if (!ModelState.IsValid)
@@ -187,17 +205,20 @@ public class ProfileModel : PageModel
             return await ReloadPageAsync(cancellationToken, populatePhoneInput: true);
         }
 
-        _context.TutorModuleChangeRequests.Add(new TutorModuleChangeRequest
-        {
-            TutorId = tutor.TutorId,
-            ProgrammeModuleId = moduleId,
-            RequestType = requestType,
-            Status = TutorAccountRequestStatus.Pending,
-            Reason = string.IsNullOrWhiteSpace(ModuleRequestInput.Reason)
-                ? null
-                : ModuleRequestInput.Reason.Trim(),
-            SubmittedAt = DateTime.UtcNow
-        });
+        DateTime submittedAt = DateTime.UtcNow;
+        string? reason = string.IsNullOrWhiteSpace(ModuleRequestInput.Reason)
+            ? null
+            : ModuleRequestInput.Reason.Trim();
+        _context.TutorModuleChangeRequests.AddRange(moduleIds.Select(moduleId =>
+            new TutorModuleChangeRequest
+            {
+                TutorId = tutor.TutorId,
+                ProgrammeModuleId = moduleId,
+                RequestType = requestType,
+                Status = TutorAccountRequestStatus.Pending,
+                Reason = reason,
+                SubmittedAt = submittedAt
+            }));
         await _context.SaveChangesAsync(cancellationToken);
 
         TempData["ModuleRequestSaved"] = true;
@@ -342,6 +363,7 @@ public class ProfileModel : PageModel
                     .Select(module => new TutorModuleOptionViewModel
                     {
                         ProgrammeModuleId = module.ProgrammeModuleId,
+                        ModuleCode = module.ProgrammeModule.ModuleCode,
                         ModuleName = module.ProgrammeModule.ModuleName
                     })
                     .ToList()
@@ -377,6 +399,7 @@ public class ProfileModel : PageModel
             .Select(module => new TutorModuleOptionViewModel
             {
                 ProgrammeModuleId = module.ProgrammeModuleId,
+                ModuleCode = module.ModuleCode,
                 ModuleName = module.ModuleName
             })
             .ToListAsync(cancellationToken);
