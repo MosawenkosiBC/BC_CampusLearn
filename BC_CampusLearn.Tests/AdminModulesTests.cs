@@ -148,6 +148,95 @@ public class AdminModulesTests
     }
 
     [Fact]
+    public async Task CatalogueOrdersModulesByActiveApprovedTutorCount()
+    {
+        await using var db = await Seed();
+        db.ProgrammeModules.AddRange(
+            new() { ProgrammeModuleId = 2, ProgrammeId = 1, ModuleCode = "ONE201", ModuleName = "One tutor", YearOfStudy = 2 },
+            new() { ProgrammeModuleId = 3, ProgrammeId = 1, ModuleCode = "TWO301", ModuleName = "Two tutors", YearOfStudy = 3 });
+        db.Tutors.AddRange(
+            CreateTutor(2, "T2"),
+            CreateTutor(3, "T3"));
+        db.TutorCourseModules.AddRange(
+            new() { TutorId = 1, ProgrammeModuleId = 2 },
+            new() { TutorId = 1, ProgrammeModuleId = 3 },
+            new() { TutorId = 2, ProgrammeModuleId = 3 },
+            new() { TutorId = 3, ProgrammeModuleId = 1, IsActive = false });
+        await db.SaveChangesAsync();
+
+        var page = Setup(new IndexModel(db));
+        await page.OnGetAsync(default);
+
+        Assert.Equal([3, 2, 1], page.Modules.Select(module => module.Id));
+        Assert.Equal([2, 1, 0], page.Modules.Select(module => module.TutorCount));
+    }
+
+    [Theory]
+    [InlineData("module", "asc", new[] { "AAA101", "PRG101", "ZZZ301" })]
+    [InlineData("module", "desc", new[] { "ZZZ301", "PRG101", "AAA101" })]
+    [InlineData("year", "asc", new[] { "PRG101", "AAA101", "ZZZ301" })]
+    [InlineData("year", "desc", new[] { "ZZZ301", "AAA101", "PRG101" })]
+    [InlineData("tutors", "asc", new[] { "AAA101", "PRG101", "ZZZ301" })]
+    public async Task CatalogueSupportsColumnSorting(string sort, string direction, string[] expectedCodes)
+    {
+        await using var db = await Seed();
+        db.ProgrammeModules.AddRange(
+            new() { ProgrammeModuleId = 2, ProgrammeId = 1, ModuleCode = "AAA101", ModuleName = "Alpha", YearOfStudy = 2 },
+            new() { ProgrammeModuleId = 3, ProgrammeId = 1, ModuleCode = "ZZZ301", ModuleName = "Zulu", YearOfStudy = 3 });
+        db.TutorCourseModules.AddRange(
+            new() { TutorId = 1, ProgrammeModuleId = 1 },
+            new() { TutorId = 1, ProgrammeModuleId = 3 });
+        await db.SaveChangesAsync();
+
+        var page = Setup(new IndexModel(db) { Sort = sort, SortDirection = direction });
+        await page.OnGetAsync(default);
+
+        Assert.Equal(expectedCodes, page.Modules.Select(module => module.Code));
+    }
+
+    [Fact]
+    public async Task CatalogueNormalizesMissingSortValuesToTutorCountDescending()
+    {
+        await using var db = await Seed();
+        var page = Setup(new IndexModel(db) { Sort = null, SortDirection = null });
+
+        await page.OnGetAsync(default);
+
+        Assert.Equal("tutors", page.Sort);
+        Assert.Equal("desc", page.SortDirection);
+    }
+
+    [Fact]
+    public async Task ModuleViewsOnlyShowActivePlacementTutors()
+    {
+        await using var db = await Seed();
+        var interviewTutor = CreateTutor(2, "T2");
+        interviewTutor.ApplicationStage = TutorApplicationStage.Interview;
+        var inactiveTutor = CreateTutor(3, "T3");
+        inactiveTutor.IsActive = false;
+        db.Tutors.AddRange(interviewTutor, inactiveTutor);
+        db.TutorCourseModules.AddRange(
+            new() { TutorId = 2, ProgrammeModuleId = 1 },
+            new() { TutorId = 3, ProgrammeModuleId = 1 });
+        db.TutorModuleChangeRequests.AddRange(
+            new() { TutorId = 2, ProgrammeModuleId = 1 },
+            new() { TutorId = 3, ProgrammeModuleId = 1 });
+        await db.SaveChangesAsync();
+
+        var catalogue = Setup(new IndexModel(db));
+        await catalogue.OnGetAsync(default);
+        Assert.Equal(0, Assert.Single(catalogue.Modules).TutorCount);
+        Assert.Equal(1, catalogue.UncoveredModules);
+        Assert.Equal(0, catalogue.PendingRequests);
+        Assert.Empty(catalogue.Requests);
+
+        var details = Setup(new DetailsModel(db));
+        Assert.IsType<PageResult>(await details.OnGetAsync(1, default));
+        Assert.Empty(details.Module.TutorCourseModules);
+        Assert.Equal(1, Assert.Single(details.AvailableTutors).TutorId);
+    }
+
+    [Fact]
     public async Task InactiveAssignmentsAreHiddenFromTutorDirectoryAndProfile()
     {
         await using var db = await Seed();
@@ -180,4 +269,19 @@ public class AdminModulesTests
         await db.SaveChangesAsync();
         return db;
     }
+
+    private static Tutor CreateTutor(int id, string personnelNumber) => new()
+    {
+        TutorId = id,
+        ProgrammeId = 1,
+        BcUser = new() { BcUserId = id, PersonnelNumber = personnelNumber, DisplayName = $"Tutor {id}" },
+        Status = TutorStatus.Approved,
+        IsActive = true,
+        ApplicationStage = TutorApplicationStage.Placement,
+        ReasonForTutoring = "Reason",
+        TeachingStyle = "Style",
+        PreviousTutoringExperience = "None",
+        CampusOfStudy = "Campus",
+        DemonstrationVideoUrl = ""
+    };
 }

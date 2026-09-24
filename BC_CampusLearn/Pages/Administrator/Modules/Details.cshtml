@@ -11,11 +11,11 @@
     @if (TempData["ModuleSuccess"] is string success) { <div class="module-success" role="status">@success</div> }
     <div asp-validation-summary="All" class="module-errors" role="alert"></div>
     <details class="module-panel"><summary>Edit module details</summary>
-        <form method="post" asp-page-handler="Save" class="module-form">
-            <input type="hidden" asp-for="Input.ProgrammeId" />
-            <div><label asp-for="Input.ModuleCode">Module code</label><input asp-for="Input.ModuleCode" required maxlength="10" /></div>
-            <div><label asp-for="Input.ModuleName">Module name</label><input asp-for="Input.ModuleName" required maxlength="150" /></div>
-            <div><label asp-for="Input.YearOfStudy">Year of study</label><select asp-for="Input.YearOfStudy">@for (var year = 1; year <= 4; year++) { <option value="@year">Year @year</option> }</select></div>
+        <form method="post" asp-page-handler="Save" class="module-form" data-module-validation novalidate>
+            <input type="hidden" name="Input.ProgrammeId" value="@Model.Input.ProgrammeId" />
+            <div><label for="Input_ModuleCode">Module code</label><input id="Input_ModuleCode" name="Input.ModuleCode" value="@Model.Input.ModuleCode" data-module-required data-module-maxlength="10" /><span class="module-field-error" data-module-error-for="Input_ModuleCode"></span></div>
+            <div><label for="Input_ModuleName">Module name</label><input id="Input_ModuleName" name="Input.ModuleName" value="@Model.Input.ModuleName" data-module-required data-module-maxlength="150" /><span class="module-field-error" data-module-error-for="Input_ModuleName"></span></div>
+            <div><label for="Input_YearOfStudy">Year of study</label><select id="Input_YearOfStudy" name="Input.YearOfStudy">@for (var year = 1; year <= 4; year++) { <option value="@year" selected="@(Model.Input.YearOfStudy == year)">Year @year</option> }</select></div>
             <button type="submit">Save changes</button>
         </form>
     </details>
@@ -24,9 +24,9 @@
         @if (Model.AvailableTutors.Count == 0) { <p>No additional eligible tutors are available in this programme.</p> }
         else
         {
-            <form method="post" asp-page-handler="Assignment" class="module-filters">
+            <form method="post" asp-page-handler="Assignment" class="module-filters" data-module-validation novalidate>
                 <input type="hidden" name="add" value="true" />
-                <div><label for="tutorId">Tutor</label><select id="tutorId" name="tutorId" required><option value="">Select a tutor</option>@foreach (var tutor in Model.AvailableTutors) { <option value="@tutor.TutorId">@tutor.BcUser.DisplayName (@tutor.BcUser.PersonnelNumber)</option> }</select></div><button type="submit">Assign tutor</button>
+                <div><label for="tutorId">Tutor</label><select id="tutorId" name="tutorId" data-module-required><option value="">Select a tutor</option>@foreach (var tutor in Model.AvailableTutors) { <option value="@tutor.TutorId">@tutor.BcUser.DisplayName (@tutor.BcUser.PersonnelNumber)</option> }</select><span class="module-field-error" data-module-error-for="tutorId"></span></div><button type="submit">Assign tutor</button>
             </form>
         }
     </div>
@@ -42,3 +42,7 @@
         </tbody></table>
     </div>
 </section>
+
+@section Scripts {
+    <script src="~/js/admin-modules.js" asp-append-version="true"></script>
+}

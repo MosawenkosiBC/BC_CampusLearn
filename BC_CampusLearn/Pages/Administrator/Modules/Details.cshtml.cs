@@ -95,7 +95,10 @@ public class DetailsModel(ApplicationDbContext context) : PageModel
     private async Task<bool> LoadAsync(int id, CancellationToken ct)
     {
         var module = await context.ProgrammeModules.AsNoTracking().Include(m => m.Programme)
-            .Include(m => m.TutorCourseModules.Where(a => a.IsActive)).ThenInclude(a => a.Tutor).ThenInclude(t => t.BcUser)
+            .Include(m => m.TutorCourseModules.Where(a => a.IsActive && a.Tutor.IsActive &&
+                a.Tutor.Status == TutorStatus.Approved &&
+                a.Tutor.ApplicationStage == TutorApplicationStage.Placement))
+            .ThenInclude(a => a.Tutor).ThenInclude(t => t.BcUser)
             .SingleOrDefaultAsync(m => m.ProgrammeModuleId == id, ct);
         if (module is null) return false;
         Module = module;

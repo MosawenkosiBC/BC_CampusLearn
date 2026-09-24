@@ -5,59 +5,140 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/pagination.css" asp-append-version="true" />
 }
 <section class="admin-dashboard modules-workspace" aria-labelledby="modules-title">
-    <header class="admin-dashboard-header"><div><h1 id="modules-title">Modules</h1><p>Manage the module catalogue, tutor coverage and change requests.</p></div></header>
+    <header class="admin-dashboard-header"><h1 id="modules-title">Modules</h1></header>
     @if (TempData["ModuleSuccess"] is string success) { <div class="module-success" role="status">@success</div> }
     <div asp-validation-summary="All" class="module-errors" role="alert"></div>
-    <div class="module-metrics">
-        <div><strong>@Model.TotalModules</strong><span>Modules in catalogue</span></div>
-        <div><strong>@Model.UncoveredModules</strong><span>Without active tutors</span></div>
-        <div><strong>@Model.PendingRequests</strong><span>Requests awaiting review</span></div>
+    <div class="admin-stat-grid module-stat-grid" aria-label="Module statistics">
+        <article class="admin-stat-card">
+            <div class="admin-stat-icon admin-stat-icon--resources" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M8.5 4h10a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1h-11a3 3 0 0 1-3-3V8a4 4 0 0 1 4-4Z" /><path d="M4.5 17.5c.7-1.5 1.9-2.25 3.5-2.25h11.5M9 8h7m-7 4h5" /></svg>
+            </div>
+            <div class="admin-stat-content"><h2>Modules in catalogue</h2><p>@Model.TotalModules</p></div>
+        </article>
+        <a asp-page="Index" asp-route-Unassigned="true" class="admin-stat-card module-stat-link" aria-label="Show @Model.UncoveredModules modules without active tutors">
+            <div class="admin-stat-icon admin-stat-icon--tutors" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 11.5a3 3 0 1 0 0-6a3 3 0 0 0 0 6Zm0 3c-3.75 0-6 2.143-6 4.286c0 .947.672 1.714 1.5 1.714h9c.828 0 1.5-.767 1.5-1.714c0-2.143-2.25-4.286-6-4.286Z" /><path d="M18.5 5.5 22 9m0-3.5L18.5 9" /></svg>
+            </div>
+            <div class="admin-stat-content"><h2>Without active tutors</h2><p>@Model.UncoveredModules</p></div>
+        </a>
+        <a asp-page="Index" asp-route-Tab="requests" class="admin-stat-card module-stat-link" aria-label="Review @Model.PendingRequests pending module requests">
+            <div class="admin-stat-icon admin-stat-icon--requests" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /><path d="M9 8h6m-6 4h6m-6 4h3" /></svg>
+            </div>
+            <div class="admin-stat-content"><h2>Requests awaiting review</h2><p>@Model.PendingRequests</p></div>
+        </a>
     </div>
+    @if (Model.Tab == "catalogue")
+    {
+        <div class="module-catalogue-toolbar">
+            <button type="button" class="module-add-button" data-bs-toggle="modal" data-bs-target="#module-create-modal">
+                <span aria-hidden="true">+</span> Add a module
+            </button>
+        </div>
+    }
     <nav class="module-tabs" aria-label="Module management">
         <a asp-page="Index" class="@(Model.Tab == "catalogue" ? "selected" : "")" aria-current="@(Model.Tab == "catalogue" ? "page" : null)">Module catalogue</a>
         <a asp-page="Index" asp-route-Tab="requests" class="@(Model.Tab == "requests" ? "selected" : "")" aria-current="@(Model.Tab == "requests" ? "page" : null)">Change requests <span>@Model.PendingRequests</span></a>
     </nav>
     @if (Model.Tab == "catalogue")
     {
-        <details class="module-panel module-create" open="@Model.ShowCreate">
-            <summary>Add a module</summary>
-            <p>Add a module to an existing programme. Codes must be unique within that programme.</p>
-            <form method="post" asp-page-handler="Create" class="module-form">
-                <div><label asp-for="Input.ProgrammeId">Programme</label><select asp-for="Input.ProgrammeId" required><option value="">Select a programme</option>@foreach (var p in Model.Programmes) { <option value="@p.Id">@p.Name</option> }</select><span asp-validation-for="Input.ProgrammeId"></span></div>
-                <div><label asp-for="Input.ModuleCode">Module code</label><input asp-for="Input.ModuleCode" maxlength="10" required placeholder="e.g. PRG101" /><span asp-validation-for="Input.ModuleCode"></span></div>
-                <div><label asp-for="Input.ModuleName">Module name</label><input asp-for="Input.ModuleName" maxlength="150" required /><span asp-validation-for="Input.ModuleName"></span></div>
-                <div><label asp-for="Input.YearOfStudy">Year of study</label><select asp-for="Input.YearOfStudy">@for (var year = 1; year <= 4; year++) { <option value="@year">Year @year</option> }</select></div>
-                <button type="submit">Create module</button>
-            </form>
-        </details>
-        <form method="get" class="module-panel module-filters">
-            <div><label asp-for="Search">Search modules</label><input asp-for="Search" type="search" placeholder="Module name or code" /></div>
-            <div><label asp-for="ProgrammeId">Programme</label><select asp-for="ProgrammeId"><option value="">All programmes</option>@foreach (var p in Model.Programmes) { <option value="@p.Id">@p.Name</option> }</select></div>
-            <div><label asp-for="Year">Year of study</label><select asp-for="Year"><option value="">All years</option>@for (var year = 1; year <= 4; year++) { <option value="@year">Year @year</option> }</select></div>
-            <label class="module-check"><input asp-for="Unassigned" /> Without active tutors</label>
-            <button type="submit">Apply filters</button><a asp-page="Index">Clear</a>
-        </form>
-        <p class="module-muted">@Model.FilteredCount modules found · Counts show active, approved tutors.</p>
-        <div class="module-table-wrap" tabindex="0" role="region" aria-label="Module catalogue">
-            <table class="module-table"><thead><tr><th scope="col">Module</th><th scope="col">Programme</th><th scope="col">Year</th><th scope="col">Active tutors</th><th scope="col">Action</th></tr></thead><tbody>
-            @foreach (var module in Model.Modules)
-            {
-                <tr><th scope="row"><strong>@module.Code</strong><span>@module.Name</span></th><td>@module.Programme</td><td>@module.Year</td><td><span class="module-badge @(module.TutorCount == 0 ? "uncovered" : "")">@module.TutorCount tutors</span></td><td><a asp-page="Details" asp-route-id="@module.Id" aria-label="Manage @module.Code">Manage →</a></td></tr>
-            }
-            @if (Model.Modules.Count == 0) { <tr><td colspan="5" class="module-empty">No modules match these filters. Clear the filters or add a module.</td></tr> }
-            </tbody></table>
+        string NextSortDirection(string column) =>
+            Model.Sort == column && Model.SortDirection == "asc" ? "desc" : "asc";
+        string? AriaSort(string column) => Model.Sort == column
+            ? Model.SortDirection == "asc" ? "ascending" : "descending"
+            : null;
+        string SortLabel(string column, string label) =>
+            $"Sort by {label} {(NextSortDirection(column) == "asc" ? "ascending" : "descending")}";
+        var selectedProgramme = Model.ProgrammeId.HasValue
+            ? Model.Programmes.FirstOrDefault(programme => programme.Id == Model.ProgrammeId.Value)
+            : null;
+        var hasActiveFilters = !string.IsNullOrWhiteSpace(Model.Search) || selectedProgramme is not null ||
+            Model.Year.HasValue || Model.Unassigned;
+        var firstVisibleModule = Model.FilteredCount == 0 ? 0 : ((Model.ModulePage - 1) * 12) + 1;
+        var lastVisibleModule = Math.Min(Model.ModulePage * 12, Model.FilteredCount);
+        var visibleModuleRange = Model.FilteredCount == 0
+            ? "0"
+            : $"{firstVisibleModule}–{lastVisibleModule}";
+        var activeSortLabel = (Model.Sort, Model.SortDirection) switch
+        {
+            ("module", "asc") => "Module A–Z",
+            ("module", _) => "Module Z–A",
+            ("programme", "asc") => "Programme A–Z",
+            ("programme", _) => "Programme Z–A",
+            ("year", "asc") => "Lowest year first",
+            ("year", _) => "Highest year first",
+            ("tutors", "asc") => "Fewest tutors first",
+            _ => "Most tutors first"
+        };
+        <div class="module-management-workspace">
+            <aside class="module-filter-panel" aria-labelledby="module-filter-title">
+                <div class="module-filter-heading"><h2 id="module-filter-title">Filters</h2><a asp-page="Index">Clear All</a></div>
+                <form method="get" class="module-filters">
+                    <div class="module-filter-group"><label asp-for="Search">Search modules</label><div class="module-filter-search"><input asp-for="Search" type="search" placeholder="Module name or code" /><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg></div></div>
+                    <div class="module-filter-group"><label asp-for="ProgrammeId">Programme</label><select asp-for="ProgrammeId"><option value="">All programmes</option>@foreach (var p in Model.Programmes) { <option value="@p.Id">@p.Name</option> }</select></div>
+                    <div class="module-filter-group"><label asp-for="Year">Year of study</label><select asp-for="Year"><option value="">All years</option>@for (var year = 1; year <= 4; year++) { <option value="@year">Year @year</option> }</select></div>
+                    <label class="module-check"><input asp-for="Unassigned" /><span>Without active tutors</span></label>
+                    <button type="submit" class="module-apply-filters">Apply Filters</button>
+                </form>
+            </aside>
+            <div class="module-results" id="module-results">
+                @if (hasActiveFilters)
+                {
+                    <div class="module-active-filters" aria-label="Active filters">
+                        <span class="module-active-filters-label">Active filters</span>
+                        @if (!string.IsNullOrWhiteSpace(Model.Search))
+                        {
+                            <a asp-page="Index" asp-route-ProgrammeId="@Model.ProgrammeId" asp-route-Year="@Model.Year" asp-route-Unassigned="@Model.Unassigned" asp-route-Sort="@Model.Sort" asp-route-SortDirection="@Model.SortDirection" asp-route-ModulePage="1" asp-fragment="module-results" aria-label="Remove search filter @Model.Search">Search: @Model.Search <span aria-hidden="true">×</span></a>
+                        }
+                        @if (selectedProgramme is not null)
+                        {
+                            <a asp-page="Index" asp-route-Search="@Model.Search" asp-route-Year="@Model.Year" asp-route-Unassigned="@Model.Unassigned" asp-route-Sort="@Model.Sort" asp-route-SortDirection="@Model.SortDirection" asp-route-ModulePage="1" asp-fragment="module-results" aria-label="Remove programme filter @selectedProgramme.Name">Programme: @selectedProgramme.Name <span aria-hidden="true">×</span></a>
+                        }
+                        @if (Model.Year.HasValue)
+                        {
+                            <a asp-page="Index" asp-route-Search="@Model.Search" asp-route-ProgrammeId="@Model.ProgrammeId" asp-route-Unassigned="@Model.Unassigned" asp-route-Sort="@Model.Sort" asp-route-SortDirection="@Model.SortDirection" asp-route-ModulePage="1" asp-fragment="module-results" aria-label="Remove year @Model.Year filter">Year: @Model.Year <span aria-hidden="true">×</span></a>
+                        }
+                        @if (Model.Unassigned)
+                        {
+                            <a asp-page="Index" asp-route-Search="@Model.Search" asp-route-ProgrammeId="@Model.ProgrammeId" asp-route-Year="@Model.Year" asp-route-Sort="@Model.Sort" asp-route-SortDirection="@Model.SortDirection" asp-route-ModulePage="1" asp-fragment="module-results" aria-label="Remove without active tutors filter">Without active tutors <span aria-hidden="true">×</span></a>
+                        }
+                    </div>
+                }
+                <p class="module-result-count" role="status">
+                    <span class="module-result-summary">Showing <strong>@visibleModuleRange</strong> of <strong>@Model.FilteredCount</strong> modules</span>
+                    <span class="module-result-sort">@activeSortLabel</span>
+                </p>
+                <span id="module-catalogue" class="module-table-anchor" aria-hidden="true"></span>
+                <div class="module-table-wrap" tabindex="0" role="region" aria-label="Module catalogue">
+                    <table class="module-table"><thead><tr>
+                        <th scope="col" aria-sort="@AriaSort("module")"><a class="module-sort-link" asp-page="Index" asp-route-Search="@Model.Search" asp-route-ProgrammeId="@Model.ProgrammeId" asp-route-Year="@Model.Year" asp-route-Unassigned="@Model.Unassigned" asp-route-Sort="module" asp-route-SortDirection="@NextSortDirection("module")" asp-route-ModulePage="1" asp-fragment="module-catalogue" aria-label="@SortLabel("module", "module")">Module @if (Model.Sort == "module") { <span class="module-sort-indicator" aria-hidden="true">@(Model.SortDirection == "asc" ? "↑" : "↓")</span> }</a></th>
+                        <th scope="col" aria-sort="@AriaSort("programme")"><a class="module-sort-link" asp-page="Index" asp-route-Search="@Model.Search" asp-route-ProgrammeId="@Model.ProgrammeId" asp-route-Year="@Model.Year" asp-route-Unassigned="@Model.Unassigned" asp-route-Sort="programme" asp-route-SortDirection="@NextSortDirection("programme")" asp-route-ModulePage="1" asp-fragment="module-catalogue" aria-label="@SortLabel("programme", "programme")">Programme @if (Model.Sort == "programme") { <span class="module-sort-indicator" aria-hidden="true">@(Model.SortDirection == "asc" ? "↑" : "↓")</span> }</a></th>
+                        <th scope="col" aria-sort="@AriaSort("year")"><a class="module-sort-link" asp-page="Index" asp-route-Search="@Model.Search" asp-route-ProgrammeId="@Model.ProgrammeId" asp-route-Year="@Model.Year" asp-route-Unassigned="@Model.Unassigned" asp-route-Sort="year" asp-route-SortDirection="@NextSortDirection("year")" asp-route-ModulePage="1" asp-fragment="module-catalogue" aria-label="@SortLabel("year", "year")">Year @if (Model.Sort == "year") { <span class="module-sort-indicator" aria-hidden="true">@(Model.SortDirection == "asc" ? "↑" : "↓")</span> }</a></th>
+                        <th scope="col" aria-sort="@AriaSort("tutors")"><a class="module-sort-link" asp-page="Index" asp-route-Search="@Model.Search" asp-route-ProgrammeId="@Model.ProgrammeId" asp-route-Year="@Model.Year" asp-route-Unassigned="@Model.Unassigned" asp-route-Sort="tutors" asp-route-SortDirection="@NextSortDirection("tutors")" asp-route-ModulePage="1" asp-fragment="module-catalogue" aria-label="@SortLabel("tutors", "active tutors")">Active tutors @if (Model.Sort == "tutors") { <span class="module-sort-indicator" aria-hidden="true">@(Model.SortDirection == "asc" ? "↑" : "↓")</span> }</a></th>
+                        <th scope="col">Action</th>
+                    </tr></thead><tbody>
+                    @foreach (var module in Model.Modules)
+                    {
+                        <tr><th scope="row"><strong>@module.Code</strong><span>@module.Name</span></th><td>@module.Programme</td><td>@module.Year</td><td><span class="module-badge @(module.TutorCount == 0 ? "uncovered" : "")">@(module.TutorCount == 0 ? "No tutors" : module.TutorCount == 1 ? "1 tutor" : $"{module.TutorCount} tutors")</span></td><td><a asp-page="Details" asp-route-id="@module.Id" class="module-manage-link" aria-label="Manage @module.Code">Manage</a></td></tr>
+                    }
+                    @if (Model.Modules.Count == 0) { <tr><td colspan="5" class="module-empty">No modules match these filters. Clear the filters or add a module.</td></tr> }
+                    </tbody></table>
+                </div>
+                @if (Model.TotalPages > 1)
+                {
+                    @await Component.InvokeAsync("Pagination", new { currentPage = Model.ModulePage, totalPages = Model.TotalPages, pageRouteValueName = "ModulePage", fragment = "module-catalogue", ariaLabel = "Module catalogue pages" })
+                }
+            </div>
         </div>
-        <nav class="module-pagination" aria-label="Module pages">
-            @if (Model.ModulePage > 1) { <a asp-route-ModulePage="@(Model.ModulePage - 1)" asp-route-Search="@Model.Search" asp-route-ProgrammeId="@Model.ProgrammeId" asp-route-Year="@Model.Year" asp-route-Unassigned="@Model.Unassigned">Previous</a> }
-            <span>Page @Model.ModulePage of @Model.TotalPages</span>
-            @if (Model.ModulePage < Model.TotalPages) { <a asp-route-ModulePage="@(Model.ModulePage + 1)" asp-route-Search="@Model.Search" asp-route-ProgrammeId="@Model.ProgrammeId" asp-route-Year="@Model.Year" asp-route-Unassigned="@Model.Unassigned">Next</a> }
-        </nav>
     }
     else
     {
-        <form method="get" class="module-panel module-filters"><input type="hidden" name="Tab" value="requests" /><div><label asp-for="RequestStatus">Request status</label><select asp-for="RequestStatus" asp-items="Html.GetEnumSelectList<TutorAccountRequestStatus>()"></select></div><button type="submit">Show requests</button></form>
+        <div class="module-management-workspace">
+        <aside class="module-filter-panel" aria-labelledby="request-filter-title"><div class="module-filter-heading"><h2 id="request-filter-title">Filters</h2><a asp-page="Index" asp-route-Tab="requests">Clear All</a></div><form method="get" class="module-filters"><input type="hidden" name="Tab" value="requests" /><div class="module-filter-group"><label asp-for="RequestStatus">Request status</label><select asp-for="RequestStatus" asp-items="Html.GetEnumSelectList<TutorAccountRequestStatus>()"></select></div><button type="submit" class="module-apply-filters">Show Requests</button></form></aside>
+        <div class="module-results">
         @if (Model.Requests.Count == 0) { <div class="module-panel module-empty">No @Model.RequestStatus.ToString().ToLowerInvariant() requests.</div> }
         @foreach (var request in Model.Requests)
         {
@@ -68,10 +149,10 @@
                 <a asp-page="Details" asp-route-id="@request.ProgrammeModuleId">View module and assigned tutors</a>
                 @if (request.Status == TutorAccountRequestStatus.Pending)
                 {
-                    <form method="post" asp-page-handler="Review" class="module-review-form">
+                    <form method="post" asp-page-handler="Review" class="module-review-form" data-module-review-validation novalidate>
                         <input type="hidden" name="requestId" value="@request.TutorModuleChangeRequestId" />
                         <label for="note-@request.TutorModuleChangeRequestId">Review note (required to decline)</label>
-                        <textarea id="note-@request.TutorModuleChangeRequestId" name="reviewNote" maxlength="500" rows="2"></textarea>
+                        <textarea id="note-@request.TutorModuleChangeRequestId" name="reviewNote" rows="2" data-module-maxlength="500"></textarea><span class="module-field-error" data-module-review-error></span>
                         <div class="module-actions"><button type="submit" name="approve" value="true">Approve @request.RequestType.ToString().ToLowerInvariant()</button><button class="secondary" type="submit" name="approve" value="false">Decline request</button></div>
                     </form>
                 }
@@ -82,10 +163,43 @@
                 }
             </article>
         }
-        <nav class="module-pagination" aria-label="Request pages">
-            @if (Model.RequestPage > 1) { <a asp-route-Tab="requests" asp-route-RequestStatus="@Model.RequestStatus" asp-route-RequestPage="@(Model.RequestPage - 1)">Previous</a> }
-            <span>Page @Model.RequestPage of @Model.RequestPages</span>
-            @if (Model.RequestPage < Model.RequestPages) { <a asp-route-Tab="requests" asp-route-RequestStatus="@Model.RequestStatus" asp-route-RequestPage="@(Model.RequestPage + 1)">Next</a> }
-        </nav>
+        @if (Model.RequestPages > 1)
+        {
+            @await Component.InvokeAsync("Pagination", new { currentPage = Model.RequestPage, totalPages = Model.RequestPages, pageRouteValueName = "RequestPage", ariaLabel = "Module request pages" })
+        }
+        </div>
+        </div>
     }
 </section>
+
+@if (Model.Tab == "catalogue")
+{
+    <div class="modal fade module-create-modal" id="module-create-modal" tabindex="-1"
+         aria-labelledby="module-create-title" aria-hidden="true"
+         data-module-create-modal data-open="@Model.ShowCreate.ToString().ToLowerInvariant()">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="Create" data-module-validation novalidate>
+                    <div class="modal-header">
+                        <div><h2 id="module-create-title">Add a module</h2><p>Add a module to an existing programme. Codes must be unique within that programme.</p></div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body module-form">
+                        <div><label for="Input_ProgrammeId">Programme</label><select id="Input_ProgrammeId" name="Input.ProgrammeId" data-module-required><option value="">Select a programme</option>@foreach (var p in Model.Programmes) { <option value="@p.Id" selected="@(Model.Input.ProgrammeId == p.Id)">@p.Name</option> }</select><span class="module-field-error" data-module-error-for="Input_ProgrammeId"></span></div>
+                        <div><label for="Input_ModuleCode">Module code</label><input id="Input_ModuleCode" name="Input.ModuleCode" value="@Model.Input.ModuleCode" placeholder="e.g. PRG101" data-module-required data-module-maxlength="10" /><span class="module-field-error" data-module-error-for="Input_ModuleCode"></span></div>
+                        <div><label for="Input_ModuleName">Module name</label><input id="Input_ModuleName" name="Input.ModuleName" value="@Model.Input.ModuleName" data-module-required data-module-maxlength="150" /><span class="module-field-error" data-module-error-for="Input_ModuleName"></span></div>
+                        <div><label for="Input_YearOfStudy">Year of study</label><select id="Input_YearOfStudy" name="Input.YearOfStudy">@for (var year = 1; year <= 4; year++) { <option value="@year" selected="@(Model.Input.YearOfStudy == year)">Year @year</option> }</select></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="module-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="module-modal-submit">Create module</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="~/js/admin-modules.js" asp-append-version="true"></script>
+}

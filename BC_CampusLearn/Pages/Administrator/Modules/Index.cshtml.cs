@@ -15,6 +15,8 @@ public class IndexModel(ApplicationDbContext context) : PageModel
     [BindProperty(SupportsGet = true)] public int? ProgrammeId { get; set; }
     [BindProperty(SupportsGet = true)] public int? Year { get; set; }
     [BindProperty(SupportsGet = true)] public bool Unassigned { get; set; }
+    [BindProperty(SupportsGet = true)] public string? Sort { get; set; } = "tutors";
+    [BindProperty(SupportsGet = true)] public string? SortDirection { get; set; } = "desc";
     [BindProperty(SupportsGet = true)] public int ModulePage { get; set; } = 1;
     [BindProperty(SupportsGet = true)] public string? Tab { get; set; } = "catalogue";
     [BindProperty(SupportsGet = true)] public TutorAccountRequestStatus RequestStatus { get; set; }
@@ -121,24 +123,52 @@ public class IndexModel(ApplicationDbContext context) : PageModel
     private async Task LoadAsync(CancellationToken ct)
     {
         Tab = Tab == "requests" ? "requests" : "catalogue";
+        Sort = Sort is "module" or "programme" or "year" or "tutors" ? Sort : "tutors";
+        SortDirection = SortDirection == "asc" ? "asc" : "desc";
         if (!Enum.IsDefined(RequestStatus)) RequestStatus = TutorAccountRequestStatus.Pending;
         Programmes = await context.ProgrammesOfStudy.AsNoTracking().OrderBy(p => p.Name).ToListAsync(ct);
         var query = context.ProgrammeModules.AsNoTracking();
         TotalModules = await query.CountAsync(ct);
-        UncoveredModules = await query.CountAsync(m => !m.TutorCourseModules.Any(a => a.IsActive && a.Tutor.IsActive && a.Tutor.Status == TutorStatus.Approved), ct);
-        PendingRequests = await context.TutorModuleChangeRequests.CountAsync(r => r.Status == TutorAccountRequestStatus.Pending, ct);
+        UncoveredModules = await query.CountAsync(m => !m.TutorCourseModules.Any(a =>
+            a.IsActive && a.Tutor.IsActive && a.Tutor.Status == TutorStatus.Approved &&
+            a.Tutor.ApplicationStage == TutorApplicationStage.Placement), ct);
+        PendingRequests = await context.TutorModuleChangeRequests.CountAsync(r =>
+            r.Status == TutorAccountRequestStatus.Pending && r.Tutor.IsActive &&
+            r.Tutor.Status == TutorStatus.Approved &&
+            r.Tutor.ApplicationStage == TutorApplicationStage.Placement, ct);
         if (ProgrammeId.HasValue) query = query.Where(m => m.ProgrammeId == ProgrammeId);
         if (Year.HasValue) query = query.Where(m => m.YearOfStudy == Year);
         if (!string.IsNullOrWhiteSpace(Search)) { var term = Search.Trim(); query = query.Where(m => m.ModuleName.Contains(term) || m.ModuleCode.Contains(term)); }
-        if (Unassigned) query = query.Where(m => !m.TutorCourseModules.Any(a => a.IsActive && a.Tutor.IsActive && a.Tutor.Status == TutorStatus.Approved));
+        if (Unassigned) query = query.Where(m => !m.TutorCourseModules.Any(a =>
+            a.IsActive && a.Tutor.IsActive && a.Tutor.Status == TutorStatus.Approved &&
+            a.Tutor.ApplicationStage == TutorApplicationStage.Placement));
         FilteredCount = await query.CountAsync(ct);
         TotalPages = Math.Max(1, (int)Math.Ceiling(FilteredCount / 12d));
         ModulePage = Math.Clamp(ModulePage, 1, TotalPages);
-        Modules = await query.OrderBy(m => m.Programme.Name).ThenBy(m => m.YearOfStudy).ThenBy(m => m.ModuleCode)
+        var orderedQuery = (Sort, SortDirection) switch
+        {
+            ("module", "asc") => query.OrderBy(m => m.ModuleCode).ThenBy(m => m.ModuleName),
+            ("module", _) => query.OrderByDescending(m => m.ModuleCode).ThenByDescending(m => m.ModuleName),
+            ("programme", "asc") => query.OrderBy(m => m.Programme.Name).ThenBy(m => m.ModuleCode),
+            ("programme", _) => query.OrderByDescending(m => m.Programme.Name).ThenBy(m => m.ModuleCode),
+            ("year", "asc") => query.OrderBy(m => m.YearOfStudy).ThenBy(m => m.ModuleCode),
+            ("year", _) => query.OrderByDescending(m => m.YearOfStudy).ThenBy(m => m.ModuleCode),
+            ("tutors", "asc") => query.OrderBy(m => m.TutorCourseModules.Count(a =>
+                a.IsActive && a.Tutor.IsActive && a.Tutor.Status == TutorStatus.Approved &&
+                a.Tutor.ApplicationStage == TutorApplicationStage.Placement)).ThenBy(m => m.ModuleCode),
+            _ => query.OrderByDescending(m => m.TutorCourseModules.Count(a =>
+                a.IsActive && a.Tutor.IsActive && a.Tutor.Status == TutorStatus.Approved &&
+                a.Tutor.ApplicationStage == TutorApplicationStage.Placement)).ThenBy(m => m.ModuleCode)
+        };
+        Modules = await orderedQuery
             .Skip((ModulePage - 1) * 12).Take(12)
             .Select(m => new ModuleRow(m.ProgrammeModuleId, m.ModuleCode, m.ModuleName, m.Programme.Name,
-                m.YearOfStudy, m.TutorCourseModules.Count(a => a.IsActive && a.Tutor.IsActive && a.Tutor.Status == TutorStatus.Approved))).ToListAsync(ct);
-        var requests = context.TutorModuleChangeRequests.AsNoTracking().Where(r => r.Status == RequestStatus);
+                m.YearOfStudy, m.TutorCourseModules.Count(a =>
+                    a.IsActive && a.Tutor.IsActive && a.Tutor.Status == TutorStatus.Approved &&
+                    a.Tutor.ApplicationStage == TutorApplicationStage.Placement))).ToListAsync(ct);
+        var requests = context.TutorModuleChangeRequests.AsNoTracking().Where(r =>
+            r.Status == RequestStatus && r.Tutor.IsActive && r.Tutor.Status == TutorStatus.Approved &&
+            r.Tutor.ApplicationStage == TutorApplicationStage.Placement);
         RequestPages = Math.Max(1, (int)Math.Ceiling(await requests.CountAsync(ct) / 12d));
         RequestPage = Math.Clamp(RequestPage, 1, RequestPages);
         Requests = await requests.Include(r => r.Tutor).ThenInclude(t => t.BcUser)
