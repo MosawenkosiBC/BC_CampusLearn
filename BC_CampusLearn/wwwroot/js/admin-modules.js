@@ -1,5 +1,8 @@
 (() => {
     const fieldLabel = (field) => {
+        if (field.dataset.moduleLabel) {
+            return field.dataset.moduleLabel;
+        }
         const label = field.id
             ? document.querySelector(`label[for="${CSS.escape(field.id)}"]`)
             : null;
@@ -11,8 +14,12 @@
             ? document.querySelector(`[data-module-error-for="${CSS.escape(field.id)}"]`)
             : null;
 
+        const validationTarget = field.dataset.moduleValidationTarget
+            ? document.querySelector(field.dataset.moduleValidationTarget)
+            : field;
         field.classList.toggle("is-invalid", Boolean(message));
-        field.toggleAttribute("aria-invalid", Boolean(message));
+        validationTarget?.classList.toggle("is-invalid", Boolean(message));
+        validationTarget?.toggleAttribute("aria-invalid", Boolean(message));
 
         if (!error) {
             return;
@@ -24,9 +31,9 @@
         error.textContent = message;
         error.hidden = !message;
         if (message) {
-            field.setAttribute("aria-describedby", error.id);
-        } else if (field.getAttribute("aria-describedby") === error.id) {
-            field.removeAttribute("aria-describedby");
+            validationTarget?.setAttribute("aria-describedby", error.id);
+        } else if (validationTarget?.getAttribute("aria-describedby") === error.id) {
+            validationTarget.removeAttribute("aria-describedby");
         }
     };
 
@@ -75,7 +82,10 @@
             }
 
             event.preventDefault();
-            firstInvalid.focus();
+            const focusTarget = firstInvalid.dataset.moduleFocusTarget
+                ? form.querySelector(firstInvalid.dataset.moduleFocusTarget)
+                : firstInvalid;
+            focusTarget?.focus();
         });
     });
 
@@ -122,4 +132,101 @@
     if (createModal?.dataset.open === "true" && window.bootstrap?.Modal) {
         window.bootstrap.Modal.getOrCreateInstance(createModal).show();
     }
+
+    const editModal = document.querySelector("[data-module-edit-modal]");
+    if (editModal?.dataset.open === "true" && window.bootstrap?.Modal) {
+        window.bootstrap.Modal.getOrCreateInstance(editModal).show();
+    }
+
+    const assignTutorModal = document.querySelector("[data-assign-tutor-modal]");
+    if (assignTutorModal?.dataset.open === "true" && window.bootstrap?.Modal) {
+        window.bootstrap.Modal.getOrCreateInstance(assignTutorModal).show();
+    }
+
+    const tutorCombobox = assignTutorModal?.querySelector("[data-tutor-combobox]");
+    const tutorToggle = tutorCombobox?.querySelector("[data-tutor-combobox-toggle]");
+    const tutorMenu = tutorCombobox?.querySelector("[data-tutor-combobox-menu]");
+    const tutorSearch = tutorCombobox?.querySelector("[data-tutor-search]");
+    const tutorSelect = assignTutorModal?.querySelector("[data-tutor-native-select]");
+    const tutorSelectedLabel = tutorCombobox?.querySelector("[data-tutor-selected-label]");
+    const tutorOptions = Array.from(tutorCombobox?.querySelectorAll("[data-tutor-option]") || []);
+    const tutorSearchEmpty = assignTutorModal?.querySelector("[data-tutor-search-empty]");
+    if (tutorCombobox && tutorToggle && tutorMenu && tutorSearch && tutorSelect) {
+        const openTutorMenu = () => {
+            tutorMenu.hidden = false;
+            tutorToggle.setAttribute("aria-expanded", "true");
+            tutorSearch.focus();
+        };
+        const closeTutorMenu = () => {
+            tutorMenu.hidden = true;
+            tutorToggle.setAttribute("aria-expanded", "false");
+        };
+        const filterTutors = () => {
+            const term = tutorSearch.value.trim().toLowerCase();
+            let visibleTutors = 0;
+            tutorOptions.forEach((option) => {
+                const matches = !term || option.textContent.toLowerCase().includes(term);
+                option.hidden = !matches;
+                if (matches) visibleTutors += 1;
+            });
+            if (tutorSearchEmpty) tutorSearchEmpty.hidden = visibleTutors > 0;
+        };
+        tutorToggle.addEventListener("click", () => {
+            if (tutorMenu.hidden) openTutorMenu();
+            else closeTutorMenu();
+        });
+        tutorSearch.addEventListener("input", filterTutors);
+        tutorOptions.forEach((option) => {
+            option.addEventListener("click", () => {
+                tutorSelect.value = option.dataset.value || "";
+                tutorSelect.dispatchEvent(new Event("change", { bubbles: true }));
+                tutorOptions.forEach((item) => item.setAttribute(
+                    "aria-selected", String(item === option)));
+                if (tutorSelectedLabel) tutorSelectedLabel.textContent = option.textContent.trim();
+                closeTutorMenu();
+                tutorToggle.focus();
+            });
+        });
+        tutorCombobox.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && !tutorMenu.hidden) {
+                event.preventDefault();
+                closeTutorMenu();
+                tutorToggle.focus();
+            }
+        });
+        document.addEventListener("click", (event) => {
+            if (!tutorCombobox.contains(event.target)) closeTutorMenu();
+        });
+        assignTutorModal.addEventListener("shown.bs.modal", () => tutorToggle.focus());
+        assignTutorModal.addEventListener("hidden.bs.modal", () => {
+            tutorSearch.value = "";
+            filterTutors();
+            closeTutorMenu();
+        });
+    }
+
+    const removeTutorModal = document.querySelector("[data-remove-tutor-modal]");
+    removeTutorModal?.addEventListener("show.bs.modal", (event) => {
+        const trigger = event.relatedTarget;
+        const tutorId = trigger?.dataset.removeTutorId || "";
+        const tutorName = trigger?.dataset.removeTutorName || "this tutor";
+        const outstandingSessionCount = Number.parseInt(
+            trigger?.dataset.outstandingSessionCount || "0", 10) || 0;
+        const input = removeTutorModal.querySelector("[data-remove-tutor-input]");
+        const name = removeTutorModal.querySelector("[data-remove-tutor-name]");
+        const clearMessage = removeTutorModal.querySelector("[data-remove-tutor-clear]");
+        const warning = removeTutorModal.querySelector("[data-remove-tutor-warning]");
+        const warningCount = removeTutorModal.querySelector("[data-remove-tutor-warning-count]");
+        const submit = removeTutorModal.querySelector("[data-remove-tutor-submit]");
+        if (input) input.value = tutorId;
+        if (name) name.textContent = tutorName;
+        if (clearMessage) clearMessage.hidden = outstandingSessionCount > 0;
+        if (warning) warning.hidden = outstandingSessionCount === 0;
+        if (warningCount) {
+            warningCount.textContent = outstandingSessionCount === 1
+                ? "1 outstanding session"
+                : `${outstandingSessionCount} outstanding sessions`;
+        }
+        if (submit) submit.disabled = outstandingSessionCount > 0;
+    });
 })();

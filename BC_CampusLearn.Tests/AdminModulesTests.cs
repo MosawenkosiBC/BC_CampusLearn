@@ -32,6 +32,18 @@ public class AdminModulesTests
     }
 
     [Fact]
+    public async Task InvalidModuleEditReopensEditModal()
+    {
+        await using var db = await Seed();
+        var page = Setup(new DetailsModel(db));
+        page.Input = new() { ProgrammeId = 1, ModuleCode = " ", ModuleName = " ", YearOfStudy = 1 };
+
+        Assert.IsType<PageResult>(await page.OnPostSaveAsync(1, default));
+        Assert.True(page.ShowEdit);
+        Assert.False(page.ModelState.IsValid);
+    }
+
+    [Fact]
     public async Task ApproveAddsAssignmentNotifiesTutorAndCannotReviewTwice()
     {
         await using var db = await Seed();
@@ -99,16 +111,91 @@ public class AdminModulesTests
     }
 
     [Fact]
-    public async Task AssignmentRejectsDifferentProgrammeAndInactiveTutor()
+    public async Task AssignmentAllowsDifferentProgrammeButRejectsInactiveTutor()
     {
         await using var db = await Seed();
         var tutor = await db.Tutors.SingleAsync();
         tutor.ProgrammeId = 2;
         var management = new AdminModuleManagement(db);
-        Assert.Contains("programme", await management.ChangeAssignmentAsync(1, 1, true, default));
-        tutor.ProgrammeId = 1; tutor.IsActive = false;
+        Assert.Null(await management.ChangeAssignmentAsync(1, 1, true, default));
+        await db.SaveChangesAsync();
+        tutor.IsActive = false;
         Assert.Contains("active", await management.ChangeAssignmentAsync(1, 1, true, default));
-        Assert.Empty(db.TutorCourseModules);
+        Assert.Single(db.TutorCourseModules);
+    }
+
+    [Fact]
+    public async Task ModuleDetailsOffersEligibleTutorsFromEveryProgramme()
+    {
+        await using var db = await Seed();
+        db.ProgrammesOfStudy.Add(new() { Id = 2, Name = "Another programme" });
+        var tutor = CreateTutor(2, "T2");
+        tutor.ProgrammeId = 2;
+        db.Tutors.Add(tutor);
+        await db.SaveChangesAsync();
+
+        var page = Setup(new DetailsModel(db));
+        Assert.IsType<PageResult>(await page.OnGetAsync(1, default));
+
+        Assert.Contains(page.AvailableTutors, available => available.TutorId == 2);
+    }
+
+    [Fact]
+    public async Task ModuleDetailsFiltersAssignedTutorsBySearchAndProgramme()
+    {
+        await using var db = await Seed();
+        db.ProgrammesOfStudy.Add(new() { Id = 2, Name = "Another programme" });
+        var tutor = CreateTutor(2, "T2");
+        tutor.ProgrammeId = 2;
+        db.Tutors.Add(tutor);
+        db.TutorCourseModules.AddRange(
+            new() { TutorId = 1, ProgrammeModuleId = 1 },
+            new() { TutorId = 2, ProgrammeModuleId = 1 });
+        await db.SaveChangesAsync();
+
+        var page = Setup(new DetailsModel(db) { TutorSearch = "Tutor 2", TutorProgrammeId = 2 });
+        Assert.IsType<PageResult>(await page.OnGetAsync(1, default));
+
+        Assert.Equal(2, page.AssignedTutorCount);
+        Assert.Equal(2, Assert.Single(page.AssignedTutors).TutorId);
+        Assert.Equal(2, page.AssignedTutorProgrammes.Count);
+    }
+
+    [Fact]
+    public async Task ModuleDetailsPaginatesAssignedTutors()
+    {
+        await using var db = await Seed();
+        var tutors = Enumerable.Range(2, 12).Select(id => CreateTutor(id, $"T{id}")).ToArray();
+        db.Tutors.AddRange(tutors);
+        db.TutorCourseModules.Add(new() { TutorId = 1, ProgrammeModuleId = 1 });
+        db.TutorCourseModules.AddRange(tutors.Select(tutor => new TutorCourseModule
+            { TutorId = tutor.TutorId, ProgrammeModuleId = 1 }));
+        await db.SaveChangesAsync();
+
+        var page = Setup(new DetailsModel(db) { TutorPage = 2 });
+        Assert.IsType<PageResult>(await page.OnGetAsync(1, default));
+
+        Assert.Equal(13, page.AssignedTutorCount);
+        Assert.Equal(13, page.FilteredAssignedTutorCount);
+        Assert.Equal(2, page.TutorTotalPages);
+        Assert.Single(page.AssignedTutors);
+    }
+
+    [Fact]
+    public async Task ModuleDetailsCountsOutstandingSessionsBeforeRemoval()
+    {
+        await using var db = await Seed();
+        db.TutorCourseModules.Add(new() { TutorId = 1, ProgrammeModuleId = 1 });
+        db.Bookings.AddRange(
+            new() { TutorId = 1, ProgrammeModuleId = 1, Status = BookingStatus.Pending },
+            new() { TutorId = 1, ProgrammeModuleId = 1, Status = BookingStatus.Confirmed },
+            new() { TutorId = 1, ProgrammeModuleId = 1, Status = BookingStatus.Completed });
+        await db.SaveChangesAsync();
+
+        var page = Setup(new DetailsModel(db));
+        Assert.IsType<PageResult>(await page.OnGetAsync(1, default));
+
+        Assert.Equal(2, page.OutstandingSessionCounts[1]);
     }
 
     [Fact]

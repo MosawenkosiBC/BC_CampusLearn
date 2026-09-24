@@ -16,9 +16,6 @@ public class AdminModuleManagement(ApplicationDbContext context)
         if (add && (!tutor.IsActive || tutor.Status != TutorStatus.Approved ||
             tutor.ApplicationStage != TutorApplicationStage.Placement))
             return "Only active, approved tutors in placement can be assigned modules.";
-        if (add && tutor.ProgrammeId != module.ProgrammeId)
-            return "Select a tutor from the module's programme.";
-
         var assignment = await context.TutorCourseModules.FindAsync([tutorId, moduleId], cancellationToken);
         if (add == (assignment?.IsActive == true))
             return add ? "This tutor is already assigned to the module." : "This tutor is no longer assigned to the module.";

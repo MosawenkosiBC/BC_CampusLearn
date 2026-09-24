@@ -1,47 +1,196 @@
 @page "{id:int}"
 @model BC_CampusLearn.Pages.Administrator.Modules.DetailsModel
-@{ ViewData["Title"] = Model.Module.ModuleCode; }
+@{
+    ViewData["Title"] = Model.Module.ModuleCode;
+    var selectedTutorProgramme = Model.TutorProgrammeId.HasValue
+        ? Model.AssignedTutorProgrammes.FirstOrDefault(programme => programme.Id == Model.TutorProgrammeId.Value)
+        : null;
+    var hasAssignedTutorFilters = !string.IsNullOrWhiteSpace(Model.TutorSearch) || selectedTutorProgramme is not null;
+    var firstVisibleTutor = Model.FilteredAssignedTutorCount == 0 ? 0 : ((Model.TutorPage - 1) * 12) + 1;
+    var lastVisibleTutor = Math.Min(Model.TutorPage * 12, Model.FilteredAssignedTutorCount);
+    var visibleTutorRange = Model.FilteredAssignedTutorCount == 0 ? "0" : $"{firstVisibleTutor}–{lastVisibleTutor}";
+}
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/pagination.css" asp-append-version="true" />
 }
-<section class="admin-dashboard modules-workspace">
-    <a asp-page="Index">← All modules</a>
-    <header class="admin-dashboard-header"><div><h1>@Model.Module.ModuleCode · @Model.Module.ModuleName</h1><p>@Model.Module.Programme.Name · Year @Model.Module.YearOfStudy</p></div></header>
+<section class="admin-dashboard modules-workspace module-details-workspace" aria-labelledby="module-details-title">
+    <header class="admin-dashboard-header module-details-header">
+        <div>
+            <h1 id="module-details-title">@Model.Module.ModuleName</h1>
+            <p>@Model.Module.Programme.Name <span aria-hidden="true">·</span> Year @Model.Module.YearOfStudy</p>
+        </div>
+        <div class="module-details-actions">
+            <button type="button" class="module-action-button" data-bs-toggle="modal" data-bs-target="#assign-tutor-modal">Assign a tutor</button>
+            <button type="button" class="module-action-button" data-bs-toggle="modal" data-bs-target="#module-edit-modal">Edit module details</button>
+        </div>
+    </header>
     @if (TempData["ModuleSuccess"] is string success) { <div class="module-success" role="status">@success</div> }
     <div asp-validation-summary="All" class="module-errors" role="alert"></div>
-    <details class="module-panel"><summary>Edit module details</summary>
-        <form method="post" asp-page-handler="Save" class="module-form" data-module-validation novalidate>
-            <input type="hidden" name="Input.ProgrammeId" value="@Model.Input.ProgrammeId" />
-            <div><label for="Input_ModuleCode">Module code</label><input id="Input_ModuleCode" name="Input.ModuleCode" value="@Model.Input.ModuleCode" data-module-required data-module-maxlength="10" /><span class="module-field-error" data-module-error-for="Input_ModuleCode"></span></div>
-            <div><label for="Input_ModuleName">Module name</label><input id="Input_ModuleName" name="Input.ModuleName" value="@Model.Input.ModuleName" data-module-required data-module-maxlength="150" /><span class="module-field-error" data-module-error-for="Input_ModuleName"></span></div>
-            <div><label for="Input_YearOfStudy">Year of study</label><select id="Input_YearOfStudy" name="Input.YearOfStudy">@for (var year = 1; year <= 4; year++) { <option value="@year" selected="@(Model.Input.YearOfStudy == year)">Year @year</option> }</select></div>
-            <button type="submit">Save changes</button>
-        </form>
-    </details>
-    <div class="module-panel">
-        <h2>Assign a tutor</h2><p class="module-muted">Choose an active, approved tutor from this programme.</p>
-        @if (Model.AvailableTutors.Count == 0) { <p>No additional eligible tutors are available in this programme.</p> }
-        else
-        {
-            <form method="post" asp-page-handler="Assignment" class="module-filters" data-module-validation novalidate>
-                <input type="hidden" name="add" value="true" />
-                <div><label for="tutorId">Tutor</label><select id="tutorId" name="tutorId" data-module-required><option value="">Select a tutor</option>@foreach (var tutor in Model.AvailableTutors) { <option value="@tutor.TutorId">@tutor.BcUser.DisplayName (@tutor.BcUser.PersonnelNumber)</option> }</select><span class="module-field-error" data-module-error-for="tutorId"></span></div><button type="submit">Assign tutor</button>
-            </form>
-        }
-    </div>
-    <h2>Assigned tutors <span class="module-badge">@Model.Module.TutorCourseModules.Count</span></h2>
-    <p class="module-muted">Removing a tutor stops new bookings for this module. Outstanding sessions must be resolved first; past sessions are retained.</p>
-    <div class="module-table-wrap" tabindex="0" role="region" aria-label="Assigned tutors">
-        <table class="module-table"><thead><tr><th scope="col">Tutor</th><th scope="col">Email</th><th scope="col">Account status</th><th scope="col">Action</th></tr></thead><tbody>
-        @foreach (var assignment in Model.Module.TutorCourseModules.OrderBy(a => a.Tutor.BcUser.DisplayName))
-        {
-            <tr><th scope="row"><a asp-page="/Administrator/Tutors/Profile" asp-route-id="@assignment.TutorId">@assignment.Tutor.BcUser.DisplayName</a></th><td>@assignment.Tutor.BcUser.Email</td><td>@(assignment.Tutor.IsActive ? assignment.Tutor.Status.ToString() : "Inactive")</td><td><details><summary>Remove tutor</summary><form method="post" asp-page-handler="Assignment"><input type="hidden" name="tutorId" value="@assignment.TutorId" /><input type="hidden" name="add" value="false" /><p>Remove this tutor from @Model.Module.ModuleCode?</p><button type="submit" class="secondary">Confirm removal</button></form></details></td></tr>
-        }
-        @if (Model.Module.TutorCourseModules.Count == 0) { <tr><td colspan="4" class="module-empty">No tutors assigned. Use the form above to add one.</td></tr> }
-        </tbody></table>
-    </div>
+    <section class="module-assigned-section" aria-labelledby="assigned-tutors-title">
+        <div class="module-assigned-heading">
+            <div>
+                <h2 id="assigned-tutors-title">Assigned tutors <span class="module-badge">@Model.Module.TutorCourseModules.Count</span></h2>
+            </div>
+        </div>
+        <div class="module-management-workspace module-assigned-workspace">
+            <aside class="module-filter-panel" aria-labelledby="assigned-filter-title">
+                <div class="module-filter-heading"><h2 id="assigned-filter-title">Filters</h2><a asp-page="Details" asp-route-id="@Model.Module.ProgrammeModuleId">Clear All</a></div>
+                <form method="get" asp-page="Details" asp-route-id="@Model.Module.ProgrammeModuleId" class="module-filters">
+                    <div class="module-filter-group"><label asp-for="TutorSearch">Search tutors</label><div class="module-filter-search"><input asp-for="TutorSearch" type="search" placeholder="Name, personnel number or email" /><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg></div></div>
+                    <div class="module-filter-group"><label asp-for="TutorProgrammeId">Programme</label><select asp-for="TutorProgrammeId"><option value="">All programmes</option>@foreach (var programme in Model.AssignedTutorProgrammes) { <option value="@programme.Id">@programme.Name</option> }</select></div>
+                    <button type="submit" class="module-apply-filters">Apply Filters</button>
+                </form>
+            </aside>
+            <div class="module-results module-assigned-results" id="assigned-tutors-results">
+                @if (hasAssignedTutorFilters)
+                {
+                    <div class="module-active-filters" aria-label="Active filters">
+                        <span class="module-active-filters-label">Active filters</span>
+                        @if (!string.IsNullOrWhiteSpace(Model.TutorSearch))
+                        {
+                            <a asp-page="Details" asp-route-id="@Model.Module.ProgrammeModuleId" asp-route-TutorProgrammeId="@Model.TutorProgrammeId" asp-route-TutorPage="1" asp-fragment="assigned-tutors-results" aria-label="Remove search filter @Model.TutorSearch">Search: @Model.TutorSearch <span aria-hidden="true">×</span></a>
+                        }
+                        @if (selectedTutorProgramme is not null)
+                        {
+                            <a asp-page="Details" asp-route-id="@Model.Module.ProgrammeModuleId" asp-route-TutorSearch="@Model.TutorSearch" asp-route-TutorPage="1" asp-fragment="assigned-tutors-results" aria-label="Remove programme filter @selectedTutorProgramme.Name">Programme: @selectedTutorProgramme.Name <span aria-hidden="true">×</span></a>
+                        }
+                    </div>
+                }
+                <p class="module-result-count" role="status"><span class="module-result-summary">Showing <strong>@visibleTutorRange</strong> of <strong>@Model.FilteredAssignedTutorCount</strong> tutors</span></p>
+                <div class="module-table-wrap" tabindex="0" role="region" aria-label="Assigned tutors">
+                    <table class="module-table"><thead><tr><th scope="col">Tutor</th><th scope="col">Email</th><th scope="col">Account status</th><th scope="col">Action</th></tr></thead><tbody>
+                    @foreach (var assignment in Model.AssignedTutors)
+                    {
+                        var outstandingSessions = Model.OutstandingSessionCounts.GetValueOrDefault(assignment.TutorId);
+                        <tr><th scope="row"><a class="module-tutor-link" asp-page="/Administrator/Tutors/Profile" asp-route-id="@assignment.TutorId">@assignment.Tutor.BcUser.DisplayName</a></th><td>@assignment.Tutor.BcUser.Email</td><td><span class="module-status-pill">@(assignment.Tutor.IsActive ? assignment.Tutor.Status.ToString() : "Inactive")</span></td><td><button type="button" class="module-action-button module-action-button--compact" data-bs-toggle="modal" data-bs-target="#remove-tutor-modal" data-remove-tutor-id="@assignment.TutorId" data-remove-tutor-name="@assignment.Tutor.BcUser.DisplayName" data-outstanding-session-count="@outstandingSessions">Remove tutor</button></td></tr>
+                    }
+                    @if (Model.AssignedTutors.Count == 0)
+                    {
+                        <tr><td colspan="4" class="module-empty">
+                            @if (Model.AssignedTutorCount == 0)
+                            {
+                                <div class="module-empty-action"><strong>No tutors are assigned to this module.</strong><span>Assign an eligible tutor to start accepting bookings.</span><button type="button" class="module-action-button" data-bs-toggle="modal" data-bs-target="#assign-tutor-modal">Assign a tutor</button></div>
+                            }
+                            else
+                            {
+                                <span>No assigned tutors match these filters.</span>
+                            }
+                        </td></tr>
+                    }
+                    </tbody></table>
+                </div>
+                @if (Model.TutorTotalPages > 1)
+                {
+                    @await Component.InvokeAsync("Pagination", new { currentPage = Model.TutorPage, totalPages = Model.TutorTotalPages, pageRouteValueName = "TutorPage", fragment = "assigned-tutors-results", ariaLabel = "Assigned tutor pages" })
+                }
+            </div>
+        </div>
+    </section>
 </section>
+
+<div class="modal fade module-create-modal module-assign-modal" id="assign-tutor-modal" tabindex="-1" aria-labelledby="assign-tutor-title" aria-hidden="true" data-assign-tutor-modal data-open="@Model.ShowAssign.ToString().ToLowerInvariant()">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Assignment" data-module-validation novalidate>
+                <input type="hidden" name="add" value="true" />
+                <div class="modal-header">
+                    <div><h2 id="assign-tutor-title">Assign a tutor</h2><p>Select any active, approved tutor.</p></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body module-assign-body">
+                    @if (Model.AvailableTutors.Count == 0)
+                    {
+                        <p class="module-details-empty">No additional eligible tutors are available.</p>
+                    }
+                    else
+                    {
+                        <div class="module-tutor-select">
+                            <label for="assignment-tutor-toggle">Tutor</label>
+                            <select id="assignment-tutor-id" name="tutorId" class="visually-hidden" data-module-required data-module-label="tutor" data-module-validation-target="#assignment-tutor-toggle" data-module-focus-target="#assignment-tutor-toggle" data-tutor-native-select>
+                                <option value="">Select a tutor</option>
+                                @foreach (var tutor in Model.AvailableTutors) { <option value="@tutor.TutorId">@tutor.BcUser.DisplayName (@tutor.BcUser.PersonnelNumber) · @tutor.Programme.Name</option> }
+                            </select>
+                            <div class="module-searchable-select" data-tutor-combobox>
+                                <button id="assignment-tutor-toggle" type="button" class="module-searchable-select-toggle" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="assignment-tutor-options" data-tutor-combobox-toggle>
+                                    <span data-tutor-selected-label>Select a tutor</span>
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
+                                </button>
+                                <div class="module-searchable-select-menu" data-tutor-combobox-menu hidden>
+                                    <div class="module-searchable-select-search"><input type="search" placeholder="Search by name, personnel number or programme" autocomplete="off" aria-label="Search tutors" data-tutor-search /><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg></div>
+                                    <div id="assignment-tutor-options" class="module-searchable-select-options" role="listbox">
+                                        @foreach (var tutor in Model.AvailableTutors)
+                                        {
+                                            <button type="button" role="option" aria-selected="false" data-tutor-option data-value="@tutor.TutorId">
+                                                <strong>@tutor.BcUser.DisplayName</strong>
+                                                <span>@tutor.BcUser.PersonnelNumber · @tutor.Programme.Name</span>
+                                                <span>Year @tutor.YearOfStudy · @tutor.CampusOfStudy</span>
+                                            </button>
+                                        }
+                                    </div>
+                                    <p class="module-tutor-search-empty" data-tutor-search-empty hidden>No tutors match your search.</p>
+                                </div>
+                            </div>
+                            <span class="module-field-error" data-module-error-for="assignment-tutor-id"></span>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="module-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                    @if (Model.AvailableTutors.Count > 0) { <button type="submit" class="module-modal-submit">Assign tutor</button> }
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade module-create-modal" id="module-edit-modal" tabindex="-1" aria-labelledby="module-edit-title" aria-hidden="true" data-module-edit-modal data-open="@Model.ShowEdit.ToString().ToLowerInvariant()">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Save" data-module-validation novalidate>
+                <input type="hidden" name="Input.ProgrammeId" value="@Model.Input.ProgrammeId" />
+                <div class="modal-header">
+                    <div><h2 id="module-edit-title">Edit module details</h2><p>Update the module code, name, or year of study.</p></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body module-form">
+                    <div><label for="Input_ModuleCode">Module code</label><input id="Input_ModuleCode" name="Input.ModuleCode" value="@Model.Input.ModuleCode" data-module-required data-module-maxlength="10" /><span class="module-field-error" data-module-error-for="Input_ModuleCode"></span></div>
+                    <div><label for="Input_ModuleName">Module name</label><input id="Input_ModuleName" name="Input.ModuleName" value="@Model.Input.ModuleName" data-module-required data-module-maxlength="150" /><span class="module-field-error" data-module-error-for="Input_ModuleName"></span></div>
+                    <div><label for="Input_YearOfStudy">Year of study</label><select id="Input_YearOfStudy" name="Input.YearOfStudy">@for (var year = 1; year <= 4; year++) { <option value="@year" selected="@(Model.Input.YearOfStudy == year)">Year @year</option> }</select></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="module-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="module-modal-submit">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade module-create-modal module-remove-modal" id="remove-tutor-modal" tabindex="-1" aria-labelledby="remove-tutor-title" aria-hidden="true" data-remove-tutor-modal>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Assignment">
+                <input type="hidden" name="tutorId" value="" data-remove-tutor-input />
+                <input type="hidden" name="add" value="false" />
+                <div class="modal-header">
+                    <div><h2 id="remove-tutor-title">Remove tutor</h2></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body module-remove-confirmation">
+                    <p>Remove <strong data-remove-tutor-name></strong> from <strong>@Model.Module.ModuleCode</strong>?</p>
+                    <p class="module-muted" data-remove-tutor-clear>The tutor will no longer receive new bookings for this module. Past sessions will remain available.</p>
+                    <div class="module-removal-warning" data-remove-tutor-warning hidden><strong data-remove-tutor-warning-count></strong><span>Complete, cancel, or decline these sessions before removing the tutor.</span></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="module-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="module-modal-danger" data-remove-tutor-submit>Remove tutor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <script src="~/js/admin-modules.js" asp-append-version="true"></script>

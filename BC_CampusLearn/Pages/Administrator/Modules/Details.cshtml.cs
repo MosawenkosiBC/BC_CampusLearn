@@ -12,6 +12,18 @@ public class DetailsModel(ApplicationDbContext context) : PageModel
 {
     public ProgrammeModule Module { get; private set; } = null!;
     public IReadOnlyList<Tutor> AvailableTutors { get; private set; } = [];
+    public IReadOnlyList<TutorCourseModule> AssignedTutors { get; private set; } = [];
+    public IReadOnlyList<ProgrammeOfStudy> AssignedTutorProgrammes { get; private set; } = [];
+    public IReadOnlyDictionary<int, int> OutstandingSessionCounts { get; private set; } =
+        new Dictionary<int, int>();
+    public int AssignedTutorCount { get; private set; }
+    public int FilteredAssignedTutorCount { get; private set; }
+    public int TutorTotalPages { get; private set; }
+    [BindProperty(SupportsGet = true)] public string? TutorSearch { get; set; }
+    [BindProperty(SupportsGet = true)] public int? TutorProgrammeId { get; set; }
+    [BindProperty(SupportsGet = true)] public int TutorPage { get; set; } = 1;
+    public bool ShowEdit { get; private set; }
+    public bool ShowAssign { get; private set; }
     [BindProperty] public IndexModel.ModuleInput Input { get; set; } = new();
     public async Task<IActionResult> OnGetAsync(int id, CancellationToken cancellationToken)
     {
@@ -27,6 +39,7 @@ public class DetailsModel(ApplicationDbContext context) : PageModel
 
     private async Task<IActionResult> SaveCoreAsync(int id, CancellationToken cancellationToken)
     {
+        ShowEdit = true;
         var module = await context.ProgrammeModules.FindAsync([id], cancellationToken);
         if (module is null) return NotFound();
         Input.ModuleCode = (Input.ModuleCode ?? "").Trim().ToUpperInvariant();
@@ -80,6 +93,7 @@ public class DetailsModel(ApplicationDbContext context) : PageModel
         }
         if (error is not null)
         {
+            ShowAssign = add;
             if (transaction is not null) await transaction.RollbackAsync(cancellationToken);
             context.ChangeTracker.Clear();
             ModelState.AddModelError("", error);
@@ -99,11 +113,42 @@ public class DetailsModel(ApplicationDbContext context) : PageModel
                 a.Tutor.Status == TutorStatus.Approved &&
                 a.Tutor.ApplicationStage == TutorApplicationStage.Placement))
             .ThenInclude(a => a.Tutor).ThenInclude(t => t.BcUser)
+            .Include(m => m.TutorCourseModules.Where(a => a.IsActive && a.Tutor.IsActive &&
+                a.Tutor.Status == TutorStatus.Approved &&
+                a.Tutor.ApplicationStage == TutorApplicationStage.Placement))
+            .ThenInclude(a => a.Tutor).ThenInclude(t => t.Programme)
             .SingleOrDefaultAsync(m => m.ProgrammeModuleId == id, ct);
         if (module is null) return false;
         Module = module;
-        AvailableTutors = await context.Tutors.AsNoTracking().Include(t => t.BcUser)
-            .Where(t => t.ProgrammeId == module.ProgrammeId && t.IsActive && t.Status == TutorStatus.Approved &&
+        var assignments = module.TutorCourseModules.OrderBy(a => a.Tutor.BcUser.DisplayName).ToList();
+        AssignedTutorCount = assignments.Count;
+        AssignedTutorProgrammes = assignments.Select(a => a.Tutor.Programme)
+            .DistinctBy(programme => programme.Id).OrderBy(programme => programme.Name).ToList();
+        IEnumerable<TutorCourseModule> filteredAssignments = assignments;
+        if (!string.IsNullOrWhiteSpace(TutorSearch))
+        {
+            var term = TutorSearch.Trim();
+            filteredAssignments = filteredAssignments.Where(assignment =>
+                assignment.Tutor.BcUser.DisplayName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                assignment.Tutor.BcUser.PersonnelNumber.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                (assignment.Tutor.BcUser.Email?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+        if (TutorProgrammeId.HasValue)
+            filteredAssignments = filteredAssignments.Where(a => a.Tutor.ProgrammeId == TutorProgrammeId.Value);
+        var filteredAssignmentList = filteredAssignments.ToList();
+        FilteredAssignedTutorCount = filteredAssignmentList.Count;
+        TutorTotalPages = Math.Max(1, (int)Math.Ceiling(FilteredAssignedTutorCount / 12d));
+        TutorPage = Math.Clamp(TutorPage, 1, TutorTotalPages);
+        AssignedTutors = filteredAssignmentList.Skip((TutorPage - 1) * 12).Take(12).ToList();
+        OutstandingSessionCounts = await context.Bookings.AsNoTracking()
+            .Where(booking => booking.ProgrammeModuleId == id &&
+                (booking.Status == BookingStatus.Pending || booking.Status == BookingStatus.Confirmed ||
+                 booking.Status == BookingStatus.InProgress))
+            .GroupBy(booking => booking.TutorId)
+            .Select(group => new { TutorId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.TutorId, item => item.Count, ct);
+        AvailableTutors = await context.Tutors.AsNoTracking().Include(t => t.BcUser).Include(t => t.Programme)
+            .Where(t => t.IsActive && t.Status == TutorStatus.Approved &&
                 t.ApplicationStage == TutorApplicationStage.Placement &&
                 !t.TutorCourseModules.Any(a => a.ProgrammeModuleId == id && a.IsActive))
             .OrderBy(t => t.BcUser.DisplayName).ToListAsync(ct);

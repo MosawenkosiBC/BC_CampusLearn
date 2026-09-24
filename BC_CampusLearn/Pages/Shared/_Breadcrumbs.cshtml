@@ -53,6 +53,13 @@
             breadcrumbs.Add(("Tutor Profile", "/Administrator/Tutors/Profile"));
             breadcrumbs.Add(("Session Information", null));
             break;
+        case "/Administrator/Modules/Index":
+            breadcrumbs.Add(("Modules", null));
+            break;
+        case "/Administrator/Modules/Details":
+            breadcrumbs.Add(("Modules", "/Administrator/Modules/Index"));
+            breadcrumbs.Add((pageTitle ?? "Module details", null));
+            break;
         case "/Student/Dashboard":
             breadcrumbs.Add(("Dashboard", null));
             break;
