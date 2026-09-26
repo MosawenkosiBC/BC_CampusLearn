@@ -221,26 +221,56 @@
 
                     @if (Model.PendingModuleRequests.Count > 0)
                     {
-                        <div class="tutor-pending-module-requests">
-                            <strong>Pending requests</strong>
-                            @foreach (var request in Model.PendingModuleRequests)
-                            {
-                                <span>
-                                    @(request.RequestType == TutorModuleChangeRequestType.Add ? "Add" : "Remove")
-                                    @request.ModuleName
-                                </span>
-                            }
-                        </div>
+                        <details class="tutor-module-decisions tutor-module-pending-decisions">
+                            <summary>
+                                <span>Pending requests</span>
+                                <span>@Model.PendingModuleRequests.Count</span>
+                            </summary>
+                            <div class="tutor-module-decision-list">
+                                @foreach (var request in Model.PendingModuleRequests)
+                                {
+                                    <article class="tutor-module-decision tutor-module-decision--pending">
+                                        <div class="tutor-module-decision-heading">
+                                            <div>
+                                                <strong>@(request.RequestType == TutorModuleChangeRequestType.Add ? "Add module" : "Remove module")</strong>
+                                                <span>@request.ModuleName</span>
+                                            </div>
+                                            <span>Pending</span>
+                                        </div>
+                                    </article>
+                                }
+                            </div>
+                        </details>
                     }
                     @if (Model.ReviewedModuleRequests.Count > 0)
                     {
-                        <details class="tutor-pending-module-requests">
-                            <summary>Recent module decisions</summary>
-                            @foreach (var request in Model.ReviewedModuleRequests)
-                            {
-                                <p><strong>@request.RequestType @request.ProgrammeModule.ModuleCode — @request.Status</strong><br />
-                                    @request.ReviewedAt?.ToLocalTime().ToString("dd MMM yyyy")<br />@request.ReviewNote</p>
-                            }
+                        <details class="tutor-module-decisions">
+                            <summary>
+                                <span>Recent module decisions</span>
+                                <span>@Model.ReviewedModuleRequests.Count</span>
+                            </summary>
+                            <div class="tutor-module-decision-list">
+                                @foreach (var request in Model.ReviewedModuleRequests)
+                                {
+                                    <article class="tutor-module-decision tutor-module-decision--@request.Status.ToString().ToLowerInvariant()">
+                                        <div class="tutor-module-decision-heading">
+                                            <div>
+                                                <strong>@request.RequestType @request.ProgrammeModule.ModuleCode</strong>
+                                                <span>@request.ProgrammeModule.ModuleName</span>
+                                            </div>
+                                            <span>@request.Status</span>
+                                        </div>
+                                        <time>@request.ReviewedAt?.ToLocalTime().ToString("dd MMM yyyy")</time>
+                                        @if (!string.IsNullOrWhiteSpace(request.ReviewNote))
+                                        {
+                                            <div class="tutor-module-decision-note">
+                                                <strong>Review note</strong>
+                                                <p>@request.ReviewNote</p>
+                                            </div>
+                                        }
+                                    </article>
+                                }
+                            </div>
                         </details>
                     }
                 </div>

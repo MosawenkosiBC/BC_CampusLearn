@@ -489,6 +489,155 @@ a.tutor-profile-nav-link:focus-visible {
     padding: 0.32rem 0.65rem;
 }
 
+.tutor-module-decisions {
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.tutor-module-decisions > summary {
+    align-items: center;
+    background-color: #fff;
+    border-radius: 0.45rem;
+    box-shadow: 0 0.35rem 1rem rgba(33, 38, 45, 0.1);
+    color: #303640;
+    cursor: pointer;
+    display: grid;
+    font-size: 0.9rem;
+    font-weight: 600;
+    gap: 0.7rem;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    list-style: none;
+    padding: 0.75rem 0.85rem;
+}
+
+.tutor-module-decisions > summary::-webkit-details-marker {
+    display: none;
+}
+
+.tutor-module-decisions > summary::after {
+    border: solid #626a73;
+    border-width: 0 0.12rem 0.12rem 0;
+    content: "";
+    height: 0.45rem;
+    margin-right: 0.2rem;
+    transform: rotate(45deg) translateY(-0.1rem);
+    transition: transform 160ms ease;
+    width: 0.45rem;
+}
+
+.tutor-module-decisions[open] > summary::after {
+    transform: rotate(225deg) translate(-0.08rem, -0.08rem);
+}
+
+.tutor-module-decisions > summary:hover {
+    box-shadow: 0 0.5rem 1.25rem rgba(33, 38, 45, 0.13);
+}
+
+.tutor-module-decisions > summary:focus-visible {
+    outline: 3px solid #858b93;
+    outline-offset: 3px;
+}
+
+.tutor-module-decisions > summary > span:last-child {
+    align-items: center;
+    background-color: #dfe3e7;
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 0.72rem;
+    height: 1.55rem;
+    justify-content: center;
+    min-width: 1.55rem;
+    padding: 0 0.4rem;
+}
+
+.tutor-module-decision-list {
+    display: grid;
+    gap: 0.7rem;
+    padding-top: 0.75rem;
+}
+
+.tutor-module-decision {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.3rem 1rem rgba(33, 38, 45, 0.08);
+    padding: 0.85rem;
+}
+
+.tutor-module-decision-heading {
+    align-items: flex-start;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.tutor-module-decision-heading > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.tutor-module-decision-heading > div strong {
+    color: #303640;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.tutor-module-decision-heading > div span {
+    color: #68707a;
+    font-size: 0.78rem;
+}
+
+.tutor-module-decision-heading > span {
+    background-color: #e6f0ea;
+    border-radius: 999px;
+    color: #315b49;
+    flex: 0 0 auto;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.25rem 0.55rem;
+}
+
+.tutor-module-decision--declined .tutor-module-decision-heading > span {
+    background-color: #f5e8e5;
+    color: #873c31;
+}
+
+.tutor-module-decision--pending .tutor-module-decision-heading > span {
+    background-color: #eceff2;
+    color: #59636d;
+}
+
+.tutor-module-decision > time {
+    color: #7b828b;
+    display: block;
+    font-size: 0.72rem;
+    margin-top: 0.45rem;
+}
+
+.tutor-module-decision-note {
+    background-color: #f4f5f6;
+    border-radius: 0.4rem;
+    margin-top: 0.7rem;
+    padding: 0.65rem 0.75rem;
+}
+
+.tutor-module-decision-note strong {
+    color: #555d66;
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.tutor-module-decision-note p {
+    color: #303640;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
 .tutor-public-profile-card {
     padding: 2rem;
 }

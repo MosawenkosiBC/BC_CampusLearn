@@ -22,17 +22,36 @@ public class IndexModel(ApplicationDbContext context) : PageModel
     [BindProperty(SupportsGet = true)] public TutorAccountRequestStatus RequestStatus { get; set; }
     [BindProperty(SupportsGet = true)] public int RequestPage { get; set; } = 1;
     [BindProperty] public ModuleInput Input { get; set; } = new();
+    [BindProperty] public List<int> SelectedRequestIds { get; set; } = [];
     public IReadOnlyList<ProgrammeOfStudy> Programmes { get; private set; } = [];
     public IReadOnlyList<ModuleRow> Modules { get; private set; } = [];
     public IReadOnlyList<TutorModuleChangeRequest> Requests { get; private set; } = [];
+    public IReadOnlyList<TutorRequestGroup> RequestGroups { get; private set; } = [];
     public int TotalModules { get; private set; }
     public int UncoveredModules { get; private set; }
     public int PendingRequests { get; private set; }
     public int FilteredCount { get; private set; }
+    public int FilteredRequestCount { get; private set; }
     public int TotalPages { get; private set; }
     public int RequestPages { get; private set; }
     public bool ShowCreate { get; private set; }
     public sealed record ModuleRow(int Id, string Code, string Name, string Programme, int Year, int TutorCount);
+    public sealed record RequestModuleRow(int RequestId, int ModuleId, string Code, string Name, string Programme);
+    public sealed record RequestSubmission(
+        int RequestId,
+        TutorModuleChangeRequestType RequestType,
+        TutorAccountRequestStatus Status,
+        string? Reason,
+        DateTime SubmittedAt,
+        DateTime? ReviewedAt,
+        string? ReviewedBy,
+        string? ReviewNote,
+        IReadOnlyList<RequestModuleRow> Modules);
+    public sealed record TutorRequestGroup(
+        int TutorId,
+        string TutorName,
+        string Programme,
+        IReadOnlyList<RequestSubmission> Submissions);
     public sealed class ModuleInput
     {
         [Range(1, int.MaxValue, ErrorMessage = "Choose a programme.")] public int ProgrammeId { get; set; }
@@ -87,26 +106,77 @@ public class IndexModel(ApplicationDbContext context) : PageModel
             ModelState.AddModelError("", "Provide a reason when declining, using no more than 500 characters.");
             await LoadAsync(cancellationToken); return Page();
         }
+        SelectedRequestIds = SelectedRequestIds
+            .Where(id => id > 0)
+            .Distinct()
+            .ToList();
+        if (SelectedRequestIds.Count == 0)
+        {
+            ModelState.AddModelError("", "Select at least one module to review.");
+            await LoadAsync(cancellationToken);
+            return Page();
+        }
         await using var transaction = context.Database.IsRelational()
             ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken) : null;
         var request = await context.TutorModuleChangeRequests.Include(r => r.Tutor)
             .Include(r => r.ProgrammeModule).SingleOrDefaultAsync(r => r.TutorModuleChangeRequestId == requestId, cancellationToken);
         if (request is null) return NotFound();
-        string? error = request.Status != TutorAccountRequestStatus.Pending ? "This request has already been reviewed." : null;
+        List<TutorModuleChangeRequest> submission = await context.TutorModuleChangeRequests
+            .Include(r => r.Tutor)
+            .Include(r => r.ProgrammeModule)
+            .Where(r => r.TutorId == request.TutorId &&
+                r.RequestType == request.RequestType &&
+                r.SubmittedAt == request.SubmittedAt &&
+                r.Reason == request.Reason)
+            .OrderBy(r => r.TutorModuleChangeRequestId)
+            .ToListAsync(cancellationToken);
+        List<TutorModuleChangeRequest> selectedRequests = submission
+            .Where(item => SelectedRequestIds.Contains(item.TutorModuleChangeRequestId))
+            .ToList();
+        string? error = selectedRequests.Count != SelectedRequestIds.Count
+            ? "The selected modules do not belong to this request."
+            : selectedRequests.Any(item => item.Status != TutorAccountRequestStatus.Pending)
+                ? "One or more selected modules have already been reviewed."
+                : null;
         var management = new AdminModuleManagement(context);
         if (error is null && approve)
         {
             if (!Enum.IsDefined(request.RequestType)) error = "The request type is invalid.";
-            else error = await management.ChangeAssignmentAsync(request.TutorId, request.ProgrammeModuleId,
-                request.RequestType == TutorModuleChangeRequestType.Add, cancellationToken);
+            else
+            {
+                foreach (TutorModuleChangeRequest item in selectedRequests)
+                {
+                    error = await management.ChangeAssignmentAsync(
+                        item.TutorId,
+                        item.ProgrammeModuleId,
+                        item.RequestType == TutorModuleChangeRequestType.Add,
+                        cancellationToken);
+                    if (error is not null) break;
+                }
+            }
         }
-        if (error is not null) { ModelState.AddModelError("", error); await LoadAsync(cancellationToken); return Page(); }
-        request.Status = approve ? TutorAccountRequestStatus.Approved : TutorAccountRequestStatus.Declined;
-        request.ReviewedAt = DateTime.UtcNow;
-        request.ReviewedBy = User.Identity?.Name ?? "Administrator";
-        request.ReviewNote = reviewNote;
-        management.Notify(request.Tutor, request.ProgrammeModule,
-            $"Your request to {request.RequestType.ToString().ToLowerInvariant()} this module was {request.Status.ToString().ToLowerInvariant()}. {reviewNote}");
+        if (error is not null)
+        {
+            if (transaction is not null) await transaction.RollbackAsync(cancellationToken);
+            context.ChangeTracker.Clear();
+            ModelState.AddModelError("", error);
+            await LoadAsync(cancellationToken);
+            return Page();
+        }
+        TutorAccountRequestStatus reviewedStatus = approve
+            ? TutorAccountRequestStatus.Approved
+            : TutorAccountRequestStatus.Declined;
+        DateTime reviewedAt = DateTime.UtcNow;
+        string reviewedBy = User.Identity?.Name ?? "Administrator";
+        foreach (TutorModuleChangeRequest item in selectedRequests)
+        {
+            item.Status = reviewedStatus;
+            item.ReviewedAt = reviewedAt;
+            item.ReviewedBy = reviewedBy;
+            item.ReviewNote = reviewNote;
+            management.Notify(item.Tutor, item.ProgrammeModule,
+                $"Your request to {item.RequestType.ToString().ToLowerInvariant()} this module was {reviewedStatus.ToString().ToLowerInvariant()}. {reviewNote}");
+        }
         try { await context.SaveChangesAsync(cancellationToken); }
         catch (DbUpdateConcurrencyException)
         {
@@ -116,7 +186,9 @@ public class IndexModel(ApplicationDbContext context) : PageModel
             await LoadAsync(cancellationToken); return Page();
         }
         if (transaction is not null) await transaction.CommitAsync(cancellationToken);
-        TempData["ModuleSuccess"] = approve ? "Request approved and assignment updated." : "Request declined. The tutor has been notified.";
+        TempData["ModuleSuccess"] = approve
+            ? "Request approved and module assignments updated."
+            : "Request declined. The tutor has been notified.";
         return RedirectToPage(new { Tab = "requests", RequestStatus });
     }
 
@@ -132,10 +204,15 @@ public class IndexModel(ApplicationDbContext context) : PageModel
         UncoveredModules = await query.CountAsync(m => !m.TutorCourseModules.Any(a =>
             a.IsActive && a.Tutor.IsActive && a.Tutor.Status == TutorStatus.Approved &&
             a.Tutor.ApplicationStage == TutorApplicationStage.Placement), ct);
-        PendingRequests = await context.TutorModuleChangeRequests.CountAsync(r =>
+        var pendingRequestRows = await context.TutorModuleChangeRequests.AsNoTracking().Where(r =>
             r.Status == TutorAccountRequestStatus.Pending && r.Tutor.IsActive &&
             r.Tutor.Status == TutorStatus.Approved &&
-            r.Tutor.ApplicationStage == TutorApplicationStage.Placement, ct);
+            r.Tutor.ApplicationStage == TutorApplicationStage.Placement)
+            .Select(r => new { r.TutorId, r.RequestType, r.SubmittedAt, r.Reason })
+            .ToListAsync(ct);
+        PendingRequests = pendingRequestRows
+            .DistinctBy(r => new { r.TutorId, r.RequestType, r.SubmittedAt, r.Reason })
+            .Count();
         if (ProgrammeId.HasValue) query = query.Where(m => m.ProgrammeId == ProgrammeId);
         if (Year.HasValue) query = query.Where(m => m.YearOfStudy == Year);
         if (!string.IsNullOrWhiteSpace(Search)) { var term = Search.Trim(); query = query.Where(m => m.ModuleName.Contains(term) || m.ModuleCode.Contains(term)); }
@@ -169,11 +246,69 @@ public class IndexModel(ApplicationDbContext context) : PageModel
         var requests = context.TutorModuleChangeRequests.AsNoTracking().Where(r =>
             r.Status == RequestStatus && r.Tutor.IsActive && r.Tutor.Status == TutorStatus.Approved &&
             r.Tutor.ApplicationStage == TutorApplicationStage.Placement);
-        RequestPages = Math.Max(1, (int)Math.Ceiling(await requests.CountAsync(ct) / 12d));
-        RequestPage = Math.Clamp(RequestPage, 1, RequestPages);
-        Requests = await requests.Include(r => r.Tutor).ThenInclude(t => t.BcUser)
+        List<TutorModuleChangeRequest> requestRows = await requests
+            .Include(r => r.Tutor).ThenInclude(t => t.BcUser)
+            .Include(r => r.Tutor).ThenInclude(t => t.Programme)
             .Include(r => r.ProgrammeModule).ThenInclude(m => m.Programme)
             .OrderByDescending(r => r.SubmittedAt).ThenByDescending(r => r.TutorModuleChangeRequestId)
-            .Skip((RequestPage - 1) * 12).Take(12).ToListAsync(ct);
+            .ToListAsync(ct);
+        var requestSubmissions = requestRows
+            .GroupBy(r => new
+            {
+                r.TutorId,
+                r.RequestType,
+                r.SubmittedAt,
+                r.Reason,
+                r.ReviewedAt,
+                r.ReviewedBy,
+                r.ReviewNote
+            })
+            .OrderBy(group => group.First().Tutor.BcUser.DisplayName)
+            .ThenByDescending(group => group.Key.SubmittedAt)
+            .ToList();
+        FilteredRequestCount = requestSubmissions.Count;
+        RequestPages = Math.Max(1, (int)Math.Ceiling(FilteredRequestCount / 12d));
+        RequestPage = Math.Clamp(RequestPage, 1, RequestPages);
+        var visibleSubmissions = requestSubmissions
+            .Skip((RequestPage - 1) * 12)
+            .Take(12)
+            .ToList();
+        Requests = visibleSubmissions.SelectMany(group => group).ToList();
+        RequestGroups = visibleSubmissions
+            .GroupBy(submission => submission.Key.TutorId)
+            .Select(tutorSubmissions =>
+        {
+            TutorModuleChangeRequest first = tutorSubmissions.First().First();
+            IReadOnlyList<RequestSubmission> submissions = tutorSubmissions
+                .Select(submission =>
+                {
+                    TutorModuleChangeRequest submissionFirst = submission.First();
+                    IReadOnlyList<RequestModuleRow> requestModules = submission
+                        .OrderBy(r => r.ProgrammeModule.ModuleCode)
+                        .Select(r => new RequestModuleRow(
+                            r.TutorModuleChangeRequestId,
+                            r.ProgrammeModuleId,
+                            r.ProgrammeModule.ModuleCode,
+                            r.ProgrammeModule.ModuleName,
+                            r.ProgrammeModule.Programme.Name))
+                        .ToList();
+                    return new RequestSubmission(
+                        submissionFirst.TutorModuleChangeRequestId,
+                        submissionFirst.RequestType,
+                        submissionFirst.Status,
+                        submissionFirst.Reason,
+                        submissionFirst.SubmittedAt,
+                        submissionFirst.ReviewedAt,
+                        submissionFirst.ReviewedBy,
+                        submissionFirst.ReviewNote,
+                        requestModules);
+                })
+                .ToList();
+            return new TutorRequestGroup(
+                first.TutorId,
+                first.Tutor.BcUser.DisplayName,
+                first.Tutor.Programme.Name,
+                submissions);
+        }).ToList();
     }
 }

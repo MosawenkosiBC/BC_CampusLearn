@@ -89,12 +89,87 @@
         });
     });
 
+    const reviewConfirmElement = document.querySelector(
+        "[data-module-review-confirm-modal]");
+    const reviewConfirmTitle = reviewConfirmElement?.querySelector(
+        "[data-module-review-confirm-title]");
+    const reviewConfirmSummary = reviewConfirmElement?.querySelector(
+        "[data-module-review-confirm-summary]");
+    const reviewConfirmList = reviewConfirmElement?.querySelector(
+        "[data-module-review-confirm-list]");
+    const reviewConfirmSubmit = reviewConfirmElement?.querySelector(
+        "[data-module-review-confirm-submit]");
+    let pendingReviewForm = null;
+    let pendingReviewSubmitter = null;
+    let returnRequestModal = null;
+    let submittingConfirmedReview = false;
+
+    reviewConfirmElement?.addEventListener("hidden.bs.modal", () => {
+        if (!submittingConfirmedReview && returnRequestModal) {
+            window.bootstrap?.Modal.getOrCreateInstance(returnRequestModal).show();
+        }
+        returnRequestModal = null;
+        submittingConfirmedReview = false;
+    });
+
+    reviewConfirmSubmit?.addEventListener("click", () => {
+        if (!pendingReviewForm || !pendingReviewSubmitter) {
+            return;
+        }
+
+        const form = pendingReviewForm;
+        const submitter = pendingReviewSubmitter;
+        pendingReviewForm = null;
+        pendingReviewSubmitter = null;
+        submittingConfirmedReview = true;
+        form.dataset.reviewConfirmed = "true";
+        window.bootstrap?.Modal.getOrCreateInstance(reviewConfirmElement).hide();
+        form.requestSubmit(submitter);
+    });
+
     document.querySelectorAll("[data-module-review-validation]").forEach((form) => {
         const note = form.querySelector("textarea[name='reviewNote']");
         const error = form.querySelector("[data-module-review-error]");
+        const requestCard = form.closest(".module-request");
+        const moduleCheckboxes = Array.from(
+            requestCard?.querySelectorAll("[data-module-request-checkbox]") || []);
+        const selectAll = requestCard?.querySelector("[data-module-select-all]");
+        const selectionCount = requestCard?.querySelector("[data-module-selection-count]");
+        const selectionError = requestCard?.querySelector("[data-module-selection-error]");
         if (!note || !error) {
             return;
         }
+
+        const updateSelection = () => {
+            const selectedCount = moduleCheckboxes.filter(
+                checkbox => checkbox.checked).length;
+            if (selectionCount) {
+                selectionCount.textContent = selectedCount === 1
+                    ? "1 module selected"
+                    : `${selectedCount} modules selected`;
+            }
+            if (selectAll) {
+                selectAll.checked = selectedCount === moduleCheckboxes.length &&
+                    moduleCheckboxes.length > 0;
+                selectAll.indeterminate = selectedCount > 0 &&
+                    selectedCount < moduleCheckboxes.length;
+            }
+            if (selectedCount > 0 && selectionError) {
+                selectionError.textContent = "";
+                selectionError.hidden = true;
+            }
+        };
+
+        selectAll?.addEventListener("change", () => {
+            moduleCheckboxes.forEach((checkbox) => {
+                checkbox.checked = selectAll.checked;
+            });
+            updateSelection();
+        });
+        moduleCheckboxes.forEach((checkbox) => {
+            checkbox.addEventListener("change", updateSelection);
+        });
+        updateSelection();
 
         const showError = (message) => {
             note.classList.toggle("is-invalid", Boolean(message));
@@ -114,6 +189,17 @@
             const isDecline = event.submitter?.name === "approve" &&
                 event.submitter.value === "false";
             let message = "";
+            const selectedModules = moduleCheckboxes.filter(
+                checkbox => checkbox.checked);
+            const hasSelectedModules = selectedModules.length > 0;
+            if (!hasSelectedModules) {
+                event.preventDefault();
+                if (selectionError) {
+                    selectionError.textContent = "Select at least one module to review.";
+                    selectionError.hidden = false;
+                }
+                moduleCheckboxes[0]?.focus();
+            }
             if (isDecline && !value) {
                 message = "Enter a review note before declining this request.";
             } else if (value.length > 500) {
@@ -123,10 +209,65 @@
             showError(message);
             if (message) {
                 event.preventDefault();
-                note.focus();
+                if (hasSelectedModules) {
+                    note.focus();
+                }
+            }
+
+            if (!hasSelectedModules || message ||
+                form.dataset.reviewConfirmed === "true") {
+                if (form.dataset.reviewConfirmed === "true") {
+                    delete form.dataset.reviewConfirmed;
+                }
+                return;
+            }
+
+            if (!reviewConfirmElement || !window.bootstrap?.Modal ||
+                !event.submitter) {
+                return;
+            }
+
+            event.preventDefault();
+            pendingReviewForm = form;
+            pendingReviewSubmitter = event.submitter;
+            const action = isDecline ? "Decline" : "Approve";
+            const moduleWord = selectedModules.length === 1 ? "module" : "modules";
+            if (reviewConfirmTitle) {
+                reviewConfirmTitle.textContent = `${action} selected ${moduleWord}?`;
+            }
+            if (reviewConfirmSummary) {
+                reviewConfirmSummary.textContent =
+                    `${action} ${selectedModules.length} selected ${moduleWord}.`;
+            }
+            if (reviewConfirmList) {
+                reviewConfirmList.replaceChildren(...selectedModules.map((checkbox) => {
+                    const item = document.createElement("li");
+                    item.textContent = checkbox.dataset.moduleLabel || "Selected module";
+                    return item;
+                }));
+            }
+            reviewConfirmSubmit.textContent = `${action} ${selectedModules.length} ${moduleWord}`;
+            reviewConfirmSubmit.classList.toggle("is-decline", isDecline);
+            returnRequestModal = form.closest("[data-module-request-modal]");
+            const showConfirmation = () =>
+                window.bootstrap.Modal.getOrCreateInstance(reviewConfirmElement).show();
+            if (returnRequestModal?.classList.contains("show")) {
+                returnRequestModal.addEventListener(
+                    "hidden.bs.modal",
+                    showConfirmation,
+                    { once: true });
+                window.bootstrap.Modal.getOrCreateInstance(returnRequestModal).hide();
+            } else {
+                showConfirmation();
             }
         });
     });
+
+    document.querySelectorAll(
+        "[data-module-request-modal][data-open-on-load='true']")
+        .forEach((modal) => {
+            window.bootstrap?.Modal.getOrCreateInstance(modal).show();
+        });
 
     const createModal = document.querySelector("[data-module-create-modal]");
     if (createModal?.dataset.open === "true" && window.bootstrap?.Modal) {
@@ -224,8 +365,8 @@
         if (warning) warning.hidden = outstandingSessionCount === 0;
         if (warningCount) {
             warningCount.textContent = outstandingSessionCount === 1
-                ? "1 outstanding session"
-                : `${outstandingSessionCount} outstanding sessions`;
+                ? "1 active session prevents removal"
+                : `${outstandingSessionCount} active sessions prevent removal`;
         }
         if (submit) submit.disabled = outstandingSessionCount > 0;
     });

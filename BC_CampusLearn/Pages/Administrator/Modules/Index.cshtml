@@ -14,21 +14,21 @@
     <div class="admin-stat-grid module-stat-grid" aria-label="Module statistics">
         <article class="admin-stat-card">
             <div class="admin-stat-icon admin-stat-icon--resources" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M8.5 4h10a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1h-11a3 3 0 0 1-3-3V8a4 4 0 0 1 4-4Z" /><path d="M4.5 17.5c.7-1.5 1.9-2.25 3.5-2.25h11.5M9 8h7m-7 4h5" /></svg>
+                <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none" stroke="none" /><path d="M9.542 4.652L6.983 5.924C3.661 7.576 2 8.402 2 9.75s1.661 2.174 4.983 3.826l2.559 1.272c1.209.601 1.814.902 2.458.902s1.249-.3 2.458-.902l2.559-1.272C20.339 11.924 22 11.098 22 9.75s-1.661-2.174-4.983-3.826l-2.559-1.272C13.25 4.051 12.644 3.75 12 3.75s-1.249.3-2.458.902ZM6 13.25v3.807c0 .092 0 .137.002.18c.029.706.42 1.347 1.03 1.689a22 22 0 0 0 .813.407a9.88 9.88 0 0 0 8.31 0c.16-.074.325-.157.656-.325c.08-.041.12-.061.158-.082c.61-.342 1-.983 1.03-1.69l.001-.179V13.25m4-3.5v6.5" /></svg>
             </div>
             <div class="admin-stat-content"><h2>Modules in catalogue</h2><p>@Model.TotalModules</p></div>
         </article>
-        <a asp-page="Index" asp-route-Unassigned="true" class="admin-stat-card module-stat-link" aria-label="Show @Model.UncoveredModules modules without active tutors">
+        <article class="admin-stat-card">
             <div class="admin-stat-icon admin-stat-icon--tutors" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none" stroke="none" /><path d="M8.5 3.708A2.5 2.5 0 0 0 6 8m-2.625 8.5C2.615 16.5 2 15.859 2 15.068c0-1.61 1.667-3.219 4.5-3.528m9-7.832A2.5 2.5 0 0 1 18 8m2.625 8.5c.76 0 1.375-.642 1.375-1.433c0-1.609-1.666-3.218-4.5-3.527M12 11.5a3 3 0 1 0 0-6a3 3 0 0 0 0 6Zm0 3c-3.75 0-6 2.143-6 4.286c0 .947.672 1.714 1.5 1.714h9c.828 0 1.5-.767 1.5-1.714c0-2.143-2.25-4.286-6-4.286Z" /></svg>
+            </div>
+            <div class="admin-stat-content"><h2>With active tutors</h2><p>@(Model.TotalModules - Model.UncoveredModules)</p></div>
+        </article>
+        <a asp-page="Index" asp-route-Unassigned="true" class="admin-stat-card module-stat-link" aria-label="Show @Model.UncoveredModules modules without active tutors">
+            <div class="admin-stat-icon admin-stat-icon--requests" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M12 11.5a3 3 0 1 0 0-6a3 3 0 0 0 0 6Zm0 3c-3.75 0-6 2.143-6 4.286c0 .947.672 1.714 1.5 1.714h9c.828 0 1.5-.767 1.5-1.714c0-2.143-2.25-4.286-6-4.286Z" /><path d="M18.5 5.5 22 9m0-3.5L18.5 9" /></svg>
             </div>
             <div class="admin-stat-content"><h2>Without active tutors</h2><p>@Model.UncoveredModules</p></div>
-        </a>
-        <a asp-page="Index" asp-route-Tab="requests" class="admin-stat-card module-stat-link" aria-label="Review @Model.PendingRequests pending module requests">
-            <div class="admin-stat-icon admin-stat-icon--requests" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /><path d="M9 8h6m-6 4h6m-6 4h3" /></svg>
-            </div>
-            <div class="admin-stat-content"><h2>Requests awaiting review</h2><p>@Model.PendingRequests</p></div>
         </a>
     </div>
     @if (Model.Tab == "catalogue")
@@ -138,30 +138,72 @@
     {
         <div class="module-management-workspace">
         <aside class="module-filter-panel" aria-labelledby="request-filter-title"><div class="module-filter-heading"><h2 id="request-filter-title">Filters</h2><a asp-page="Index" asp-route-Tab="requests">Clear All</a></div><form method="get" class="module-filters"><input type="hidden" name="Tab" value="requests" /><div class="module-filter-group"><label asp-for="RequestStatus">Request status</label><select asp-for="RequestStatus" asp-items="Html.GetEnumSelectList<TutorAccountRequestStatus>()"></select></div><button type="submit" class="module-apply-filters">Show Requests</button></form></aside>
-        <div class="module-results">
-        @if (Model.Requests.Count == 0) { <div class="module-panel module-empty">No @Model.RequestStatus.ToString().ToLowerInvariant() requests.</div> }
-        @foreach (var request in Model.Requests)
+        <div class="module-results" id="request-results">
+        @{ var firstVisibleRequest = Model.FilteredRequestCount == 0 ? 0 : ((Model.RequestPage - 1) * 12) + 1;
+           var lastVisibleRequest = Math.Min(Model.RequestPage * 12, Model.FilteredRequestCount);
+           var visibleRequestRange = Model.FilteredRequestCount == 0 ? "0" : $"{firstVisibleRequest}–{lastVisibleRequest}"; }
+        <p class="module-result-count" role="status">
+            <span class="module-result-summary">Showing <strong>@visibleRequestRange</strong> of <strong>@Model.FilteredRequestCount</strong> requests</span>
+            <span class="module-result-sort">@Model.RequestStatus requests</span>
+        </p>
+        <div class="module-table-wrap" tabindex="0" role="region" aria-label="Module change requests">
+            <table class="module-table module-request-table">
+                <thead><tr><th scope="col">Tutor</th><th scope="col">Request</th><th scope="col">Modules</th><th scope="col">Submitted</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead>
+                <tbody>
+                @foreach (var tutorGroup in Model.RequestGroups)
+                {
+                    @foreach (var submission in tutorGroup.Submissions)
+                    {
+                        var requestModalId = $"module-request-{submission.RequestId}";
+                        <tr>
+                            <th scope="row"><div class="module-request-table-tutor"><strong>@tutorGroup.TutorName</strong><small>@tutorGroup.Programme</small></div></th>
+                            <td><strong>@submission.RequestType @(submission.Modules.Count == 1 ? "1 module" : $"{submission.Modules.Count} modules")</strong></td>
+                            <td><span class="module-request-code-list">@string.Join(", ", submission.Modules.Select(module => module.Code))</span></td>
+                            <td><time>@submission.SubmittedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</time></td>
+                            <td><span class="module-badge">@submission.Status</span></td>
+                            <td><button type="button" class="module-request-action" data-bs-toggle="modal" data-bs-target="#@requestModalId">View request</button></td>
+                        </tr>
+                    }
+                }
+                @if (Model.FilteredRequestCount == 0) { <tr><td colspan="6" class="module-empty">No @Model.RequestStatus.ToString().ToLowerInvariant() requests. @(Model.RequestStatus == TutorAccountRequestStatus.Pending ? "All requests have been reviewed." : "Requests with this status will appear here.")</td></tr> }
+                </tbody>
+            </table>
+        </div>
+
+        @foreach (var tutorGroup in Model.RequestGroups)
         {
-            <article class="module-panel module-request">
-                <div class="module-request-heading"><h2>@request.RequestType @request.ProgrammeModule.ModuleCode <span class="module-badge">@request.Status</span></h2><time>@request.SubmittedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</time></div>
-                <p><strong>@request.Tutor.BcUser.DisplayName</strong> · @request.ProgrammeModule.ModuleName · @request.ProgrammeModule.Programme.Name</p>
-                <p class="module-reason">@(request.Reason ?? "No reason supplied.")</p>
-                <a asp-page="Details" asp-route-id="@request.ProgrammeModuleId">View module and assigned tutors</a>
-                @if (request.Status == TutorAccountRequestStatus.Pending)
-                {
-                    <form method="post" asp-page-handler="Review" class="module-review-form" data-module-review-validation novalidate>
-                        <input type="hidden" name="requestId" value="@request.TutorModuleChangeRequestId" />
-                        <label for="note-@request.TutorModuleChangeRequestId">Review note (required to decline)</label>
-                        <textarea id="note-@request.TutorModuleChangeRequestId" name="reviewNote" rows="2" data-module-maxlength="500"></textarea><span class="module-field-error" data-module-review-error></span>
-                        <div class="module-actions"><button type="submit" name="approve" value="true">Approve @request.RequestType.ToString().ToLowerInvariant()</button><button class="secondary" type="submit" name="approve" value="false">Decline request</button></div>
-                    </form>
-                }
-                else
-                {
-                    <p class="module-muted">Reviewed by @(request.ReviewedBy ?? "Administrator") · @request.ReviewedAt?.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</p>
-                    @if (!string.IsNullOrWhiteSpace(request.ReviewNote)) { <p>@request.ReviewNote</p> }
-                }
-            </article>
+            @foreach (var submission in tutorGroup.Submissions)
+            {
+                var requestModalId = $"module-request-{submission.RequestId}";
+                <div class="modal fade module-request-modal" id="@requestModalId" tabindex="-1" aria-labelledby="@requestModalId-title" aria-hidden="true" data-module-request-modal data-open-on-load="@((!ViewData.ModelState.IsValid && submission.Modules.Any(module => Model.SelectedRequestIds.Contains(module.RequestId))).ToString().ToLowerInvariant())">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                    @if (submission.Status == TutorAccountRequestStatus.Pending)
+                    {
+                        <form id="review-@submission.RequestId" method="post" asp-page-handler="Review" class="modal-content module-request" data-module-review-validation novalidate>
+                            <input type="hidden" name="requestId" value="@submission.RequestId" />
+                            <div class="modal-header"><div><h2 id="@requestModalId-title">@submission.RequestType @(submission.Modules.Count == 1 ? "1 module" : $"{submission.Modules.Count} modules")</h2><p>@tutorGroup.TutorName · @submission.SubmittedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</p></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                            <div class="modal-body">
+                                <div class="module-request-selection-toolbar"><label><input type="checkbox" data-module-select-all /><span>Select all modules</span></label><strong data-module-selection-count>0 modules selected</strong></div>
+                                <div class="module-request-module-list" aria-label="Modules in this request">
+                                @foreach (var module in submission.Modules)
+                                {
+                                    <div class="module-request-module-option"><input id="request-module-@module.RequestId" type="checkbox" name="SelectedRequestIds" value="@module.RequestId" checked="@Model.SelectedRequestIds.Contains(module.RequestId)" data-module-request-checkbox data-module-label="@module.Code — @module.Name" aria-label="Select @module.Code for review" /><a asp-page="Details" asp-route-id="@module.ModuleId"><span><strong>@module.Code</strong> <span aria-hidden="true">—</span> @module.Name</span>@if (module.Programme != tutorGroup.Programme) { <small>@module.Programme</small> }</a></div>
+                                }
+                                </div>
+                                <span class="module-field-error module-selection-error" data-module-selection-error hidden></span>
+                                <p class="module-reason-label">Tutor's reason</p><p class="module-reason">@(submission.Reason ?? "No reason supplied.")</p>
+                                <div class="module-review-form"><label for="note-@submission.RequestId">Review note</label><p>This note will be shown to the tutor with your decision. A note is required when declining.</p><textarea id="note-@submission.RequestId" name="reviewNote" rows="2" data-module-maxlength="500"></textarea><span class="module-field-error" data-module-review-error></span></div>
+                            </div>
+                            <div class="modal-footer module-actions"><button class="secondary" type="submit" name="approve" value="false">Decline selected</button><button type="submit" name="approve" value="true">Approve selected</button></div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="modal-content module-request"><div class="modal-header"><div><h2 id="@requestModalId-title">@submission.RequestType @(submission.Modules.Count == 1 ? "1 module" : $"{submission.Modules.Count} modules")</h2><p>@tutorGroup.TutorName · @submission.SubmittedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</p></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><div class="module-request-module-list" aria-label="Modules in this request">@foreach (var module in submission.Modules) { <div class="module-request-module-option"><a asp-page="Details" asp-route-id="@module.ModuleId"><span><strong>@module.Code</strong> <span aria-hidden="true">—</span> @module.Name</span></a></div> }</div><p class="module-reason-label">Tutor's reason</p><p class="module-reason">@(submission.Reason ?? "No reason supplied.")</p><div class="module-review-summary module-review-summary--@submission.Status.ToString().ToLowerInvariant()"><div class="module-review-summary-header"><div><strong>Reviewed by @(submission.ReviewedBy ?? "Administrator")</strong><time>@submission.ReviewedAt?.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</time></div><span class="module-badge">@submission.Status</span></div>@if (!string.IsNullOrWhiteSpace(submission.ReviewNote)) { <div class="module-review-note"><strong>Review note</strong><p>@submission.ReviewNote</p></div> }</div></div><div class="modal-footer"><button type="button" class="module-modal-cancel" data-bs-dismiss="modal">Close</button></div></div>
+                    }
+                    </div>
+                </div>
+            }
         }
         @if (Model.RequestPages > 1)
         {
@@ -195,6 +237,36 @@
                         <button type="submit" class="module-modal-submit">Create module</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Tab == "requests")
+{
+    <div class="modal fade module-review-confirm-modal"
+         id="module-review-confirm-modal"
+         tabindex="-1"
+         aria-labelledby="module-review-confirm-title"
+         aria-hidden="true"
+         data-module-review-confirm-modal>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 id="module-review-confirm-title" data-module-review-confirm-title>Confirm review</h2>
+                        <p data-module-review-confirm-summary></p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="module-review-confirm-label">Selected modules</p>
+                    <ul data-module-review-confirm-list></ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="module-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="module-modal-submit" data-module-review-confirm-submit>Confirm</button>
+                </div>
             </div>
         </div>
     </div>

@@ -49,7 +49,10 @@ public class AdminModulesTests
         await using var db = await Seed();
         var request = new TutorModuleChangeRequest { TutorId = 1, ProgrammeModuleId = 1, RequestType = TutorModuleChangeRequestType.Add, SubmittedAt = DateTime.UtcNow };
         db.TutorModuleChangeRequests.Add(request); await db.SaveChangesAsync();
-        var page = Setup(new IndexModel(db));
+        var page = Setup(new IndexModel(db)
+        {
+            SelectedRequestIds = [request.TutorModuleChangeRequestId]
+        });
         Assert.IsType<RedirectToPageResult>(await page.OnPostReviewAsync(request.TutorModuleChangeRequestId, true, "Approved", default));
         Assert.True((await db.TutorCourseModules.SingleAsync()).IsActive);
         Assert.Equal(TutorAccountRequestStatus.Approved, request.Status);
@@ -67,13 +70,158 @@ public class AdminModulesTests
         await using var db = await Seed();
         var request = new TutorModuleChangeRequest { TutorId = 1, ProgrammeModuleId = 1 };
         db.TutorModuleChangeRequests.Add(request); await db.SaveChangesAsync();
-        var page = Setup(new IndexModel(db));
+        var page = Setup(new IndexModel(db)
+        {
+            SelectedRequestIds = [request.TutorModuleChangeRequestId]
+        });
         Assert.IsType<PageResult>(await page.OnPostReviewAsync(request.TutorModuleChangeRequestId, false, " ", default));
         Assert.Equal(TutorAccountRequestStatus.Pending, request.Status);
         Assert.IsType<RedirectToPageResult>(await page.OnPostReviewAsync(request.TutorModuleChangeRequestId, false, "Not qualified yet", default));
         Assert.Empty(db.TutorCourseModules);
         Assert.Equal(TutorAccountRequestStatus.Declined, request.Status);
         Assert.Contains("Not qualified yet", (await db.UserNotifications.SingleAsync()).Message);
+    }
+
+    [Fact]
+    public async Task ModuleRequestsAreGroupedByTutorAndSubmission()
+    {
+        await using var db = await Seed();
+        db.ProgrammeModules.Add(new()
+        {
+            ProgrammeModuleId = 2,
+            ProgrammeId = 1,
+            ModuleCode = "DBS201",
+            ModuleName = "Databases",
+            YearOfStudy = 2
+        });
+        DateTime submittedAt = DateTime.UtcNow;
+        db.TutorModuleChangeRequests.AddRange(
+            new()
+            {
+                TutorId = 1,
+                ProgrammeModuleId = 1,
+                RequestType = TutorModuleChangeRequestType.Add,
+                Reason = "Strong results in both modules.",
+                SubmittedAt = submittedAt
+            },
+            new()
+            {
+                TutorId = 1,
+                ProgrammeModuleId = 2,
+                RequestType = TutorModuleChangeRequestType.Add,
+                Reason = "Strong results in both modules.",
+                SubmittedAt = submittedAt
+            });
+        await db.SaveChangesAsync();
+        var page = Setup(new IndexModel(db) { Tab = "requests" });
+
+        await page.OnGetAsync(default);
+
+        var tutorGroup = Assert.Single(page.RequestGroups);
+        var submission = Assert.Single(tutorGroup.Submissions);
+        Assert.Equal(2, submission.Modules.Count);
+        Assert.Equal(1, page.PendingRequests);
+    }
+
+    [Fact]
+    public async Task ApprovingGroupedSubmissionUpdatesEverySelectedModule()
+    {
+        await using var db = await Seed();
+        db.ProgrammeModules.Add(new()
+        {
+            ProgrammeModuleId = 2,
+            ProgrammeId = 1,
+            ModuleCode = "DBS201",
+            ModuleName = "Databases",
+            YearOfStudy = 2
+        });
+        DateTime submittedAt = DateTime.UtcNow;
+        var requests = new[]
+        {
+            new TutorModuleChangeRequest
+            {
+                TutorId = 1,
+                ProgrammeModuleId = 1,
+                RequestType = TutorModuleChangeRequestType.Add,
+                Reason = "Strong results in both modules.",
+                SubmittedAt = submittedAt
+            },
+            new TutorModuleChangeRequest
+            {
+                TutorId = 1,
+                ProgrammeModuleId = 2,
+                RequestType = TutorModuleChangeRequestType.Add,
+                Reason = "Strong results in both modules.",
+                SubmittedAt = submittedAt
+            }
+        };
+        db.TutorModuleChangeRequests.AddRange(requests);
+        await db.SaveChangesAsync();
+        var page = Setup(new IndexModel(db)
+        {
+            SelectedRequestIds = requests
+                .Select(request => request.TutorModuleChangeRequestId)
+                .ToList()
+        });
+
+        Assert.IsType<RedirectToPageResult>(await page.OnPostReviewAsync(
+            requests[0].TutorModuleChangeRequestId,
+            true,
+            "Approved together",
+            default));
+
+        Assert.Equal(2, await db.TutorCourseModules.CountAsync(a => a.IsActive));
+        Assert.All(requests, request =>
+            Assert.Equal(TutorAccountRequestStatus.Approved, request.Status));
+        Assert.Equal(2, await db.UserNotifications.CountAsync());
+    }
+
+    [Fact]
+    public async Task ReviewingSubsetLeavesUnselectedModulesPending()
+    {
+        await using var db = await Seed();
+        db.ProgrammeModules.Add(new()
+        {
+            ProgrammeModuleId = 2,
+            ProgrammeId = 1,
+            ModuleCode = "DBS201",
+            ModuleName = "Databases",
+            YearOfStudy = 2
+        });
+        DateTime submittedAt = DateTime.UtcNow;
+        var selected = new TutorModuleChangeRequest
+        {
+            TutorId = 1,
+            ProgrammeModuleId = 1,
+            RequestType = TutorModuleChangeRequestType.Add,
+            Reason = "Strong results in both modules.",
+            SubmittedAt = submittedAt
+        };
+        var unselected = new TutorModuleChangeRequest
+        {
+            TutorId = 1,
+            ProgrammeModuleId = 2,
+            RequestType = TutorModuleChangeRequestType.Add,
+            Reason = "Strong results in both modules.",
+            SubmittedAt = submittedAt
+        };
+        db.TutorModuleChangeRequests.AddRange(selected, unselected);
+        await db.SaveChangesAsync();
+        var page = Setup(new IndexModel(db)
+        {
+            SelectedRequestIds = [selected.TutorModuleChangeRequestId]
+        });
+
+        Assert.IsType<RedirectToPageResult>(await page.OnPostReviewAsync(
+            selected.TutorModuleChangeRequestId,
+            true,
+            "Approved selected module",
+            default));
+
+        Assert.Equal(TutorAccountRequestStatus.Approved, selected.Status);
+        Assert.Equal(TutorAccountRequestStatus.Pending, unselected.Status);
+        Assert.Equal(1, await db.TutorCourseModules.CountAsync(a => a.IsActive));
+        Assert.Equal(1, await db.UserNotifications.CountAsync());
     }
 
     [Theory]

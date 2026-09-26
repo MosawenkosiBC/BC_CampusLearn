@@ -22,7 +22,7 @@ public class AdminModuleManagement(ApplicationDbContext context)
         if (!add && await context.Bookings.AnyAsync(booking => booking.TutorId == tutorId &&
             booking.ProgrammeModuleId == moduleId && (booking.Status == BookingStatus.Pending ||
             booking.Status == BookingStatus.Confirmed || booking.Status == BookingStatus.InProgress), cancellationToken))
-            return "Complete, cancel or decline outstanding sessions for this module before removing the tutor.";
+            return "One or more sessions for this module are pending, confirmed, or in progress. They must be resolved before the tutor can be removed.";
 
         if (assignment is null)
             context.TutorCourseModules.Add(new TutorCourseModule { TutorId = tutorId, ProgrammeModuleId = moduleId });
