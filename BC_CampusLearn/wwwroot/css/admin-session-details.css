@@ -10,7 +10,6 @@
 .admin-session-review-action button { background: #363c3d; border: 0; border-radius: .5rem; color: #fff; font-weight: 600; min-height: 2.5rem; padding: .5rem 1.25rem; }
 .admin-session-review-action button:hover { background: #242a2b; }
 .admin-session-review-action button:focus-visible { box-shadow: 0 0 0 3px rgba(79,135,165,.35); outline: none; }
-.admin-session-review-action .admin-session-review-message { color: #2b6843; font-weight: 600; margin: 0; }
 .admin-session-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem 2rem; margin: 0; }
 .admin-session-summary-grid > div { min-width: 0; }
 .admin-session-summary-grid dt { color: #626b78; font-size: .78rem; font-weight: 600; margin-bottom: .3rem; }

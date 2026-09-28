@@ -5,9 +5,15 @@
     string layoutPagePath =
         ViewContext.RouteData.Values["Page"]?.ToString()
         ?? string.Empty;
+    bool isAdmin = User.IsInRole(nameof(BcUserRole.Admin)) ||
+        User.IsInRole(nameof(BcUserRole.SuperAdmin)) ||
+        User.IsInRole(nameof(BcUserRole.Dev));
     bool isAdministratorArea = layoutPagePath.StartsWith(
         "/Administrator/",
-        StringComparison.OrdinalIgnoreCase);
+        StringComparison.OrdinalIgnoreCase) ||
+        (isAdmin && layoutPagePath.Equals(
+            "/LearningResources/Details",
+            StringComparison.OrdinalIgnoreCase));
     bool hasDashboardBackground =
         layoutPagePath.Equals(
             "/Student/Dashboard",
@@ -74,9 +80,6 @@
             StringComparison.OrdinalIgnoreCase);
     bool isTutor = User.IsInRole(nameof(BcUserRole.Tutor)) ||
         User.IsInRole(nameof(BcUserRole.HeadOfTutors));
-    bool isAdmin = User.IsInRole(nameof(BcUserRole.Admin)) ||
-        User.IsInRole(nameof(BcUserRole.SuperAdmin)) ||
-        User.IsInRole(nameof(BcUserRole.Dev));
     string dashboardPage = isAdmin
         ? "/Administrator/Admin/Dashboard"
         : "/Student/Dashboard";
