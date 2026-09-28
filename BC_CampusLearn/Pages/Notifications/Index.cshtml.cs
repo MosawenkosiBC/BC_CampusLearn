@@ -126,6 +126,13 @@ public class IndexModel(
                         "/Tutors/TutorApplication",
                         StringComparison.OrdinalIgnoreCase)
                         ? "View application"
+                        : LinkUrl.Equals(
+                            "/Tutors/PublicProfile",
+                            StringComparison.OrdinalIgnoreCase) ||
+                          LinkUrl.Equals(
+                            "/Tutors/Profile",
+                            StringComparison.OrdinalIgnoreCase)
+                            ? "View profile"
                         : "View related page";
 
         private bool IsSessionLink =>

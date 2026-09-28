@@ -129,7 +129,12 @@ public class ProfileModel : PageModel
                 item.BcUserId == currentUser.BcUserId &&
                 item.Status == TutorStatus.Approved &&
                 item.IsActive)
-            .Select(item => new { item.TutorId, item.ProgrammeId })
+            .Select(item => new
+            {
+                item.TutorId,
+                item.ProgrammeId,
+                item.BcUserId
+            })
             .SingleOrDefaultAsync(cancellationToken);
         if (tutor is null)
         {
@@ -143,9 +148,17 @@ public class ProfileModel : PageModel
 
         int moduleId = ModuleRequestInput.ProgrammeModuleId!.Value;
         TutorModuleChangeRequestType requestType = ModuleRequestInput.RequestType!.Value;
-        bool belongsToProgramme = await _context.ProgrammeModules.AnyAsync(
-            module => module.ProgrammeModuleId == moduleId && module.ProgrammeId == tutor.ProgrammeId,
-            cancellationToken);
+        var requestedModule = await _context.ProgrammeModules
+            .Where(module =>
+                module.ProgrammeModuleId == moduleId &&
+                module.ProgrammeId == tutor.ProgrammeId)
+            .Select(module => new
+            {
+                module.ModuleCode,
+                module.ModuleName
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+        bool belongsToProgramme = requestedModule is not null;
         bool currentlyAssigned = await _context.TutorCourseModules.AnyAsync(
             assignment => assignment.IsActive && assignment.TutorId == tutor.TutorId &&
                 assignment.ProgrammeModuleId == moduleId,
@@ -197,6 +210,18 @@ public class ProfileModel : PageModel
                 ? null
                 : ModuleRequestInput.Reason.Trim(),
             SubmittedAt = DateTime.UtcNow
+        });
+        string requestedAction = requestType ==
+            TutorModuleChangeRequestType.Add
+                ? "add"
+                : "remove";
+        _context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = tutor.BcUserId,
+            Title = "Module change request submitted",
+            Message = $"Your request to {requestedAction} {requestedModule!.ModuleCode} ({requestedModule.ModuleName}) was submitted successfully and is waiting for administrator review. We will notify you when a decision is made.",
+            LinkUrl = "/Tutors/Profile",
+            CreatedAt = DateTimeOffset.UtcNow
         });
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -285,6 +310,15 @@ public class ProfileModel : PageModel
         tutor.ProfileImagePath =
             $"/{relativeDirectory.Replace('\\', '/')}/{fileName}";
         tutor.UpdatedAt = DateTime.UtcNow;
+
+        _context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = tutor.BcUserId,
+            Title = "Public profile updated",
+            Message = "Your public tutor profile photo was updated successfully. Students viewing your profile will now see your new photo.",
+            LinkUrl = "/Tutors/PublicProfile",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
 
         await _context.SaveChangesAsync(cancellationToken);
 

@@ -145,6 +145,22 @@ public class NotificationsPageTests
         Assert.Equal("View application", notification.ActionLabel);
     }
 
+    [Theory]
+    [InlineData("/Tutors/Profile")]
+    [InlineData("/Tutors/PublicProfile")]
+    public void TutorProfileNotificationUsesViewProfileAction(string linkUrl)
+    {
+        var notification = new IndexModel.NotificationItem(
+            44,
+            "Public profile updated",
+            "Your tutor profile was updated.",
+            linkUrl,
+            Now,
+            null);
+
+        Assert.Equal("View profile", notification.ActionLabel);
+    }
+
     [Fact]
     public async Task OpeningAnotherUsersNotificationDoesNotExposeOrUpdateIt()
     {
