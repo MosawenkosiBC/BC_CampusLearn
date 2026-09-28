@@ -136,6 +136,15 @@
     -webkit-line-clamp: 2;
 }
 
+.notification-card-copy > .notification-card-message--application {
+    font-size: 14px;
+}
+
+.notification-modal-message--application {
+    font-size: 14px;
+    line-height: 1.45;
+}
+
 .notification-card-content > time {
     color: #737a7b;
     flex: 0 0 auto;

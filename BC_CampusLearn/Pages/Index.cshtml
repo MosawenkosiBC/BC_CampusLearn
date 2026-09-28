@@ -34,6 +34,11 @@
         <div class="hero-cta-group mt-5">
             <a class="btn btn-primary" style="background-color:#AD0151; border-color:#AD0151;"
                asp-page="/Tutors/Index">Find A Tutor</a>
+            @if (Model.TutorApplicationsOpen)
+            {
+                <a class="btn btn-primary" style="background-color:#AD0151; border-color:#AD0151;"
+                   asp-page="/Tutors/TutorApplication">Become a Tutor</a>
+            }
         </div>
     </div>
     @* <div class="hero-quote-wrap">
@@ -93,6 +98,11 @@
     <div class="hero-cta-group mt-4">
         <a class="btn btn-primary" style="background-color:#AD0151; border-color:#AD0151;"
            asp-page="/Tutors/Index">Find A Tutor</a>
+        @if (Model.TutorApplicationsOpen)
+        {
+            <a class="btn btn-primary" style="background-color:#AD0151; border-color:#AD0151;"
+               asp-page="/Tutors/TutorApplication">Become a Tutor</a>
+        }
     </div>
 </div>
 

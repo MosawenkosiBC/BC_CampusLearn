@@ -71,7 +71,9 @@
                         <span class="notification-card-content">
                             <span class="notification-card-copy">
                                 <strong>@notification.Title</strong>
-                                <span>@notification.Message</span>
+                                <span class="@(notification.HighlightedClosingDate is not null ? "notification-card-message--application" : null)">
+                                    @notification.PreviewMessage
+                                </span>
                             </span>
                             <time datetime="@notification.CreatedAt.ToString("O")">
                                 @localCreatedAt.ToString("HH:mm")
@@ -124,7 +126,15 @@
             <time datetime="@Model.SelectedNotification.CreatedAt.ToString("O")">
                 @selectedLocalCreatedAt.ToString("dd MMMM yyyy 'at' HH:mm")
             </time>
-            <p>@Model.SelectedNotification.Message</p>
+            <p class="@(Model.SelectedNotification.HighlightedClosingDate is not null ? "notification-modal-message--application" : null)">
+                <span class="notification-message-summary">@Model.SelectedNotification.SummaryMessage</span>
+                @if (Model.SelectedNotification.HighlightedClosingDate is not null)
+                {
+                    <strong class="tutor-application-closing-date">
+                        Applications close: @Model.SelectedNotification.HighlightedClosingDate
+                    </strong>
+                }
+            </p>
         </div>
         <div class="notification-modal-footer">
             <button type="button"

@@ -811,11 +811,71 @@ public class AdminApplicationsTests
         Assert.Equal(
             TutorApplicationStage.Shortlisted,
             shortlisted.ApplicationStage);
-        UserNotification notification = await context.UserNotifications.SingleAsync();
+        UserNotification notification = await context.UserNotifications
+            .SingleAsync(item => item.Title == "Tutor application shortlisted");
         Assert.Equal(shortlisted.BcUserId, notification.RecipientBcUserId);
         Assert.Equal("Tutor application shortlisted", notification.Title);
         Assert.Contains("has been shortlisted", notification.Message);
         Assert.Equal(TutorStatus.Pending, uncheckedCandidate.Status);
+    }
+
+    [Fact]
+    public async Task OpeningApplicationsNotifiesEveryStudentWithApplicationLink()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.BcUsers.AddRange(
+            CreateUser(1, "First Student", "ST5101"),
+            CreateUser(2, "Second Student", "ST5102"),
+            new BcUser
+            {
+                BcUserId = 3,
+                DisplayName = "Campus Admin",
+                PersonnelNumber = "AD5103",
+                Role = BcUserRole.Admin
+            });
+        await context.SaveChangesAsync();
+
+        var page = new ApplicationsModel(context);
+        DateTime openDate = DateTime.UtcNow.Date;
+        DateTime closeDate = openDate.AddMonths(1);
+
+        await page.OnPostSettingsAsync(
+            true,
+            2,
+            openDate,
+            closeDate,
+            CancellationToken.None);
+
+        List<UserNotification> notifications = await context.UserNotifications
+            .OrderBy(item => item.RecipientBcUserId)
+            .ToListAsync();
+        Assert.Collection(
+            notifications,
+            item => Assert.Equal(1, item.RecipientBcUserId),
+            item => Assert.Equal(2, item.RecipientBcUserId));
+        Assert.All(notifications, notification =>
+        {
+            Assert.Equal("🥳 Tutor applications are open", notification.Title);
+            Assert.Contains("Interested in helping fellow students?", notification.Message);
+            Assert.Contains("• No failed subjects", notification.Message);
+            Assert.Contains(
+                $"Applications close: {closeDate:dd MMMM yyyy}",
+                notification.Message);
+            Assert.Equal("/Tutors/TutorApplication", notification.LinkUrl);
+        });
+
+        await page.OnPostSettingsAsync(
+            true,
+            2,
+            openDate,
+            closeDate,
+            CancellationToken.None);
+
+        Assert.Equal(2, await context.UserNotifications.CountAsync());
     }
 
     [Fact]
