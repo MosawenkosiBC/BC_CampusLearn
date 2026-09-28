@@ -6,6 +6,10 @@
 }
 
 @section Styles {
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Valley+Sans:ital,wght@0,100..900;1,100..900&amp;display=swap"
+          rel="stylesheet" />
     <link rel="stylesheet"
           href="~/css/admin-dashboard.css"
           asp-append-version="true" />
@@ -13,7 +17,7 @@
 
 <section class="admin-dashboard" aria-labelledby="admin-dashboard-title">
     <header class="admin-dashboard-header">
-        <h1 id="admin-dashboard-title">Welcome to Admin Dashboard</h1>
+        <h1 id="admin-dashboard-title">Welcome back, @Model.AdminFirstName 👋</h1>
     </header>
 
     <div class="admin-stat-grid" aria-label="Administration statistics">
@@ -63,7 +67,7 @@
             <div class="admin-stat-icon admin-stat-icon--sessions" aria-hidden="true">
                 <svg viewBox="0 0 24 24">
                     <path d="M0 0h24v24H0z" fill="none" stroke="none" />
-                    <path d="M3 21v-8h4v8m3 0V3h4v18m3 0V8h4v13M2 21h20" />
+                    <path d="M3 21v-8h4v8m3 0V3h4v18m3 0V8h4v13" />
                 </svg>
             </div>
             <div class="admin-stat-content">
@@ -72,4 +76,348 @@
             </div>
         </article>
     </div>
+
+    <div class="admin-dashboard-panels">
+        <section class="admin-dashboard-panel admin-session-activity"
+                 aria-labelledby="admin-session-activity-title">
+            <div class="admin-panel-heading">
+                <div>
+                    <h2 id="admin-session-activity-title">Session activity</h2>
+                    <p>Completed sessions across all tutors</p>
+                </div>
+                <div class="admin-activity-filter" data-session-activity-filter>
+                    <button type="button"
+                            class="admin-activity-filter-trigger"
+                            data-session-activity-filter-trigger
+                            aria-haspopup="listbox"
+                            aria-expanded="false"
+                            aria-controls="session-activity-period-options">
+                        <span data-session-activity-filter-label>Last week vs this week</span>
+                        <span class="admin-activity-filter-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div id="session-activity-period-options"
+                         class="admin-activity-filter-menu"
+                         data-session-activity-filter-menu
+                         role="listbox"
+                         aria-label="Comparison period"
+                         hidden>
+                        <button type="button"
+                                class="admin-activity-filter-option is-selected"
+                                data-session-activity-option="weekly"
+                                role="option"
+                                aria-selected="true">
+                            Last week vs this week
+                        </button>
+                        <button type="button"
+                                class="admin-activity-filter-option"
+                                data-session-activity-option="monthly"
+                                role="option"
+                                aria-selected="false">
+                            Last month vs this month
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @foreach (var comparison in new[]
+            {
+                (Key: "weekly", Data: Model.WeeklyActivity),
+                (Key: "monthly", Data: Model.MonthlyActivity)
+            })
+            {
+                var activity = comparison.Data;
+                <div class="admin-activity-view"
+                     data-session-activity-view="@comparison.Key"
+                     hidden="@(comparison.Key == "monthly" ? "hidden" : null)">
+                    <div class="admin-activity-series-controls"
+                         aria-label="Toggle session activity lines">
+                        <button type="button"
+                                class="admin-activity-series-toggle is-previous is-active"
+                                data-session-series-toggle="0"
+                                aria-pressed="true">
+                            <span class="admin-activity-toggle-switch" aria-hidden="true">
+                                <span></span>
+                            </span>
+                            <span>@activity.PreviousLabel</span>
+                        </button>
+                        <button type="button"
+                                class="admin-activity-series-toggle is-current is-active"
+                                data-session-series-toggle="1"
+                                aria-pressed="true">
+                            <span class="admin-activity-toggle-switch" aria-hidden="true">
+                                <span></span>
+                            </span>
+                            <span>@activity.CurrentLabel</span>
+                        </button>
+                        <button type="button"
+                                class="admin-activity-series-toggle is-average is-active"
+                                data-session-series-toggle="2"
+                                aria-pressed="true">
+                            <span class="admin-activity-toggle-switch" aria-hidden="true">
+                                <span></span>
+                            </span>
+                            <span>@activity.AverageLabel</span>
+                        </button>
+                    </div>
+
+                    <div class="admin-activity-chart">
+                        <canvas data-session-activity-chart
+                                data-labels="@System.Text.Json.JsonSerializer.Serialize(activity.Buckets.Select(bucket => bucket.Label))"
+                                data-previous-values="@System.Text.Json.JsonSerializer.Serialize(activity.Buckets.Select(bucket => bucket.PreviousCount))"
+                                data-current-values="@System.Text.Json.JsonSerializer.Serialize(activity.Buckets.Select(bucket => bucket.CurrentCount))"
+                                data-average-values="@System.Text.Json.JsonSerializer.Serialize(activity.Buckets.Select(bucket => bucket.AverageCount))"
+                                data-previous-label="@activity.PreviousLabel"
+                                data-current-label="@activity.CurrentLabel"
+                                data-average-label="@activity.AverageLabel"
+                                data-suggested-maximum="@Math.Max(4, activity.MaximumBucketCount)"
+                                role="img"
+                                aria-label="Completed sessions: @activity.PreviousLabel, @activity.PreviousTotal; @activity.CurrentLabel, @activity.CurrentTotal">
+                            Completed sessions chart for @activity.PreviousLabel and @activity.CurrentLabel.
+                        </canvas>
+                    </div>
+                </div>
+            }
+        </section>
+
+        <section class="admin-dashboard-panel admin-tutor-performance"
+                 aria-labelledby="admin-tutor-performance-title">
+            <div class="admin-panel-heading">
+                <div>
+                    <h2 id="admin-tutor-performance-title">Tutor performance</h2>
+                    <p>Ranked by completed sessions</p>
+                </div>
+                <a asp-page="/Administrator/Tutors/Index"
+                   class="admin-heading-link">
+                    <span>View tutors</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        <path fill="currentColor"
+                              d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
+                    </svg>
+                </a>
+            </div>
+
+            @if (Model.TutorPerformance.Count == 0)
+            {
+                <p class="admin-panel-empty">No active tutors to display.</p>
+            }
+            else
+            {
+                <div class="admin-tutor-performance-table-wrap">
+                    <table class="admin-tutor-performance-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Tutor</th>
+                                <th scope="col">Sessions</th>
+                                <th scope="col">Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int index = 0; index < Model.TutorPerformance.Count; index++)
+                            {
+                                var tutor = Model.TutorPerformance[index];
+                                <tr>
+                                    <td>
+                                        <div class="admin-tutor-identity">
+                                            <span class="admin-tutor-rank">@(index + 1).</span>
+                                            <span class="admin-tutor-avatar">
+                                                @if (!string.IsNullOrWhiteSpace(tutor.ProfileImagePath))
+                                                {
+                                                    <img src="@tutor.ProfileImagePath"
+                                                         alt="Profile photo of @tutor.DisplayName" />
+                                                }
+                                                else
+                                                {
+                                                    <span aria-hidden="true">@tutor.Initials</span>
+                                                }
+                                            </span>
+                                            <strong>@tutor.DisplayName</strong>
+                                        </div>
+                                    </td>
+                                    <td class="admin-tutor-session-count">
+                                        @tutor.CompletedSessions
+                                    </td>
+                                    <td>
+                                        <span class="admin-tutor-rating"
+                                              aria-label="@(tutor.AverageRating.HasValue ? $"Average rating {tutor.AverageRating.Value:0.0} out of 5" : "No rating yet")">
+                                            @if (tutor.AverageRating.HasValue)
+                                            {
+                                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="m12 2.75l2.78 5.63l6.22.91l-4.5 4.39l1.06 6.2L12 16.95l-5.56 2.93l1.06-6.2L3 9.29l6.22-.91L12 2.75Z" />
+                                                </svg>
+                                                @tutor.AverageRating.Value.ToString("0.0")
+                                            }
+                                            else
+                                            {
+                                                <span>Not rated</span>
+                                            }
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+
+    <div class="admin-dashboard-lower-panels">
+        <section class="admin-dashboard-panel admin-events-panel"
+                 aria-labelledby="admin-events-title">
+            <div class="admin-panel-heading">
+                <div>
+                    <h2 id="admin-events-title">Upcoming events</h2>
+                </div>
+                <span class="admin-events-link" aria-label="View Events page coming soon">
+                    <span>View Events</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        <path fill="currentColor"
+                              d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
+                    </svg>
+                </span>
+            </div>
+            <figure class="admin-event-preview"
+                    data-admin-event-carousel
+                    aria-roledescription="carousel"
+                    aria-label="Upcoming events">
+                <div class="admin-event-slides" aria-live="polite">
+                    <div class="admin-event-slide is-active"
+                         data-admin-event-slide
+                         aria-hidden="false">
+                        <img src="/Media/events/2026%20Industry%20connect_PTA%20%26%20KP.png"
+                             alt="Industry Connect Day on 29 July 2026 from 09:00 to 17:00" />
+                    </div>
+                    <div class="admin-event-slide admin-event-slide--placeholder"
+                         data-admin-event-slide
+                         aria-hidden="true"
+                         aria-label="Empty event image placeholder"></div>
+                </div>
+                <div class="admin-event-navigation">
+                    <button type="button"
+                            class="admin-event-nav-button"
+                            data-admin-event-previous
+                            aria-label="Previous event">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m15 5l-7 7l7 7" />
+                        </svg>
+                    </button>
+                    <div class="admin-event-dots" aria-label="Event carousel navigation">
+                        <button type="button"
+                                class="admin-event-dot is-active"
+                                data-admin-event-dot="0"
+                                aria-label="Show event 1"
+                                aria-current="true"></button>
+                        <button type="button"
+                                class="admin-event-dot"
+                                data-admin-event-dot="1"
+                                aria-label="Show event 2"
+                                aria-current="false"></button>
+                    </div>
+                    <button type="button"
+                            class="admin-event-nav-button"
+                            data-admin-event-next
+                            aria-label="Next event">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m9 5l7 7l-7 7" />
+                        </svg>
+                    </button>
+                </div>
+            </figure>
+        </section>
+
+        <section class="admin-dashboard-panel admin-most-booked-panel"
+                 aria-labelledby="admin-most-booked-title">
+            <div class="admin-panel-heading">
+                <div>
+                    <h2 id="admin-most-booked-title">Most-booked modules</h2>
+                    <p>Ranked by completed sessions</p>
+                </div>
+            </div>
+            @if (Model.MostBookedModules.Count == 0)
+            {
+                <p class="admin-panel-empty">No completed module bookings yet.</p>
+            }
+            else
+            {
+                var mostBookedMaximum = Model.MostBookedModules.Max(module => module.CompletedSessions);
+                <ol class="admin-most-booked-list">
+                    @for (int index = 0; index < Model.MostBookedModules.Count; index++)
+                    {
+                        var module = Model.MostBookedModules[index];
+                        var barWidth = Math.Max(8, (int)Math.Round(module.CompletedSessions * 100d / mostBookedMaximum));
+                        <li>
+                            <span class="admin-most-booked-rank">@(index + 1)</span>
+                            <span class="admin-most-booked-module">
+                                <strong>@module.Code</strong>
+                                <span class="admin-most-booked-track" aria-hidden="true">
+                                    <span style="width: @barWidth%"></span>
+                                </span>
+                            </span>
+                            <span class="admin-most-booked-count">@module.CompletedSessions</span>
+                        </li>
+                    }
+                </ol>
+            }
+        </section>
+
+        <section class="admin-dashboard-panel admin-quick-actions-panel"
+                 aria-labelledby="admin-quick-actions-title">
+            <div class="admin-panel-heading">
+                <div>
+                    <h2 id="admin-quick-actions-title">Quick actions</h2>
+                </div>
+            </div>
+            <div class="admin-quick-actions-grid">
+                <a asp-page="/Administrator/Tutors/Index"
+                   class="admin-quick-action">
+                    <span class="admin-quick-action-icon is-tutors" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M0 0h24v24H0z" fill="none" stroke="none" />
+                            <path d="M8.5 3.708A2.5 2.5 0 0 0 6 8m-2.625 8.5C2.615 16.5 2 15.859 2 15.068c0-1.61 1.667-3.219 4.5-3.528m9-7.832A2.5 2.5 0 0 1 18 8m2.625 8.5c.76 0 1.375-.642 1.375-1.433c0-1.609-1.666-3.218-4.5-3.527M12 11.5a3 3 0 1 0 0-6a3 3 0 0 0 0 6Zm0 3c-3.75 0-6 2.143-6 4.286c0 .947.672 1.714 1.5 1.714h9c.828 0 1.5-.767 1.5-1.714c0-2.143-2.25-4.286-6-4.286Z" />
+                        </svg>
+                    </span>
+                    <strong>Manage tutors</strong>
+                </a>
+                <a asp-page="/Administrator/Admin/Applications"
+                   asp-route-Stage="applications"
+                   class="admin-quick-action">
+                    <span class="admin-quick-action-icon is-applications" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M0 0h24v24H0z" fill="none" stroke="none" />
+                            <path d="M14.5 5h-2c-2.828 0-4.243 0-5.121.879C6.5 6.757 6.5 8.172 6.5 11v5c0 2.828 0 4.243.879 5.121C8.257 22 9.672 22 12.5 22h1.343c.818 0 1.226 0 1.594-.152s.656-.441 1.235-1.02l2.656-2.656c.579-.579.867-.867 1.02-1.235c.152-.368.152-.776.152-1.594V11c0-2.828 0-4.243-.879-5.121C18.743 5 17.328 5 14.5 5ZM15 21.5v-1c0-1.886 0-2.828.586-3.414S17.114 16.5 19 16.5h1M6.5 19a3 3 0 0 1-3-3V8c0-2.828 0-4.243.879-5.121C5.257 2 6.672 2 9.5 2h5a3 3 0 0 1 3 3m-7.499 8h4m-4-4h7" />
+                        </svg>
+                    </span>
+                    <strong>Review applications</strong>
+                </a>
+                <a asp-page="/Administrator/Admin/Statistics"
+                   asp-fragment="review-progress-title"
+                   class="admin-quick-action">
+                    <span class="admin-quick-action-icon is-reviews" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M0 0h24v24H0z" fill="none" stroke="none" />
+                            <path d="M16 2v4M8 2v4m13 7v-1c0-3.771 0-5.657-1.172-6.828S16.771 4 13 4h-2C7.229 4 5.343 4 4.172 5.172S3 8.229 3 12v2c0 3.771 0 5.657 1.172 6.828S7.229 22 11 22M3 10h18M17.5 18.5a2 2 0 1 0 0-4a2 2 0 0 0 0 4Zm0 0A3.5 3.5 0 0 1 21 22m-3.5-3.5A3.5 3.5 0 0 0 14 22" />
+                        </svg>
+                    </span>
+                    <strong>Review sessions</strong>
+                </a>
+                <a asp-page="/Administrator/Admin/Statistics"
+                   class="admin-quick-action">
+                    <span class="admin-quick-action-icon is-statistics" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M0 0h24v24H0z" fill="none" stroke="none" />
+                            <path d="m3 11l2.5-2.5c1.017-1.017 1.526-1.526 2.137-1.638a2 2 0 0 1 .726 0c.611.112 1.12.62 2.137 1.638s1.526 1.526 2.137 1.638c.24.045.486.045.726 0c.611-.112 1.12-.621 2.137-1.638L21 3M3 15v6m6-8v8m6-5v5m6-12v12" />
+                        </svg>
+                    </span>
+                    <strong>View statistics</strong>
+                </a>
+            </div>
+        </section>
+    </div>
 </section>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+    <script src="~/js/admin-dashboard.js" asp-append-version="true"></script>
+}
