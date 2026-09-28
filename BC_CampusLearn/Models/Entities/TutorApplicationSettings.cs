@@ -20,4 +20,7 @@ public class TutorApplicationSettings
             (!OpenDate.HasValue || OpenDate.Value.Date <= today) &&
             (!CloseDate.HasValue || CloseDate.Value.Date >= today);
     }
+
+    public int GetApplicationYear(DateTime fallbackDate) =>
+        (CloseDate ?? fallbackDate).Year + 1;
 }

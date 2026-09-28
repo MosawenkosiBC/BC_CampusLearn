@@ -133,23 +133,31 @@ public class IndexModel(
         public string PreviewMessage => SummaryMessage
             .Split('\n', 2, StringSplitOptions.None)[0];
 
-        public string ActionLabel =>
+        public bool IsTutorApprovalNotification =>
+            Title.Equals(
+                "Tutor application approved",
+                StringComparison.Ordinal) &&
+            SummaryMessage.StartsWith(
+                "Congratulations!",
+                StringComparison.Ordinal);
+
+        public string TutorApprovalMessage => IsTutorApprovalNotification
+            ? SummaryMessage["Congratulations!".Length..].TrimStart()
+            : SummaryMessage;
+
+        public string? ActionLabel =>
             Title.EndsWith(
                 "Tutor applications are open",
                 StringComparison.Ordinal) &&
-            LinkUrl.Equals(
-                "/Tutors/TutorApplication",
-                StringComparison.OrdinalIgnoreCase)
+            IsTutorApplicationLink
                 ? "Apply now"
                 : Title == "Session completed" &&
             IsSessionLink
                 ? "Complete review"
                 : IsSessionLink
                     ? "View session"
-                    : LinkUrl.Equals(
-                        "/Tutors/TutorApplication",
-                        StringComparison.OrdinalIgnoreCase)
-                        ? "View application"
+                    : IsTutorApplicationLink
+                        ? null
                         : LinkUrl.Equals(
                             "/Tutors/PublicProfile",
                             StringComparison.OrdinalIgnoreCase) ||
@@ -164,6 +172,11 @@ public class IndexModel(
                 "Tutor applications are open",
                 StringComparison.Ordinal) &&
             Message.Contains(ClosingDateMarker, StringComparison.Ordinal);
+
+        private bool IsTutorApplicationLink =>
+            LinkUrl.Equals(
+                "/Tutors/TutorApplication",
+                StringComparison.OrdinalIgnoreCase);
 
         private bool IsSessionLink =>
             LinkUrl.StartsWith(

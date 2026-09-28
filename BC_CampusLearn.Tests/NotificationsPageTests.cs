@@ -132,7 +132,7 @@ public class NotificationsPageTests
     }
 
     [Fact]
-    public void TutorApplicationNotificationUsesViewApplicationAction()
+    public void TutorApplicationNotificationDoesNotShowAnAction()
     {
         var notification = new IndexModel.NotificationItem(
             43,
@@ -142,7 +142,7 @@ public class NotificationsPageTests
             Now,
             null);
 
-        Assert.Equal("View application", notification.ActionLabel);
+        Assert.Null(notification.ActionLabel);
     }
 
     [Fact]
@@ -165,6 +165,23 @@ public class NotificationsPageTests
             "Apply to become a peer tutor.",
             notification.PreviewMessage);
         Assert.Equal("31 October 2026", notification.HighlightedClosingDate);
+    }
+
+    [Fact]
+    public void ApprovedTutorNotificationExposesCelebrationMessage()
+    {
+        var notification = new IndexModel.NotificationItem(
+            45,
+            "Tutor application approved",
+            "Congratulations! Welcome to the Mzala Connect Tutor Team!",
+            "/Tutors/TutorApplication",
+            Now,
+            null);
+
+        Assert.True(notification.IsTutorApprovalNotification);
+        Assert.Equal(
+            "Welcome to the Mzala Connect Tutor Team!",
+            notification.TutorApprovalMessage);
     }
 
     [Theory]

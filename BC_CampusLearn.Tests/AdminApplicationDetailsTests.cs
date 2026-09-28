@@ -152,8 +152,6 @@ public class AdminApplicationDetailsTests
         {
             RejectionMessage = new ApplicationMessageInput
             {
-                Subject = "Tutor application outcome",
-                EmailBody = "Thank you for applying. We cannot proceed with your application.",
                 NotificationMessage = "Thank you for applying. Your tutor application was not successful."
             }
         };

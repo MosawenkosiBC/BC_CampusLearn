@@ -748,44 +748,19 @@ BC CampusLearn Tutor Team</textarea>
             </dialog>
 
             <dialog id="shortlist-reject-@candidate.TutorId"
-                    class="admin-application-modal shortlist-reject-modal"
+                    class="admin-application-modal shortlist-reject-modal shortlist-stage-reject-modal"
                     data-shortlist-reject-modal
                     data-return-modal-id="shortlist-candidate-@candidate.TutorId"
                     aria-labelledby="shortlist-reject-title-@candidate.TutorId">
                 <div>
                     <h2 id="shortlist-reject-title-@candidate.TutorId">Reject this application?</h2>
-                    <p>
-                        @candidate.DisplayName will be marked as rejected and removed from active
-                        applications. They cannot submit another application during this cycle.
-                    </p>
-                    <div class="candidate-email-field">
-                        <label for="shortlist-reject-subject-@candidate.TutorId">Email subject</label>
-                        <input id="shortlist-reject-subject-@candidate.TutorId"
-                               form="shortlist-action-form-@candidate.TutorId"
-                               name="RejectionMessage.Subject"
-                               maxlength="200"
-                               value="Tutor application outcome" />
-                    </div>
-                    <div class="candidate-email-field">
-                        <label for="shortlist-reject-email-@candidate.TutorId">Email message</label>
-                        <textarea id="shortlist-reject-email-@candidate.TutorId"
-                                  form="shortlist-action-form-@candidate.TutorId"
-                                  name="RejectionMessage.EmailBody"
-                                  rows="7"
-                                  maxlength="5000">Dear @candidate.DisplayName,
-
-Thank you for the time and effort you invested in your tutor application. After careful review, we will not be progressing your application to the next stage.
-
-Kind regards,
-BC CampusLearn Tutor Team</textarea>
-                    </div>
                     <div class="candidate-email-field">
                         <label for="shortlist-reject-notification-@candidate.TutorId">Notification message</label>
                         <textarea id="shortlist-reject-notification-@candidate.TutorId"
                                   form="shortlist-action-form-@candidate.TutorId"
                                   name="RejectionMessage.NotificationMessage"
                                   rows="4"
-                                  maxlength="1000">After careful review, your tutor application will not progress to the next stage. Please check your email for the full message from the BC CampusLearn Tutor Team.</textarea>
+                                  maxlength="1000">Thank you for your continued interest in the tutor programme. After careful review, we are unable to progress your application to the next stage.</textarea>
                     </div>
                     <div class="shortlist-reject-modal-actions">
                         <button type="button"
@@ -1004,33 +979,14 @@ BC CampusLearn Tutor Team</textarea>
                     <h2 id="interview-reject-title-@candidate.TutorId">Reject this candidate?</h2>
                     <p>
                         @candidate.DisplayName will be removed from the interview stage and notified
-                        by notification and email that their tutor application was not approved.
+                        through CampusLearn that their tutor application was not approved.
                     </p>
-                    <div class="candidate-email-field">
-                        <label for="interview-reject-subject-@candidate.TutorId">Email subject</label>
-                        <input id="interview-reject-subject-@candidate.TutorId"
-                               name="RejectionMessage.Subject"
-                               maxlength="200"
-                               value="Tutor application outcome" />
-                    </div>
-                    <div class="candidate-email-field">
-                        <label for="interview-reject-email-@candidate.TutorId">Email message</label>
-                        <textarea id="interview-reject-email-@candidate.TutorId"
-                                  name="RejectionMessage.EmailBody"
-                                  rows="7"
-                                  maxlength="5000">Dear @candidate.DisplayName,
-
-Thank you for attending the tutor interview. After careful consideration, we will not be progressing your application further.
-
-Kind regards,
-BC CampusLearn Tutor Team</textarea>
-                    </div>
                     <div class="candidate-email-field">
                         <label for="interview-reject-notification-@candidate.TutorId">Notification message</label>
                         <textarea id="interview-reject-notification-@candidate.TutorId"
                                   name="RejectionMessage.NotificationMessage"
                                   rows="4"
-                                  maxlength="1000">After careful consideration, your tutor application was unsuccessful. Please check your email for the full message from the BC CampusLearn Tutor Team.</textarea>
+                                  maxlength="1000">Thank you for the time and effort you put into your tutor interview. Although we will not be progressing your application further on this occasion, we truly appreciate your interest in becoming a Mzala Connect tutor. We encourage you to keep developing your skills and to apply again in the future. We wish you every success on your journey!</textarea>
                     </div>
                     <div class="shortlist-reject-modal-actions">
                         <button type="button"

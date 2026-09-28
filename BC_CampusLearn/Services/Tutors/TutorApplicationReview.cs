@@ -85,15 +85,6 @@ public static class TutorApplicationReview
                 });
         }
 
-        context.UserNotifications.Add(new UserNotification
-        {
-            RecipientBcUserId = candidate.BcUserId,
-            Title = "Tutor application shortlisted",
-            Message = $"Congratulations! Your {candidate.SubmittedAt.Year} tutor application has been shortlisted. The BC CampusLearn Tutor Team will contact you with details about the next step.",
-            LinkUrl = "/Tutors/TutorApplication",
-            CreatedAt = new DateTimeOffset(reviewedAt, TimeSpan.Zero)
-        });
-
         await context.SaveChangesAsync(cancellationToken);
         bool shortlistLimitReached = settings.ShortlistLimit.HasValue &&
             shortlistedCount + 1 == settings.ShortlistLimit.Value &&
@@ -213,7 +204,7 @@ public static class TutorApplicationReview
         {
             RecipientBcUserId = candidate.BcUserId,
             Title = "Tutor application moved to interview",
-            Message = "Your tutor application has progressed to the interview stage.",
+            Message = "Great news! Your tutor application has progressed to the interview stage. We’re excited to learn more about you and the contribution you could make as a Mzala Connect tutor. Your interview details will be shared with you shortly. Congratulations on reaching this stage, and best of luck with your interview!",
             LinkUrl = "/Tutors/TutorApplication",
             CreatedAt = DateTimeOffset.UtcNow
         });
@@ -381,8 +372,7 @@ public static class TutorApplicationReview
         {
             RecipientBcUserId = candidate.BcUserId,
             Title = "Tutor application approved",
-            Message = "Congratulations! Your tutor application has been approved. " +
-                "You are now a BC CampusLearn tutor.",
+            Message = "Congratulations! We’re delighted to let you know that your tutor application has been approved. Welcome to the Mzala Connect Tutor Team! We’re excited to have you join us and look forward to the positive impact you’ll make by supporting and inspiring fellow students. Your tutoring journey starts here. Well done! 🎓",
             LinkUrl = "/Tutors/TutorApplication",
             CreatedAt = DateTimeOffset.UtcNow
         });
@@ -447,8 +437,8 @@ public static class TutorApplicationReview
             Message = !string.IsNullOrWhiteSpace(notificationMessage)
                 ? notificationMessage.Trim()
                 : string.IsNullOrEmpty(normalizedReason)
-                ? "Your tutor application was not approved after the interview."
-                : "Your tutor application was not approved after the interview. " +
+                ? "Thank you for the time and effort you put into your tutor interview. Although we will not be progressing your application further on this occasion, we truly appreciate your interest in becoming a Mzala Connect tutor. We encourage you to keep developing your skills and to apply again in the future. We wish you every success on your journey!"
+                : "Thank you for the time and effort you put into your tutor interview. Although we will not be progressing your application further on this occasion, we truly appreciate your interest in becoming a Mzala Connect tutor. We encourage you to keep developing your skills and to apply again in the future. We wish you every success on your journey! " +
                     $"Reason: {normalizedReason}",
             LinkUrl = "/Tutors/TutorApplication",
             CreatedAt = DateTimeOffset.UtcNow

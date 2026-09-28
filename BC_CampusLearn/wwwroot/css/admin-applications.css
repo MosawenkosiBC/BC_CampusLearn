@@ -2167,6 +2167,14 @@ button.candidate-view-link {
     max-width: min(30rem, calc(100vw - 2rem));
 }
 
+.shortlist-stage-reject-modal {
+    max-width: min(42rem, calc(100vw - 2rem));
+}
+
+.shortlist-stage-reject-modal .candidate-email-field textarea {
+    font-size: 0.95rem;
+}
+
 .shortlist-reject-modal h2,
 .shortlist-interview-confirm-modal h2 {
     color: #252a2b;

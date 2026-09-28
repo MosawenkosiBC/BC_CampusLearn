@@ -385,7 +385,9 @@
     border-radius: 0.65rem;
     box-shadow: 0 1.25rem 3rem rgba(25, 30, 32, 0.24);
     color: #252a2b;
-    max-width: min(30rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    max-width: min(42rem, calc(100vw - 2rem));
+    overflow-y: auto;
     padding: 1.5rem;
     width: 100%;
 }
@@ -403,7 +405,48 @@
     color: #646a6b;
     font-size: 0.82rem;
     line-height: 1.6;
-    margin: 0;
+    margin: 0 0 1.1rem;
+}
+
+.application-reject-modal .candidate-email-field {
+    display: grid;
+    gap: 0.4rem;
+    margin-top: 0.9rem;
+    min-width: 0;
+}
+
+.application-reject-modal .candidate-email-field label {
+    color: #34393a;
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.application-reject-modal .candidate-email-field input,
+.application-reject-modal .candidate-email-field textarea {
+    background: #f3f5f5;
+    border: 1px solid transparent;
+    border-radius: 0.4rem;
+    color: #252a2b;
+    font: inherit;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    padding: 0.7rem 0.75rem;
+    width: 100%;
+}
+
+.application-reject-modal .candidate-email-field input {
+    min-height: 2.75rem;
+}
+
+.application-reject-modal .candidate-email-field textarea {
+    resize: vertical;
+}
+
+.application-reject-modal .candidate-email-field input:focus,
+.application-reject-modal .candidate-email-field textarea:focus {
+    border-color: #4ac1c1;
+    outline: 3px solid rgba(74, 193, 193, 0.22);
 }
 
 .application-reject-modal-actions {

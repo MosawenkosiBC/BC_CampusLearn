@@ -177,20 +177,7 @@ public class AdminApplicationsTests
         Assert.Equal(TutorApplicationStage.Shortlisted, first.ApplicationStage);
         Assert.Equal(TutorApplicationStage.Shortlisted, second.ApplicationStage);
         Assert.Equal("Strong academic results", first.ShortlistReason);
-        UserNotification[] shortlistNotifications = await context.UserNotifications
-            .OrderBy(notification => notification.RecipientBcUserId)
-            .ToArrayAsync();
-        Assert.Equal(2, shortlistNotifications.Length);
-        Assert.All(
-            shortlistNotifications,
-            notification => Assert.Equal(
-                "Tutor application shortlisted",
-                notification.Title));
-        Assert.All(
-            shortlistNotifications,
-            notification => Assert.Contains(
-                "has been shortlisted",
-                notification.Message));
+        Assert.Empty(await context.UserNotifications.ToListAsync());
         Assert.Equal(TutorStatus.Pending, uncheckedCandidate.Status);
         Assert.Equal(
             TutorApplicationStage.Submitted,
@@ -325,10 +312,9 @@ public class AdminApplicationsTests
         Assert.Equal(
             "Ask about the candidate's teaching demonstration.",
             decision.Reason);
-        Assert.Contains(
-            "interview stage",
-            (await context.UserNotifications.SingleAsync()).Message,
-            StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(
+            "Great news! Your tutor application has progressed to the interview stage. We’re excited to learn more about you and the contribution you could make as a Mzala Connect tutor. Your interview details will be shared with you shortly. Congratulations on reaching this stage, and best of luck with your interview!",
+            (await context.UserNotifications.SingleAsync()).Message);
     }
 
     [Fact]
@@ -455,11 +441,13 @@ public class AdminApplicationsTests
         UserNotification notification = await context.UserNotifications
             .SingleAsync();
         Assert.Equal(candidate.BcUserId, notification.RecipientBcUserId);
-        Assert.Contains("now a BC CampusLearn tutor", notification.Message);
+        Assert.Equal(
+            "Congratulations! We’re delighted to let you know that your tutor application has been approved. Welcome to the Mzala Connect Tutor Team! We’re excited to have you join us and look forward to the positive impact you’ll make by supporting and inspiring fellow students. Your tutoring journey starts here. Well done! 🎓",
+            notification.Message);
     }
 
     [Fact]
-    public async Task RejectingInterviewCandidateCreatesNotificationAndEmail()
+    public async Task RejectingInterviewCandidateCreatesNotificationWithoutEmail()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -484,8 +472,6 @@ public class AdminApplicationsTests
         {
             RejectionMessage = new ApplicationMessageInput
             {
-                Subject = "Tutor application outcome",
-                EmailBody = "Thank you for applying. We cannot proceed with your application.",
                 NotificationMessage = "Thank you for applying. Your tutor application was not successful."
             }
         };
@@ -500,9 +486,7 @@ public class AdminApplicationsTests
         UserNotification notification = await context.UserNotifications
             .SingleAsync();
         Assert.Equal(page.RejectionMessage.NotificationMessage, notification.Message);
-        Assert.Equal(student.Email, emailSender.ComposedRecipientEmail);
-        Assert.Equal(page.RejectionMessage.Subject, emailSender.ComposedSubject);
-        Assert.Equal(page.RejectionMessage.EmailBody, emailSender.ComposedBody);
+        Assert.Null(emailSender.ComposedRecipientEmail);
     }
 
     [Fact]
@@ -811,11 +795,9 @@ public class AdminApplicationsTests
         Assert.Equal(
             TutorApplicationStage.Shortlisted,
             shortlisted.ApplicationStage);
-        UserNotification notification = await context.UserNotifications
-            .SingleAsync(item => item.Title == "Tutor application shortlisted");
-        Assert.Equal(shortlisted.BcUserId, notification.RecipientBcUserId);
-        Assert.Equal("Tutor application shortlisted", notification.Title);
-        Assert.Contains("has been shortlisted", notification.Message);
+        Assert.DoesNotContain(
+            await context.UserNotifications.ToListAsync(),
+            notification => notification.Title == "Tutor application shortlisted");
         Assert.Equal(TutorStatus.Pending, uncheckedCandidate.Status);
     }
 
@@ -989,6 +971,7 @@ public class AdminApplicationsTests
         };
 
         Assert.True(settings.IsAcceptingApplications(today));
+        Assert.Equal(2027, settings.GetApplicationYear(today));
         Assert.False(settings.IsAcceptingApplications(today.AddDays(-1)));
         Assert.False(settings.IsAcceptingApplications(today.AddDays(8)));
         settings.IsOpen = false;

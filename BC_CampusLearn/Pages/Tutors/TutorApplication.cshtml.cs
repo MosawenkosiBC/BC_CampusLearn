@@ -68,6 +68,7 @@ public class TutorApplicationModel : PageModel
     public string? StudentDetailsErrorMessage { get; private set; }
     public bool ApplicationsOpen { get; private set; }
     public bool ShowClosedApplicationsModal { get; private set; }
+    public int ApplicationYear { get; private set; }
 
     public int InitialStep { get; private set; }
 
@@ -262,7 +263,7 @@ public class TutorApplicationModel : PageModel
             {
                 RecipientBcUserId = currentUser.BcUserId,
                 Title = "Tutor application submitted",
-                Message = $"Thank you for taking the time to apply for the {submittedAt.Year} tutor programme. We have received your application and supporting documents. Our team will carefully review your submission, and we will notify you as soon as there is an update on your application.",
+                Message = $"Thank you for taking the time to apply for the {ApplicationYear} tutor programme. We have received your application and supporting documents. Our team will carefully review your submission, and we will notify you as soon as there is an update on your application.",
                 LinkUrl = "/Tutors/TutorApplication",
                 CreatedAt = new DateTimeOffset(submittedAt)
             });
@@ -378,6 +379,8 @@ public class TutorApplicationModel : PageModel
             .SingleOrDefaultAsync(cancellationToken);
         ApplicationsOpen = applicationSettings?.IsAcceptingApplications(
             DateTime.UtcNow) ?? false;
+        ApplicationYear = applicationSettings?.GetApplicationYear(
+            DateTime.UtcNow) ?? DateTime.UtcNow.Year + 1;
 
         if (!ApplicationsOpen)
         {

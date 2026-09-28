@@ -241,33 +241,12 @@
                         applications. They cannot submit another application during this cycle.
                     </p>
                     <div class="candidate-email-field">
-                        <label for="application-reject-subject">Email subject</label>
-                        <input id="application-reject-subject"
-                               form="application-review-form"
-                               name="RejectionMessage.Subject"
-                               maxlength="200"
-                               value="Tutor application outcome" />
-                    </div>
-                    <div class="candidate-email-field">
-                        <label for="application-reject-email">Email message</label>
-                        <textarea id="application-reject-email"
-                                  form="application-review-form"
-                                  name="RejectionMessage.EmailBody"
-                                  rows="7"
-                                  maxlength="5000">Dear @Model.DisplayName,
-
-Thank you for taking the time to apply for the tutor programme. After careful review, we will not be progressing your application to the next stage.
-
-Kind regards,
-BC CampusLearn Tutor Team</textarea>
-                    </div>
-                    <div class="candidate-email-field">
                         <label for="application-reject-notification">Notification message</label>
                         <textarea id="application-reject-notification"
                                   form="application-review-form"
                                   name="RejectionMessage.NotificationMessage"
                                   rows="4"
-                                  maxlength="1000">After careful review, your tutor application was unsuccessful. Please check your email for the full message from the BC CampusLearn Tutor Team.</textarea>
+                                  maxlength="1000">Thank you for applying to become a tutor. After careful review, we are unable to progress your application to the next stage.</textarea>
                     </div>
                     <div class="application-reject-modal-actions">
                         <button type="button"

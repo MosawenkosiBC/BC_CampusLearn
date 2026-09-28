@@ -277,6 +277,74 @@
     white-space: pre-line;
 }
 
+.notification-congratulations {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    display: inline;
+    font: inherit;
+    font-weight: 800;
+    padding: 0;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.18em;
+}
+
+.notification-congratulations:hover,
+.notification-congratulations:focus-visible {
+    color: inherit;
+    outline: none;
+    text-decoration-thickness: 3px;
+}
+
+.notification-modal-message--approval,
+.notification-modal-message--approval .notification-message-summary {
+    white-space: normal;
+}
+
+.notification-confetti-piece {
+    animation: notification-confetti-burst 1.15s ease-out forwards;
+    background: var(--confetti-color);
+    border-radius: 2px;
+    height: 11px;
+    left: var(--confetti-left);
+    pointer-events: none;
+    position: fixed;
+    top: var(--confetti-top);
+    width: 7px;
+    z-index: 2000;
+}
+
+@keyframes notification-confetti-burst {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) rotate(0deg) scale(0.75);
+    }
+
+    38% {
+        opacity: 1;
+        transform: translate(
+            calc(-50% + var(--confetti-x)),
+            calc(-50% - var(--confetti-rise)))
+            rotate(var(--confetti-half-rotation));
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(
+            calc(-50% + var(--confetti-x)),
+            calc(-50% + var(--confetti-fall)))
+            rotate(var(--confetti-rotation));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .notification-confetti-piece {
+        display: none;
+    }
+}
+
 .notification-modal-footer {
     align-items: center;
     background: #f4f6f6;

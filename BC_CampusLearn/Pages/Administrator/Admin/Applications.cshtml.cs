@@ -512,7 +512,7 @@ public class ApplicationsModel : PageModel
         {
             RecipientBcUserId = recipient.BcUserId,
             Title = "Tutor application communication sent",
-            Message = $"The BC CampusLearn Tutor Team sent you an email about your tutor application. Please check {recipient.Email} for the full message.",
+            Message = $"The Mzala Connect Tutor Team sent you an email about your tutor application. Please check {recipient.Email} for the full message.",
             LinkUrl = "/Tutors/TutorApplication",
             CreatedAt = DateTimeOffset.UtcNow
         });
@@ -560,18 +560,14 @@ public class ApplicationsModel : PageModel
         int tutorId,
         CancellationToken cancellationToken)
     {
-        string? validationError = ValidateComposedMessage(
-            RejectionMessage,
-            requireNotificationMessage: true);
+        string? validationError = ValidateNotificationMessage(
+            RejectionMessage.NotificationMessage);
         if (validationError is not null)
         {
             PageError = validationError;
             return RedirectToPage(new { Stage = "shortlist", Search });
         }
 
-        var recipient = await GetCommunicationRecipientAsync(
-            tutorId,
-            cancellationToken);
         ShortlistResult result = await TutorApplicationReview.RejectShortlistedAsync(
             _context,
             tutorId,
@@ -583,10 +579,6 @@ public class ApplicationsModel : PageModel
         if (result.Succeeded)
         {
             PageMessage = result.Message;
-            await SendComposedMessageAsync(
-                recipient,
-                RejectionMessage,
-                cancellationToken);
         }
         else
         {
@@ -657,19 +649,13 @@ public class ApplicationsModel : PageModel
         int tutorId,
         CancellationToken cancellationToken)
     {
-        string? validationError = ValidateComposedMessage(
-            RejectionMessage,
-            requireNotificationMessage: true);
+        string? validationError = ValidateNotificationMessage(
+            RejectionMessage.NotificationMessage);
         if (validationError is not null)
         {
             PageError = validationError;
             return RedirectToPage(new { Stage = "interview", Search });
         }
-
-        CommunicationRecipient? recipient =
-            await GetCommunicationRecipientAsync(
-                tutorId,
-                cancellationToken);
 
         ShortlistResult result = await TutorApplicationReview
             .RejectInterviewedAsync(
@@ -683,10 +669,6 @@ public class ApplicationsModel : PageModel
         if (result.Succeeded)
         {
             PageMessage = result.Message;
-            await SendComposedMessageAsync(
-                recipient,
-                RejectionMessage,
-                cancellationToken);
         }
         else
         {
@@ -710,24 +692,6 @@ public class ApplicationsModel : PageModel
                     ? tutor.BcUser.PersonnelNumber
                     : tutor.BcUser.DisplayName))
             .SingleOrDefaultAsync(cancellationToken);
-
-    private async Task SendComposedMessageAsync(
-        CommunicationRecipient? recipient,
-        ApplicationMessageInput message,
-        CancellationToken cancellationToken)
-    {
-        if (_emailSender is null ||
-            string.IsNullOrWhiteSpace(recipient?.Email))
-        {
-            return;
-        }
-
-        await _emailSender.SendComposedAsync(
-            recipient.Email,
-            message.Subject.Trim(),
-            message.EmailBody.Trim(),
-            cancellationToken);
-    }
 
     private static string? ValidateComposedMessage(
         ApplicationMessageInput message,
@@ -755,6 +719,14 @@ public class ApplicationsModel : PageModel
         }
 
         return null;
+    }
+
+    private static string? ValidateNotificationMessage(string? message)
+    {
+        string notification = message?.Trim() ?? string.Empty;
+        return notification.Length is < 1 or > 1000
+            ? "Enter a notification message of no more than 1,000 characters."
+            : null;
     }
 
     private sealed record CommunicationRecipient(

@@ -54,13 +54,14 @@ public class TutorApplicationTests
                 ]
             };
             context.ProgrammesOfStudy.Add(programme);
+            DateTime closeDate = DateTime.UtcNow.Date.AddDays(7);
             context.TutorApplicationSettings.Add(
                 new TutorApplicationSettings
                 {
                     IsOpen = true,
                     ShortlistLimit = 2,
                     OpenDate = DateTime.UtcNow.Date.AddDays(-1),
-                    CloseDate = DateTime.UtcNow.Date.AddDays(7),
+                    CloseDate = closeDate,
                     UpdatedAt = DateTime.UtcNow
                 });
             await context.SaveChangesAsync();
@@ -118,7 +119,7 @@ public class TutorApplicationTests
                 .SingleAsync();
             Assert.Equal("Tutor application submitted", notification.Title);
             Assert.Contains(
-                $"apply for the {tutor.SubmittedAt.Year} tutor programme",
+                $"apply for the {closeDate.Year + 1} tutor programme",
                 notification.Message);
             Assert.Contains(
                 "received your application and supporting documents",

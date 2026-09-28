@@ -126,8 +126,27 @@
             <time datetime="@Model.SelectedNotification.CreatedAt.ToString("O")">
                 @selectedLocalCreatedAt.ToString("dd MMMM yyyy 'at' HH:mm")
             </time>
-            <p class="@(Model.SelectedNotification.HighlightedClosingDate is not null ? "notification-modal-message--application" : null)">
-                <span class="notification-message-summary">@Model.SelectedNotification.SummaryMessage</span>
+            <p class="@(Model.SelectedNotification.HighlightedClosingDate is not null
+                ? "notification-modal-message--application"
+                : Model.SelectedNotification.IsTutorApprovalNotification
+                    ? "notification-modal-message--approval"
+                    : null)">
+                <span class="notification-message-summary">
+                    @if (Model.SelectedNotification.IsTutorApprovalNotification)
+                    {
+                        <button type="button"
+                                class="notification-congratulations"
+                                data-confetti-trigger
+                                aria-label="Celebrate your tutor approval">
+                            Congratulations!
+                        </button>
+                        <text> @Model.SelectedNotification.TutorApprovalMessage</text>
+                    }
+                    else
+                    {
+                        @Model.SelectedNotification.SummaryMessage
+                    }
+                </span>
                 @if (Model.SelectedNotification.HighlightedClosingDate is not null)
                 {
                     <strong class="tutor-application-closing-date">
@@ -142,10 +161,13 @@
                     data-notification-modal-close>
                 Close
             </button>
-            <a class="notification-modal-action"
-               href="/Notifications/Open/@Model.SelectedNotification.NotificationId">
-                @Model.SelectedNotification.ActionLabel
-            </a>
+            @if (Model.SelectedNotification.ActionLabel is not null)
+            {
+                <a class="notification-modal-action"
+                   href="/Notifications/Open/@Model.SelectedNotification.NotificationId">
+                    @Model.SelectedNotification.ActionLabel
+                </a>
+            }
         </div>
     </dialog>
 }

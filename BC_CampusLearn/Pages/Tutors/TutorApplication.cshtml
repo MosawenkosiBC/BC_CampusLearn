@@ -559,11 +559,6 @@
 
                         <div class="tutor-application-field">
                             <label asp-for="ProfileInput.DemonstrationVideoUrl" data-required></label>
-                            <small id="demonstration-video-help"
-                                   class="tutor-field-help">
-                                Add a link to a video of you tutoring or
-                                explaining a concept.
-                            </small>
                             <div class="tutor-link-input-wrap">
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      viewBox="0 0 24 24"
@@ -581,6 +576,11 @@
                                        aria-describedby="demonstration-video-help"
                                        required />
                             </div>
+                            <small id="demonstration-video-help"
+                                   class="tutor-field-help">
+                                Add a link to a video of you tutoring or
+                                explaining a concept.
+                            </small>
                             <span asp-validation-for="ProfileInput.DemonstrationVideoUrl"></span>
                         </div>
 

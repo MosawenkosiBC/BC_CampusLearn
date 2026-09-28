@@ -13,8 +13,7 @@ namespace BC_CampusLearn.Pages.Administrator.Admin;
 public class ApplicationDetailsModel(
     ApplicationDbContext context,
     IWebHostEnvironment environment,
-    ICurrentUserService? currentUserService = null,
-    ITutorApplicationEmailSender? emailSender = null) : PageModel
+    ICurrentUserService? currentUserService = null) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public string Stage { get; set; } = "applications";
@@ -121,15 +120,11 @@ public class ApplicationDetailsModel(
         int id,
         CancellationToken cancellationToken)
     {
-        string subject = RejectionMessage.Subject?.Trim() ?? string.Empty;
-        string emailBody = RejectionMessage.EmailBody?.Trim() ?? string.Empty;
         string notificationMessage =
             RejectionMessage.NotificationMessage?.Trim() ?? string.Empty;
-        if (subject.Length is < 1 or > 200 ||
-            emailBody.Length is < 1 or > 5000 ||
-            notificationMessage.Length is < 1 or > 1000)
+        if (notificationMessage.Length is < 1 or > 1000)
         {
-            ReviewError = "Compose an email and notification message before rejecting the application.";
+            ReviewError = "Enter a notification message of no more than 1,000 characters.";
             if (!await LoadApplicationAsync(id, cancellationToken))
             {
                 return NotFound();
@@ -137,15 +132,6 @@ public class ApplicationDetailsModel(
 
             return Page();
         }
-
-        var recipient = await context.Tutors
-            .AsNoTracking()
-            .Where(tutor => tutor.TutorId == id)
-            .Select(tutor => new
-            {
-                tutor.BcUser.Email
-            })
-            .SingleOrDefaultAsync(cancellationToken);
 
         ShortlistResult result = await TutorApplicationReview.RejectAsync(
             context,
@@ -156,16 +142,6 @@ public class ApplicationDetailsModel(
 
         if (result.Succeeded)
         {
-            if (emailSender is not null &&
-                !string.IsNullOrWhiteSpace(recipient?.Email))
-            {
-                await emailSender.SendComposedAsync(
-                    recipient.Email,
-                    subject,
-                    emailBody,
-                    cancellationToken);
-            }
-
             PageMessage = result.Message;
             ShowReviewResultModal = true;
             return RedirectToPage(
