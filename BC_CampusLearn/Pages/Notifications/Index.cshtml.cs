@@ -116,8 +116,32 @@ public class IndexModel(
         DateTimeOffset CreatedAt,
         DateTimeOffset? ReadAt)
     {
+        private const string ClosingDateMarker = "Applications close: ";
+
+        public string SummaryMessage => HasHighlightedClosingDate
+            ? Message[..Message.LastIndexOf(
+                ClosingDateMarker,
+                StringComparison.Ordinal)].TrimEnd()
+            : Message;
+
+        public string? HighlightedClosingDate => HasHighlightedClosingDate
+            ? Message[(Message.LastIndexOf(
+                ClosingDateMarker,
+                StringComparison.Ordinal) + ClosingDateMarker.Length)..]
+            : null;
+
+        public string PreviewMessage => SummaryMessage
+            .Split('\n', 2, StringSplitOptions.None)[0];
+
         public string ActionLabel =>
-            Title == "Session completed" &&
+            Title.EndsWith(
+                "Tutor applications are open",
+                StringComparison.Ordinal) &&
+            LinkUrl.Equals(
+                "/Tutors/TutorApplication",
+                StringComparison.OrdinalIgnoreCase)
+                ? "Apply now"
+                : Title == "Session completed" &&
             IsSessionLink
                 ? "Complete review"
                 : IsSessionLink
@@ -134,6 +158,12 @@ public class IndexModel(
                             StringComparison.OrdinalIgnoreCase)
                             ? "View profile"
                         : "View related page";
+
+        private bool HasHighlightedClosingDate =>
+            Title.EndsWith(
+                "Tutor applications are open",
+                StringComparison.Ordinal) &&
+            Message.Contains(ClosingDateMarker, StringComparison.Ordinal);
 
         private bool IsSessionLink =>
             LinkUrl.StartsWith(

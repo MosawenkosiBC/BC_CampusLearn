@@ -145,6 +145,28 @@ public class NotificationsPageTests
         Assert.Equal("View application", notification.ActionLabel);
     }
 
+    [Fact]
+    public void OpenTutorApplicationsNotificationUsesApplyNowAction()
+    {
+        var notification = new IndexModel.NotificationItem(
+            44,
+            "🥳 Tutor applications are open",
+            "Apply to become a peer tutor.\n• No failed subjects\n" +
+                "Applications close: 31 October 2026",
+            "/Tutors/TutorApplication",
+            Now,
+            null);
+
+        Assert.Equal("Apply now", notification.ActionLabel);
+        Assert.Equal(
+            "Apply to become a peer tutor.\n• No failed subjects",
+            notification.SummaryMessage);
+        Assert.Equal(
+            "Apply to become a peer tutor.",
+            notification.PreviewMessage);
+        Assert.Equal("31 October 2026", notification.HighlightedClosingDate);
+    }
+
     [Theory]
     [InlineData("/Tutors/Profile")]
     [InlineData("/Tutors/PublicProfile")]

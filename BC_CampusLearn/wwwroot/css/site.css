@@ -125,6 +125,14 @@ textarea {
   -webkit-line-clamp: 2;
 }
 
+.message-notification-preview--application {
+  font-size: 14px;
+}
+
+.notification-message-summary {
+  white-space: pre-line;
+}
+
 .message-notification-item time {
   color: #7a7a7a;
   font-size: 12px;
@@ -400,4 +408,11 @@ body {
 .join-meeting-unavailable-dismiss:focus-visible {
   background: #900044;
   border-color: #900044;
+}
+.tutor-application-closing-date {
+    display: block;
+    font-size: 14px;
+    margin-top: .65rem;
+    color: #b42318;
+    font-weight: 700;
 }

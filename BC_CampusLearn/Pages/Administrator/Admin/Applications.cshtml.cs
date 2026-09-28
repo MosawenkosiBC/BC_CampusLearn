@@ -348,6 +348,7 @@ public class ApplicationsModel : PageModel
     {
         TutorApplicationSettings? settings = await _context
             .TutorApplicationSettings.SingleOrDefaultAsync(cancellationToken);
+        bool applicationsWereOpen = settings?.IsOpen ?? false;
 
         if (settings is null)
         {
@@ -375,6 +376,32 @@ public class ApplicationsModel : PageModel
         }
         settings.NotifyStudents = isOpen;
         settings.UpdatedAt = DateTime.UtcNow;
+
+        if (isOpen && !applicationsWereOpen)
+        {
+            List<int> studentIds = await _context.BcUsers
+                .AsNoTracking()
+                .Where(user => user.Role == BcUserRole.Student)
+                .Select(user => user.BcUserId)
+                .ToListAsync(cancellationToken);
+            DateTimeOffset createdAt = DateTimeOffset.UtcNow;
+
+            _context.UserNotifications.AddRange(studentIds.Select(studentId =>
+                new UserNotification
+                {
+                    RecipientBcUserId = studentId,
+                    Title = "🥳 Tutor applications are open",
+                    Message = "Interested in helping fellow students? Apply " +
+                        "to become a peer tutor.\n\nWhat you'll need:\n" +
+                        "• 65%+ overall average or 75%+ in a subject\n" +
+                        "• No failed subjects\n" +
+                        "• 8-15 hours per month to tutor\n" +
+                        $"Applications close: {closeDate:dd MMMM yyyy}",
+                    LinkUrl = "/Tutors/TutorApplication",
+                    CreatedAt = createdAt
+                }));
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
 
         if (!settings.IsAcceptingApplications(DateTime.UtcNow))

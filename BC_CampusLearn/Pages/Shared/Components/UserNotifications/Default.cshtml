@@ -41,9 +41,11 @@
                 <a class="message-notification-item"
                    asp-page="/Notifications/Index"
                    asp-route-notificationId="@notification.UserNotificationId"
-                   data-user-notification-id="@notification.UserNotificationId">
+                    data-user-notification-id="@notification.UserNotificationId">
                     <span class="message-notification-sender">@notification.Title</span>
-                    <span class="message-notification-preview">@notification.Message</span>
+                    <span class="message-notification-preview @(notification.HighlightedClosingDate is not null ? "message-notification-preview--application" : null)">
+                        @notification.PreviewMessage
+                    </span>
                     <time datetime="@notification.CreatedAt.ToString("O")">
                         @notification.CreatedAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM, HH:mm")
                     </time>
