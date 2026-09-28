@@ -28,12 +28,7 @@
     </header>
     @if (TempData["ModuleSuccess"] is string success) { <div class="module-success" role="status">@success</div> }
     <div asp-validation-summary="All" class="module-errors" role="alert"></div>
-    <section class="module-assigned-section" aria-labelledby="assigned-tutors-title">
-        <div class="module-assigned-heading">
-            <div>
-                <h2 id="assigned-tutors-title">Assigned tutors <span class="module-badge">@Model.Module.TutorCourseModules.Count</span></h2>
-            </div>
-        </div>
+    <section class="module-assigned-section" aria-label="Assigned tutors">
         <div class="module-management-workspace module-assigned-workspace">
             <aside class="module-filter-panel" aria-labelledby="assigned-filter-title">
                 <div class="module-filter-heading"><h2 id="assigned-filter-title">Filters</h2><a asp-page="Details" asp-route-id="@Model.Module.ProgrammeModuleId">Clear All</a></div>
@@ -60,11 +55,11 @@
                 }
                 <p class="module-result-count" role="status"><span class="module-result-summary">Showing <strong>@visibleTutorRange</strong> of <strong>@Model.FilteredAssignedTutorCount</strong> tutors</span></p>
                 <div class="module-table-wrap" tabindex="0" role="region" aria-label="Assigned tutors">
-                    <table class="module-table"><thead><tr><th scope="col">Tutor</th><th scope="col">Email</th><th scope="col">Account status</th><th scope="col">Action</th></tr></thead><tbody>
+                    <table class="module-table"><thead><tr><th scope="col">Tutor</th><th scope="col">Email</th><th scope="col">Account status</th><th scope="col">Remove Tutor From Module</th></tr></thead><tbody>
                     @foreach (var assignment in Model.AssignedTutors)
                     {
                         var outstandingSessions = Model.OutstandingSessionCounts.GetValueOrDefault(assignment.TutorId);
-                        <tr><th scope="row"><a class="module-tutor-link" asp-page="/Administrator/Tutors/Profile" asp-route-id="@assignment.TutorId">@assignment.Tutor.BcUser.DisplayName</a></th><td>@assignment.Tutor.BcUser.Email</td><td><span class="module-status-pill">@(assignment.Tutor.IsActive ? assignment.Tutor.Status.ToString() : "Inactive")</span></td><td><button type="button" class="module-action-button module-action-button--compact" data-bs-toggle="modal" data-bs-target="#remove-tutor-modal" data-remove-tutor-id="@assignment.TutorId" data-remove-tutor-name="@assignment.Tutor.BcUser.DisplayName" data-outstanding-session-count="@outstandingSessions">Remove tutor</button></td></tr>
+                        <tr><th scope="row"><a class="module-tutor-link" asp-page="/Administrator/Tutors/Profile" asp-route-id="@assignment.TutorId">@assignment.Tutor.BcUser.DisplayName</a></th><td>@assignment.Tutor.BcUser.Email</td><td><span class="module-status-pill">@(assignment.Tutor.IsActive ? assignment.Tutor.Status.ToString() : "Inactive")</span></td><td><button type="button" class="module-action-button module-action-button--compact" data-bs-toggle="modal" data-bs-target="#remove-tutor-modal" data-remove-tutor-id="@assignment.TutorId" data-remove-tutor-name="@assignment.Tutor.BcUser.DisplayName" data-outstanding-session-count="@outstandingSessions">Remove</button></td></tr>
                     }
                     @if (Model.AssignedTutors.Count == 0)
                     {
