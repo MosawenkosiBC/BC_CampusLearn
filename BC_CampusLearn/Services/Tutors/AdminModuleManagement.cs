@@ -16,16 +16,13 @@ public class AdminModuleManagement(ApplicationDbContext context)
         if (add && (!tutor.IsActive || tutor.Status != TutorStatus.Approved ||
             tutor.ApplicationStage != TutorApplicationStage.Placement))
             return "Only active, approved tutors in placement can be assigned modules.";
-        if (add && tutor.ProgrammeId != module.ProgrammeId)
-            return "Select a tutor from the module's programme.";
-
         var assignment = await context.TutorCourseModules.FindAsync([tutorId, moduleId], cancellationToken);
         if (add == (assignment?.IsActive == true))
             return add ? "This tutor is already assigned to the module." : "This tutor is no longer assigned to the module.";
         if (!add && await context.Bookings.AnyAsync(booking => booking.TutorId == tutorId &&
             booking.ProgrammeModuleId == moduleId && (booking.Status == BookingStatus.Pending ||
             booking.Status == BookingStatus.Confirmed || booking.Status == BookingStatus.InProgress), cancellationToken))
-            return "Complete, cancel or decline outstanding sessions for this module before removing the tutor.";
+            return "One or more sessions for this module are pending, confirmed, or in progress. They must be resolved before the tutor can be removed.";
 
         if (assignment is null)
             context.TutorCourseModules.Add(new TutorCourseModule { TutorId = tutorId, ProgrammeModuleId = moduleId });

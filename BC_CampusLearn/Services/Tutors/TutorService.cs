@@ -41,7 +41,12 @@ public class TutorService : ITutorService
             .Include(tutor => tutor.Programme)
             .Include(tutor => tutor.BcUser)
             .Include(tutor => tutor.TutorAvailabilities)
-            .OrderBy(tutor => tutor.TutorId)
+            .OrderBy(tutor =>
+                !string.IsNullOrWhiteSpace(preferredCampus) &&
+                tutor.CampusOfStudy == preferredCampus.Trim()
+                    ? 0
+                    : 1)
+            .ThenBy(tutor => tutor.TutorId)
             .ToListAsync(cancellationToken);
         List<TutorCardViewModel> cards = tutors
             .Select(tutor => new TutorCardViewModel
@@ -193,6 +198,26 @@ public class TutorService : ITutorService
         return campuses
             .Select(campus => campus.Trim())
             .Where(campus => campus.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(campus => campus, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<string>>
+        GetCampusesAsync(
+            CancellationToken cancellationToken = default)
+    {
+        List<string> campuses = await _context.Tutors
+            .AsNoTracking()
+            .Where(tutor =>
+                tutor.Status == TutorStatus.Approved &&
+                tutor.IsActive)
+            .Select(tutor => tutor.CampusOfStudy)
+            .ToListAsync(cancellationToken);
+
+        return campuses
+            .Select(campus => campus.Trim())
+            .Where(campus => !string.IsNullOrWhiteSpace(campus))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(campus => campus, StringComparer.OrdinalIgnoreCase)
             .ToList();

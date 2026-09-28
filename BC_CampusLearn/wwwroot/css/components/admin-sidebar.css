@@ -5,6 +5,11 @@
     --admin-sidebar-width: 5.5rem;
 }
 
+html.administrator-area-root,
+body.administrator-area {
+    overflow-x: clip;
+}
+
 body.administrator-area {
     background: #fff;
     padding-left: var(--admin-sidebar-width);
