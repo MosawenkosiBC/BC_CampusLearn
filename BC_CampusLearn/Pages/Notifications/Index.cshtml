@@ -108,7 +108,7 @@
 {
     DateTimeOffset selectedLocalCreatedAt = Model.SelectedNotification.CreatedAt
         .ToOffset(TimeSpan.FromHours(2));
-    <dialog class="notification-modal"
+    <dialog class="notification-modal @(Model.SelectedNotification.IsTutorApprovalNotification ? "notification-modal--approval" : null)"
             data-notification-modal
             aria-labelledby="notification-modal-title">
         <div class="notification-modal-header">

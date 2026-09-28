@@ -303,44 +303,74 @@
     white-space: normal;
 }
 
-.notification-confetti-piece {
-    animation: notification-confetti-burst 1.15s ease-out forwards;
-    background: var(--confetti-color);
-    border-radius: 2px;
-    height: 11px;
-    left: var(--confetti-left);
+.notification-modal--approval {
+    overflow: visible;
+}
+
+.notification-confetti {
+    height: 100vh;
+    inset: 0;
+    overflow: hidden;
     pointer-events: none;
     position: fixed;
-    top: var(--confetti-top);
-    width: 7px;
+    width: 100vw;
     z-index: 2000;
 }
 
-@keyframes notification-confetti-burst {
+.notification-confetti-piece {
+    animation: notification-confetti-fall var(--confetti-duration) ease-in
+        var(--confetti-delay) both;
+    background: var(--confetti-colour);
+    border-radius: 2px;
+    height: calc(var(--confetti-size) * 1.55);
+    left: var(--confetti-x);
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    width: var(--confetti-size);
+    will-change: transform;
+}
+
+.notification-confetti-piece:nth-child(3n) {
+    border-radius: 50%;
+}
+
+.notification-confetti-piece:nth-child(4n) {
+    height: calc(var(--confetti-size) * 0.55);
+    width: calc(var(--confetti-size) * 1.7);
+}
+
+.notification-confetti-piece.is-education-icon {
+    align-items: center;
+    background: transparent;
+    display: inline-flex;
+    font-size: clamp(20px, 2.5vw, 30px);
+    height: auto;
+    justify-content: center;
+    line-height: 1;
+    width: auto;
+}
+
+@keyframes notification-confetti-fall {
     0% {
-        opacity: 1;
-        transform: translate(-50%, -50%) rotate(0deg) scale(0.75);
+        opacity: 0;
+        transform: translate3d(0, -12vh, 0) rotate(0deg);
     }
 
-    38% {
+    8%,
+    85% {
         opacity: 1;
-        transform: translate(
-            calc(-50% + var(--confetti-x)),
-            calc(-50% - var(--confetti-rise)))
-            rotate(var(--confetti-half-rotation));
     }
 
     100% {
         opacity: 0;
-        transform: translate(
-            calc(-50% + var(--confetti-x)),
-            calc(-50% + var(--confetti-fall)))
+        transform: translate3d(var(--confetti-drift), 112vh, 0)
             rotate(var(--confetti-rotation));
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .notification-confetti-piece {
+    .notification-confetti {
         display: none;
     }
 }

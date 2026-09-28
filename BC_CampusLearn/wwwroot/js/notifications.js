@@ -30,7 +30,11 @@
         return;
     }
 
-    const colors = ["#4ac1c1", "#c2185b", "#f4b942", "#6c63ff", "#38a169"];
+    const colors = [
+        "#c6005c", "#4ebdc2", "#f5b942", "#6f4a8a",
+        "#2f80ed", "#7bc96f", "#ef6c57"
+    ];
+    const educationIcons = ["🎓", "📚", "✏️", "⭐", "🧠", "📝"];
     let celebrationActive = false;
 
     const celebrate = () => {
@@ -40,44 +44,44 @@
         }
 
         celebrationActive = true;
-        const bounds = confettiTrigger.getBoundingClientRect();
-        const originX = bounds.left + bounds.width / 2;
-        const originY = bounds.top + bounds.height / 2;
+        const celebration = document.createElement("div");
+        celebration.className = "notification-confetti";
+        celebration.setAttribute("aria-hidden", "true");
 
-        for (let index = 0; index < 28; index += 1) {
+        for (let index = 0; index < 72; index += 1) {
             const piece = document.createElement("span");
-            const angle = (Math.PI * 2 * index) / 28;
-            const distance = 65 + Math.random() * 105;
-            piece.className = "notification-confetti-piece";
-            piece.style.setProperty("--confetti-left", `${originX}px`);
-            piece.style.setProperty("--confetti-top", `${originY}px`);
+            const isEducationIcon = index % 6 === 0;
+            piece.className = isEducationIcon
+                ? "notification-confetti-piece is-education-icon"
+                : "notification-confetti-piece";
+            if (isEducationIcon) {
+                piece.textContent = educationIcons[
+                    Math.floor(Math.random() * educationIcons.length)];
+            }
+
+            piece.style.setProperty("--confetti-x", `${Math.random() * 100}vw`);
             piece.style.setProperty(
-                "--confetti-x",
-                `${Math.cos(angle) * distance}px`);
+                "--confetti-delay", `${-Math.random() * 0.9}s`);
             piece.style.setProperty(
-                "--confetti-rise",
-                `${45 + Math.random() * 85}px`);
+                "--confetti-duration", `${3.4 + Math.random() * 2.2}s`);
             piece.style.setProperty(
-                "--confetti-fall",
-                `${90 + Math.random() * 125}px`);
-            const rotation = 360 + Math.random() * 540;
+                "--confetti-drift", `${-90 + Math.random() * 180}px`);
             piece.style.setProperty(
-                "--confetti-half-rotation",
-                `${rotation * 0.45}deg`);
+                "--confetti-rotation", `${360 + Math.random() * 720}deg`);
             piece.style.setProperty(
-                "--confetti-rotation",
-                `${rotation}deg`);
+                "--confetti-size", `${8 + Math.random() * 8}px`);
             piece.style.setProperty(
-                "--confetti-color",
-                colors[index % colors.length]);
-            modal.appendChild(piece);
-            piece.addEventListener("animationend", () => piece.remove(),
-                { once: true });
+                "--confetti-colour",
+                colors[Math.floor(Math.random() * colors.length)]);
+            celebration.append(piece);
         }
 
+        modal.append(celebration);
+
         window.setTimeout(() => {
+            celebration.remove();
             celebrationActive = false;
-        }, 1250);
+        }, 6500);
     };
 
     confettiTrigger.addEventListener("pointerenter", celebrate);
