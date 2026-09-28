@@ -1384,13 +1384,6 @@
     margin: 0;
 }
 
-.module-success {
-    background: #e4f4e9;
-    border-radius: 9px;
-    margin-bottom: 20px;
-    padding: 16px 20px;
-}
-
 .module-errors.validation-summary-errors {
     background: #fff0ec;
     border: 1px solid #f0c8bb;

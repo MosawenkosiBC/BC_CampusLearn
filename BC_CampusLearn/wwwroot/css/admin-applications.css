@@ -29,21 +29,6 @@
     gap: 1.5rem;
 }
 
-.applications-notice {
-    background: #e5f6f1;
-    border-left: 0.25rem solid #2c8c70;
-    color: #205f4d;
-    font-size: 0.82rem;
-    margin: -1.35rem 0 1.25rem;
-    padding: 0.75rem 1rem;
-}
-
-.applications-notice--error {
-    background: #fdebed;
-    border-left-color: #b83c4b;
-    color: #8d2633;
-}
-
 .applications-toggle,
 .applications-search {
     align-items: center;
@@ -1406,30 +1391,6 @@ button.candidate-view-link {
 
 .interview-room-form {
     padding: 1.35rem 1.65rem 1.65rem;
-}
-
-.interview-room-success {
-    align-items: center;
-    background: #dcebea;
-    border-radius: 0.48rem;
-    color: #285f60;
-    display: flex;
-    font-size: 0.76rem;
-    font-weight: 700;
-    gap: 0.55rem;
-    margin-bottom: 1rem;
-    padding: 0.75rem 0.85rem;
-}
-
-.interview-room-success span {
-    align-items: center;
-    background: #2f8586;
-    border-radius: 50%;
-    color: #fff;
-    display: inline-flex;
-    flex: 0 0 1.25rem;
-    height: 1.25rem;
-    justify-content: center;
 }
 
 .interview-room-form label span,

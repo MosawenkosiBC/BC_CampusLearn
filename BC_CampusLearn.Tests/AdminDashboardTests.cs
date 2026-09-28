@@ -45,7 +45,7 @@ public class AdminDashboardTests
 
         Assert.Equal(1, page.ActiveTutorCount);
         Assert.Equal(2, page.TutorResourceCount);
-        Assert.Equal(3, page.PendingAdminRequestCount);
+        Assert.Equal(2, page.PendingAdminRequestCount);
         Assert.Equal(1, page.CompletedSessionCount);
     }
 

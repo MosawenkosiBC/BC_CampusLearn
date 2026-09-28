@@ -2,7 +2,13 @@
     var pagePath = ViewContext.RouteData.Values["Page"]?.ToString() ?? "/Index";
     var pageTitle = ViewData["Title"]?.ToString();
     var breadcrumbs = new List<(string Label, string? Page)>();
-    var isAdministrator = pagePath.StartsWith("/Administrator/", StringComparison.OrdinalIgnoreCase);
+    var hasAdminRole = User.IsInRole(nameof(BcUserRole.Admin)) ||
+        User.IsInRole(nameof(BcUserRole.SuperAdmin)) ||
+        User.IsInRole(nameof(BcUserRole.Dev));
+    var isAdministrator = pagePath.StartsWith("/Administrator/", StringComparison.OrdinalIgnoreCase) ||
+        (hasAdminRole && pagePath.Equals(
+            "/LearningResources/Details",
+            StringComparison.OrdinalIgnoreCase));
     var isTutor = User.IsInRole(nameof(BcUserRole.Tutor)) ||
         User.IsInRole(nameof(BcUserRole.HeadOfTutors));
     var dashboardPage = isAdministrator
@@ -60,6 +66,9 @@
             breadcrumbs.Add(("Modules", "/Administrator/Modules/Index"));
             breadcrumbs.Add((pageTitle ?? "Module details", null));
             break;
+        case "/Administrator/LearningResources/Index":
+            breadcrumbs.Add(("Learning Resources", null));
+            break;
         case "/Student/Dashboard":
             breadcrumbs.Add(("Dashboard", null));
             break;
@@ -116,7 +125,11 @@
             breadcrumbs.Add(("Learning Resources", null));
             break;
         case "/LearningResources/Details":
-            breadcrumbs.Add(("Learning Resources", "/LearningResources/Index"));
+            breadcrumbs.Add((
+                "Learning Resources",
+                isAdministrator
+                    ? "/Administrator/LearningResources/Index"
+                    : "/LearningResources/Index"));
             breadcrumbs.Add(("Resource Details", null));
             break;
         case "/Account/SignIn":

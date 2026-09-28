@@ -9,7 +9,10 @@
 }
 <section class="admin-dashboard modules-workspace" aria-labelledby="modules-title">
     <header class="admin-dashboard-header"><h1 id="modules-title">Modules</h1></header>
-    @if (TempData["ModuleSuccess"] is string success) { <div class="module-success" role="status">@success</div> }
+    @if (TempData["ModuleSuccess"] is string success)
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(success))
+    }
     <div asp-validation-summary="All" class="module-errors" role="alert"></div>
     <div class="admin-stat-grid module-stat-grid" aria-label="Module statistics">
         <article class="admin-stat-card">

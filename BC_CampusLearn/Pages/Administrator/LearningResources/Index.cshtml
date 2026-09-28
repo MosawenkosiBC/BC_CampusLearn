@@ -1,0 +1,140 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.LearningResources.IndexModel
+@{
+    ViewData["Title"] = "Learning Resources";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/Dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/learning-resources.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-tutors.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-learning-resources.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/pagination.css" asp-append-version="true" />
+}
+
+<section class="admin-dashboard admin-learning-resources-page"
+         aria-labelledby="admin-learning-resources-title">
+    <header class="admin-dashboard-header">
+        <h1 id="admin-learning-resources-title">Learning Resources</h1>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ResourceMessage))
+    {
+        @await Html.PartialAsync(
+            "_CampusAlert",
+            new CampusAlertViewModel(Model.ResourceMessage))
+    }
+
+    <div class="admin-tutors-workspace">
+        <aside class="admin-tutor-filters" aria-labelledby="admin-resource-filter-title">
+            <div class="admin-filter-heading">
+                <h2 id="admin-resource-filter-title">Filters</h2>
+                <a asp-page="/Administrator/LearningResources/Index">Clear All</a>
+            </div>
+            <form method="get" asp-page="/Administrator/LearningResources/Index">
+                <div class="admin-filter-group">
+                    <label asp-for="SearchName">Search by Name</label>
+                    <div class="admin-filter-search">
+                        <input asp-for="SearchName" type="search"
+                               placeholder="Resource or tutor name" />
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                    </div>
+                </div>
+                <div class="admin-filter-group">
+                    <label asp-for="SearchModule">Search by Module</label>
+                    <div class="admin-filter-search">
+                        <input asp-for="SearchModule" type="search"
+                               placeholder="Module name or code" />
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                    </div>
+                </div>
+                <div class="admin-filter-group">
+                    <label asp-for="SearchCourse">Search by Course</label>
+                    <div class="admin-filter-search">
+                        <input asp-for="SearchCourse" type="search"
+                               placeholder="Programme name" />
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                    </div>
+                </div>
+                <button type="submit" class="admin-apply-filters">Apply Filters</button>
+            </form>
+        </aside>
+
+        <div class="admin-tutor-results">
+            <p class="admin-tutor-result-count" role="status">
+                Showing <strong>@Model.TotalResources</strong>
+                @(Model.TotalResources == 1 ? "resource" : "resources")
+            </p>
+
+            <div class="student-resource-grid" id="resource-catalogue">
+                @foreach (var resource in Model.Resources)
+                {
+                    <article class="student-resource-card admin-resource-card">
+                        <div class="admin-resource-card-heading">
+                            <span class="admin-resource-status admin-resource-status--@resource.Status.ToString().ToLowerInvariant()">
+                                @resource.Status
+                            </span>
+                            <span class="admin-resource-comments">
+                                @resource.CommentCount @(resource.CommentCount == 1 ? "comment" : "comments")
+                            </span>
+                        </div>
+                        <h2>@resource.ModuleName</h2>
+                        <p class="student-resource-topic" title="@resource.Topic">
+                            @resource.TopicDisplay
+                        </p>
+                        <div class="student-resource-meta">
+                            @if (!string.IsNullOrWhiteSpace(resource.TutorProfileImagePath))
+                            {
+                                <img src="@resource.TutorProfileImagePath"
+                                     alt="@resource.TutorName profile picture"
+                                     class="student-resource-author-image"
+                                     loading="lazy" />
+                            }
+                            else
+                            {
+                                <span class="student-resource-author-icon"
+                                      aria-label="@resource.TutorName initials">
+                                    @resource.TutorInitials
+                                </span>
+                            }
+                            <a asp-page="/Administrator/Tutors/Profile"
+                               asp-route-id="@resource.TutorId"
+                               class="student-resource-tutor-link">@resource.TutorName</a>
+                            <span aria-hidden="true">|</span>
+                            <small>@resource.DateLabel: @resource.DateDisplay</small>
+                        </div>
+                        <div class="student-resource-card-actions admin-resource-card-actions">
+                            <a asp-page="/LearningResources/Details"
+                               asp-route-resourceId="@resource.LearningResourceId"
+                               class="student-resource-learn-more">Read</a>
+                        </div>
+                    </article>
+                }
+            </div>
+
+            @if (Model.Resources.Count == 0)
+            {
+                <div class="admin-resources-empty">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <h2>No resources found</h2>
+                    <p>Try changing or clearing the filters.</p>
+                    <a asp-page="/Administrator/LearningResources/Index"
+                       class="admin-resources-clear">Clear all</a>
+                </div>
+            }
+
+            @if (Model.TotalPages > 1)
+            {
+                @await Component.InvokeAsync("Pagination", new
+                {
+                    currentPage = Model.ResourcePage,
+                    totalPages = Model.TotalPages,
+                    pageRouteValueName = "ResourcePage",
+                    fragment = "resource-catalogue",
+                    ariaLabel = "Learning resource pages"
+                })
+            }
+        </div>
+    </div>
+</section>
