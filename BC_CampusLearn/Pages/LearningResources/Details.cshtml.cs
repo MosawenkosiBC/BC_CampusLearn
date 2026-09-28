@@ -25,8 +25,12 @@ public class DetailsModel : PageModel
     public LearningResource Resource { get; private set; } = null!;
     public string TutorName { get; private set; } = string.Empty;
     public int CurrentBcUserId { get; private set; }
+    public bool IsAdministrator { get; private set; }
     public bool IsPublished =>
         Resource.Status == LearningResourceStatus.Published;
+    public bool CanParticipateInDiscussion =>
+        IsPublished &&
+        (Resource.AllowSubscriberComments || IsAdministrator);
     public IReadOnlyList<ResourceComment> Comments { get; private set; }
         = Array.Empty<ResourceComment>();
 
@@ -44,6 +48,7 @@ public class DetailsModel : PageModel
     {
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
         CurrentBcUserId = currentUser.BcUserId;
+        IsAdministrator = IsAdministratorRole(currentUser.Role);
         LearningResource? resource = await _context.LearningResources
             .AsNoTracking()
             .Include(item => item.ProgrammeModule)
@@ -59,13 +64,14 @@ public class DetailsModel : PageModel
         }
 
         bool isOwningTutor = resource.Tutor.BcUserId == currentUser.BcUserId;
-        if (!isOwningTutor &&
+        if (!IsAdministrator &&
+            !isOwningTutor &&
             resource.Status != LearningResourceStatus.Published)
         {
             return NotFound();
         }
 
-        if (!isOwningTutor)
+        if (!IsAdministrator && !isOwningTutor)
         {
             ResourceSubscription? subscription = await _context.ResourceSubscriptions
                 .SingleOrDefaultAsync(item =>
@@ -114,6 +120,7 @@ public class DetailsModel : PageModel
         CancellationToken cancellationToken)
     {
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
+        bool isAdministrator = IsAdministratorRole(currentUser.Role);
         LearningResource? resource = await _context.LearningResources
             .AsNoTracking()
             .Include(item => item.ProgrammeModule)
@@ -135,12 +142,12 @@ public class DetailsModel : PageModel
                 item.IsActive,
                 cancellationToken);
         bool isOwningTutor = resource.Tutor.BcUserId == currentUser.BcUserId;
-        if (!isOwningTutor && !hasActiveSubscription)
+        if (!isAdministrator && !isOwningTutor && !hasActiveSubscription)
         {
             return Forbid();
         }
 
-        if (!resource.AllowSubscriberComments)
+        if (!resource.AllowSubscriberComments && !isAdministrator)
         {
             DiscussionError = true;
             DiscussionMessage = "Comments are closed for this resource.";
@@ -304,9 +311,11 @@ public class DetailsModel : PageModel
             : comment.Author.DisplayName;
 
     public string GetAuthorRole(ResourceComment comment) =>
-        comment.AuthorUserId == Resource.Tutor.BcUserId
-            ? "Tutor"
-            : "Student";
+        IsAdministratorRole(comment.Author.Role)
+            ? "Administrator"
+            : comment.AuthorUserId == Resource.Tutor.BcUserId
+                ? "Tutor"
+                : "Student";
 
     public static string GetAuthorInitials(ResourceComment comment)
     {
@@ -366,6 +375,11 @@ public class DetailsModel : PageModel
             return NotFound();
         }
 
+        if (IsAdministratorRole(currentUser.Role))
+        {
+            return null;
+        }
+
         bool hasActiveSubscription = await _context.ResourceSubscriptions
             .AsNoTracking()
             .AnyAsync(item =>
@@ -383,4 +397,7 @@ public class DetailsModel : PageModel
             null,
             new { resourceId },
             "discussion");
+
+    private static bool IsAdministratorRole(BcUserRole role) =>
+        role is BcUserRole.Admin or BcUserRole.SuperAdmin or BcUserRole.Dev;
 }

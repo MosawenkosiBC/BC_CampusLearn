@@ -15,6 +15,12 @@
     bool isStatistics = currentPage.Equals(
         "/Administrator/Admin/Statistics",
         StringComparison.OrdinalIgnoreCase);
+    bool isLearningResources = currentPage.StartsWith(
+        "/Administrator/LearningResources/",
+        StringComparison.OrdinalIgnoreCase) ||
+        currentPage.Equals(
+            "/LearningResources/Details",
+            StringComparison.OrdinalIgnoreCase);
 }
 
 <aside class="admin-sidebar" aria-label="Administrator navigation">
@@ -89,7 +95,9 @@
             </svg>
         </a>
 
-        <span class="admin-sidebar-link is-coming-soon"
+        <a asp-page="/Administrator/LearningResources/Index"
+              class="admin-sidebar-link @(isLearningResources ? "is-active" : null)"
+              aria-current="@(isLearningResources ? "page" : null)"
               aria-label="Learning resources"
               data-label="Learning resources">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -97,7 +105,7 @@
                 <path fill="currentColor" stroke="none" d="M8.25 8A.75.75 0 0 1 9 7.25h7a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 8M9 10.25a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5z" />
                 <path fill="currentColor" fill-rule="evenodd" stroke="none" d="M8.5 3.25A4.75 4.75 0 0 0 3.75 8v10a3.75 3.75 0 0 0 3.75 3.75h11A1.75 1.75 0 0 0 20.25 20V5a1.75 1.75 0 0 0-1.75-1.75Zm10.25 11V5a.25.25 0 0 0-.25-.25h-10A3.25 3.25 0 0 0 5.25 8v7a3.73 3.73 0 0 1 2.25-.75Zm0 1.5H7.5a2.25 2.25 0 0 0 0 4.5h11a.25.25 0 0 0 .25-.25Z" clip-rule="evenodd" />
             </svg>
-        </span>
+        </a>
 
         <span class="admin-sidebar-link is-coming-soon admin-sidebar-settings"
               aria-label="Settings"

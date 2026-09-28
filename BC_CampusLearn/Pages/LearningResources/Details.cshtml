@@ -11,17 +11,24 @@
           href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.bubble.css" />
     <link rel="stylesheet" href="~/css/learning-resources.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/components/navigation-drawer.css" asp-append-version="true" />
+    @if (Model.IsAdministrator)
+    {
+        <link rel="stylesheet" href="~/css/admin-learning-resources.css" asp-append-version="true" />
+    }
 }
 
-@await Html.PartialAsync(
-    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+@if (!Model.IsAdministrator)
+{
+    @await Html.PartialAsync(
+        "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+}
 
 <main class="container-fluid px-3 px-xl-4 py-4 student-resource-reader-page">
     <header class="student-resource-reader-heading">
         <h1>@Model.Resource.Topic</h1>
     </header>
 
-    <div class="student-resource-reader-layout @(Model.IsPublished && Model.Resource.AllowSubscriberComments ? "has-open-discussion" : null) @(!Model.IsPublished ? "is-owner-preview" : null)">
+    <div class="student-resource-reader-layout @(Model.CanParticipateInDiscussion ? "has-open-discussion" : null) @(!Model.IsPublished ? "is-owner-preview" : null)">
         <div class="student-resource-reader-column">
             <article class="student-resource-reader">
                 <header class="student-resource-reader-meta">
@@ -49,15 +56,27 @@
                         </div>
                     </div>
                     <div class="student-resource-reader-bookmark-row">
-                        <button type="button"
-                                class="student-resource-bookmark student-resource-reader-bookmark"
-                                data-resource-detail-bookmark
-                                data-resource-id="@Model.Resource.LearningResourceId"
-                                data-resource-name="@Model.Resource.Topic"
-                                aria-label="Bookmark @Model.Resource.Topic"
-                                aria-pressed="false">
-                            <i class="bi bi-bookmark" aria-hidden="true"></i>
-                        </button>
+                        @if (Model.IsAdministrator)
+                        {
+                            <button type="button"
+                                    class="admin-resource-delete admin-resource-reader-delete"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#delete-learning-resource-modal">
+                                Delete resource
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button"
+                                    class="student-resource-bookmark student-resource-reader-bookmark"
+                                    data-resource-detail-bookmark
+                                    data-resource-id="@Model.Resource.LearningResourceId"
+                                    data-resource-name="@Model.Resource.Topic"
+                                    aria-label="Bookmark @Model.Resource.Topic"
+                                    aria-pressed="false">
+                                <i class="bi bi-bookmark" aria-hidden="true"></i>
+                            </button>
+                        }
                     </div>
                 </header>
 
@@ -109,7 +128,7 @@
             </header>
 
             @if (!string.IsNullOrWhiteSpace(Model.DiscussionMessage) &&
-                 (!Model.DiscussionError || !Model.Resource.AllowSubscriberComments))
+                 (!Model.DiscussionError || !Model.CanParticipateInDiscussion))
             {
                 <div class="resource-discussion-alert @(Model.DiscussionError ? "is-error" : null)"
                      role="status">
@@ -123,7 +142,7 @@
                     <i class="bi bi-chat-square-text" aria-hidden="true"></i>
                     <h3>No comments yet</h3>
                     <p>
-                        @(Model.Resource.AllowSubscriberComments
+                        @(Model.CanParticipateInDiscussion
                             ? "Start the discussion by asking the first question."
                             : "No comments were posted before this discussion was closed.")
                     </p>
@@ -162,6 +181,10 @@
                                             <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
                                         </span>
                                     }
+                                    else if (Model.GetAuthorRole(comment) == "Administrator")
+                                    {
+                                        <span class="resource-comment-admin-badge">Admin</span>
+                                    }
                                     <time datetime="@DateTime.SpecifyKind(comment.DateCreated, DateTimeKind.Utc).ToString("O")">
                                         @DetailsModel.GetCommentTimeDisplay(comment.DateCreated)
                                     </time>
@@ -188,7 +211,7 @@
                                 {
                                     <p id="comment-text-@comment.CommentId">@comment.CommentText</p>
                                     <div class="resource-comment-actions" id="comment-actions-@comment.CommentId">
-                                        @if (Model.Resource.AllowSubscriberComments)
+                                        @if (Model.CanParticipateInDiscussion)
                                         {
                                             <button type="button"
                                                     class="resource-comment-action"
@@ -273,6 +296,10 @@
                                                         <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
                                                     </span>
                                                 }
+                                                else if (Model.GetAuthorRole(reply) == "Administrator")
+                                                {
+                                                    <span class="resource-comment-admin-badge">Admin</span>
+                                                }
                                                 <time datetime="@DateTime.SpecifyKind(reply.DateCreated, DateTimeKind.Utc).ToString("O")">
                                                     @DetailsModel.GetCommentTimeDisplay(reply.DateCreated)
                                                 </time>
@@ -343,7 +370,7 @@
                 </div>
             }
 
-            @if (Model.Resource.AllowSubscriberComments)
+            @if (Model.CanParticipateInDiscussion)
             {
                 <form method="post"
                       asp-page-handler="AddComment"
@@ -427,6 +454,7 @@
     </div>
 </main>
 
+@section Modals {
 <div class="modal fade resource-comment-delete-modal"
      id="delete-resource-comment-modal"
      tabindex="-1"
@@ -459,9 +487,52 @@
     </div>
 </div>
 
+    @if (Model.IsAdministrator)
+    {
+        <div class="modal fade admin-resource-delete-modal"
+             id="delete-learning-resource-modal"
+             tabindex="-1"
+             aria-labelledby="delete-learning-resource-title"
+             aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form method="post"
+                          asp-page="/Administrator/LearningResources/Index"
+                          asp-page-handler="Delete"
+                          asp-route-resourceId="@Model.Resource.LearningResourceId">
+                        <div class="modal-header">
+                            <h2 class="modal-title" id="delete-learning-resource-title">
+                                Delete learning resource?
+                            </h2>
+                            <button type="button" class="btn-close"
+                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>
+                                <strong>@Model.Resource.Topic</strong> and its discussion
+                                will be permanently deleted.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="admin-resource-modal-cancel"
+                                    data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="admin-resource-modal-delete">
+                                Delete resource
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
-    <script src="~/js/components/navigation-drawer.js" asp-append-version="true"></script>
+    @if (!Model.IsAdministrator)
+    {
+        <script src="~/js/components/navigation-drawer.js" asp-append-version="true"></script>
+    }
     <script src="~/js/learning-resource-reader.js" asp-append-version="true"></script>
     <script src="~/js/learning-resource-discussion.js" asp-append-version="true"></script>
 }

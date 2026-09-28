@@ -178,11 +178,13 @@
     @if (!Model.ShowReviewResultModal &&
         !string.IsNullOrWhiteSpace(Model.PageMessage))
     {
-        <div class="applications-notice" role="status">@Model.PageMessage</div>
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.PageMessage))
     }
     @if (!string.IsNullOrWhiteSpace(Model.PageError))
     {
-        <div class="applications-notice applications-notice--error" role="alert">@Model.PageError</div>
+        @await Html.PartialAsync(
+            "_CampusAlert",
+            new CampusAlertViewModel(Model.PageError, CampusAlertVariant.Danger))
     }
 
     <nav class="application-stage-tabs" aria-label="Application stages">
@@ -1182,10 +1184,9 @@ BC CampusLearn Tutor Team</textarea>
                     @if (Model.OpenInterviewRoomCandidateId == candidate.TutorId &&
                         !string.IsNullOrWhiteSpace(Model.InterviewRoomMessage))
                     {
-                        <div class="interview-room-success" role="status">
-                            <span aria-hidden="true">&#10003;</span>
-                            @Model.InterviewRoomMessage
-                        </div>
+                        @await Html.PartialAsync(
+                            "_CampusAlert",
+                            new CampusAlertViewModel(Model.InterviewRoomMessage))
                     }
 
                     <label for="interview-notes-@candidate.TutorId">

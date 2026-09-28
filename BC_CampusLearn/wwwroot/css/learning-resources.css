@@ -403,6 +403,15 @@
     object-fit: cover;
 }
 
+.resource-comment-admin-badge {
+    background: #363c3d;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.16rem 0.42rem;
+}
+
 .student-resource-learn-more {
     align-self: flex-start;
     margin-top: .8rem;

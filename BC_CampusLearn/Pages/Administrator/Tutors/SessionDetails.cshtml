@@ -22,11 +22,11 @@
     <div class="admin-session-review-action">
         <button type="button" data-bs-toggle="offcanvas" data-bs-target="#administrator-review-panel"
                 aria-controls="administrator-review-panel">Administrator Review</button>
-        @if (!string.IsNullOrWhiteSpace(Model.AdminReviewMessage))
-        {
-            <p class="admin-session-review-message" role="status">@Model.AdminReviewMessage</p>
-        }
     </div>
+    @if (!string.IsNullOrWhiteSpace(Model.AdminReviewMessage))
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.AdminReviewMessage))
+    }
     <div class="admin-session-review-grid">
     <details class="admin-session-summary admin-session-review-accordion">
         <summary><h2 id="session-summary-title">Session Summary</h2></summary>

@@ -26,7 +26,10 @@
             <button type="button" class="module-action-button" data-bs-toggle="modal" data-bs-target="#module-edit-modal">Edit module details</button>
         </div>
     </header>
-    @if (TempData["ModuleSuccess"] is string success) { <div class="module-success" role="status">@success</div> }
+    @if (TempData["ModuleSuccess"] is string success)
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(success))
+    }
     <div asp-validation-summary="All" class="module-errors" role="alert"></div>
     <section class="module-assigned-section" aria-label="Assigned tutors">
         <div class="module-management-workspace module-assigned-workspace">
