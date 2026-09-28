@@ -1,5 +1,6 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Pages.Administrator.Admin;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -147,7 +148,15 @@ public class AdminApplicationDetailsTests
 
         var detailsPage = new ApplicationDetailsModel(
             context,
-            new TestWebHostEnvironment());
+            new TestWebHostEnvironment())
+        {
+            RejectionMessage = new ApplicationMessageInput
+            {
+                Subject = "Tutor application outcome",
+                EmailBody = "Thank you for applying. We cannot proceed with your application.",
+                NotificationMessage = "Thank you for applying. Your tutor application was not successful."
+            }
+        };
         detailsPage.ModelState.AddModelError(
             "Stage",
             "An unrelated binding error must not block rejection.");

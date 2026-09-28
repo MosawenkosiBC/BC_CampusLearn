@@ -1,7 +1,10 @@
 (() => {
-    const menus = [...document.querySelectorAll(
+    const messageMenus = [...document.querySelectorAll(
         "[data-message-notifications]")];
-    if (menus.length === 0 || !window.signalR) {
+    const userNotificationMenus = [...document.querySelectorAll(
+        "[data-user-notifications]")];
+    if ((messageMenus.length === 0 &&
+        userNotificationMenus.length === 0) || !window.signalR) {
         return;
     }
 
@@ -35,7 +38,7 @@
     };
 
     if (activeBookingId) {
-        menus.forEach((menu) => {
+        messageMenus.forEach((menu) => {
             const visibleMessages = [...menu.querySelectorAll(
                 `[data-booking-id="${activeBookingId}"]`)];
             visibleMessages.forEach((message) => message.remove());
@@ -78,7 +81,7 @@
             return;
         }
 
-        menus.forEach((menu) => {
+        messageMenus.forEach((menu) => {
             const list = menu.querySelector(
                 "[data-message-notification-list]");
             if (list.querySelector(
@@ -95,7 +98,8 @@
             updateCount(menu, count);
         });
 
-        const visibleMenu = menus.find((menu) => menu.offsetParent !== null);
+        const visibleMenu = messageMenus.find(
+            (menu) => menu.offsetParent !== null);
         const trigger = visibleMenu?.querySelector(
             "[data-message-notification-trigger]");
         if (trigger && window.bootstrap) {
@@ -104,6 +108,83 @@
     };
 
     connection.on("ReceiveMessageNotification", displayNotification);
+
+    const updateUserNotificationCount = (menu, count) => {
+        menu.dataset.unreadCount = String(count);
+        const countBadge = menu.querySelector(
+            "[data-user-notification-count]");
+        const summary = menu.querySelector(
+            "[data-user-notification-summary]");
+        const empty = menu.querySelector(
+            "[data-user-notification-empty]");
+        const trigger = menu.querySelector(
+            "[data-user-notification-trigger]");
+
+        countBadge.textContent = formatCount(count);
+        countBadge.hidden = count === 0;
+        summary.textContent = `${count} unread`;
+        empty.hidden = count > 0;
+        trigger.setAttribute(
+            "aria-label",
+            `Notifications, ${count} unread`);
+    };
+
+    const createUserNotification = (notification) => {
+        const link = document.createElement("a");
+        link.className = "message-notification-item is-new";
+        link.href = notification.openUrl;
+        link.dataset.userNotificationId =
+            notification.userNotificationId;
+
+        const title = document.createElement("span");
+        title.className = "message-notification-sender";
+        title.textContent = notification.title;
+        const preview = document.createElement("span");
+        preview.className = "message-notification-preview";
+        preview.textContent = notification.message;
+        const time = document.createElement("time");
+        const createdAt = new Date(notification.createdAt);
+        time.dateTime = createdAt.toISOString();
+        time.textContent = createdAt.toLocaleString([], {
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+        link.append(title, preview, time);
+        return link;
+    };
+
+    const displayUserNotification = (notification) => {
+        userNotificationMenus.forEach((menu) => {
+            const list = menu.querySelector(
+                "[data-user-notification-list]");
+            if (list.querySelector(
+                `[data-user-notification-id="${notification.userNotificationId}"]`)) {
+                return;
+            }
+
+            list.prepend(createUserNotification(notification));
+            while (list.children.length > 10) {
+                list.lastElementChild.remove();
+            }
+
+            const count = Number(menu.dataset.unreadCount || 0) + 1;
+            updateUserNotificationCount(menu, count);
+        });
+
+        const visibleMenu = userNotificationMenus.find(
+            (menu) => menu.offsetParent !== null);
+        const trigger = visibleMenu?.querySelector(
+            "[data-user-notification-trigger]");
+        if (trigger && window.bootstrap) {
+            bootstrap.Dropdown.getOrCreateInstance(trigger).show();
+        }
+    };
+
+    connection.on(
+        "ReceiveUserNotification",
+        displayUserNotification);
 
     const startConnection = async () => {
         try {

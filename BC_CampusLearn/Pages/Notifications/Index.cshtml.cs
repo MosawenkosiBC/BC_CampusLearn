@@ -70,6 +70,7 @@ public class IndexModel(
                 item.UserNotificationId,
                 item.Title,
                 item.Message,
+                item.LinkUrl,
                 item.CreatedAt,
                 item.ReadAt))
             .ToListAsync(cancellationToken);
@@ -103,6 +104,7 @@ public class IndexModel(
             notification.UserNotificationId,
             notification.Title,
             notification.Message,
+            notification.LinkUrl,
             notification.CreatedAt,
             notification.ReadAt);
 
@@ -110,6 +112,28 @@ public class IndexModel(
         long NotificationId,
         string Title,
         string Message,
+        string LinkUrl,
         DateTimeOffset CreatedAt,
-        DateTimeOffset? ReadAt);
+        DateTimeOffset? ReadAt)
+    {
+        public string ActionLabel =>
+            Title == "Session completed" &&
+            IsSessionLink
+                ? "Complete review"
+                : IsSessionLink
+                    ? "View session"
+                    : LinkUrl.Equals(
+                        "/Tutors/TutorApplication",
+                        StringComparison.OrdinalIgnoreCase)
+                        ? "View application"
+                        : "View related page";
+
+        private bool IsSessionLink =>
+            LinkUrl.StartsWith(
+                "/Bookings/SessionDetails/",
+                StringComparison.OrdinalIgnoreCase) ||
+            LinkUrl.StartsWith(
+                "/Tutors/SessionDetails/",
+                StringComparison.OrdinalIgnoreCase);
+    }
 }

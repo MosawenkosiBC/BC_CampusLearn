@@ -2,6 +2,7 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
+using BC_CampusLearn.Services.Notifications;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -122,6 +123,8 @@ public class BookingService : IBookingService
                     .ThenInclude(tutor => tutor.BcUser)
                 .Include(item => item.Tutor)
                     .ThenInclude(tutor => tutor.TutorCourseModules)
+                        .ThenInclude(assignment =>
+                            assignment.ProgrammeModule)
                 .FirstOrDefaultAsync(
                     item =>
                         item.TutorAvailabilityId ==
@@ -156,6 +159,11 @@ public class BookingService : IBookingService
             return BookingCreationResult.Failure(
                 "Select a module assigned to this tutor.");
         }
+
+        TutorCourseModule selectedAssignment =
+            slot.Tutor.TutorCourseModules.Single(assignment =>
+                assignment.IsActive &&
+                assignment.ProgrammeModuleId == input.ProgrammeModuleId);
 
         List<string> preparationLinks = input.PreparationLinks
             .Where(link => !string.IsNullOrWhiteSpace(link))
@@ -320,6 +328,33 @@ public class BookingService : IBookingService
         {
             await _context.SaveChangesAsync(
                 cancellationToken);
+
+            DateTimeOffset notificationTime = DateTimeOffset.UtcNow;
+            string tutorName = string.IsNullOrWhiteSpace(
+                slot.Tutor.BcUser.DisplayName)
+                ? slot.Tutor.BcUser.PersonnelNumber
+                : slot.Tutor.BcUser.DisplayName;
+            var notificationDetails = new BookingNotificationDetails(
+                selectedAssignment.ProgrammeModule.ModuleCode,
+                selectedAssignment.ProgrammeModule.ModuleName,
+                booking.Location,
+                booking.ScheduledStartTime,
+                tutorName,
+                student.DisplayName,
+                MeetingLinkUrl: null);
+            _context.UserNotifications.AddRange(
+                BookingNotificationFactory.BookingSubmitted(
+                    student.BcUserId,
+                    booking.BookingId,
+                    notificationDetails,
+                    notificationTime),
+                BookingNotificationFactory.BookingReceived(
+                    slot.Tutor.BcUserId,
+                    booking.BookingId,
+                    notificationDetails,
+                    notificationTime));
+
+            await _context.SaveChangesAsync(cancellationToken);
 
             if (assignmentTransaction is not null)
                 await assignmentTransaction.CommitAsync(cancellationToken);

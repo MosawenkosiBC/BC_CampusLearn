@@ -6,6 +6,7 @@ using BC_CampusLearn.Services.Availability;
 using BC_CampusLearn.Services.Tutors;
 using BC_CampusLearn.Services.Sessions;
 using BC_CampusLearn.Services.Students;
+using BC_CampusLearn.Services.Notifications;
 using BC_CampusLearn.Hubs;
 using BC_CampusLearn.Models.Entities;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -16,13 +17,15 @@ using Microsoft.Identity.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddScoped<UserNotificationSignalRInterceptor>();
+
 string connectionString =
     builder.Configuration.GetConnectionString(
         "DefaultConnection")
     ?? throw new InvalidOperationException(
         "DefaultConnection was not configured.");
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+builder.Services.AddDbContext<ApplicationDbContext>((serviceProvider, options) =>
 {
     options.UseSqlServer(
         connectionString,
@@ -30,6 +33,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         {
             sqlOptions.EnableRetryOnFailure();
         });
+    options.AddInterceptors(
+        serviceProvider.GetRequiredService<
+            UserNotificationSignalRInterceptor>());
 });
 
 builder.Services.Configure<DevelopmentUserOptions>(
