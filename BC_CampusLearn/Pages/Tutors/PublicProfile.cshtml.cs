@@ -124,11 +124,48 @@ public class PublicProfileModel : PageModel
             return Page();
         }
 
-        tutor.Biography = NullIfWhiteSpace(Input.Biography);
-        tutor.PreferredTutoringMode = Input.PreferredTutoringMode!.Value;
+        string? biography = NullIfWhiteSpace(Input.Biography);
+        PreferredTutoringMode preferredMode =
+            Input.PreferredTutoringMode!.Value;
+        List<string> updatedFields = [];
+
+        if (!string.Equals(tutor.Biography, biography, StringComparison.Ordinal))
+        {
+            updatedFields.Add("biography");
+        }
+
+        if (tutor.PreferredTutoringMode != preferredMode)
+        {
+            updatedFields.Add("tutoring preference");
+        }
+
+        if (!string.Equals(tutor.GitHubUrl, githubUrl, StringComparison.Ordinal))
+        {
+            updatedFields.Add("GitHub link");
+        }
+
+        if (!string.Equals(tutor.LinkedInUrl, linkedInUrl, StringComparison.Ordinal))
+        {
+            updatedFields.Add("LinkedIn link");
+        }
+
+        tutor.Biography = biography;
+        tutor.PreferredTutoringMode = preferredMode;
         tutor.GitHubUrl = githubUrl;
         tutor.LinkedInUrl = linkedInUrl;
         tutor.UpdatedAt = DateTime.UtcNow;
+
+        if (updatedFields.Count > 0)
+        {
+            _context.UserNotifications.Add(new UserNotification
+            {
+                RecipientBcUserId = tutor.BcUserId,
+                Title = "Public profile updated",
+                Message = $"Your public tutor profile was updated successfully. Updated: {FormatUpdatedFields(updatedFields)}. Students will now see this information when they view your profile.",
+                LinkUrl = "/Tutors/PublicProfile",
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+        }
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -197,4 +234,12 @@ public class PublicProfileModel : PageModel
             ? null
             : value.Trim();
     }
+
+    private static string FormatUpdatedFields(IReadOnlyList<string> fields) =>
+        fields.Count switch
+        {
+            1 => fields[0],
+            2 => $"{fields[0]} and {fields[1]}",
+            _ => $"{string.Join(", ", fields.Take(fields.Count - 1))}, and {fields[^1]}"
+        };
 }
