@@ -227,7 +227,7 @@ public class SessionHub : Hub
     private static string GetGroupName(int bookingId) =>
         $"session-{bookingId}";
 
-    private static string GetUserGroupName(int bcUserId) =>
+    public static string GetUserGroupName(int bcUserId) =>
         $"user-{bcUserId}";
 
     private sealed record BookingParticipant(

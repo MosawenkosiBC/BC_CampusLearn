@@ -1,5 +1,6 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Pages.Administrator.Admin;
 using BC_CampusLearn.Services.Tutors;
 using Microsoft.EntityFrameworkCore;
@@ -176,7 +177,20 @@ public class AdminApplicationsTests
         Assert.Equal(TutorApplicationStage.Shortlisted, first.ApplicationStage);
         Assert.Equal(TutorApplicationStage.Shortlisted, second.ApplicationStage);
         Assert.Equal("Strong academic results", first.ShortlistReason);
-        Assert.Empty(context.UserNotifications);
+        UserNotification[] shortlistNotifications = await context.UserNotifications
+            .OrderBy(notification => notification.RecipientBcUserId)
+            .ToArrayAsync();
+        Assert.Equal(2, shortlistNotifications.Length);
+        Assert.All(
+            shortlistNotifications,
+            notification => Assert.Equal(
+                "Tutor application shortlisted",
+                notification.Title));
+        Assert.All(
+            shortlistNotifications,
+            notification => Assert.Contains(
+                "has been shortlisted",
+                notification.Message));
         Assert.Equal(TutorStatus.Pending, uncheckedCandidate.Status);
         Assert.Equal(
             TutorApplicationStage.Submitted,
@@ -466,7 +480,15 @@ public class AdminApplicationsTests
         await context.SaveChangesAsync();
 
         var emailSender = new RecordingTutorApplicationEmailSender();
-        var page = new ApplicationsModel(context, emailSender: emailSender);
+        var page = new ApplicationsModel(context, emailSender: emailSender)
+        {
+            RejectionMessage = new ApplicationMessageInput
+            {
+                Subject = "Tutor application outcome",
+                EmailBody = "Thank you for applying. We cannot proceed with your application.",
+                NotificationMessage = "Thank you for applying. Your tutor application was not successful."
+            }
+        };
 
         await page.OnPostRejectInterviewedAsync(
             1,
@@ -477,9 +499,58 @@ public class AdminApplicationsTests
         Assert.False(candidate.IsActive);
         UserNotification notification = await context.UserNotifications
             .SingleAsync();
-        Assert.Contains("not approved", notification.Message);
-        Assert.Equal(student.Email, emailSender.RecipientEmail);
-        Assert.Equal(student.DisplayName, emailSender.RecipientName);
+        Assert.Equal(page.RejectionMessage.NotificationMessage, notification.Message);
+        Assert.Equal(student.Email, emailSender.ComposedRecipientEmail);
+        Assert.Equal(page.RejectionMessage.Subject, emailSender.ComposedSubject);
+        Assert.Equal(page.RejectionMessage.EmailBody, emailSender.ComposedBody);
+    }
+
+    [Fact]
+    public async Task SendingCommunicationCreatesNotificationAndSendsComposedEmail()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        BcUser student = CreateUser(1, "Shortlisted Candidate", "ST3958");
+        student.Email = "shortlisted.candidate@example.com";
+        context.BcUsers.Add(student);
+        Tutor candidate = CreateTutor(1, TutorStatus.Pending);
+        candidate.ApplicationStage = TutorApplicationStage.Shortlisted;
+        context.Tutors.Add(candidate);
+        await context.SaveChangesAsync();
+
+        var emailSender = new RecordingTutorApplicationEmailSender();
+        var page = new ApplicationsModel(context, emailSender: emailSender)
+        {
+            Stage = "shortlist",
+            Communication = new ApplicationMessageInput
+            {
+                Subject = "Tutor interview invitation",
+                EmailBody = "Your tutor interview is scheduled for Monday at 10:00."
+            }
+        };
+
+        var result = await page.OnPostSendCommunicationAsync(
+            candidate.TutorId,
+            CancellationToken.None);
+
+        var redirect = Assert.IsType<Microsoft.AspNetCore.Mvc.RedirectToPageResult>(result);
+        Assert.Equal("shortlist", redirect.RouteValues?["Stage"]);
+        UserNotification notification = await context.UserNotifications.SingleAsync();
+        Assert.Equal(student.BcUserId, notification.RecipientBcUserId);
+        Assert.Equal("Tutor application communication sent", notification.Title);
+        Assert.Contains(student.Email, notification.Message);
+        Assert.Equal("/Tutors/TutorApplication", notification.LinkUrl);
+        Assert.Equal(student.Email, emailSender.ComposedRecipientEmail);
+        Assert.Equal(page.Communication.Subject, emailSender.ComposedSubject);
+        Assert.Equal(page.Communication.EmailBody, emailSender.ComposedBody);
     }
 
     [Fact]
@@ -740,7 +811,10 @@ public class AdminApplicationsTests
         Assert.Equal(
             TutorApplicationStage.Shortlisted,
             shortlisted.ApplicationStage);
-        Assert.Empty(context.UserNotifications);
+        UserNotification notification = await context.UserNotifications.SingleAsync();
+        Assert.Equal(shortlisted.BcUserId, notification.RecipientBcUserId);
+        Assert.Equal("Tutor application shortlisted", notification.Title);
+        Assert.Contains("has been shortlisted", notification.Message);
         Assert.Equal(TutorStatus.Pending, uncheckedCandidate.Status);
     }
 
@@ -1036,6 +1110,27 @@ public class AdminApplicationsTests
     {
         public string? RecipientEmail { get; private set; }
         public string? RecipientName { get; private set; }
+        public string? ComposedRecipientEmail { get; private set; }
+        public string? ComposedSubject { get; private set; }
+        public string? ComposedBody { get; private set; }
+
+        public Task SendComposedAsync(
+            string recipientEmail,
+            string subject,
+            string body,
+            CancellationToken cancellationToken)
+        {
+            ComposedRecipientEmail = recipientEmail;
+            ComposedSubject = subject;
+            ComposedBody = body;
+            return Task.CompletedTask;
+        }
+
+        public Task SendApplicationSubmittedAsync(
+            string recipientEmail,
+            string recipientName,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
 
         public Task SendInterviewRejectionAsync(
             string recipientEmail,

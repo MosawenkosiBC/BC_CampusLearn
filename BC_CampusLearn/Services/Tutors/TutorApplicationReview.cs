@@ -85,6 +85,15 @@ public static class TutorApplicationReview
                 });
         }
 
+        context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = candidate.BcUserId,
+            Title = "Tutor application shortlisted",
+            Message = $"Congratulations! Your {candidate.SubmittedAt.Year} tutor application has been shortlisted. The BC CampusLearn Tutor Team will contact you with details about the next step.",
+            LinkUrl = "/Tutors/TutorApplication",
+            CreatedAt = new DateTimeOffset(reviewedAt, TimeSpan.Zero)
+        });
+
         await context.SaveChangesAsync(cancellationToken);
         bool shortlistLimitReached = settings.ShortlistLimit.HasValue &&
             shortlistedCount + 1 == settings.ShortlistLimit.Value &&
@@ -98,7 +107,8 @@ public static class TutorApplicationReview
         ApplicationDbContext context,
         int tutorId,
         string? reason,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? notificationMessage = null)
     {
         string normalizedReason = reason?.Trim() ?? string.Empty;
         if (normalizedReason.Length > 1000)
@@ -136,8 +146,10 @@ public static class TutorApplicationReview
         context.UserNotifications.Add(new UserNotification
         {
             RecipientBcUserId = candidate.BcUserId,
-            Title = "Tutor application reviewed",
-            Message = string.IsNullOrEmpty(normalizedReason)
+            Title = "Tutor application unsuccessful",
+            Message = !string.IsNullOrWhiteSpace(notificationMessage)
+                ? notificationMessage.Trim()
+                : string.IsNullOrEmpty(normalizedReason)
                 ? "Your tutor application was not moved to the shortlist."
                 : "Your tutor application was not moved to the shortlist. " +
                     $"Reason: {normalizedReason}",
@@ -264,7 +276,8 @@ public static class TutorApplicationReview
         int tutorId,
         string? reason,
         CancellationToken cancellationToken,
-        int? reviewerBcUserId = null)
+        int? reviewerBcUserId = null,
+        string? notificationMessage = null)
     {
         string normalizedReason = reason?.Trim() ?? string.Empty;
         if (normalizedReason.Length > 1000)
@@ -309,8 +322,10 @@ public static class TutorApplicationReview
         context.UserNotifications.Add(new UserNotification
         {
             RecipientBcUserId = candidate.BcUserId,
-            Title = "Tutor application reviewed",
-            Message = string.IsNullOrEmpty(normalizedReason)
+            Title = "Tutor application unsuccessful",
+            Message = !string.IsNullOrWhiteSpace(notificationMessage)
+                ? notificationMessage.Trim()
+                : string.IsNullOrEmpty(normalizedReason)
                 ? "Your tutor application will not progress to the interview stage."
                 : "Your tutor application will not progress to the interview stage. " +
                     $"Reason: {normalizedReason}",
@@ -382,7 +397,8 @@ public static class TutorApplicationReview
         int tutorId,
         string? reason,
         CancellationToken cancellationToken,
-        int? reviewerBcUserId = null)
+        int? reviewerBcUserId = null,
+        string? notificationMessage = null)
     {
         string normalizedReason = reason?.Trim() ?? string.Empty;
         if (normalizedReason.Length > 1000)
@@ -427,8 +443,10 @@ public static class TutorApplicationReview
         context.UserNotifications.Add(new UserNotification
         {
             RecipientBcUserId = candidate.BcUserId,
-            Title = "Tutor application reviewed",
-            Message = string.IsNullOrEmpty(normalizedReason)
+            Title = "Tutor application unsuccessful",
+            Message = !string.IsNullOrWhiteSpace(notificationMessage)
+                ? notificationMessage.Trim()
+                : string.IsNullOrEmpty(normalizedReason)
                 ? "Your tutor application was not approved after the interview."
                 : "Your tutor application was not approved after the interview. " +
                     $"Reason: {normalizedReason}",

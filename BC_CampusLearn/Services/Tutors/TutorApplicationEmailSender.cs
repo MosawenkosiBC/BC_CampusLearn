@@ -6,6 +6,17 @@ namespace BC_CampusLearn.Services.Tutors;
 
 public interface ITutorApplicationEmailSender
 {
+    Task SendComposedAsync(
+        string recipientEmail,
+        string subject,
+        string body,
+        CancellationToken cancellationToken);
+
+    Task SendApplicationSubmittedAsync(
+        string recipientEmail,
+        string recipientName,
+        CancellationToken cancellationToken);
+
     Task SendInterviewRejectionAsync(
         string recipientEmail,
         string recipientName,
@@ -33,32 +44,47 @@ public sealed class TutorApplicationEmailSender(
 {
     private readonly TutorApplicationEmailOptions _options = options.Value;
 
+    public Task SendComposedAsync(
+        string recipientEmail,
+        string subject,
+        string body,
+        CancellationToken cancellationToken) =>
+        SendAsync(
+            recipientEmail,
+            subject,
+            body,
+            "administrator-composed tutor application communication",
+            cancellationToken);
+
+    public Task SendApplicationSubmittedAsync(
+        string recipientEmail,
+        string recipientName,
+        CancellationToken cancellationToken) =>
+        SendAsync(
+            recipientEmail,
+            "Tutor application received",
+            $"Dear {recipientName},{Environment.NewLine}{Environment.NewLine}" +
+            "Thank you for applying to become a tutor with BC CampusLearn. " +
+            "We have received your application, and our team will review " +
+            "the information and documents you submitted." +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            "We will notify you as soon as there is an update on your " +
+            "application." +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            $"Kind regards,{Environment.NewLine}" +
+            "BC CampusLearn Tutor Team",
+            "application submission confirmation",
+            cancellationToken);
+
     public async Task SendInterviewRejectionAsync(
         string recipientEmail,
         string recipientName,
         CancellationToken cancellationToken)
     {
-        if (!_options.Enabled)
-        {
-            logger.LogInformation(
-                "Tutor application email delivery is disabled. The interview rejection email for {RecipientEmail} was not sent.",
-                recipientEmail);
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(_options.Host) ||
-            string.IsNullOrWhiteSpace(_options.FromAddress))
-        {
-            logger.LogWarning(
-                "Tutor application email delivery is enabled but the SMTP host or sender address is missing.");
-            return;
-        }
-
-        using var message = new MailMessage
-        {
-            From = new MailAddress(_options.FromAddress, _options.FromName),
-            Subject = "Tutor application outcome",
-            Body = $"Dear {recipientName},{Environment.NewLine}{Environment.NewLine}" +
+        await SendAsync(
+            recipientEmail,
+            "Tutor application outcome",
+            $"Dear {recipientName},{Environment.NewLine}{Environment.NewLine}" +
                 "Thank you for the time, effort, and enthusiasm you invested " +
                 "in the tutor application and interview process." +
                 $"{Environment.NewLine}{Environment.NewLine}" +
@@ -76,6 +102,39 @@ public sealed class TutorApplicationEmailSender(
                 $"{Environment.NewLine}{Environment.NewLine}" +
                 $"Kind regards,{Environment.NewLine}" +
                 "BC CampusLearn Tutor Team",
+            "interview rejection",
+            cancellationToken);
+    }
+
+    private async Task SendAsync(
+        string recipientEmail,
+        string subject,
+        string body,
+        string emailDescription,
+        CancellationToken cancellationToken)
+    {
+        if (!_options.Enabled)
+        {
+            logger.LogInformation(
+                "Tutor application email delivery is disabled. The {EmailDescription} email for {RecipientEmail} was not sent.",
+                emailDescription,
+                recipientEmail);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_options.Host) ||
+            string.IsNullOrWhiteSpace(_options.FromAddress))
+        {
+            logger.LogWarning(
+                "Tutor application email delivery is enabled but the SMTP host or sender address is missing.");
+            return;
+        }
+
+        using var message = new MailMessage
+        {
+            From = new MailAddress(_options.FromAddress, _options.FromName),
+            Subject = subject,
+            Body = body,
             IsBodyHtml = false
         };
         message.To.Add(recipientEmail);
@@ -99,7 +158,8 @@ public sealed class TutorApplicationEmailSender(
         {
             logger.LogError(
                 exception,
-                "The interview rejection email for {RecipientEmail} could not be sent.",
+                "The {EmailDescription} email for {RecipientEmail} could not be sent.",
+                emailDescription,
                 recipientEmail);
         }
     }

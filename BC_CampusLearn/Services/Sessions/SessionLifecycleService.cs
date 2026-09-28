@@ -1,5 +1,6 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Notifications;
 using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Services.Sessions;
@@ -47,6 +48,15 @@ public class SessionLifecycleService : ISessionLifecycleService
                  booking.SessionExecution.ExpectedCompletionAt <= now))
             .ToListAsync(cancellationToken);
 
+        List<Booking> reminderBookings = await _context.Bookings
+            .Where(booking =>
+                booking.Status == BookingStatus.Confirmed &&
+                booking.StudentBcUserId != null &&
+                booking.ReminderSentAt == null &&
+                booking.ScheduledStartTime > now &&
+                booking.ScheduledStartTime <= now.AddHours(1))
+            .ToListAsync(cancellationToken);
+
         foreach (Booking booking in dueBookings)
         {
             BookingStatus? automaticStatus =
@@ -65,6 +75,11 @@ public class SessionLifecycleService : ISessionLifecycleService
                     now,
                     UnreviewedReasonCode,
                     UnreviewedWarningMessage);
+                await AddStudentStatusNotificationAsync(
+                    booking,
+                    BookingStatus.Declined,
+                    now,
+                    cancellationToken);
             }
             else if (automaticStatus == BookingStatus.Cancelled &&
                 booking.Status == BookingStatus.Confirmed)
@@ -75,6 +90,11 @@ public class SessionLifecycleService : ISessionLifecycleService
                     now,
                     NotStartedReasonCode,
                     NotStartedCancellationReason);
+                await AddStudentStatusNotificationAsync(
+                    booking,
+                    BookingStatus.Cancelled,
+                    now,
+                    cancellationToken);
             }
             else if (automaticStatus == BookingStatus.Completed)
             {
@@ -84,10 +104,45 @@ public class SessionLifecycleService : ISessionLifecycleService
                     booking,
                     BookingStatus.Completed,
                     now);
+                await AddStudentStatusNotificationAsync(
+                    booking,
+                    BookingStatus.Completed,
+                    now,
+                    cancellationToken);
+                await AddTutorCompletionNotificationAsync(
+                    booking,
+                    now,
+                    cancellationToken);
             }
         }
 
-        if (dueBookings.Count > 0)
+        foreach (Booking booking in reminderBookings)
+        {
+            BookingNotificationContext notificationContext =
+                await GetNotificationContextAsync(
+                    booking,
+                    cancellationToken);
+            if (!notificationContext.TutorBcUserId.HasValue)
+            {
+                continue;
+            }
+
+            int studentBcUserId = booking.StudentBcUserId!.Value;
+            booking.ReminderSentAt = now;
+            _context.UserNotifications.AddRange(
+                BookingNotificationFactory.SessionReminderForStudent(
+                    studentBcUserId,
+                    booking.BookingId,
+                    notificationContext.Details,
+                    now),
+                BookingNotificationFactory.SessionReminderForTutor(
+                    notificationContext.TutorBcUserId.Value,
+                    booking.BookingId,
+                    notificationContext.Details,
+                    now));
+        }
+
+        if (dueBookings.Count > 0 || reminderBookings.Count > 0)
         {
             await _context.SaveChangesAsync(cancellationToken);
         }
@@ -135,6 +190,11 @@ public class SessionLifecycleService : ISessionLifecycleService
             BookingStatus.Confirmed,
             now,
             changedByBcUserId: changedByBcUserId);
+        await AddStudentStatusNotificationAsync(
+            booking,
+            BookingStatus.Confirmed,
+            now,
+            cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
         return SessionLifecycleResult.Success();
     }
@@ -218,6 +278,12 @@ public class SessionLifecycleService : ISessionLifecycleService
             });
         }
 
+        await AddStudentStatusNotificationAsync(
+            booking,
+            newStatus,
+            now,
+            cancellationToken);
+
         await _context.SaveChangesAsync(cancellationToken);
         return SessionLifecycleResult.Success();
     }
@@ -279,6 +345,20 @@ public class SessionLifecycleService : ISessionLifecycleService
             });
         }
 
+        BookingNotificationContext notificationContext =
+            await GetNotificationContextAsync(
+                booking,
+                cancellationToken);
+        if (notificationContext.TutorBcUserId.HasValue)
+        {
+            _context.UserNotifications.Add(
+                BookingNotificationFactory.StudentCancelled(
+                    notificationContext.TutorBcUserId.Value,
+                    booking.BookingId,
+                    notificationContext.Details,
+                    now));
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
         return SessionLifecycleResult.Success();
     }
@@ -329,6 +409,11 @@ public class SessionLifecycleService : ISessionLifecycleService
             BookingStatus.InProgress,
             now,
             changedByBcUserId: changedByBcUserId);
+        await AddStudentStatusNotificationAsync(
+            booking,
+            BookingStatus.InProgress,
+            now,
+            cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
         return SessionLifecycleResult.Success();
     }
@@ -417,4 +502,123 @@ public class SessionLifecycleService : ISessionLifecycleService
             (uri.Scheme == Uri.UriSchemeHttp ||
              uri.Scheme == Uri.UriSchemeHttps);
     }
+
+    private async Task AddStudentStatusNotificationAsync(
+        Booking booking,
+        BookingStatus status,
+        DateTimeOffset createdAt,
+        CancellationToken cancellationToken)
+    {
+        if (booking.StudentBcUserId is not int studentBcUserId)
+        {
+            return;
+        }
+
+        BookingNotificationContext notificationContext =
+            await GetNotificationContextAsync(
+                booking,
+                cancellationToken);
+
+        _context.UserNotifications.Add(
+            BookingNotificationFactory.StudentStatusChanged(
+                studentBcUserId,
+                booking.BookingId,
+                status,
+                notificationContext.Details,
+                createdAt));
+    }
+
+    private async Task AddTutorCompletionNotificationAsync(
+        Booking booking,
+        DateTimeOffset createdAt,
+        CancellationToken cancellationToken)
+    {
+        BookingNotificationContext notificationContext =
+            await GetNotificationContextAsync(
+                booking,
+                cancellationToken);
+        if (!notificationContext.TutorBcUserId.HasValue)
+        {
+            return;
+        }
+
+        _context.UserNotifications.Add(
+            BookingNotificationFactory.TutorSessionCompleted(
+                notificationContext.TutorBcUserId.Value,
+                booking.BookingId,
+                notificationContext.Details,
+                createdAt));
+    }
+
+    private async Task<BookingNotificationContext>
+        GetNotificationContextAsync(
+            Booking booking,
+            CancellationToken cancellationToken)
+    {
+        ModuleNotificationDetails? module = await _context.ProgrammeModules
+            .AsNoTracking()
+            .Where(item =>
+                item.ProgrammeModuleId == booking.ProgrammeModuleId)
+            .Select(item => new ModuleNotificationDetails(
+                item.ModuleCode,
+                item.ModuleName))
+            .SingleOrDefaultAsync(cancellationToken);
+
+        int? tutorBcUserId = await _context.Tutors
+            .AsNoTracking()
+            .Where(tutor => tutor.TutorId == booking.TutorId)
+            .Select(tutor => (int?)tutor.BcUserId)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        string tutorName = "your tutor";
+        if (tutorBcUserId.HasValue)
+        {
+            UserNameDetails? tutorUser = await _context.BcUsers
+                .AsNoTracking()
+                .Where(user => user.BcUserId == tutorBcUserId.Value)
+                .Select(user => new UserNameDetails(
+                    user.DisplayName,
+                    user.PersonnelNumber))
+                .SingleOrDefaultAsync(cancellationToken);
+            if (tutorUser is not null)
+            {
+                tutorName = string.IsNullOrWhiteSpace(tutorUser.DisplayName)
+                    ? tutorUser.PersonnelNumber
+                    : tutorUser.DisplayName;
+            }
+        }
+
+        string? meetingLinkUrl = booking.MeetingLink?.Url;
+        if (string.IsNullOrWhiteSpace(meetingLinkUrl))
+        {
+            meetingLinkUrl = await _context.MeetingLinks
+                .AsNoTracking()
+                .Where(link => link.BookingId == booking.BookingId)
+                .Select(link => link.Url)
+                .SingleOrDefaultAsync(cancellationToken);
+        }
+
+        return new BookingNotificationContext(
+            new BookingNotificationDetails(
+                module?.ModuleCode ?? string.Empty,
+                module?.ModuleName ?? string.Empty,
+                booking.Location,
+                booking.ScheduledStartTime,
+                tutorName,
+                booking.StudentName,
+                meetingLinkUrl),
+            tutorBcUserId);
+    }
+
+    private sealed record BookingNotificationContext(
+        BookingNotificationDetails Details,
+        int? TutorBcUserId);
+
+    private sealed record ModuleNotificationDetails(
+        string ModuleCode,
+        string ModuleName);
+
+    private sealed record UserNameDetails(
+        string DisplayName,
+        string PersonnelNumber);
 }

@@ -34,17 +34,20 @@ public class TutorApplicationModel : PageModel
     private readonly ICurrentUserService _currentUserService;
     private readonly IWebHostEnvironment _environment;
     private readonly IStudentDetailsService _studentDetailsService;
+    private readonly ITutorApplicationEmailSender _emailSender;
 
     public TutorApplicationModel(
         ApplicationDbContext context,
         ICurrentUserService currentUserService,
         IWebHostEnvironment environment,
-        IStudentDetailsService studentDetailsService)
+        IStudentDetailsService studentDetailsService,
+        ITutorApplicationEmailSender emailSender)
     {
         _context = context;
         _currentUserService = currentUserService;
         _environment = environment;
         _studentDetailsService = studentDetailsService;
+        _emailSender = emailSender;
     }
 
     [BindProperty]
@@ -255,6 +258,14 @@ public class TutorApplicationModel : PageModel
             }
 
             _context.Tutors.Add(tutor);
+            _context.UserNotifications.Add(new UserNotification
+            {
+                RecipientBcUserId = currentUser.BcUserId,
+                Title = "Tutor application submitted",
+                Message = $"Thank you for taking the time to apply for the {submittedAt.Year} tutor programme. We have received your application and supporting documents. Our team will carefully review your submission, and we will notify you as soon as there is an update on your application.",
+                LinkUrl = "/Tutors/TutorApplication",
+                CreatedAt = new DateTimeOffset(submittedAt)
+            });
             await _context.SaveChangesAsync(cancellationToken);
         }
         catch (OperationCanceledException)
@@ -291,6 +302,18 @@ public class TutorApplicationModel : PageModel
         {
             DeleteDocumentDirectory(documentDirectory);
             throw;
+        }
+
+        if (!string.IsNullOrWhiteSpace(EmailAddress))
+        {
+            string applicantName = string.Join(
+                ' ',
+                new[] { FirstName, LastName }
+                    .Where(part => !string.IsNullOrWhiteSpace(part)));
+            await _emailSender.SendApplicationSubmittedAsync(
+                EmailAddress,
+                applicantName,
+                cancellationToken);
         }
 
         SubmissionMessage =

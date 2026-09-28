@@ -13,6 +13,61 @@ namespace BC_CampusLearn.Tests;
 public class BookingServiceTests
 {
     [Fact]
+    public async Task CreateBookingAsync_NotifiesStudentAndTutor()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        DateTimeOffset scheduledStart = DateTimeOffset.UtcNow.AddDays(2);
+        TutorAvailability availability = AddTutorAvailability(
+            context,
+            scheduledStart);
+        await context.SaveChangesAsync();
+
+        var currentUser = new CurrentUser(
+            21,
+            "STUDENT21",
+            "Student Name",
+            "student@example.com");
+        var service = new BookingService(
+            context,
+            new TestCurrentUserService(currentUser),
+            new TestWebHostEnvironment());
+
+        BookingCreationResult result = await service.CreateBookingAsync(
+            new CreateBookingInput
+            {
+                TutorAvailabilityId = availability.TutorAvailabilityId,
+                ProgrammeModuleId = 3,
+                Location = "Teams",
+                AcceptedTerms = true
+            });
+
+        Assert.True(result.Succeeded);
+        List<UserNotification> notifications = await context
+            .UserNotifications
+            .OrderBy(item => item.RecipientBcUserId)
+            .ToListAsync();
+        Assert.Equal(2, notifications.Count);
+        Assert.Contains(notifications, item =>
+            item.RecipientBcUserId == 21 &&
+            item.Title == "Booking submitted");
+        Assert.Contains(notifications, item =>
+            item.RecipientBcUserId == 31 &&
+            item.Title == "New booking request");
+        Assert.All(notifications, item =>
+        {
+            Assert.Contains("MOD101 (Module)", item.Message);
+            Assert.Contains("Teams", item.Message);
+            Assert.Contains(
+                scheduledStart.ToOffset(TimeSpan.FromHours(2))
+                    .ToString("d MMMM yyyy"),
+                item.Message);
+        });
+        Assert.All(notifications, item => Assert.Contains(
+            $"/{result.BookingId}",
+            item.LinkUrl));
+    }
+
+    [Fact]
     public async Task CreateBookingAsync_BlocksStudentWithPendingReview()
     {
         await using ApplicationDbContext context = CreateContext();
@@ -130,6 +185,59 @@ public class BookingServiceTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new ApplicationDbContext(options);
+    }
+
+    private static TutorAvailability AddTutorAvailability(
+        ApplicationDbContext context,
+        DateTimeOffset availableTime)
+    {
+        var tutorUser = new BcUser
+        {
+            BcUserId = 31,
+            PersonnelNumber = "TUTOR31",
+            DisplayName = "Tutor Name",
+            CreatedAt = DateTime.UtcNow
+        };
+        var tutor = new Tutor
+        {
+            TutorId = 12,
+            BcUserId = tutorUser.BcUserId,
+            BcUser = tutorUser,
+            ProgrammeId = 1,
+            ReasonForTutoring = "Help students",
+            TeachingStyle = "Practical",
+            PreviousTutoringExperience = "Peer tutoring",
+            CampusOfStudy = "Pretoria",
+            DemonstrationVideoUrl = string.Empty,
+            Status = TutorStatus.Approved,
+            IsActive = true,
+            SubmittedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow
+        };
+        var module = new ProgrammeModule
+        {
+            ProgrammeModuleId = 3,
+            ProgrammeId = 1,
+            ModuleCode = "MOD101",
+            ModuleName = "Module"
+        };
+        tutor.TutorCourseModules.Add(new TutorCourseModule
+        {
+            TutorId = tutor.TutorId,
+            Tutor = tutor,
+            ProgrammeModuleId = module.ProgrammeModuleId,
+            ProgrammeModule = module,
+            IsActive = true
+        });
+        var availability = new TutorAvailability
+        {
+            TutorAvailabilityId = 45,
+            TutorId = tutor.TutorId,
+            Tutor = tutor,
+            AvailableTime = availableTime
+        };
+        context.TutorAvailabilities.Add(availability);
+        return availability;
     }
 
     private sealed class TestCurrentUserService(CurrentUser user)

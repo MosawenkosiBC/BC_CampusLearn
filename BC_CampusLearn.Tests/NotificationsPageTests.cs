@@ -94,6 +94,58 @@ public class NotificationsPageTests
     }
 
     [Fact]
+    public async Task SessionNotificationUsesViewSessionAction()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = 1,
+            Title = "Session starts in one hour",
+            Message = "Detailed session reminder",
+            LinkUrl = "/Bookings/SessionDetails/42",
+            CreatedAt = Now
+        });
+        await context.SaveChangesAsync();
+        var page = CreatePage(context);
+        page.NotificationId = context.UserNotifications
+            .Single()
+            .UserNotificationId;
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.NotNull(page.SelectedNotification);
+        Assert.Equal("View session", page.SelectedNotification.ActionLabel);
+    }
+
+    [Fact]
+    public void CompletedSessionNotificationUsesCompleteReviewAction()
+    {
+        var notification = new IndexModel.NotificationItem(
+            42,
+            "Session completed",
+            "Please complete your review.",
+            "/Bookings/SessionDetails/42",
+            Now,
+            null);
+
+        Assert.Equal("Complete review", notification.ActionLabel);
+    }
+
+    [Fact]
+    public void TutorApplicationNotificationUsesViewApplicationAction()
+    {
+        var notification = new IndexModel.NotificationItem(
+            43,
+            "Tutor application submitted",
+            "Your application was submitted successfully.",
+            "/Tutors/TutorApplication",
+            Now,
+            null);
+
+        Assert.Equal("View application", notification.ActionLabel);
+    }
+
+    [Fact]
     public async Task OpeningAnotherUsersNotificationDoesNotExposeOrUpdateIt()
     {
         await using ApplicationDbContext context = CreateContext();

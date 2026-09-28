@@ -31,6 +31,8 @@ public class Booking
 
     public DateTimeOffset? CompletedAt { get; set; }
 
+    public DateTimeOffset? ReminderSentAt { get; set; }
+
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     public ProgrammeModule ProgrammeModule { get; set; } = null!;

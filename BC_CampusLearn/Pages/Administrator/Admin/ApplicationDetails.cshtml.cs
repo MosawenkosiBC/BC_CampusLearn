@@ -1,6 +1,7 @@
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Tutors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,7 +13,8 @@ namespace BC_CampusLearn.Pages.Administrator.Admin;
 public class ApplicationDetailsModel(
     ApplicationDbContext context,
     IWebHostEnvironment environment,
-    ICurrentUserService? currentUserService = null) : PageModel
+    ICurrentUserService? currentUserService = null,
+    ITutorApplicationEmailSender? emailSender = null) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public string Stage { get; set; } = "applications";
@@ -25,6 +27,9 @@ public class ApplicationDetailsModel(
     [BindProperty]
     [StringLength(1000)]
     public string? ReviewReason { get; set; }
+
+    [BindProperty]
+    public ApplicationMessageInput RejectionMessage { get; set; } = new();
 
     public string? ReviewError { get; private set; }
 
@@ -116,14 +121,51 @@ public class ApplicationDetailsModel(
         int id,
         CancellationToken cancellationToken)
     {
+        string subject = RejectionMessage.Subject?.Trim() ?? string.Empty;
+        string emailBody = RejectionMessage.EmailBody?.Trim() ?? string.Empty;
+        string notificationMessage =
+            RejectionMessage.NotificationMessage?.Trim() ?? string.Empty;
+        if (subject.Length is < 1 or > 200 ||
+            emailBody.Length is < 1 or > 5000 ||
+            notificationMessage.Length is < 1 or > 1000)
+        {
+            ReviewError = "Compose an email and notification message before rejecting the application.";
+            if (!await LoadApplicationAsync(id, cancellationToken))
+            {
+                return NotFound();
+            }
+
+            return Page();
+        }
+
+        var recipient = await context.Tutors
+            .AsNoTracking()
+            .Where(tutor => tutor.TutorId == id)
+            .Select(tutor => new
+            {
+                tutor.BcUser.Email
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+
         ShortlistResult result = await TutorApplicationReview.RejectAsync(
             context,
             id,
             ReviewReason,
-            cancellationToken);
+            cancellationToken,
+            notificationMessage);
 
         if (result.Succeeded)
         {
+            if (emailSender is not null &&
+                !string.IsNullOrWhiteSpace(recipient?.Email))
+            {
+                await emailSender.SendComposedAsync(
+                    recipient.Email,
+                    subject,
+                    emailBody,
+                    cancellationToken);
+            }
+
             PageMessage = result.Message;
             ShowReviewResultModal = true;
             return RedirectToPage(

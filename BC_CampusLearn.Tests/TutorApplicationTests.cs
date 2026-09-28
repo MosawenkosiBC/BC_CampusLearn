@@ -4,6 +4,7 @@ using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Pages.Tutors;
 using BC_CampusLearn.Services.Students;
+using BC_CampusLearn.Services.Tutors;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,129 @@ namespace BC_CampusLearn.Tests;
 
 public class TutorApplicationTests
 {
+    [Fact]
+    public async Task SubmittingApplicationCreatesNotificationAndSendsEmail()
+    {
+        string contentRoot = Path.Combine(
+            Path.GetTempPath(),
+            $"campuslearn-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(contentRoot);
+
+        try
+        {
+            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            await using var context = new ApplicationDbContext(options);
+            var programme = new ProgrammeOfStudy
+            {
+                Id = 1,
+                Name = "Bachelor of Computing",
+                ProgrammeModules =
+                [
+                    new ProgrammeModule
+                    {
+                        ProgrammeModuleId = 1,
+                        ModuleCode = "PRG101",
+                        ModuleName = "Programming",
+                        YearOfStudy = 1
+                    },
+                    new ProgrammeModule
+                    {
+                        ProgrammeModuleId = 2,
+                        ModuleCode = "DBS101",
+                        ModuleName = "Databases",
+                        YearOfStudy = 1
+                    }
+                ]
+            };
+            context.ProgrammesOfStudy.Add(programme);
+            context.TutorApplicationSettings.Add(
+                new TutorApplicationSettings
+                {
+                    IsOpen = true,
+                    ShortlistLimit = 2,
+                    OpenDate = DateTime.UtcNow.Date.AddDays(-1),
+                    CloseDate = DateTime.UtcNow.Date.AddDays(7),
+                    UpdatedAt = DateTime.UtcNow
+                });
+            await context.SaveChangesAsync();
+
+            var emailSender = new RecordingTutorApplicationEmailSender();
+            var page = new TutorApplicationModel(
+                context,
+                new TestCurrentUserService(new CurrentUser(
+                    1,
+                    "600001",
+                    "Login Name",
+                    "login@example.test")),
+                new TestWebHostEnvironment(contentRoot),
+                new TestStudentDetailsService(new StudentDetails(
+                    "600001",
+                    "Lebo",
+                    "Lee",
+                    "Nkosi",
+                    "600001@student.belgiumcampus.ac.za",
+                    programme.Name,
+                    2,
+                    "Pretoria Campus")),
+                emailSender)
+            {
+                Input = new TutorApplicationStageOneInput
+                {
+                    PhoneNumber = "0123456789",
+                    OverallAverage = 80,
+                    ProgrammeId = programme.Id,
+                    YearOfStudy = 2
+                },
+                ProfileInput = new TutorApplicationStageTwoInput
+                {
+                    ReasonForTutoring = "I enjoy helping students.",
+                    TeachingStyle = "Patient and practical.",
+                    PreviousTutoringExperience = "Peer tutoring.",
+                    CampusOfStudy = "Pretoria Campus",
+                    DemonstrationVideoUrl = "https://example.test/demo"
+                },
+                FinalInput = new TutorApplicationStageThreeInput
+                {
+                    PreferredTutoringMode = PreferredTutoringMode.Both,
+                    ProgrammeModuleIds = [1, 2],
+                    Transcript = CreateFile("transcript.pdf")
+                }
+            };
+
+            IActionResult result = await page.OnPostAsync(
+                CancellationToken.None);
+
+            Assert.IsType<RedirectToPageResult>(result);
+            Tutor tutor = await context.Tutors.SingleAsync();
+            Assert.Equal(TutorApplicationStage.Submitted, tutor.ApplicationStage);
+            UserNotification notification = await context.UserNotifications
+                .SingleAsync();
+            Assert.Equal("Tutor application submitted", notification.Title);
+            Assert.Contains(
+                $"apply for the {tutor.SubmittedAt.Year} tutor programme",
+                notification.Message);
+            Assert.Contains(
+                "received your application and supporting documents",
+                notification.Message);
+            Assert.Contains(
+                "carefully review your submission",
+                notification.Message);
+            Assert.Equal(
+                "600001@student.belgiumcampus.ac.za",
+                emailSender.SubmittedRecipientEmail);
+            Assert.Equal("Lee Nkosi", emailSender.SubmittedRecipientName);
+        }
+        finally
+        {
+            if (Directory.Exists(contentRoot))
+            {
+                Directory.Delete(contentRoot, recursive: true);
+            }
+        }
+    }
+
     [Fact]
     public async Task ApplicationUsesVerifiedStudentDetails()
     {
@@ -55,7 +179,8 @@ public class TutorApplicationTests
                 "600001@student.belgiumcampus.ac.za",
                 "Bachelor of Computing",
                 3,
-                "Pretoria Campus")));
+                "Pretoria Campus")),
+            new RecordingTutorApplicationEmailSender());
 
         await page.OnGetAsync(CancellationToken.None);
 
@@ -162,7 +287,8 @@ public class TutorApplicationTests
                     user.Email!,
                     programme.Name,
                     2,
-                    "Pretoria")))
+                    "Pretoria")),
+                new RecordingTutorApplicationEmailSender())
             {
                 Input = new TutorApplicationStageOneInput
                 {
@@ -230,6 +356,36 @@ public class TutorApplicationTests
     {
         public bool IsAuthenticated => true;
         public CurrentUser GetRequiredUser() => user;
+    }
+
+    private sealed class RecordingTutorApplicationEmailSender
+        : ITutorApplicationEmailSender
+    {
+        public string? SubmittedRecipientEmail { get; private set; }
+        public string? SubmittedRecipientName { get; private set; }
+
+        public Task SendComposedAsync(
+            string recipientEmail,
+            string subject,
+            string body,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        public Task SendApplicationSubmittedAsync(
+            string recipientEmail,
+            string recipientName,
+            CancellationToken cancellationToken)
+        {
+            SubmittedRecipientEmail = recipientEmail;
+            SubmittedRecipientName = recipientName;
+            return Task.CompletedTask;
+        }
+
+        public Task SendInterviewRejectionAsync(
+            string recipientEmail,
+            string recipientName,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
     }
 
     private sealed class TestStudentDetailsService(StudentDetails details)

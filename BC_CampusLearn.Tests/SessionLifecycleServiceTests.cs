@@ -14,6 +14,7 @@ public class SessionLifecycleServiceTests
         DateTimeOffset now = new(2026, 8, 31, 9, 0, 0, TimeSpan.Zero);
         await using ApplicationDbContext context = CreateContext();
         Booking booking = CreateBooking(now.AddHours(1));
+        AddTutorAssignment(context, booking);
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         var service = new SessionLifecycleService(
@@ -43,6 +44,57 @@ public class SessionLifecycleServiceTests
         Assert.Equal(BookingStatus.Pending, history.PreviousStatus);
         Assert.Equal(BookingStatus.Confirmed, history.NewStatus);
         Assert.False(history.ChangedBySystem);
+        UserNotification notification = Assert.Single(
+            context.UserNotifications);
+        Assert.Equal(booking.StudentBcUserId, notification.RecipientBcUserId);
+        Assert.Equal("Booking confirmed", notification.Title);
+        Assert.Contains("MOD101 (Module Name)", notification.Message);
+        Assert.Contains("Tutor Name", notification.Message);
+        Assert.Contains("Teams", notification.Message);
+        Assert.Contains(
+            "https://teams.microsoft.com/meeting",
+            notification.Message);
+        Assert.DoesNotContain('\n', notification.Message);
+    }
+
+    [Fact]
+    public async Task ProcessDueTransitions_SendsOneReminderToEachParticipant()
+    {
+        DateTimeOffset now = new(2026, 8, 31, 9, 0, 0, TimeSpan.Zero);
+        await using ApplicationDbContext context = CreateContext();
+        Booking booking = CreateBooking(now.AddMinutes(45));
+        booking.Status = BookingStatus.Confirmed;
+        booking.MeetingLink = new MeetingLink
+        {
+            Url = "https://teams.microsoft.com/reminder"
+        };
+        AddTutorAssignment(context, booking);
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var service = new SessionLifecycleService(
+            context,
+            new TestTimeProvider(now));
+
+        await service.ProcessDueTransitionsAsync();
+        await service.ProcessDueTransitionsAsync();
+
+        Assert.Equal(now, booking.ReminderSentAt);
+        List<UserNotification> reminders = await context.UserNotifications
+            .Where(item => item.Title == "Session starts in one hour")
+            .ToListAsync();
+        Assert.Equal(2, reminders.Count);
+        Assert.Contains(reminders, item =>
+            item.RecipientBcUserId == booking.StudentBcUserId);
+        Assert.Contains(reminders, item => item.RecipientBcUserId == 8);
+        Assert.All(reminders, item =>
+        {
+            Assert.Contains("MOD101 (Module Name)", item.Message);
+            Assert.Contains("Teams", item.Message);
+            Assert.Contains(
+                "https://teams.microsoft.com/reminder",
+                item.Message);
+            Assert.DoesNotContain('\n', item.Message);
+        });
     }
 
     [Fact]
@@ -118,6 +170,10 @@ public class SessionLifecycleServiceTests
         BookingStatusHistory history = Assert.Single(booking.StatusHistory);
         Assert.Equal(SessionLifecycleService.TutorDeclinedReasonCode, history.ReasonCode);
         Assert.Null(history.Reason);
+        UserNotification notification = Assert.Single(
+            context.UserNotifications);
+        Assert.Equal(booking.StudentBcUserId, notification.RecipientBcUserId);
+        Assert.Equal("Booking declined", notification.Title);
     }
 
     [Fact]
@@ -223,6 +279,7 @@ public class SessionLifecycleServiceTests
         DateTimeOffset now = new(2026, 8, 31, 10, 0, 0, TimeSpan.Zero);
         await using ApplicationDbContext context = CreateContext();
         Booking booking = CreateBooking(now.AddHours(1));
+        AddTutorAssignment(context, booking);
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         var service = new SessionLifecycleService(
@@ -249,6 +306,10 @@ public class SessionLifecycleServiceTests
         Assert.Equal(
             booking.ScheduledStartTime,
             availability.AvailableTime);
+        UserNotification notification = Assert.Single(
+            context.UserNotifications);
+        Assert.Equal(8, notification.RecipientBcUserId);
+        Assert.Equal("Booking cancelled by student", notification.Title);
     }
 
     [Fact]
@@ -348,6 +409,7 @@ public class SessionLifecycleServiceTests
         {
             Url = "https://teams.microsoft.com/meeting"
         };
+        AddTutorAssignment(context, booking);
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         var service = new SessionLifecycleService(context, clock);
@@ -370,6 +432,22 @@ public class SessionLifecycleServiceTests
             booking.SessionExecution!.ExpectedCompletionAt);
         Assert.Equal(expectedCompletion, booking.SessionExecution.CompletedAt);
         Assert.Equal(expectedCompletion, booking.CompletedAt);
+        List<UserNotification> completionNotifications = await context
+            .UserNotifications
+            .Where(item => item.Title == "Session completed")
+            .ToListAsync();
+        Assert.Equal(2, completionNotifications.Count);
+        UserNotification studentNotification = Assert.Single(
+            completionNotifications,
+            item => item.RecipientBcUserId == booking.StudentBcUserId);
+        Assert.Contains("Great work", studentNotification.Message);
+        Assert.Contains("complete your review", studentNotification.Message);
+        UserNotification tutorNotification = Assert.Single(
+            completionNotifications,
+            item => item.RecipientBcUserId == 8);
+        Assert.Contains("Tutor Name", studentNotification.Message);
+        Assert.Contains("Student", tutorNotification.Message);
+        Assert.Contains("complete your session review", tutorNotification.Message);
     }
 
     [Fact]
@@ -407,6 +485,13 @@ public class SessionLifecycleServiceTests
             SessionSchedulingRules.TriggeredCountdownLength,
             booking.SessionExecution.ExpectedCompletionAt -
                 booking.SessionExecution.StartedAt);
+        UserNotification notification = Assert.Single(
+            context.UserNotifications);
+        Assert.Equal("Session started", notification.Title);
+        Assert.Contains("has started", notification.Message);
+        Assert.Contains(
+            "https://teams.microsoft.com/meeting",
+            notification.Message);
     }
 
     [Fact]
@@ -474,6 +559,49 @@ public class SessionLifecycleServiceTests
             ScheduledStartTime = scheduledStart,
             DateBooked = scheduledStart.AddDays(-1)
         };
+    }
+
+    private static void AddTutorAssignment(
+        ApplicationDbContext context,
+        Booking booking)
+    {
+        var tutor = new Tutor
+        {
+            TutorId = booking.TutorId,
+            BcUserId = 8,
+            BcUser = new BcUser
+            {
+                BcUserId = 8,
+                PersonnelNumber = "TUTOR8",
+                DisplayName = "Tutor Name",
+                CreatedAt = DateTime.UtcNow
+            },
+            ProgrammeId = 1,
+            ReasonForTutoring = "Help students",
+            TeachingStyle = "Practical",
+            PreviousTutoringExperience = "Peer tutoring",
+            CampusOfStudy = "Pretoria",
+            DemonstrationVideoUrl = string.Empty,
+            SubmittedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow
+        };
+        var assignment = new TutorCourseModule
+        {
+            TutorId = booking.TutorId,
+            Tutor = tutor,
+            ProgrammeModuleId = booking.ProgrammeModuleId,
+            ProgrammeModule = new ProgrammeModule
+            {
+                ProgrammeModuleId = booking.ProgrammeModuleId,
+                ProgrammeId = 1,
+                ModuleCode = "MOD101",
+                ModuleName = "Module Name"
+            },
+            IsActive = true
+        };
+        booking.TutorCourseModule = assignment;
+        booking.ProgrammeModule = assignment.ProgrammeModule;
+        context.TutorCourseModules.Add(assignment);
     }
 
     private sealed class TestTimeProvider : TimeProvider

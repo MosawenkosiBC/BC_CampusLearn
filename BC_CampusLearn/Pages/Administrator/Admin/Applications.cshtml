@@ -591,7 +591,13 @@
                     <p>Structure a clear message for @candidate.DisplayName.</p>
                 </header>
 
-                <form class="candidate-email-form" data-email-composer>
+                <form method="post"
+                      asp-page-handler="SendCommunication"
+                      class="candidate-email-form"
+                      data-email-composer>
+                    <input type="hidden" name="tutorId" value="@candidate.TutorId" />
+                    <input type="hidden" name="Stage" value="@Model.Stage" />
+                    <input type="hidden" name="Search" value="@Model.Search" />
                     <div class="candidate-email-field">
                         <label for="candidate-email-recipient-@candidate.TutorId">Recipient</label>
                         <input id="candidate-email-recipient-@candidate.TutorId"
@@ -615,6 +621,7 @@
                         <div class="candidate-email-field">
                             <label for="candidate-email-subject-@candidate.TutorId">Subject</label>
                             <input id="candidate-email-subject-@candidate.TutorId"
+                                   name="Communication.Subject"
                                    type="text"
                                    maxlength="200"
                                    value="Tutor application interview invitation"
@@ -631,6 +638,7 @@
                     <div class="candidate-email-field">
                         <label for="candidate-email-body-@candidate.TutorId">Email message</label>
                         <textarea id="candidate-email-body-@candidate.TutorId"
+                                  name="Communication.EmailBody"
                                   rows="12"
                                   maxlength="5000"
                                   data-email-body>Dear @candidate.DisplayName,
@@ -658,9 +666,8 @@ BC CampusLearn Tutor Team</textarea>
                                 data-communication-close>
                             Back
                         </button>
-                        <button type="button"
-                                class="candidate-email-send"
-                                disabled>
+                        <button type="submit"
+                                class="candidate-email-send">
                             Send email
                         </button>
                     </div>
@@ -751,6 +758,35 @@ BC CampusLearn Tutor Team</textarea>
                         @candidate.DisplayName will be marked as rejected and removed from active
                         applications. They cannot submit another application during this cycle.
                     </p>
+                    <div class="candidate-email-field">
+                        <label for="shortlist-reject-subject-@candidate.TutorId">Email subject</label>
+                        <input id="shortlist-reject-subject-@candidate.TutorId"
+                               form="shortlist-action-form-@candidate.TutorId"
+                               name="RejectionMessage.Subject"
+                               maxlength="200"
+                               value="Tutor application outcome" />
+                    </div>
+                    <div class="candidate-email-field">
+                        <label for="shortlist-reject-email-@candidate.TutorId">Email message</label>
+                        <textarea id="shortlist-reject-email-@candidate.TutorId"
+                                  form="shortlist-action-form-@candidate.TutorId"
+                                  name="RejectionMessage.EmailBody"
+                                  rows="7"
+                                  maxlength="5000">Dear @candidate.DisplayName,
+
+Thank you for the time and effort you invested in your tutor application. After careful review, we will not be progressing your application to the next stage.
+
+Kind regards,
+BC CampusLearn Tutor Team</textarea>
+                    </div>
+                    <div class="candidate-email-field">
+                        <label for="shortlist-reject-notification-@candidate.TutorId">Notification message</label>
+                        <textarea id="shortlist-reject-notification-@candidate.TutorId"
+                                  form="shortlist-action-form-@candidate.TutorId"
+                                  name="RejectionMessage.NotificationMessage"
+                                  rows="4"
+                                  maxlength="1000">After careful review, your tutor application will not progress to the next stage. Please check your email for the full message from the BC CampusLearn Tutor Team.</textarea>
+                    </div>
                     <div class="shortlist-reject-modal-actions">
                         <button type="button"
                                 class="shortlist-reject-cancel"
@@ -970,6 +1006,32 @@ BC CampusLearn Tutor Team</textarea>
                         @candidate.DisplayName will be removed from the interview stage and notified
                         by notification and email that their tutor application was not approved.
                     </p>
+                    <div class="candidate-email-field">
+                        <label for="interview-reject-subject-@candidate.TutorId">Email subject</label>
+                        <input id="interview-reject-subject-@candidate.TutorId"
+                               name="RejectionMessage.Subject"
+                               maxlength="200"
+                               value="Tutor application outcome" />
+                    </div>
+                    <div class="candidate-email-field">
+                        <label for="interview-reject-email-@candidate.TutorId">Email message</label>
+                        <textarea id="interview-reject-email-@candidate.TutorId"
+                                  name="RejectionMessage.EmailBody"
+                                  rows="7"
+                                  maxlength="5000">Dear @candidate.DisplayName,
+
+Thank you for attending the tutor interview. After careful consideration, we will not be progressing your application further.
+
+Kind regards,
+BC CampusLearn Tutor Team</textarea>
+                    </div>
+                    <div class="candidate-email-field">
+                        <label for="interview-reject-notification-@candidate.TutorId">Notification message</label>
+                        <textarea id="interview-reject-notification-@candidate.TutorId"
+                                  name="RejectionMessage.NotificationMessage"
+                                  rows="4"
+                                  maxlength="1000">After careful consideration, your tutor application was unsuccessful. Please check your email for the full message from the BC CampusLearn Tutor Team.</textarea>
+                    </div>
                     <div class="shortlist-reject-modal-actions">
                         <button type="button"
                                 class="shortlist-reject-cancel"
@@ -1027,7 +1089,13 @@ BC CampusLearn Tutor Team</textarea>
                     <p>Structure a clear message for @candidate.DisplayName.</p>
                 </header>
 
-                <form class="candidate-email-form" data-email-composer>
+                <form method="post"
+                      asp-page-handler="SendCommunication"
+                      class="candidate-email-form"
+                      data-email-composer>
+                    <input type="hidden" name="tutorId" value="@candidate.TutorId" />
+                    <input type="hidden" name="Stage" value="@Model.Stage" />
+                    <input type="hidden" name="Search" value="@Model.Search" />
                     <div class="candidate-email-field">
                         <label for="interview-email-recipient-@candidate.TutorId">Recipient</label>
                         <input id="interview-email-recipient-@candidate.TutorId"
@@ -1049,6 +1117,7 @@ BC CampusLearn Tutor Team</textarea>
                     <div class="candidate-email-field">
                         <label for="interview-email-subject-@candidate.TutorId">Subject</label>
                         <input id="interview-email-subject-@candidate.TutorId"
+                               name="Communication.Subject"
                                type="text"
                                maxlength="200"
                                value="Thank you for attending your tutor interview"
@@ -1058,6 +1127,7 @@ BC CampusLearn Tutor Team</textarea>
                     <div class="candidate-email-field">
                         <label for="interview-email-body-@candidate.TutorId">Email message</label>
                         <textarea id="interview-email-body-@candidate.TutorId"
+                                  name="Communication.EmailBody"
                                   rows="12"
                                   maxlength="5000"
                                   data-email-body>Dear @candidate.DisplayName,
@@ -1079,9 +1149,8 @@ BC CampusLearn Tutor Team</textarea>
                                 data-communication-close>
                             Back
                         </button>
-                        <button type="button"
-                                class="candidate-email-send"
-                                disabled>
+                        <button type="submit"
+                                class="candidate-email-send">
                             Send email
                         </button>
                     </div>

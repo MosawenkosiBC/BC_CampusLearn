@@ -12,7 +12,7 @@ public class UserNotificationConfiguration
         builder.ToTable("UserNotifications");
         builder.HasKey(item => item.UserNotificationId);
         builder.Property(item => item.Title).HasMaxLength(160).IsRequired();
-        builder.Property(item => item.Message).HasMaxLength(1400).IsRequired();
+        builder.Property(item => item.Message).HasMaxLength(4000).IsRequired();
         builder.Property(item => item.LinkUrl).HasMaxLength(2048).IsRequired();
         builder.Property(item => item.CreatedAt).HasColumnType("datetimeoffset");
         builder.Property(item => item.ReadAt).HasColumnType("datetimeoffset");

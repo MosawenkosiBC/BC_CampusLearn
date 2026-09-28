@@ -1,6 +1,7 @@
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Tutors;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
@@ -87,6 +88,12 @@ public class ApplicationsModel : PageModel
 
     [BindProperty]
     public InterviewPreparationInput InterviewPreparation { get; set; } = new();
+
+    [BindProperty]
+    public ApplicationMessageInput Communication { get; set; } = new();
+
+    [BindProperty]
+    public ApplicationMessageInput RejectionMessage { get; set; } = new();
 
     [BindProperty]
     [StringLength(4000, ErrorMessage = "Interview notes cannot exceed 4,000 characters.")]
@@ -452,6 +459,51 @@ public class ApplicationsModel : PageModel
         return RedirectToPage(new { Stage = "shortlist", Search });
     }
 
+    public async Task<IActionResult> OnPostSendCommunicationAsync(
+        int tutorId,
+        CancellationToken cancellationToken)
+    {
+        string? validationError = ValidateComposedMessage(
+            Communication,
+            requireNotificationMessage: false);
+        if (validationError is not null)
+        {
+            PageError = validationError;
+            return RedirectToPage(new { Stage, Search });
+        }
+
+        var recipient = await GetCommunicationRecipientAsync(
+            tutorId,
+            cancellationToken);
+        if (recipient is null || string.IsNullOrWhiteSpace(recipient.Email))
+        {
+            PageError = "The candidate does not have an email address.";
+            return RedirectToPage(new { Stage, Search });
+        }
+
+        _context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = recipient.BcUserId,
+            Title = "Tutor application communication sent",
+            Message = $"The BC CampusLearn Tutor Team sent you an email about your tutor application. Please check {recipient.Email} for the full message.",
+            LinkUrl = "/Tutors/TutorApplication",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        await _context.SaveChangesAsync(cancellationToken);
+
+        if (_emailSender is not null)
+        {
+            await _emailSender.SendComposedAsync(
+                recipient.Email,
+                Communication.Subject.Trim(),
+                Communication.EmailBody.Trim(),
+                cancellationToken);
+        }
+
+        PageMessage = "The communication was sent to the candidate.";
+        return RedirectToPage(new { Stage, Search });
+    }
+
     public async Task<IActionResult> OnPostSaveInterviewPreparationAsync(
         int tutorId,
         CancellationToken cancellationToken)
@@ -481,16 +533,33 @@ public class ApplicationsModel : PageModel
         int tutorId,
         CancellationToken cancellationToken)
     {
+        string? validationError = ValidateComposedMessage(
+            RejectionMessage,
+            requireNotificationMessage: true);
+        if (validationError is not null)
+        {
+            PageError = validationError;
+            return RedirectToPage(new { Stage = "shortlist", Search });
+        }
+
+        var recipient = await GetCommunicationRecipientAsync(
+            tutorId,
+            cancellationToken);
         ShortlistResult result = await TutorApplicationReview.RejectShortlistedAsync(
             _context,
             tutorId,
             InterviewPreparation.Notes,
             cancellationToken,
-            _currentUserService?.GetRequiredUser().BcUserId);
+            _currentUserService?.GetRequiredUser().BcUserId,
+            RejectionMessage.NotificationMessage);
 
         if (result.Succeeded)
         {
             PageMessage = result.Message;
+            await SendComposedMessageAsync(
+                recipient,
+                RejectionMessage,
+                cancellationToken);
         }
         else
         {
@@ -561,15 +630,19 @@ public class ApplicationsModel : PageModel
         int tutorId,
         CancellationToken cancellationToken)
     {
-        var recipient = await _context.Tutors
-            .AsNoTracking()
-            .Where(tutor => tutor.TutorId == tutorId)
-            .Select(tutor => new
-            {
-                tutor.BcUser.Email,
-                tutor.BcUser.DisplayName
-            })
-            .SingleOrDefaultAsync(cancellationToken);
+        string? validationError = ValidateComposedMessage(
+            RejectionMessage,
+            requireNotificationMessage: true);
+        if (validationError is not null)
+        {
+            PageError = validationError;
+            return RedirectToPage(new { Stage = "interview", Search });
+        }
+
+        CommunicationRecipient? recipient =
+            await GetCommunicationRecipientAsync(
+                tutorId,
+                cancellationToken);
 
         ShortlistResult result = await TutorApplicationReview
             .RejectInterviewedAsync(
@@ -577,19 +650,16 @@ public class ApplicationsModel : PageModel
                 tutorId,
                 null,
                 cancellationToken,
-                _currentUserService?.GetRequiredUser().BcUserId);
+                _currentUserService?.GetRequiredUser().BcUserId,
+                RejectionMessage.NotificationMessage);
 
         if (result.Succeeded)
         {
             PageMessage = result.Message;
-            if (_emailSender is not null &&
-                !string.IsNullOrWhiteSpace(recipient?.Email))
-            {
-                await _emailSender.SendInterviewRejectionAsync(
-                    recipient.Email,
-                    recipient.DisplayName,
-                    cancellationToken);
-            }
+            await SendComposedMessageAsync(
+                recipient,
+                RejectionMessage,
+                cancellationToken);
         }
         else
         {
@@ -598,6 +668,72 @@ public class ApplicationsModel : PageModel
 
         return RedirectToPage(new { Stage = "interview", Search });
     }
+
+    private async Task<CommunicationRecipient?>
+        GetCommunicationRecipientAsync(
+            int tutorId,
+            CancellationToken cancellationToken) =>
+        await _context.Tutors
+            .AsNoTracking()
+            .Where(tutor => tutor.TutorId == tutorId)
+            .Select(tutor => new CommunicationRecipient(
+                tutor.BcUserId,
+                tutor.BcUser.Email,
+                string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName)
+                    ? tutor.BcUser.PersonnelNumber
+                    : tutor.BcUser.DisplayName))
+            .SingleOrDefaultAsync(cancellationToken);
+
+    private async Task SendComposedMessageAsync(
+        CommunicationRecipient? recipient,
+        ApplicationMessageInput message,
+        CancellationToken cancellationToken)
+    {
+        if (_emailSender is null ||
+            string.IsNullOrWhiteSpace(recipient?.Email))
+        {
+            return;
+        }
+
+        await _emailSender.SendComposedAsync(
+            recipient.Email,
+            message.Subject.Trim(),
+            message.EmailBody.Trim(),
+            cancellationToken);
+    }
+
+    private static string? ValidateComposedMessage(
+        ApplicationMessageInput message,
+        bool requireNotificationMessage)
+    {
+        string subject = message.Subject?.Trim() ?? string.Empty;
+        string body = message.EmailBody?.Trim() ?? string.Empty;
+        string notification = message.NotificationMessage?.Trim() ??
+            string.Empty;
+
+        if (subject.Length is < 1 or > 200)
+        {
+            return "Enter an email subject of no more than 200 characters.";
+        }
+
+        if (body.Length is < 1 or > 5000)
+        {
+            return "Enter an email message of no more than 5,000 characters.";
+        }
+
+        if (requireNotificationMessage &&
+            (notification.Length is < 1 or > 1000))
+        {
+            return "Enter a notification message of no more than 1,000 characters.";
+        }
+
+        return null;
+    }
+
+    private sealed record CommunicationRecipient(
+        int BcUserId,
+        string? Email,
+        string DisplayName);
 
     private async Task LoadSettingsAsync(CancellationToken cancellationToken)
     {
