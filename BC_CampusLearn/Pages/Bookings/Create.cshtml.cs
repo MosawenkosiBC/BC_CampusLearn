@@ -1,9 +1,12 @@
 using BC_CampusLearn.Authentication;
+using BC_CampusLearn.Data;
+using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Bookings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Pages.Bookings;
 
@@ -15,13 +18,16 @@ public class CreateModel : PageModel
 
     private readonly IBookingService _bookingService;
     private readonly ICurrentUserService _currentUserService;
+    private readonly ApplicationDbContext _context;
 
     public CreateModel(
         IBookingService bookingService,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        ApplicationDbContext context)
     {
         _bookingService = bookingService;
         _currentUserService = currentUserService;
+        _context = context;
     }
 
     [BindProperty]
@@ -36,6 +42,11 @@ public class CreateModel : PageModel
         = null!;
 
     public bool ShowPendingReviewModal { get; private set; }
+
+    public IReadOnlyList<string> BookingTerms { get; private set; } = [];
+
+    public string SupportEmail { get; private set; } =
+        "tutors@belgiumcampus.ac.za";
 
     public async Task<IActionResult> OnGetAsync(
         int slotId,
@@ -66,6 +77,7 @@ public class CreateModel : PageModel
         }
 
         Preview = preview;
+        await LoadPlatformSettingsAsync(cancellationToken);
 
         ShowPendingReviewModal =
             await _bookingService.HasPendingStudentReviewAsync(
@@ -202,6 +214,28 @@ public class CreateModel : PageModel
 
         Preview = preview;
 
+        await LoadPlatformSettingsAsync(cancellationToken);
+
         return Page();
+    }
+
+    private async Task LoadPlatformSettingsAsync(
+        CancellationToken cancellationToken)
+    {
+        var settings = await _context.PlatformSettings
+            .AsNoTracking()
+            .Where(item => item.PlatformSettingsId == PlatformSettings.SingletonId)
+            .Select(item => new
+            {
+                item.BookingTermsAndConditions,
+                item.SupportEmail
+            })
+            .SingleAsync(cancellationToken);
+
+        BookingTerms = settings.BookingTermsAndConditions
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Split('\n', StringSplitOptions.TrimEntries |
+                StringSplitOptions.RemoveEmptyEntries);
+        SupportEmail = settings.SupportEmail;
     }
 }

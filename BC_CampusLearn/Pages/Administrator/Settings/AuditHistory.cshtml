@@ -1,0 +1,38 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Settings.AuditHistoryModel
+@{ ViewData["Title"] = "Settings audit history"; }
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-settings.css" asp-append-version="true" />
+}
+<main class="admin-settings" aria-labelledby="settings-title" data-settings-page>
+    <header class="admin-dashboard-header"><h1 id="settings-title">Settings</h1></header>
+    <div class="settings-layout">
+        <partial name="_SettingsNavigation" />
+        <section class="settings-section" aria-labelledby="audit-title">
+            <header class="settings-section-heading"><div><h2 id="audit-title">Audit history</h2><p>The latest 100 setting and access changes.</p></div><span class="settings-status settings-status--live">Live</span></header>
+            @if (Model.AuditRows.Count == 0)
+            {
+                <div class="settings-empty"><i class="bi bi-clock-history"></i><h3>No changes recorded yet</h3><p>Saved changes will appear here.</p></div>
+            }
+            else
+            {
+                <div class="settings-audit-list">
+                @foreach (var audit in Model.AuditRows)
+                {
+                    <article>
+                        <div class="settings-audit-marker"><i class="bi bi-pencil"></i></div>
+                        <div class="settings-audit-content">
+                            <div><span>@audit.Category</span><time datetime="@audit.ChangedAt.ToString("O")">@audit.ChangedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</time></div>
+                            <h3>@audit.SettingName</h3>
+                            <p><strong>@audit.Administrator</strong> changed <del>@(audit.PreviousValue ?? "Not set")</del> to <ins>@(audit.NewValue ?? "Not set")</ins>.</p>
+                            @if (!string.IsNullOrWhiteSpace(audit.Reason)) { <blockquote>@audit.Reason</blockquote> }
+                        </div>
+                    </article>
+                }
+                </div>
+            }
+        </section>
+    </div>
+</main>
+@section Scripts { <script src="~/js/admin-settings.js" asp-append-version="true"></script> }

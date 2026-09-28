@@ -1,0 +1,31 @@
+@{
+    string currentPage = ViewContext.RouteData.Values["Page"]?.ToString()
+        ?? string.Empty;
+}
+
+<nav class="settings-navigation" aria-label="Settings sections">
+    <a asp-page="/Administrator/Settings/General"
+       class="@(currentPage.EndsWith("/General", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
+        <i class="bi bi-sliders" aria-hidden="true"></i><span>General</span>
+    </a>
+    <a asp-page="/Administrator/Settings/Bookings"
+       class="@(currentPage.EndsWith("/Bookings", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
+        <i class="bi bi-calendar2-check" aria-hidden="true"></i><span>Bookings &amp; sessions</span>
+    </a>
+    <a asp-page="/Administrator/Settings/TutorPayments"
+       class="@(currentPage.EndsWith("/TutorPayments", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
+        <i class="bi bi-wallet2" aria-hidden="true"></i><span>Tutor payments</span>
+    </a>
+    <a asp-page="/Administrator/Settings/Notifications"
+       class="@(currentPage.EndsWith("/Notifications", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
+        <i class="bi bi-bell" aria-hidden="true"></i><span>Notifications</span>
+    </a>
+    <a asp-page="/Administrator/Settings/UsersAccess"
+       class="@(currentPage.EndsWith("/UsersAccess", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
+        <i class="bi bi-people" aria-hidden="true"></i><span>Users &amp; access</span>
+    </a>
+    <a asp-page="/Administrator/Settings/AuditHistory"
+       class="@(currentPage.EndsWith("/AuditHistory", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
+        <i class="bi bi-clock-history" aria-hidden="true"></i><span>Audit history</span>
+    </a>
+</nav>

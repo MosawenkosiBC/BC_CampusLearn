@@ -1,0 +1,46 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Settings.GeneralModel
+@{
+    ViewData["Title"] = "General settings";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-settings.css" asp-append-version="true" />
+}
+
+<main class="admin-settings" aria-labelledby="settings-title" data-settings-page>
+    <header class="admin-dashboard-header"><h1 id="settings-title">Settings</h1></header>
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage)) { <div class="settings-alert settings-alert--success" role="status">@Model.SuccessMessage</div> }
+    <div class="settings-layout">
+        <partial name="_SettingsNavigation" />
+        <section class="settings-section" aria-labelledby="general-title">
+            <header class="settings-section-heading"><div><h2 id="general-title">General</h2><p>Core information and shared display preferences.</p></div><span class="settings-status settings-status--live">Live</span></header>
+            <form method="post" class="settings-form">
+                <div asp-validation-summary="ModelOnly" class="settings-validation"></div>
+                <div class="settings-field-grid">
+                    <div class="settings-field"><label asp-for="Input.SupportEmail"></label><input asp-for="Input.SupportEmail" type="email" /><small>Displayed wherever users need help or booking support.</small><span asp-validation-for="Input.SupportEmail"></span></div>
+                    <div class="settings-field"><label asp-for="Input.DateTimeFormat"></label><select asp-for="Input.DateTimeFormat">@foreach (string format in GeneralModel.DateTimeFormats) { <option value="@format">@DateTime.Now.ToString(format)</option> }</select><span asp-validation-for="Input.DateTimeFormat"></span></div>
+                    <div class="settings-field"><label asp-for="Input.AcademicYear"></label><input asp-for="Input.AcademicYear" type="number" min="2000" max="2200" /><span asp-validation-for="Input.AcademicYear"></span></div>
+                </div>
+                <div class="settings-subsection">
+                    <div class="settings-subsection-copy"><h3>System-wide announcement</h3><p>Publish a short banner across the site.</p></div>
+                    <div class="settings-field settings-field--wide"><label asp-for="Input.Announcement"></label><textarea asp-for="Input.Announcement" rows="4" placeholder="Share an important update with students and tutors."></textarea><span asp-validation-for="Input.Announcement"></span></div>
+                    <label class="settings-switch"><input asp-for="Input.IsAnnouncementEnabled" /><span aria-hidden="true"></span><strong>Show announcement across the platform</strong></label>
+                </div>
+                <footer class="settings-form-footer"><button type="submit" class="settings-primary-button">Save general settings</button></footer>
+            </form>
+            <div id="maintenance" class="settings-danger-zone">
+                <div><span class="settings-danger-label">Developer control</span><h3>Maintenance mode</h3><p>Current status: <strong>@(Model.MaintenanceModeEnabled ? "Enabled" : "Disabled")</strong>. Only a Dev administrator can change this switch.</p></div>
+                @if (Model.CanManageMaintenance)
+                {
+                    <form method="post" asp-page-handler="Maintenance" data-confirm="Confirm this maintenance-mode change?">
+                        <input type="hidden" name="enabled" value="@(!Model.MaintenanceModeEnabled)" />
+                        <label for="maintenance-reason">Reason</label><input id="maintenance-reason" asp-for="MaintenanceReason" placeholder="Why is maintenance mode changing?" /><span asp-validation-for="MaintenanceReason"></span>
+                        <button type="submit" class="@(Model.MaintenanceModeEnabled ? "settings-secondary-button" : "settings-danger-button")">@(Model.MaintenanceModeEnabled ? "Disable maintenance mode" : "Enable maintenance mode")</button>
+                    </form>
+                }
+            </div>
+        </section>
+    </div>
+</main>
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script src="~/js/admin-settings.js" asp-append-version="true"></script> }

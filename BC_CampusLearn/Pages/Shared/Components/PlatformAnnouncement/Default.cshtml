@@ -1,0 +1,9 @@
+@model string
+
+@if (!string.IsNullOrWhiteSpace(Model))
+{
+    <aside class="platform-announcement" role="status" aria-label="CampusLearn announcement">
+        <i class="bi bi-megaphone" aria-hidden="true"></i>
+        <span>@Model</span>
+    </aside>
+}

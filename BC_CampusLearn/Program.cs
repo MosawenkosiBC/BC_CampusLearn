@@ -7,6 +7,7 @@ using BC_CampusLearn.Services.Tutors;
 using BC_CampusLearn.Services.Sessions;
 using BC_CampusLearn.Services.Students;
 using BC_CampusLearn.Services.Notifications;
+using BC_CampusLearn.Services.Settings;
 using BC_CampusLearn.Hubs;
 using BC_CampusLearn.Models.Entities;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -18,6 +19,7 @@ using Microsoft.Identity.Web;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<UserNotificationSignalRInterceptor>();
+builder.Services.AddScoped<SettingsAuditService>();
 
 string connectionString =
     builder.Configuration.GetConnectionString(
@@ -159,6 +161,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToPage(
         "/Account/AccessDenied");
     options.Conventions.AllowAnonymousToPage("/NotFound");
+    options.Conventions.AllowAnonymousToPage("/Maintenance");
 
     options.Conventions.AuthorizeFolder("/Student");
     options.Conventions.AuthorizeFolder("/Tutors");
@@ -204,6 +207,36 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.Use(async (httpContext, next) =>
+{
+    PathString path = httpContext.Request.Path;
+    bool bypass = path.StartsWithSegments("/Maintenance") ||
+        path.StartsWithSegments("/Account") ||
+        httpContext.User.IsInRole(nameof(BcUserRole.Dev));
+
+    if (!bypass)
+    {
+        await using AsyncServiceScope scope =
+            httpContext.RequestServices.CreateAsyncScope();
+        ApplicationDbContext dbContext = scope.ServiceProvider
+            .GetRequiredService<ApplicationDbContext>();
+        bool maintenanceEnabled = await dbContext.PlatformSettings
+            .AsNoTracking()
+            .Where(settings => settings.PlatformSettingsId ==
+                PlatformSettings.SingletonId)
+            .Select(settings => settings.IsMaintenanceModeEnabled)
+            .SingleAsync(httpContext.RequestAborted);
+
+        if (maintenanceEnabled)
+        {
+            httpContext.Response.Redirect("/Maintenance");
+            return;
+        }
+    }
+
+    await next(httpContext);
+});
 
 app.MapRazorPages();
 app.MapHub<SessionHub>("/hubs/session");

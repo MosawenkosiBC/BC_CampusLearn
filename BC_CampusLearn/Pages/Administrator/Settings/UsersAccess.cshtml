@@ -1,0 +1,73 @@
+@page
+@using BC_CampusLearn.Models.Entities
+@model BC_CampusLearn.Pages.Administrator.Settings.UsersAccessModel
+@{ ViewData["Title"] = "Users and access settings"; }
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-settings.css" asp-append-version="true" />
+}
+
+<main class="admin-settings" aria-labelledby="settings-title" data-settings-page>
+    <header class="admin-dashboard-header"><h1 id="settings-title">Settings</h1></header>
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage)) { <div class="settings-alert settings-alert--success" role="status">@Model.SuccessMessage</div> }
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <div class="settings-alert settings-alert--error" role="alert">@Model.ErrorMessage</div> }
+    <div class="settings-layout">
+        <partial name="_SettingsNavigation" />
+        <section class="settings-section" aria-labelledby="access-title">
+            <header class="settings-section-heading"><div><h2 id="access-title">Users and access</h2><p>View administrative users and control privileged roles.</p></div><span class="settings-status settings-status--restricted">Super Admin only</span></header>
+            @if (Model.CanManageAccess)
+            {
+                <details class="settings-access-grant" @(!ViewData.ModelState.IsValid ? "open" : null)>
+                    <summary>Add administrative access</summary>
+                    <form method="post" asp-page-handler="GrantAccess" class="settings-form settings-form--compact">
+                        <div class="settings-field-grid">
+                            <div class="settings-field"><label asp-for="Input.PersonnelNumber"></label><input asp-for="Input.PersonnelNumber" placeholder="Existing user personnel number" /><span asp-validation-for="Input.PersonnelNumber"></span></div>
+                            <div class="settings-field"><label asp-for="Input.Role"></label><select asp-for="Input.Role"><option value="@BcUserRole.HeadOfTutors">Head of Tutors</option><option value="@BcUserRole.Admin">Admin</option><option value="@BcUserRole.SuperAdmin">Super Admin</option></select><span asp-validation-for="Input.Role"></span></div>
+                            <div class="settings-field settings-field--wide"><label asp-for="Input.Reason"></label><input asp-for="Input.Reason" placeholder="Reason for granting this access" /><span asp-validation-for="Input.Reason"></span></div>
+                        </div>
+                        <button type="submit" class="settings-primary-button">Grant access</button>
+                    </form>
+                </details>
+            }
+            <div class="settings-table-wrap">
+                <table class="settings-table">
+                    <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Last login</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+                    <tbody>
+                    @foreach (var user in Model.AccessUsers)
+                    {
+                        <tr>
+                            <td><strong>@user.DisplayName</strong><span>@user.PersonnelNumber · @(user.Email ?? "No email")</span></td>
+                            <td><span class="settings-role">@UsersAccessModel.RoleLabel(user.Role)</span></td>
+                            <td><span class="settings-access-state @(user.IsActive ? "is-active" : "is-inactive")">@(user.IsActive ? "Active" : "Inactive")</span></td>
+                            <td>@(user.LastLoginAt?.ToString("dd MMM yyyy, HH:mm") ?? "Never")</td>
+                            <td>
+                                @if (Model.CanManageAccess && user.Role != BcUserRole.Dev && user.BcUserId != Model.CurrentUserId)
+                                {
+                                    <details class="settings-row-actions">
+                                        <summary aria-label="Manage @user.DisplayName"><i class="bi bi-three-dots"></i></summary>
+                                        <div>
+                                            <form method="post" asp-page-handler="ChangeRole" data-confirm="Change this user's administrative role?">
+                                                <input type="hidden" name="userId" value="@user.BcUserId" />
+                                                <select name="role" aria-label="New role for @user.DisplayName"><option value="@BcUserRole.HeadOfTutors" selected="@(user.Role == BcUserRole.HeadOfTutors)">Head of Tutors</option><option value="@BcUserRole.Admin" selected="@(user.Role == BcUserRole.Admin)">Admin</option><option value="@BcUserRole.SuperAdmin" selected="@(user.Role == BcUserRole.SuperAdmin)">Super Admin</option></select>
+                                                <input name="reason" required minlength="5" placeholder="Reason" /><button type="submit">Change role</button>
+                                            </form>
+                                            <form method="post" asp-page-handler="ToggleAccess" data-confirm="@(user.IsActive ? "Deactivate this user's administrative access?" : "Reactivate this user's administrative access?")">
+                                                <input type="hidden" name="userId" value="@user.BcUserId" /><input type="hidden" name="active" value="@(!user.IsActive)" /><input name="reason" required minlength="5" placeholder="Reason" /><button type="submit">@(user.IsActive ? "Deactivate" : "Activate")</button>
+                                            </form>
+                                            <form method="post" asp-page-handler="RemoveAccess" data-confirm="Remove this user's administrative access?">
+                                                <input type="hidden" name="userId" value="@user.BcUserId" /><input name="reason" required minlength="5" placeholder="Reason" /><button type="submit" class="is-danger">Remove access</button>
+                                            </form>
+                                        </div>
+                                    </details>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div class="settings-permission-skeleton"><div><span class="settings-status">Skeleton</span><h3>Role permissions</h3></div><p>Permission controls for reviewing sessions, approving payments, finalising cycles, marking payments paid, changing rates, reopening cycles and managing administrators will be connected as those workflows are built.</p></div>
+        </section>
+    </div>
+</main>
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script src="~/js/admin-settings.js" asp-append-version="true"></script> }
