@@ -203,26 +203,6 @@ public class TutorService : ITutorService
             .ToList();
     }
 
-    public async Task<IReadOnlyList<string>>
-        GetCampusesAsync(
-            CancellationToken cancellationToken = default)
-    {
-        List<string> campuses = await _context.Tutors
-            .AsNoTracking()
-            .Where(tutor =>
-                tutor.Status == TutorStatus.Approved &&
-                tutor.IsActive)
-            .Select(tutor => tutor.CampusOfStudy)
-            .ToListAsync(cancellationToken);
-
-        return campuses
-            .Select(campus => campus.Trim())
-            .Where(campus => !string.IsNullOrWhiteSpace(campus))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(campus => campus, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
     private static string? GetSafeExternalUrl(string? url)
     {
         if (string.IsNullOrWhiteSpace(url) ||
