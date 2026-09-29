@@ -90,7 +90,9 @@ public class IndexModel(
     private async Task LoadAsync(CancellationToken cancellationToken)
     {
         IQueryable<LearningResource> query = context.LearningResources
-            .AsNoTracking();
+            .AsNoTracking()
+            .Where(resource =>
+                resource.Status == LearningResourceStatus.Published);
 
         if (!string.IsNullOrWhiteSpace(SearchName))
         {

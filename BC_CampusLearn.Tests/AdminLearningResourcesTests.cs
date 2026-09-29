@@ -15,7 +15,7 @@ namespace BC_CampusLearn.Tests;
 public class AdminLearningResourcesTests
 {
     [Fact]
-    public async Task IndexShowsDraftAndPublishedResourcesAndAppliesFilters()
+    public async Task IndexShowsOnlyPublishedResourcesAndAppliesFilters()
     {
         await using ApplicationDbContext context = CreateContext();
         SeedResources(context);
@@ -27,11 +27,9 @@ public class AdminLearningResourcesTests
 
         await page.OnGetAsync(CancellationToken.None);
 
-        Assert.Equal(2, page.TotalResources);
-        Assert.Contains(page.Resources, resource =>
-            resource.Status == LearningResourceStatus.Draft);
-        Assert.Contains(page.Resources, resource =>
-            resource.Status == LearningResourceStatus.Published);
+        Assert.Equal(1, page.TotalResources);
+        LearningResourceStatus status = Assert.Single(page.Resources).Status;
+        Assert.Equal(LearningResourceStatus.Published, status);
 
         page.SearchModule = "OTHER";
         await page.OnGetAsync(CancellationToken.None);
@@ -46,7 +44,7 @@ public class AdminLearningResourcesTests
         await using ApplicationDbContext context = CreateContext();
         List<LearningResource> resources = SeedResources(context);
         LearningResource seed = resources[0];
-        for (int id = 3; id <= 10; id++)
+        for (int id = 3; id <= 11; id++)
         {
             context.LearningResources.Add(new LearningResource
             {
