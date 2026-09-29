@@ -43,6 +43,9 @@
         case "/Administrator/Admin/Applications":
             breadcrumbs.Add(("Applications", null));
             break;
+        case "/Administrator/Admin/BookingsAndSessions":
+            breadcrumbs.Add(("Bookings and Sessions", null));
+            break;
         case "/Administrator/Admin/ApplicationDetails":
             breadcrumbs.Add(("Applications", "/Administrator/Admin/Applications"));
             breadcrumbs.Add(("Application Details", null));
@@ -55,9 +58,8 @@
             breadcrumbs.Add(("Tutor Profile", null));
             break;
         case "/Administrator/Tutors/SessionDetails":
-            breadcrumbs.Add(("Tutors", "/Administrator/Tutors/Index"));
-            breadcrumbs.Add(("Tutor Profile", "/Administrator/Tutors/Profile"));
-            breadcrumbs.Add(("Session Information", null));
+            breadcrumbs.Add(("Bookings and Sessions", "/Administrator/Admin/BookingsAndSessions"));
+            breadcrumbs.Add(("Session Details", null));
             break;
         case "/Administrator/Modules/Index":
             breadcrumbs.Add(("Modules", null));

@@ -1,0 +1,406 @@
+.admin-bookings-sessions {
+    color: #252a2b;
+    padding: 1.25rem 0 3rem;
+    position: relative;
+}
+
+.approval-status-help {
+    position: absolute;
+    right: 0;
+    top: -2.85rem;
+    z-index: 20;
+}
+
+.approval-status-help-button {
+    align-items: center;
+    background: #fff;
+    border: 0;
+    border-radius: 50%;
+    box-shadow: 0 0.4rem 1rem rgba(25, 30, 32, 0.16);
+    color: #34393a;
+    display: flex;
+    font-size: 1rem;
+    font-weight: 750;
+    height: 2.35rem;
+    justify-content: center;
+    padding: 0;
+    width: 2.35rem;
+}
+
+.approval-status-help-button:hover,
+.approval-status-help-button:focus-visible {
+    box-shadow: 0 0.5rem 1.25rem rgba(25, 30, 32, 0.22);
+    outline: 0;
+}
+
+.approval-status-help-card {
+    background: #fff;
+    border-radius: 0.6rem;
+    box-shadow: 0 0.8rem 2rem rgba(25, 30, 32, 0.18);
+    opacity: 0;
+    padding: 1rem;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.65rem);
+    transform: translateY(-0.35rem);
+    transition: opacity 140ms ease, transform 140ms ease;
+    visibility: hidden;
+    width: min(46rem, calc(100vw - 2rem));
+}
+
+.approval-status-help:hover .approval-status-help-card,
+.approval-status-help:focus-within .approval-status-help-card {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+.approval-status-help-card::before {
+    border-bottom: 0.45rem solid #fff;
+    border-left: 0.45rem solid transparent;
+    border-right: 0.45rem solid transparent;
+    content: "";
+    position: absolute;
+    right: 0.75rem;
+    top: -0.4rem;
+}
+
+.approval-status-help-card::after {
+    content: "";
+    height: 0.7rem;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: -0.65rem;
+}
+
+.approval-status-help-card h2 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin: 0 0 0.85rem;
+}
+
+.approval-status-help-card > div {
+    align-items: center;
+    display: grid;
+    gap: 0.45rem;
+    grid-template-columns: max-content auto minmax(0, 1fr);
+    margin-top: 0.7rem;
+}
+
+.approval-status-help-card p {
+    color: #5f6768;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.bookings-sessions-heading {
+    margin-bottom: 1.6rem;
+}
+
+.bookings-sessions-heading h1 {
+    color: #141718;
+    font-size: clamp(1.65rem, 2.4vw, 2.1rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin: 0;
+}
+
+.session-statistics {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0 0 1rem;
+}
+
+.session-statistic-card {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #f0f1f2;
+    border-radius: 0.45rem;
+    box-shadow: 0 0.4rem 1rem rgba(25, 30, 32, 0.08);
+    color: #272b2c;
+    display: grid;
+    font-size: 0.86rem;
+    font-weight: 650;
+    gap: 0.8rem;
+    grid-template-columns: 1fr auto;
+    min-height: 4.2rem;
+    padding: 0.8rem 1rem;
+    text-decoration: none;
+}
+
+.session-statistic-card:hover,
+.session-statistic-card:focus-visible {
+    color: #272b2c;
+}
+
+.session-statistic-card:focus-visible,
+.session-filters :is(input, select, button, a):focus-visible,
+.session-view-link:focus-visible,
+.completed-session-table-wrap:focus-visible {
+    outline: 3px solid rgba(74, 193, 193, 0.55);
+    outline-offset: 2px;
+}
+
+.session-statistic-card.is-active {
+    background: #363c3d;
+    border-color: #363c3d;
+    color: #fff;
+}
+
+.session-statistic-card strong {
+    align-items: center;
+    background: #eef0f0;
+    border-radius: 0.45rem;
+    color: #414647;
+    display: flex;
+    font-size: 0.76rem;
+    height: 1.8rem;
+    justify-content: center;
+    min-width: 1.8rem;
+    padding: 0 0.35rem;
+}
+
+.session-statistic-card.is-active strong {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+}
+
+.sessions-workspace {
+    align-items: start;
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: 250px minmax(0, 1fr);
+}
+
+.session-filters,
+.completed-session-table-wrap {
+    background: #fff;
+    border: 1px solid #f0f1f2;
+    border-radius: 0.55rem;
+    box-shadow: 0 0.4rem 1.2rem rgba(25, 30, 32, 0.08);
+}
+
+.sessions-main-column {
+    min-width: 0;
+}
+
+.session-filters {
+    margin-top: 5.2rem;
+    padding: 1.25rem;
+}
+
+.session-filter-heading {
+    align-items: start;
+    border-bottom: 1px solid #dfe3e4;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1.2rem;
+    padding-bottom: 1rem;
+}
+
+.session-filter-heading h2 {
+    font-size: 1.05rem;
+    font-weight: 650;
+    margin: 0;
+}
+
+.session-filter-heading span {
+    color: #697071;
+    display: block;
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
+}
+
+.session-filter-heading a {
+    color: #5e6667;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.session-filter-field {
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.session-filter-field > span {
+    color: #34393a;
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 650;
+    margin-bottom: 0.4rem;
+}
+
+.session-filter-field input,
+.session-filter-field select {
+    background: #f1f3f3;
+    border: 0;
+    border-radius: 0.45rem;
+    color: #252a2b;
+    font-size: 0.78rem;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.7rem;
+    width: 100%;
+}
+
+.session-custom-period {
+    display: block;
+}
+
+.session-custom-period[hidden] {
+    display: none;
+}
+
+.session-filter-submit {
+    border: 0;
+    border-radius: 0.45rem;
+    font-size: 0.8rem;
+    font-weight: 650;
+    background: #363c3d;
+    color: #fff;
+    min-height: 2.8rem;
+    width: 100%;
+}
+
+.session-filter-submit:hover {
+    background: #252a2b;
+}
+
+.completed-sessions {
+    min-width: 0;
+}
+
+.completed-session-table-wrap {
+    overflow-x: auto;
+}
+
+.completed-session-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.completed-session-table th,
+.completed-session-table td {
+    border-bottom: 1px solid #edf0f1;
+    font-size: 0.82rem;
+    padding: 1rem 1.1rem;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.completed-session-table thead th {
+    background: #f6f7f7;
+    color: #5d6566;
+    font-size: 0.75rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.completed-session-table tbody th {
+    font-weight: 650;
+}
+
+.completed-session-table tbody tr:last-child > * {
+    border-bottom: 0;
+}
+
+.completed-session-table tbody tr:hover {
+    background: #fbfcfc;
+}
+
+.session-approval {
+    border-radius: 999px;
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 650;
+    padding: 0.35rem 0.65rem;
+    white-space: nowrap;
+}
+
+.session-approval.is-approved {
+    background: #e5f5ea;
+    color: #267141;
+}
+
+.session-approval.is-pending {
+    background: #fff2cf;
+    color: #8a6417;
+}
+
+.session-approval.is-waiting {
+    background: #edf0f1;
+    color: #5e6667;
+}
+
+.session-view-link {
+    background: #363c3d;
+    border-radius: 0.4rem;
+    color: #fff;
+    display: inline-flex;
+    font-size: 0.76rem;
+    font-weight: 650;
+    padding: 0.5rem 0.85rem;
+    text-decoration: none;
+}
+
+.session-view-link:hover {
+    background: #252a2b;
+    color: #fff;
+}
+
+.completed-session-empty {
+    color: #687071;
+    padding: 3rem 1rem !important;
+    text-align: center !important;
+}
+
+@media (max-width: 991.98px) {
+    .session-statistics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .sessions-workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .session-filters {
+        margin-top: 0;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .session-statistics {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+@media (max-width: 575.98px) {
+    .admin-bookings-sessions {
+        padding-top: 1rem;
+    }
+
+    .approval-status-help {
+        top: -2.55rem;
+    }
+
+    .approval-status-help-card > div {
+        align-items: start;
+        grid-template-columns: max-content auto minmax(0, 1fr);
+    }
+
+    .approval-status-help-card p {
+        white-space: normal;
+    }
+
+    .completed-session-table th,
+    .completed-session-table td {
+        padding: 0.85rem;
+    }
+}

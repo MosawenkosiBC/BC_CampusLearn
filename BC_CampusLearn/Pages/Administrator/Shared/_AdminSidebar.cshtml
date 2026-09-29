@@ -7,10 +7,19 @@
         StringComparison.OrdinalIgnoreCase);
     bool isTutors = currentPage.StartsWith(
         "/Administrator/Tutors/",
-        StringComparison.OrdinalIgnoreCase);
+        StringComparison.OrdinalIgnoreCase) &&
+        !currentPage.Equals(
+            "/Administrator/Tutors/SessionDetails",
+            StringComparison.OrdinalIgnoreCase);
     bool isApplications = currentPage.Equals(
         "/Administrator/Admin/Applications",
         StringComparison.OrdinalIgnoreCase);
+    bool isBookingsAndSessions = currentPage.Equals(
+            "/Administrator/Admin/BookingsAndSessions",
+            StringComparison.OrdinalIgnoreCase) ||
+        currentPage.Equals(
+            "/Administrator/Tutors/SessionDetails",
+            StringComparison.OrdinalIgnoreCase);
     bool isModules = currentPage.StartsWith("/Administrator/Modules/", StringComparison.OrdinalIgnoreCase);
     bool isStatistics = currentPage.Equals(
         "/Administrator/Admin/Statistics",
@@ -55,14 +64,16 @@
             </svg>
         </a>
 
-        <span class="admin-sidebar-link is-coming-soon"
+        <a asp-page="/Administrator/Admin/BookingsAndSessions"
+              class="admin-sidebar-link @(isBookingsAndSessions ? "is-active" : null)"
+              aria-current="@(isBookingsAndSessions ? "page" : null)"
               aria-label="Bookings and sessions"
               data-label="Bookings and sessions">
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M0 0h24v24H0z" fill="none" stroke="none" />
                 <path d="M16 2v4M8 2v4m13 7v-1c0-3.771 0-5.657-1.172-6.828S16.771 4 13 4h-2C7.229 4 5.343 4 4.172 5.172S3 8.229 3 12v2c0 3.771 0 5.657 1.172 6.828S7.229 22 11 22M3 10h18M17.5 18.5a2 2 0 1 0 0-4a2 2 0 0 0 0 4Zm0 0A3.5 3.5 0 0 1 21 22m-3.5-3.5A3.5 3.5 0 0 0 14 22" />
             </svg>
-        </span>
+        </a>
 
         <a asp-page="/Administrator/Admin/Applications"
            class="admin-sidebar-link @(isApplications ? "is-active" : null)"

@@ -1,0 +1,230 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Admin.BookingsAndSessionsModel
+
+@{
+    ViewData["Title"] = "Bookings and Sessions";
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/admin-bookings-sessions.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/components/pagination.css"
+          asp-append-version="true" />
+}
+
+<section class="admin-bookings-sessions" aria-labelledby="bookings-sessions-title">
+    <div class="approval-status-help">
+        <button type="button"
+                class="approval-status-help-button"
+                aria-label="Explain admin approval statuses"
+                aria-describedby="approval-status-help-card">?</button>
+        <div class="approval-status-help-card" id="approval-status-help-card" role="tooltip">
+            <h2>Approval status guide</h2>
+            <div>
+                <span class="session-approval is-waiting">Awaiting reviews</span>
+                <span aria-hidden="true">–</span>
+                <p>A student, tutor, or Tutor Head review has not yet been submitted.</p>
+            </div>
+            <div>
+                <span class="session-approval is-pending">Pending approval</span>
+                <span aria-hidden="true">–</span>
+                <p>The Tutor Head review or administrator approval is still pending.</p>
+            </div>
+            <div>
+                <span class="session-approval is-approved">Approved</span>
+                <span aria-hidden="true">–</span>
+                <p>The session reviews have been accepted.</p>
+            </div>
+        </div>
+    </div>
+
+    <header class="bookings-sessions-heading">
+        <h1 id="bookings-sessions-title">Bookings and Sessions</h1>
+    </header>
+
+    <div class="sessions-workspace">
+        <aside class="session-filters" aria-labelledby="session-filters-title">
+            <div class="session-filter-heading">
+                <div>
+                    <h2 id="session-filters-title">Filter</h2>
+                    <span>@Model.PeriodLabel</span>
+                </div>
+                @if (Model.Search is not null || Model.Approval != "all" || Model.Queue != "all" || Model.Period != "month")
+                {
+                    <a asp-page="/Administrator/Admin/BookingsAndSessions">Clear all</a>
+                }
+            </div>
+
+            <form method="get">
+                <input type="hidden" name="Queue" value="@Model.Queue" />
+
+                <label class="session-filter-field">
+                    <span>Search sessions</span>
+                    <input asp-for="Search"
+                           placeholder="Tutor, student or location"
+                           autocomplete="off" />
+                </label>
+
+                <label class="session-filter-field">
+                    <span>Admin approval</span>
+                    <select asp-for="Approval">
+                        <option value="all">All approval statuses</option>
+                        <option value="awaiting">Awaiting reviews</option>
+                        <option value="pending">Pending approval</option>
+                        <option value="approved">Approved</option>
+                    </select>
+                </label>
+
+                <label class="session-filter-field">
+                    <span>Date</span>
+                    <select asp-for="Period" data-session-period>
+                        <option value="month">Current month</option>
+                        <option value="week">Current week</option>
+                        <option value="day">Today</option>
+                        <option value="custom">Custom dates</option>
+                    </select>
+                </label>
+
+                <div class="session-custom-period" data-custom-period @(Model.Period == "custom" ? null : "hidden")>
+                    <label class="session-filter-field">
+                        <span>From</span>
+                        <input asp-for="From" type="date" />
+                    </label>
+                    <label class="session-filter-field">
+                        <span>To</span>
+                        <input asp-for="To" type="date" />
+                    </label>
+                </div>
+
+                <button type="submit" class="session-filter-submit">Apply filters</button>
+            </form>
+        </aside>
+
+        <div class="sessions-main-column">
+            <nav class="session-statistics" aria-label="Session review queues">
+                <a asp-page="/Administrator/Admin/BookingsAndSessions"
+                   asp-route-Queue="all"
+                   asp-route-Search="@Model.Search"
+                   asp-route-Approval="@Model.Approval"
+                   asp-route-Period="@Model.Period"
+                   asp-route-From="@Model.From?.ToString("yyyy-MM-dd")"
+                   asp-route-To="@Model.To?.ToString("yyyy-MM-dd")"
+                   class="session-statistic-card @(Model.Queue == "all" ? "is-active" : null)"
+                   aria-current="@(Model.Queue == "all" ? "page" : null)">
+                    <span>Completed Sessions</span>
+                    <strong>@Model.CompletedSessionCount</strong>
+                </a>
+
+                <a asp-page="/Administrator/Admin/BookingsAndSessions"
+                   asp-route-Queue="admin"
+                   asp-route-Search="@Model.Search"
+                   asp-route-Approval="all"
+                   asp-route-Period="@Model.Period"
+                   asp-route-From="@Model.From?.ToString("yyyy-MM-dd")"
+                   asp-route-To="@Model.To?.ToString("yyyy-MM-dd")"
+                   class="session-statistic-card @(Model.Queue == "admin" ? "is-active" : null)"
+                   aria-current="@(Model.Queue == "admin" ? "page" : null)">
+                    <span>Require Admin Review</span>
+                    <strong>@Model.RequireAdminReviewCount</strong>
+                </a>
+
+                <a asp-page="/Administrator/Admin/BookingsAndSessions"
+                   asp-route-Queue="tutor"
+                   asp-route-Search="@Model.Search"
+                   asp-route-Approval="@Model.Approval"
+                   asp-route-Period="@Model.Period"
+                   asp-route-From="@Model.From?.ToString("yyyy-MM-dd")"
+                   asp-route-To="@Model.To?.ToString("yyyy-MM-dd")"
+                   class="session-statistic-card @(Model.Queue == "tutor" ? "is-active" : null)"
+                   aria-current="@(Model.Queue == "tutor" ? "page" : null)">
+                    <span>Require Tutor Review</span>
+                    <strong>@Model.RequireTutorReviewCount</strong>
+                </a>
+            </nav>
+
+            <section class="completed-sessions" aria-label="Completed sessions">
+            <div class="completed-session-table-wrap" tabindex="0">
+                <table class="completed-session-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Tutor name</th>
+                            <th scope="col">Student name</th>
+                            <th scope="col">Location</th>
+                            <th scope="col">Session date</th>
+                            <th scope="col">Admin approval</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Sessions.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" class="completed-session-empty">
+                                    No completed sessions match the selected filters.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var session in Model.Sessions)
+                            {
+                                <tr>
+                                    <th scope="row">@session.TutorDisplayName</th>
+                                    <td>@session.StudentName</td>
+                                    <td>@session.Location</td>
+                                    <td>
+                                        <time datetime="@session.SessionDate.ToString("O")">
+                                            @session.SessionDate.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
+                                        </time>
+                                    </td>
+                                    <td>
+                                        <span class="session-approval @session.AdminApprovalCssClass">
+                                            @session.AdminApprovalLabel
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a asp-page="/Administrator/Tutors/SessionDetails"
+                                           asp-route-id="@session.BookingId"
+                                           class="session-view-link"
+                                           aria-label="View session for @session.StudentName with @session.TutorDisplayName">
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (Model.TotalPages > 1)
+            {
+                @await Component.InvokeAsync("Pagination", new
+                {
+                    currentPage = Model.SessionPage,
+                    totalPages = Model.TotalPages,
+                    pageRouteValueName = "SessionPage",
+                    ariaLabel = "Completed session pages"
+                })
+            }
+            </section>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        (() => {
+            const period = document.querySelector('[data-session-period]');
+            const customPeriod = document.querySelector('[data-custom-period]');
+            if (!period || !customPeriod) return;
+
+            const updateCustomPeriod = () => {
+                customPeriod.hidden = period.value !== 'custom';
+            };
+            period.addEventListener('change', updateCustomPeriod);
+            updateCustomPeriod();
+        })();
+    </script>
+}
