@@ -21,7 +21,7 @@
                     <summary>Add administrative access</summary>
                     <form method="post" asp-page-handler="GrantAccess" class="settings-form settings-form--compact">
                         <div class="settings-field-grid">
-                            <div class="settings-field"><label asp-for="Input.PersonnelNumber"></label><input asp-for="Input.PersonnelNumber" placeholder="Existing user personnel number" /><span asp-validation-for="Input.PersonnelNumber"></span></div>
+                            <div class="settings-field"><label asp-for="Input.UserIdentifier"></label><input asp-for="Input.UserIdentifier" placeholder="Existing user personnel number or email" /><span asp-validation-for="Input.UserIdentifier"></span></div>
                             <div class="settings-field"><label asp-for="Input.Role"></label><select asp-for="Input.Role"><option value="@BcUserRole.HeadOfTutors">Head of Tutors</option><option value="@BcUserRole.Admin">Admin</option><option value="@BcUserRole.SuperAdmin">Super Admin</option></select><span asp-validation-for="Input.Role"></span></div>
                             <div class="settings-field settings-field--wide"><label asp-for="Input.Reason"></label><input asp-for="Input.Reason" placeholder="Reason for granting this access" /><span asp-validation-for="Input.Reason"></span></div>
                         </div>
@@ -36,7 +36,7 @@
                     @foreach (var user in Model.AccessUsers)
                     {
                         <tr>
-                            <td><strong>@user.DisplayName</strong><span>@user.PersonnelNumber · @(user.Email ?? "No email")</span></td>
+                            <td><strong>@user.DisplayName</strong><span>@(user.PersonnelNumber ?? "No personnel number") · @(user.Email ?? "No email")</span></td>
                             <td><span class="settings-role">@UsersAccessModel.RoleLabel(user.Role)</span></td>
                             <td><span class="settings-access-state @(user.IsActive ? "is-active" : "is-inactive")">@(user.IsActive ? "Active" : "Inactive")</span></td>
                             <td>@(user.LastLoginAt?.ToString("dd MMM yyyy, HH:mm") ?? "Never")</td>

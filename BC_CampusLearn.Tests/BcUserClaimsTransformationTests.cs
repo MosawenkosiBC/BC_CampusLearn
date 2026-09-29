@@ -3,9 +3,11 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace BC_CampusLearn.Tests;
@@ -18,7 +20,8 @@ public class BcUserClaimsTransformationTests
         await using ApplicationDbContext context = CreateContext();
         var transformation = new BcUserClaimsTransformation(
             context,
-            new TestWebHostEnvironment(Environments.Production));
+            new TestWebHostEnvironment(Environments.Production),
+            CreateIdentityProtector());
         ClaimsPrincipal principal = CreatePrincipal();
 
         await transformation.TransformAsync(principal);
@@ -35,7 +38,8 @@ public class BcUserClaimsTransformationTests
         await using ApplicationDbContext context = CreateContext();
         var transformation = new BcUserClaimsTransformation(
             context,
-            new TestWebHostEnvironment(Environments.Development));
+            new TestWebHostEnvironment(Environments.Development),
+            CreateIdentityProtector());
         ClaimsPrincipal principal = CreatePrincipal(
             new Claim(
                 EntraClaimTypes.DevelopmentRole,
@@ -56,7 +60,8 @@ public class BcUserClaimsTransformationTests
         await using ApplicationDbContext context = CreateContext();
         var transformation = new BcUserClaimsTransformation(
             context,
-            new TestWebHostEnvironment(Environments.Production));
+            new TestWebHostEnvironment(Environments.Production),
+            CreateIdentityProtector());
         ClaimsPrincipal principal = CreatePrincipalWithoutPersonnelNumber(
             "601334@student.belgiumcampus.ac.za");
 
@@ -79,7 +84,8 @@ public class BcUserClaimsTransformationTests
         await using ApplicationDbContext context = CreateContext();
         var transformation = new BcUserClaimsTransformation(
             context,
-            new TestWebHostEnvironment(Environments.Production));
+            new TestWebHostEnvironment(Environments.Production),
+            CreateIdentityProtector());
         ClaimsPrincipal principal = CreatePrincipalWithoutPersonnelNumber(
             "601334@student.belgiumcampus.ac.za");
 
@@ -97,24 +103,60 @@ public class BcUserClaimsTransformationTests
     [InlineData("surname.i@belgiumcampus.ac.za")]
     [InlineData("student.name@student.belgiumcampus.ac.za")]
     [InlineData("601334@external.example")]
-    public async Task NonStudentPreferredUsernameCannotBecomePersonnelNumber(
+    public async Task NonStudentPreferredUsernameCreatesUserWithoutPersonnelNumber(
         string preferredUsername)
     {
         await using ApplicationDbContext context = CreateContext();
         var transformation = new BcUserClaimsTransformation(
             context,
-            new TestWebHostEnvironment(Environments.Production));
+            new TestWebHostEnvironment(Environments.Production),
+            CreateIdentityProtector());
         ClaimsPrincipal principal = CreatePrincipalWithoutPersonnelNumber(
             preferredUsername);
 
-        InvalidOperationException exception = await Assert.ThrowsAsync<
-            InvalidOperationException>(() =>
-                transformation.TransformAsync(principal));
+        await transformation.TransformAsync(principal);
 
-        Assert.Contains(
-            "numeric Belgium Campus student username",
-            exception.Message);
-        Assert.Empty(context.BcUsers);
+        BcUser user = await context.BcUsers.SingleAsync();
+        Assert.Null(user.PersonnelNumber);
+        Assert.NotNull(user.EncryptedEntraObjectId);
+        Assert.NotNull(user.EncryptedEntraTenantId);
+        Assert.NotEqual(
+            "11111111-1111-1111-1111-111111111111",
+            user.EncryptedEntraObjectId);
+        Assert.NotEqual(
+            "22222222-2222-2222-2222-222222222222",
+            user.EncryptedEntraTenantId);
+        Assert.Equal(64, user.EntraIdentityLookupHash?.Length);
+    }
+
+    [Fact]
+    public async Task ExistingAdministratorWithoutPersonnelNumberLinksByEmailOnce()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        context.BcUsers.Add(new BcUser
+        {
+            PersonnelNumber = null,
+            DisplayName = "Campus Administrator",
+            Email = "admin@belgiumcampus.ac.za",
+            Role = BcUserRole.Admin,
+            CreatedAt = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+        int existingUserId = (await context.BcUsers.SingleAsync()).BcUserId;
+        var transformation = new BcUserClaimsTransformation(
+            context,
+            new TestWebHostEnvironment(Environments.Production),
+            CreateIdentityProtector());
+        ClaimsPrincipal principal = CreatePrincipalWithoutPersonnelNumber(
+            "admin@belgiumcampus.ac.za");
+
+        await transformation.TransformAsync(principal);
+
+        BcUser user = await context.BcUsers.SingleAsync();
+        Assert.Equal(existingUserId, user.BcUserId);
+        Assert.Equal(BcUserRole.Admin, user.Role);
+        Assert.NotNull(user.EntraIdentityLookupHash);
+        Assert.True(principal.IsInRole(nameof(BcUserRole.Admin)));
     }
 
     private static ApplicationDbContext CreateContext()
@@ -130,6 +172,8 @@ public class BcUserClaimsTransformationTests
     {
         var claims = new List<Claim>
         {
+            new(EntraClaimTypes.ObjectId, "11111111-1111-1111-1111-111111111111"),
+            new(EntraClaimTypes.TenantId, "22222222-2222-2222-2222-222222222222"),
             new(EntraClaimTypes.PersonnelNumber, "TEST-0001"),
             new(ClaimTypes.Name, "Test User"),
             new(ClaimTypes.Email, "test.user@belgiumcampus.ac.za")
@@ -146,6 +190,12 @@ public class BcUserClaimsTransformationTests
     {
         Claim[] claims =
         [
+            new Claim(
+                EntraClaimTypes.ObjectId,
+                "11111111-1111-1111-1111-111111111111"),
+            new Claim(
+                EntraClaimTypes.TenantId,
+                "22222222-2222-2222-2222-222222222222"),
             new Claim(ClaimTypes.Name, "Test Student"),
             new Claim(
                 EntraClaimTypes.PreferredUsername,
@@ -156,6 +206,14 @@ public class BcUserClaimsTransformationTests
             claims,
             authenticationType: "Test"));
     }
+
+    private static IEntraIdentityProtector CreateIdentityProtector() =>
+        new EntraIdentityProtector(
+            new EphemeralDataProtectionProvider(),
+            Options.Create(new IdentityProtectionOptions
+            {
+                LookupKey = Convert.ToBase64String(new byte[32])
+            }));
 
     private sealed class TestWebHostEnvironment : IWebHostEnvironment
     {

@@ -75,7 +75,7 @@ public class TutorProfileNotificationTests
             ModuleRequestInput = new TutorModuleChangeRequestInput
             {
                 RequestType = TutorModuleChangeRequestType.Add,
-                ProgrammeModuleId = module.ProgrammeModuleId,
+                ProgrammeModuleIds = [module.ProgrammeModuleId],
                 Reason = "I am qualified to tutor this module."
             }
         };

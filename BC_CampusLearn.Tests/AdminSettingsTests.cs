@@ -80,7 +80,7 @@ public class AdminSettingsTests
         UsersAccessModel page = CreateAccessPage(context, BcUserRole.Admin);
         page.Input = new UsersAccessModel.AccessInput
         {
-            PersonnelNumber = "ST200",
+            UserIdentifier = "ST200",
             Role = BcUserRole.Admin,
             Reason = "Support the tutoring programme"
         };
@@ -110,7 +110,7 @@ public class AdminSettingsTests
         UsersAccessModel page = CreateAccessPage(context, BcUserRole.SuperAdmin);
         page.Input = new UsersAccessModel.AccessInput
         {
-            PersonnelNumber = "ST200",
+            UserIdentifier = "ST200",
             Role = BcUserRole.Admin,
             Reason = "Support the tutoring programme"
         };

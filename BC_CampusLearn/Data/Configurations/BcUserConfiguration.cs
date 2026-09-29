@@ -10,7 +10,12 @@ public class BcUserConfiguration : IEntityTypeConfiguration<BcUser>
     {
         builder.ToTable("BcUsers");
         builder.HasKey(user => user.BcUserId);
-        builder.Property(user => user.PersonnelNumber).HasMaxLength(50).IsRequired();
+        builder.Property(user => user.PersonnelNumber).HasMaxLength(50);
+        builder.Property(user => user.EncryptedEntraTenantId).HasMaxLength(512);
+        builder.Property(user => user.EncryptedEntraObjectId).HasMaxLength(512);
+        builder.Property(user => user.EntraIdentityLookupHash)
+            .HasMaxLength(64)
+            .IsFixedLength();
         builder.Property(user => user.DisplayName).HasMaxLength(200).IsRequired();
         builder.Property(user => user.Email).HasMaxLength(320);
         builder.Property(user => user.Role)
@@ -23,7 +28,12 @@ public class BcUserConfiguration : IEntityTypeConfiguration<BcUser>
         builder.Property(user => user.IsPublicActivityEnabled).HasDefaultValue(true);
         builder.Property(user => user.PublicActivityDisabledReason).HasMaxLength(500);
         builder.Property(user => user.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
-        builder.HasIndex(user => user.PersonnelNumber).IsUnique();
+        builder.HasIndex(user => user.PersonnelNumber)
+            .IsUnique()
+            .HasFilter("[PersonnelNumber] IS NOT NULL");
+        builder.HasIndex(user => user.EntraIdentityLookupHash)
+            .IsUnique()
+            .HasFilter("[EntraIdentityLookupHash] IS NOT NULL");
         builder.ToTable("BcUsers", table =>
         {
             table.HasCheckConstraint(

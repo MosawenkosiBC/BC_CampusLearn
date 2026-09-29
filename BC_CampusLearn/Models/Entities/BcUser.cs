@@ -3,7 +3,10 @@ namespace BC_CampusLearn.Models.Entities;
 public class BcUser
 {
     public int BcUserId { get; set; }
-    public string PersonnelNumber { get; set; } = null!;
+    public string? PersonnelNumber { get; set; }
+    public string? EncryptedEntraTenantId { get; set; }
+    public string? EncryptedEntraObjectId { get; set; }
+    public string? EntraIdentityLookupHash { get; set; }
     public string DisplayName { get; set; } = string.Empty;
     public string? Email { get; set; }
     public BcUserRole Role { get; set; } = BcUserRole.Student;

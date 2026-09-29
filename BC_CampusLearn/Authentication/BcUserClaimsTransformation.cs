@@ -10,13 +10,16 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
 {
     private readonly ApplicationDbContext _context;
     private readonly IWebHostEnvironment _environment;
+    private readonly IEntraIdentityProtector _identityProtector;
 
     public BcUserClaimsTransformation(
         ApplicationDbContext context,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        IEntraIdentityProtector identityProtector)
     {
         _context = context;
         _environment = environment;
+        _identityProtector = identityProtector;
     }
 
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
@@ -26,46 +29,21 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
             return principal;
         }
 
-        string? bcUserIdValue =
-            principal.FindFirstValue(EntraClaimTypes.BcUserId);
+        string? tenantId = principal.FindFirstValue(EntraClaimTypes.TenantId)
+            ?? principal.FindFirstValue(EntraClaimTypes.TenantIdUri);
+        string? objectId = principal.FindFirstValue(EntraClaimTypes.ObjectId)
+            ?? principal.FindFirstValue(EntraClaimTypes.ObjectIdUri);
 
-        if (int.TryParse(bcUserIdValue, out int existingBcUserId))
+        if (string.IsNullOrWhiteSpace(tenantId) ||
+            string.IsNullOrWhiteSpace(objectId))
         {
-            BcUser existingUser = await _context.BcUsers
-                .Include(user => user.Admin)
-                .SingleOrDefaultAsync(user =>
-                    user.BcUserId == existingBcUserId)
-                ?? throw new InvalidOperationException(
-                    "The authenticated principal is linked to a BC user that no longer exists.");
-
-            if (RequiresAdminProfile(existingUser.Role) &&
-                existingUser.Admin is null)
-            {
-                existingUser.Admin = new Admin
-                {
-                    CreatedAt = DateTime.UtcNow
-                };
-                await _context.SaveChangesAsync();
-            }
-
-            string? existingTutorProfileImagePath = existingUser.Role is
-                    BcUserRole.Tutor or BcUserRole.HeadOfTutors
-                ? await _context.Tutors
-                    .AsNoTracking()
-                    .Where(tutor => tutor.BcUserId == existingBcUserId)
-                    .Select(tutor => tutor.ProfileImagePath)
-                    .SingleOrDefaultAsync()
-                : null;
-
-            AddApplicationClaims(
-                principal,
-                existingBcUserId,
-                EffectiveRole(existingUser),
-                existingTutorProfileImagePath,
-                existingUser.PersonnelNumber);
-
-            return principal;
+            throw new InvalidOperationException(
+                "The authenticated principal does not contain the required Entra tenant and object identifiers.");
         }
+
+        string identityLookupHash = _identityProtector.CreateLookupHash(
+            tenantId,
+            objectId);
 
         string? personnelNumber =
             principal.FindFirstValue(EntraClaimTypes.PersonnelNumber);
@@ -79,29 +57,68 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
             personnelNumber = GetStudentNumberFromPreferredUsername(
                 principal.FindFirstValue(
                     EntraClaimTypes.PreferredUsername));
-
-            if (string.IsNullOrWhiteSpace(personnelNumber))
-            {
-                throw new InvalidOperationException(
-                    "A verified personnel number or numeric Belgium Campus student username is required to link a BC user.");
-            }
         }
 
-        string normalizedPersonnelNumber = personnelNumber.Trim();
+        string? normalizedPersonnelNumber = string.IsNullOrWhiteSpace(personnelNumber)
+            ? null
+            : personnelNumber.Trim();
         BcUser? user = await _context.BcUsers
             .Include(item => item.Admin)
             .SingleOrDefaultAsync(item =>
-                item.PersonnelNumber == normalizedPersonnelNumber);
+                item.EntraIdentityLookupHash == identityLookupHash);
+
+        if (user is null && normalizedPersonnelNumber is not null)
+        {
+            user = await _context.BcUsers
+                .Include(item => item.Admin)
+                .SingleOrDefaultAsync(item =>
+                    item.PersonnelNumber == normalizedPersonnelNumber);
+
+            if (user?.EntraIdentityLookupHash is not null)
+            {
+                throw new InvalidOperationException(
+                    "The supplied personnel number is already linked to another Entra identity.");
+            }
+        }
+
+        // One-time bridge for administrator records created before encrypted
+        // Entra identifiers were introduced. Once linked, all future lookups
+        // use the immutable Entra identity fingerprint rather than email.
+        if (user is null &&
+            normalizedPersonnelNumber is null &&
+            !string.IsNullOrWhiteSpace(email))
+        {
+            List<BcUser> emailMatches = await _context.BcUsers
+                .Include(item => item.Admin)
+                .Where(item =>
+                    item.EntraIdentityLookupHash == null &&
+                    item.Email == email.Trim())
+                .Take(2)
+                .ToListAsync();
+
+            if (emailMatches.Count > 1)
+            {
+                throw new InvalidOperationException(
+                    "More than one unlinked BC user has the authenticated email address.");
+            }
+
+            user = emailMatches.SingleOrDefault();
+        }
 
         BcUserRole? developmentRole = GetDevelopmentRole(principal);
 
         if (user is null)
         {
+            ProtectedEntraIdentity protectedIdentity =
+                _identityProtector.Protect(tenantId, objectId);
             user = new BcUser
             {
                 PersonnelNumber = normalizedPersonnelNumber,
+                EncryptedEntraTenantId = protectedIdentity.TenantId,
+                EncryptedEntraObjectId = protectedIdentity.ObjectId,
+                EntraIdentityLookupHash = protectedIdentity.LookupHash,
                 DisplayName = string.IsNullOrWhiteSpace(displayName)
-                    ? normalizedPersonnelNumber
+                    ? normalizedPersonnelNumber ?? "Institution user"
                     : displayName.Trim(),
                 Email = string.IsNullOrWhiteSpace(email)
                     ? null
@@ -114,6 +131,21 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
         }
         else
         {
+            if (user.EntraIdentityLookupHash is null)
+            {
+                ProtectedEntraIdentity protectedIdentity =
+                    _identityProtector.Protect(tenantId, objectId);
+                user.EncryptedEntraTenantId = protectedIdentity.TenantId;
+                user.EncryptedEntraObjectId = protectedIdentity.ObjectId;
+                user.EntraIdentityLookupHash = protectedIdentity.LookupHash;
+            }
+
+            if (string.IsNullOrWhiteSpace(user.PersonnelNumber) &&
+                normalizedPersonnelNumber is not null)
+            {
+                user.PersonnelNumber = normalizedPersonnelNumber;
+            }
+
             if (!string.IsNullOrWhiteSpace(displayName))
             {
                 user.DisplayName = displayName.Trim();
@@ -122,12 +154,6 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
             if (!string.IsNullOrWhiteSpace(email))
             {
                 user.Email = email.Trim();
-            }
-
-            if (string.IsNullOrWhiteSpace(user.PersonnelNumber))
-            {
-                throw new InvalidOperationException(
-                    "The linked BC user does not have a verified personnel number.");
             }
 
             if (developmentRole.HasValue)

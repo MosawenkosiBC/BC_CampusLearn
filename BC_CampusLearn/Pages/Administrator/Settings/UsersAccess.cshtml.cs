@@ -38,7 +38,7 @@ public class UsersAccessModel(
         CurrentUser currentUser = currentUserService.GetRequiredUser();
         if (currentUser.Role != BcUserRole.SuperAdmin) return Forbid();
 
-        Input.PersonnelNumber = Input.PersonnelNumber?.Trim() ?? string.Empty;
+        Input.UserIdentifier = Input.UserIdentifier?.Trim() ?? string.Empty;
         Input.Reason = Input.Reason?.Trim() ?? string.Empty;
         if (Input.Reason.Length < 5)
         {
@@ -56,7 +56,8 @@ public class UsersAccessModel(
             .Include(user => user.Tutor)
             .Include(user => user.Admin)
             .SingleOrDefaultAsync(user =>
-                user.PersonnelNumber == Input.PersonnelNumber,
+                user.PersonnelNumber == Input.UserIdentifier ||
+                user.Email == Input.UserIdentifier,
                 cancellationToken);
         ValidateTarget(target, currentUser);
 
@@ -208,13 +209,13 @@ public class UsersAccessModel(
         if (target is null)
         {
             ModelState.AddModelError(
-                "Input.PersonnelNumber",
-                "No existing user has that personnel number.");
+                "Input.UserIdentifier",
+                "No existing user has that personnel number or email address.");
         }
         else if (target.BcUserId == currentUser.BcUserId)
         {
             ModelState.AddModelError(
-                "Input.PersonnelNumber",
+                "Input.UserIdentifier",
                 "You cannot change your own administrative access.");
         }
         else if (Input.Role == BcUserRole.HeadOfTutors && !IsApprovedTutor(target))
@@ -261,7 +262,7 @@ public class UsersAccessModel(
         string reason) =>
         auditService.Record(
             "Users and access",
-            $"{setting}: {target.DisplayName} ({target.PersonnelNumber})",
+            $"{setting}: {target.DisplayName} ({target.PersonnelNumber ?? target.Email ?? "No identifier"})",
             previous,
             next,
             currentUser,
@@ -296,9 +297,9 @@ public class UsersAccessModel(
 
     public sealed class AccessInput
     {
-        [Required, StringLength(50)]
-        [Display(Name = "Personnel number")]
-        public string PersonnelNumber { get; set; } = string.Empty;
+        [Required, StringLength(320)]
+        [Display(Name = "Personnel number or email")]
+        public string UserIdentifier { get; set; } = string.Empty;
 
         [Required]
         public BcUserRole Role { get; set; } = BcUserRole.Admin;
@@ -310,7 +311,7 @@ public class UsersAccessModel(
     public sealed record AccessUserRow(
         int BcUserId,
         string DisplayName,
-        string PersonnelNumber,
+        string? PersonnelNumber,
         string? Email,
         BcUserRole Role,
         bool IsActive,

@@ -15,8 +15,19 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDataProtection()
+    .SetApplicationName("BC_CampusLearn");
+builder.Services.AddOptions<IdentityProtectionOptions>()
+    .Bind(builder.Configuration.GetSection(
+        IdentityProtectionOptions.SectionName))
+    .Validate(
+        options => options.TryGetLookupKey(out _),
+        "IdentityProtection:LookupKey must be a Base64-encoded key of at least 32 bytes.")
+    .ValidateOnStart();
 
 builder.Services.AddScoped<UserNotificationSignalRInterceptor>();
 builder.Services.AddScoped<SettingsAuditService>();
@@ -94,6 +105,9 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<
+    IEntraIdentityProtector,
+    EntraIdentityProtector>();
 builder.Services.AddScoped<IClaimsTransformation, BcUserClaimsTransformation>();
 
 builder.Services.AddScoped<

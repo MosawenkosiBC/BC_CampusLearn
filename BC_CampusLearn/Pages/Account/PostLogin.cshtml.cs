@@ -22,6 +22,12 @@ public class PostLoginModel : PageModel
         CurrentUser currentUser =
             _currentUserService.GetRequiredUser();
 
+        if (currentUser.Role == BcUserRole.Student &&
+            string.IsNullOrWhiteSpace(currentUser.PersonnelNumber))
+        {
+            return RedirectToPage("/Account/AccessDenied");
+        }
+
         string dashboardPage = currentUser.Role switch
         {
             BcUserRole.Tutor or BcUserRole.HeadOfTutors =>

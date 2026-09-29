@@ -37,8 +37,7 @@ public class ClaimsCurrentUserService : ICurrentUserService
         string? personnelNumber =
             principal.FindFirstValue(EntraClaimTypes.PersonnelNumber);
 
-        if (!int.TryParse(bcUserIdValue, out int bcUserId) ||
-            string.IsNullOrWhiteSpace(personnelNumber))
+        if (!int.TryParse(bcUserIdValue, out int bcUserId))
         {
             throw new InvalidOperationException(
                 "The authenticated principal has not been linked to a BC user.");
