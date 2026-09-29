@@ -25,7 +25,7 @@
             <div>
                 <span class="session-approval is-waiting">Awaiting reviews</span>
                 <span aria-hidden="true">–</span>
-                <p>A student, tutor, or Tutor Head review has not yet been submitted.</p>
+                <p>The student or tutor review has not yet been submitted.</p>
             </div>
             <div>
                 <span class="session-approval is-pending">Pending approval</span>
@@ -131,16 +131,16 @@
                 </a>
 
                 <a asp-page="/Administrator/Admin/BookingsAndSessions"
-                   asp-route-Queue="tutor"
+                   asp-route-Queue="head"
                    asp-route-Search="@Model.Search"
                    asp-route-Approval="@Model.Approval"
                    asp-route-Period="@Model.Period"
                    asp-route-From="@Model.From?.ToString("yyyy-MM-dd")"
                    asp-route-To="@Model.To?.ToString("yyyy-MM-dd")"
-                   class="session-statistic-card @(Model.Queue == "tutor" ? "is-active" : null)"
-                   aria-current="@(Model.Queue == "tutor" ? "page" : null)">
-                    <span>Require Tutor Review</span>
-                    <strong>@Model.RequireTutorReviewCount</strong>
+                   class="session-statistic-card @(Model.Queue == "head" ? "is-active" : null)"
+                   aria-current="@(Model.Queue == "head" ? "page" : null)">
+                    <span>Require Tutor Head Review</span>
+                    <strong>@Model.RequireTutorHeadReviewCount</strong>
                 </a>
             </nav>
 

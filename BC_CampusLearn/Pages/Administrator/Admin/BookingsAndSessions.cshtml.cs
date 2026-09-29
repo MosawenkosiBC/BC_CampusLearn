@@ -11,7 +11,7 @@ public class BookingsAndSessionsModel(
     TimeProvider? timeProvider = null) : PageModel
 {
     public const int PageSize = 8;
-    private static readonly string[] ValidQueues = ["all", "admin", "tutor"];
+    private static readonly string[] ValidQueues = ["all", "admin", "head"];
     private static readonly string[] ValidApprovalFilters =
         ["all", "awaiting", "pending", "approved"];
     private static readonly string[] ValidPeriods =
@@ -42,7 +42,7 @@ public class BookingsAndSessionsModel(
 
     public int CompletedSessionCount { get; private set; }
     public int RequireAdminReviewCount { get; private set; }
-    public int RequireTutorReviewCount { get; private set; }
+    public int RequireTutorHeadReviewCount { get; private set; }
     public int FilteredSessionCount { get; private set; }
     public int TotalPages { get; private set; }
     public int DisplayedSessionCount => Sessions.Count;
@@ -75,8 +75,9 @@ public class BookingsAndSessionsModel(
         RequireAdminReviewCount = await completed.CountAsync(booking =>
             booking.AdminSessionReview == null,
             cancellationToken);
-        RequireTutorReviewCount = await completed.CountAsync(booking =>
-            booking.TutorEvaluation == null,
+        RequireTutorHeadReviewCount = await completed.CountAsync(booking =>
+            !booking.SessionReviews.Any(review =>
+                review.Reviewer.Role == BcUserRole.HeadOfTutors),
             cancellationToken);
 
         IQueryable<Booking> filtered = completed;
@@ -84,9 +85,11 @@ public class BookingsAndSessionsModel(
         {
             filtered = filtered.Where(booking => booking.AdminSessionReview == null);
         }
-        else if (Queue == "tutor")
+        else if (Queue == "head")
         {
-            filtered = filtered.Where(booking => booking.TutorEvaluation == null);
+            filtered = filtered.Where(booking =>
+                !booking.SessionReviews.Any(review =>
+                    review.Reviewer.Role == BcUserRole.HeadOfTutors));
         }
 
         if (Search is not null)
@@ -102,7 +105,8 @@ public class BookingsAndSessionsModel(
         filtered = Approval switch
         {
             "awaiting" => filtered.Where(booking =>
-                booking.StudentEvaluation == null || booking.TutorEvaluation == null),
+                booking.StudentEvaluation == null ||
+                booking.TutorEvaluation == null),
             "pending" => filtered.Where(booking =>
                 booking.StudentEvaluation != null &&
                 booking.TutorEvaluation != null &&
@@ -141,6 +145,8 @@ public class BookingsAndSessionsModel(
                 booking.ScheduledStartTime,
                 booking.TutorEvaluation != null,
                 booking.StudentEvaluation != null,
+                booking.SessionReviews.Any(review =>
+                    review.Reviewer.Role == BcUserRole.HeadOfTutors),
                 booking.AdminSessionReview == null
                     ? null
                     : booking.AdminSessionReview.AllReviewsSubmitted &&
@@ -206,22 +212,23 @@ public class BookingsAndSessionsModel(
         DateTimeOffset SessionDate,
         bool HasTutorReview,
         bool HasStudentReview,
+        bool HasTutorHeadReview,
         bool? IsAdminApproved)
     {
         public string TutorDisplayName => string.IsNullOrWhiteSpace(TutorName)
             ? TutorPersonnelNumber
             : TutorName;
 
-        public string AdminApprovalLabel => !HasTutorReview || !HasStudentReview
-            ? "Awaiting reviews"
-            : IsAdminApproved == true
-                ? "Approved"
+        public string AdminApprovalLabel => IsAdminApproved == true
+            ? "Approved"
+            : !HasTutorReview || !HasStudentReview
+                ? "Awaiting reviews"
                 : "Pending approval";
 
-        public string AdminApprovalCssClass => !HasTutorReview || !HasStudentReview
-            ? "is-waiting"
-            : IsAdminApproved == true
-                ? "is-approved"
+        public string AdminApprovalCssClass => IsAdminApproved == true
+            ? "is-approved"
+            : !HasTutorReview || !HasStudentReview
+                ? "is-waiting"
                 : "is-pending";
     }
 }
