@@ -1,10 +1,38 @@
 (() => {
     const pageSize = 5;
 
-    const reviewPanel = document.querySelector("#administrator-review-panel[data-open-on-error='true']");
-    if (reviewPanel && window.bootstrap?.Offcanvas) {
-        window.bootstrap.Offcanvas.getOrCreateInstance(reviewPanel).show();
-    }
+    const tabs = [...document.querySelectorAll("[data-review-tab]")];
+    const panels = [...document.querySelectorAll("[data-review-panel]")];
+
+    const activateTab = (tab, moveFocus = false) => {
+        tabs.forEach(candidate => {
+            const isActive = candidate === tab;
+            candidate.classList.toggle("is-active", isActive);
+            candidate.setAttribute("aria-selected", isActive ? "true" : "false");
+            candidate.tabIndex = isActive ? 0 : -1;
+        });
+
+        panels.forEach(panel => {
+            panel.hidden = panel.id !== tab.dataset.reviewTab;
+        });
+
+        if (moveFocus) tab.focus();
+    };
+
+    tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => activateTab(tab));
+        tab.addEventListener("keydown", event => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+
+            let nextIndex = index;
+            if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
+            if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
+            if (event.key === "Home") nextIndex = 0;
+            if (event.key === "End") nextIndex = tabs.length - 1;
+            activateTab(tabs[nextIndex], true);
+        });
+    });
 
     document.querySelectorAll("[data-review-pager]").forEach(pager => {
         const answers = [...pager.querySelectorAll("[data-review-answer]")];
