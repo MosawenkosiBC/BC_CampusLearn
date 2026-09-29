@@ -14,6 +14,7 @@ public class AdminBookingsAndSessionsTests
         await using ApplicationDbContext context = CreateContext();
         TutorCourseModule assignment = CreateAssignment();
         context.TutorCourseModules.Add(assignment);
+        BcUser tutorHead = CreateTutorHead();
         context.BcUsers.Add(new BcUser
         {
             BcUserId = 900,
@@ -21,6 +22,7 @@ public class AdminBookingsAndSessionsTests
             DisplayName = "Admin User",
             Role = BcUserRole.Admin
         });
+        context.BcUsers.Add(tutorHead);
         context.Bookings.AddRange(
             CreateBooking(1, assignment, "Alex Student", "Online",
                 studentReview: new StudentEvaluation(),
@@ -30,7 +32,8 @@ public class AdminBookingsAndSessionsTests
             CreateBooking(3, assignment, "Chris Student", "Online",
                 studentReview: new StudentEvaluation(),
                 tutorReview: new TutorStudentEvaluation(),
-                adminReview: ApprovedReview()),
+                adminReview: ApprovedReview(),
+                tutorHeadReviewer: tutorHead),
             CreateBooking(4, assignment, "Dana Student", "Online",
                 status: BookingStatus.Confirmed));
         await context.SaveChangesAsync();
@@ -40,7 +43,7 @@ public class AdminBookingsAndSessionsTests
 
         Assert.Equal(3, page.CompletedSessionCount);
         Assert.Equal(2, page.RequireAdminReviewCount);
-        Assert.Equal(1, page.RequireTutorReviewCount);
+        Assert.Equal(2, page.RequireTutorHeadReviewCount);
         Assert.Equal(3, page.DisplayedSessionCount);
         Assert.DoesNotContain(page.Sessions, session => session.StudentName == "Dana Student");
         Assert.Equal("Approved", page.Sessions
@@ -85,9 +88,15 @@ public class AdminBookingsAndSessionsTests
         Assert.Contains(adminQueue.Sessions, session => session.StudentName == "Alex Student");
         Assert.Contains(adminQueue.Sessions, session => session.StudentName == "Bianca Student");
 
-        var tutorQueue = new BookingsAndSessionsModel(context, new FixedTimeProvider()) { Queue = "tutor" };
-        await tutorQueue.OnGetAsync(CancellationToken.None);
-        Assert.Equal("Bianca Student", Assert.Single(tutorQueue.Sessions).StudentName);
+        var tutorHeadQueue = new BookingsAndSessionsModel(context, new FixedTimeProvider()) { Queue = "head" };
+        await tutorHeadQueue.OnGetAsync(CancellationToken.None);
+        Assert.Equal(3, tutorHeadQueue.Sessions.Count);
+        Assert.Equal("Approved", tutorHeadQueue.Sessions
+            .Single(session => session.StudentName == "Chris Student")
+            .AdminApprovalLabel);
+        Assert.Equal("Pending approval", tutorHeadQueue.Sessions
+            .Single(session => session.StudentName == "Alex Student")
+            .AdminApprovalLabel);
 
         var approved = new BookingsAndSessionsModel(context, new FixedTimeProvider())
         {
@@ -221,7 +230,8 @@ public class AdminBookingsAndSessionsTests
         BookingStatus status = BookingStatus.Completed,
         StudentEvaluation? studentReview = null,
         TutorStudentEvaluation? tutorReview = null,
-        AdminSessionReview? adminReview = null) => new()
+        AdminSessionReview? adminReview = null,
+        BcUser? tutorHeadReviewer = null) => new()
         {
             BookingId = id,
             TutorId = assignment.Tutor.TutorId,
@@ -238,8 +248,26 @@ public class AdminBookingsAndSessionsTests
                 : null,
             StudentEvaluation = studentReview,
             TutorEvaluation = tutorReview,
-            AdminSessionReview = adminReview
+            AdminSessionReview = adminReview,
+            SessionReviews = tutorHeadReviewer is null
+                ? []
+                : [new SessionReview
+                {
+                    ReviewerBcUserId = tutorHeadReviewer.BcUserId,
+                    Reviewer = tutorHeadReviewer,
+                    Rating = 5,
+                    CreatedAt = new DateTimeOffset(
+                        2026, 9, 29, 9, 0, 0, TimeSpan.Zero)
+                }]
         };
+
+    private static BcUser CreateTutorHead() => new()
+    {
+        BcUserId = 901,
+        PersonnelNumber = "H901",
+        DisplayName = "Tutor Head",
+        Role = BcUserRole.HeadOfTutors
+    };
 
     private static Booking CreateBookingWithDate(
         int id,
