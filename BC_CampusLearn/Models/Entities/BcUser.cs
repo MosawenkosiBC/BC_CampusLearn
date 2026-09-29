@@ -7,6 +7,7 @@ public class BcUser
     public string DisplayName { get; set; } = string.Empty;
     public string? Email { get; set; }
     public BcUserRole Role { get; set; } = BcUserRole.Student;
+    public bool IsAdministrativeAccessActive { get; set; } = true;
     public bool IsPublicActivityEnabled { get; set; } = true;
     public string? PublicActivityDisabledReason { get; set; }
     public DateTime? PublicActivityDisabledAt { get; set; }
@@ -21,4 +22,6 @@ public class BcUser
     public ICollection<TutorApplicationReviewDecision>
         TutorApplicationReviewDecisions { get; set; }
         = new List<TutorApplicationReviewDecision>();
+    public ICollection<SettingAuditLog> SettingAuditLogs { get; set; }
+        = new List<SettingAuditLog>();
 }

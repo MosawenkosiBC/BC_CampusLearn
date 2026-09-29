@@ -60,7 +60,7 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
             AddApplicationClaims(
                 principal,
                 existingBcUserId,
-                existingUser.Role,
+                EffectiveRole(existingUser),
                 existingTutorProfileImagePath,
                 existingUser.PersonnelNumber);
 
@@ -161,7 +161,7 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
         AddApplicationClaims(
             principal,
             user.BcUserId,
-            user.Role,
+            EffectiveRole(user),
             tutorProfileImagePath,
             user.PersonnelNumber);
 
@@ -213,6 +213,18 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
         role is BcUserRole.Admin or
             BcUserRole.SuperAdmin or
             BcUserRole.Dev;
+
+    private static BcUserRole EffectiveRole(BcUser user)
+    {
+        if (user.IsAdministrativeAccessActive || user.Role == BcUserRole.Dev)
+        {
+            return user.Role;
+        }
+
+        return user.Role == BcUserRole.HeadOfTutors
+            ? BcUserRole.Tutor
+            : BcUserRole.Student;
+    }
 
     private static void AddApplicationClaims(
         ClaimsPrincipal principal,

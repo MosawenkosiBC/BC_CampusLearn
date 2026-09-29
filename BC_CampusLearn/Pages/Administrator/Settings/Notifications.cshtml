@@ -1,0 +1,22 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Settings.NotificationsModel
+@{ ViewData["Title"] = "Notification settings"; }
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-settings.css" asp-append-version="true" />
+}
+<main class="admin-settings" aria-labelledby="settings-title" data-settings-page>
+    <header class="admin-dashboard-header"><h1 id="settings-title">Settings</h1></header>
+    <div class="settings-layout">
+        <partial name="_SettingsNavigation" />
+        <section class="settings-section settings-section--placeholder" aria-labelledby="notifications-title">
+            <header class="settings-section-heading"><div><h2 id="notifications-title">Notifications</h2><p>Delivery channels and event-specific preferences will live here.</p></div><span class="settings-status">Skeleton</span></header>
+            <div class="settings-placeholder-grid">
+                <article><i class="bi bi-app-indicator"></i><h3>In-app</h3><p>Control operational alerts inside the platform.</p></article>
+                <article><i class="bi bi-envelope"></i><h3>Email</h3><p>Configure email delivery and the reply-to identity.</p></article>
+                <article><i class="bi bi-alarm"></i><h3>Reminders</h3><p>Choose reminder timing for sessions and approvals.</p></article>
+            </div>
+        </section>
+    </div>
+</main>
+@section Scripts { <script src="~/js/admin-settings.js" asp-append-version="true"></script> }

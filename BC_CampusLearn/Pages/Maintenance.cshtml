@@ -1,0 +1,30 @@
+@page
+@model BC_CampusLearn.Pages.MaintenanceModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Maintenance - CampusLearn</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { align-items: center; background: #f4f8f8; color: #252b2c; display: flex; font-family: Arial, sans-serif; justify-content: center; margin: 0; min-height: 100vh; padding: 1.5rem; }
+        main { background: #fff; border: 1px solid #dfe7e7; border-radius: 1.25rem; box-shadow: 0 1rem 3rem rgba(26,40,42,.09); max-width: 36rem; padding: clamp(2rem, 7vw, 4rem); text-align: center; }
+        span { align-items: center; background: #e5f7f5; border-radius: 50%; color: #248d8d; display: inline-flex; font-size: 2rem; height: 4.5rem; justify-content: center; width: 4.5rem; }
+        h1 { font-size: clamp(1.7rem, 5vw, 2.4rem); margin: 1.35rem 0 .75rem; }
+        p { color: #687172; line-height: 1.65; }
+        a { color: #167d7d; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <main>
+        <span aria-hidden="true">⚙</span>
+        <h1>CampusLearn is undergoing maintenance</h1>
+        <p>We’re making a few improvements. Please try again shortly.</p>
+        <p>If you need assistance, email <a href="mailto:@Model.SupportEmail">@Model.SupportEmail</a>.</p>
+    </main>
+</body>
+</html>

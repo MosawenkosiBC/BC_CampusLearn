@@ -58,6 +58,12 @@ public class ApplicationDbContext : DbContext
     public DbSet<UserNotification> UserNotifications =>
         Set<UserNotification>();
 
+    public DbSet<PlatformSettings> PlatformSettings =>
+        Set<PlatformSettings>();
+
+    public DbSet<SettingAuditLog> SettingAuditLogs =>
+        Set<SettingAuditLog>();
+
     public DbSet<SessionReview> SessionReviews =>
         Set<SessionReview>();
 

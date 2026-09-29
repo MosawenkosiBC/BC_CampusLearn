@@ -1,0 +1,22 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Settings.TutorPaymentsModel
+@{ ViewData["Title"] = "Tutor payment settings"; }
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-settings.css" asp-append-version="true" />
+}
+<main class="admin-settings" aria-labelledby="settings-title" data-settings-page>
+    <header class="admin-dashboard-header"><h1 id="settings-title">Settings</h1></header>
+    <div class="settings-layout">
+        <partial name="_SettingsNavigation" />
+        <section class="settings-section settings-section--placeholder" aria-labelledby="payments-title">
+            <header class="settings-section-heading"><div><h2 id="payments-title">Tutor payments</h2><p>Payment rates, monthly cycles and approval rules will live here.</p></div><span class="settings-status">Skeleton</span></header>
+            <div class="settings-placeholder-grid">
+                <article><i class="bi bi-cash-stack"></i><h3>Session rate</h3><p>Set the amount and effective date for approved sessions.</p></article>
+                <article><i class="bi bi-calendar-range"></i><h3>Payment cycle</h3><p>Choose when each monthly period starts and closes.</p></article>
+                <article><i class="bi bi-person-check"></i><h3>Approval rules</h3><p>Configure Head of Tutors and administrator approval.</p></article>
+            </div>
+        </section>
+    </div>
+</main>
+@section Scripts { <script src="~/js/admin-settings.js" asp-append-version="true"></script> }

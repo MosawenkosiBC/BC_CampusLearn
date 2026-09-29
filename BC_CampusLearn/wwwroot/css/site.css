@@ -416,3 +416,29 @@ body {
     color: #b42318;
     font-weight: 700;
 }
+.platform-announcement {
+    align-items: center;
+    background: #e9f8f7;
+    border-bottom: 1px solid #bce4e1;
+    color: #195f5f;
+    display: flex;
+    font-size: .85rem;
+    font-weight: 650;
+    gap: .65rem;
+    justify-content: center;
+    line-height: 1.4;
+    padding: .7rem 1.25rem;
+    position: relative;
+    z-index: 1020;
+}
+
+body.administrator-area > .platform-announcement {
+    left: var(--admin-sidebar-width);
+    position: fixed;
+    right: 0;
+    top: var(--admin-header-height);
+}
+
+body.administrator-area:has(> .platform-announcement) > .container {
+    padding-top: calc(var(--admin-header-height) + 3.25rem);
+}

@@ -1,0 +1,23 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Settings.BookingsModel
+@{ ViewData["Title"] = "Booking settings"; }
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-settings.css" asp-append-version="true" />
+}
+
+<main class="admin-settings" aria-labelledby="settings-title" data-settings-page>
+    <header class="admin-dashboard-header"><h1 id="settings-title">Settings</h1></header>
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage)) { <div class="settings-alert settings-alert--success" role="status">@Model.SuccessMessage</div> }
+    <div class="settings-layout">
+        <partial name="_SettingsNavigation" />
+        <section class="settings-section" aria-labelledby="bookings-title">
+            <header class="settings-section-heading"><div><h2 id="bookings-title">Bookings and sessions</h2><p>Edit the terms students review before confirming a session.</p></div><span class="settings-status settings-status--live">Live</span></header>
+            <form method="post" class="settings-form">
+                <div class="settings-field settings-field--wide"><label asp-for="Input.Terms"></label><textarea asp-for="Input.Terms" rows="15"></textarea><small>Enter one condition per line. Blank lines are removed when saved.</small><span asp-validation-for="Input.Terms"></span></div>
+                <footer class="settings-form-footer"><button type="submit" class="settings-primary-button">Save booking terms</button></footer>
+            </form>
+        </section>
+    </div>
+</main>
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script src="~/js/admin-settings.js" asp-append-version="true"></script> }

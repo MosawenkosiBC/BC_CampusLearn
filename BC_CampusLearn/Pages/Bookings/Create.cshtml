@@ -49,35 +49,29 @@
             <h2 id="booking-terms-title">Terms &amp; Conditions</h2>
 
             <ul>
-                <li>
-                    All appointments with tutors must be scheduled a day ahead.
-                    We cannot organise a tutor for you at short notice.
-                </li>
-                <li>All sessions are limited to 1 hour.</li>
-                <li>You must come prepared for the sessions.</li>
+                @foreach (string term in Model.BookingTerms.Take(3))
+                {
+                    <li>@term</li>
+                }
             </ul>
 
             <div id="booking-terms-more"
                  class="booking-terms-more"
                  data-booking-terms-more>
-                <ul>
-                <li>
-                    You will be given some exercises to do in your sessions.
-                </li>
-                <li>All online sessions via MS Teams are recorded.</li>
-                <li>
-                    All face-to-face sessions are held at the study room.
-                </li>
-                <li>Respect the time and effort of your tutor.</li>
-                <li>
-                    You will be required to complete a tutor evaluation form.
-                </li>
-                </ul>
+                @if (Model.BookingTerms.Count > 3)
+                {
+                    <ul>
+                    @foreach (string term in Model.BookingTerms.Skip(3))
+                    {
+                        <li>@term</li>
+                    }
+                    </ul>
+                }
 
                 <p>
                     For any inquiries, email:
-                    <a href="mailto:tutors@belgiumcampus.ac.za">
-                        tutors@belgiumcampus.ac.za
+                    <a href="mailto:@Model.SupportEmail">
+                        @Model.SupportEmail
                     </a>
                 </p>
             </div>

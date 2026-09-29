@@ -18,6 +18,8 @@ public class BcUserConfiguration : IEntityTypeConfiguration<BcUser>
             .HasDefaultValue(BcUserRole.Student)
             .HasSentinel((BcUserRole)0)
             .IsRequired();
+        builder.Property(user => user.IsAdministrativeAccessActive)
+            .HasDefaultValue(true);
         builder.Property(user => user.IsPublicActivityEnabled).HasDefaultValue(true);
         builder.Property(user => user.PublicActivityDisabledReason).HasMaxLength(500);
         builder.Property(user => user.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
