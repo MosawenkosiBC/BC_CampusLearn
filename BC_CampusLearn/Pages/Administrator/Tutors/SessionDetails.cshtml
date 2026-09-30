@@ -152,6 +152,15 @@
                             <h2>@review.Title</h2>
                             <p>Submitted form responses for this session.</p>
                         </div>
+                        @if (review.Id == "tutor-review" &&
+                             !string.IsNullOrWhiteSpace(session.TutorEvaluation?.TranscriptStoragePath))
+                        {
+                            <a class="tutor-head-recording-button"
+                               asp-page-handler="Transcript"
+                               asp-route-id="@session.BookingId">
+                                Download transcript
+                            </a>
+                        }
                     </header>
                     <div class="admin-session-review-body">
                         @if (review.Answers.Count == 0)

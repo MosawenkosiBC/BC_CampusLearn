@@ -15,6 +15,12 @@ public class PlatformSettings
     public bool IsAnnouncementEnabled { get; set; }
     public bool IsMaintenanceModeEnabled { get; set; }
     public string BookingTermsAndConditions { get; set; } = DefaultBookingTerms;
+    public DateOnly TutorHeadReviewPeriodStartDate { get; set; } =
+        new(2026, 9, 1);
+    public DateOnly TutorHeadReviewPeriodEndDate { get; set; } =
+        new(2026, 9, 30);
+    public DateOnly TutorHeadReviewDeadline { get; set; } =
+        new(2026, 10, 5);
     public int? UpdatedByBcUserId { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
     public byte[] RowVersion { get; set; } = [];

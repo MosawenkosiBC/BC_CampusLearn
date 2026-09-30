@@ -229,4 +229,46 @@ public class SessionDetailsModel(
             FileDownloadName = document.OriginalFileName
         };
     }
+
+    public async Task<IActionResult> OnGetTranscriptAsync(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        TutorStudentEvaluation? evaluation = await context
+            .TutorStudentEvaluations
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item =>
+                item.BookingId == id &&
+                (item.Booking.Status == BookingStatus.Completed ||
+                 item.Booking.Status == BookingStatus.Cancelled),
+                cancellationToken);
+        if (evaluation is null ||
+            string.IsNullOrWhiteSpace(evaluation.TranscriptStoragePath) ||
+            string.IsNullOrWhiteSpace(evaluation.TranscriptOriginalFileName) ||
+            string.IsNullOrWhiteSpace(evaluation.TranscriptContentType))
+        {
+            return NotFound();
+        }
+
+        string transcriptRoot = Path.GetFullPath(Path.Combine(
+            environment.ContentRootPath,
+            "App_Data",
+            "tutor-review-transcripts"));
+        string fullPath = Path.GetFullPath(Path.Combine(
+            environment.ContentRootPath,
+            evaluation.TranscriptStoragePath));
+        string allowedPrefix = transcriptRoot.TrimEnd(
+            Path.DirectorySeparatorChar,
+            Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        if (!fullPath.StartsWith(allowedPrefix, StringComparison.OrdinalIgnoreCase) ||
+            !System.IO.File.Exists(fullPath))
+        {
+            return NotFound();
+        }
+
+        return new PhysicalFileResult(fullPath, evaluation.TranscriptContentType)
+        {
+            FileDownloadName = evaluation.TranscriptOriginalFileName
+        };
+    }
 }

@@ -13,6 +13,11 @@ namespace BC_CampusLearn.Pages.Tutors;
 [Authorize]
 public class SessionDetailsModel : PageModel
 {
+    private const long MaximumTranscriptSize = 10 * 1024 * 1024;
+
+    private static readonly HashSet<string> AllowedTranscriptExtensions =
+        new(StringComparer.OrdinalIgnoreCase) { ".pdf", ".doc", ".docx" };
+
     private readonly ApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly IWebHostEnvironment _environment;
@@ -373,6 +378,7 @@ public class SessionDetailsModel : PageModel
         string studentIssues = EvaluationInput.StudentIssues.Trim();
         string tutorComments = EvaluationInput.TutorComments.Trim();
         string recordingLink = EvaluationInput.RecordingLink.Trim();
+        IFormFile? transcript = EvaluationInput.Transcript;
         bool recordingLinkIsValid = Uri.TryCreate(
             recordingLink,
             UriKind.Absolute,
@@ -392,7 +398,90 @@ public class SessionDetailsModel : PageModel
             return RedirectToPage(new { bookingId });
         }
 
-        _context.TutorStudentEvaluations.Add(new TutorStudentEvaluation
+        string? transcriptOriginalFileName = null;
+        string? transcriptStoragePath = null;
+        string? transcriptContentType = null;
+        long? transcriptSizeBytes = null;
+        if (transcript is null)
+        {
+            SessionActionError = true;
+            SessionActionMessage = "Upload the meeting transcript.";
+            return RedirectToPage(new { bookingId });
+        }
+
+        {
+            transcriptOriginalFileName = Path.GetFileName(transcript.FileName);
+            string extension = Path.GetExtension(transcriptOriginalFileName)
+                .ToLowerInvariant();
+            if (transcript.Length <= 0 ||
+                transcript.Length > MaximumTranscriptSize ||
+                string.IsNullOrWhiteSpace(transcriptOriginalFileName) ||
+                transcriptOriginalFileName.Length > 255 ||
+                !AllowedTranscriptExtensions.Contains(extension))
+            {
+                SessionActionError = true;
+                SessionActionMessage = transcript.Length > MaximumTranscriptSize
+                    ? "The transcript must be 10 MB or smaller."
+                    : "The transcript must be a PDF or Word document.";
+                return RedirectToPage(new { bookingId });
+            }
+
+            string relativeDirectory = Path.Combine(
+                "App_Data",
+                "tutor-review-transcripts",
+                bookingId.ToString());
+            string transcriptDirectory = Path.Combine(
+                _environment.ContentRootPath,
+                relativeDirectory);
+            string storedFileName = $"{Guid.NewGuid():N}{extension}";
+            string fullPath = Path.Combine(transcriptDirectory, storedFileName);
+            try
+            {
+                Directory.CreateDirectory(transcriptDirectory);
+                await using var stream = new FileStream(
+                    fullPath,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize: 81920,
+                    useAsync: true);
+                await transcript.CopyToAsync(stream, cancellationToken);
+            }
+            catch (OperationCanceledException)
+                when (cancellationToken.IsCancellationRequested)
+            {
+                DeleteTranscriptFile(fullPath);
+                throw;
+            }
+            catch (IOException)
+            {
+                DeleteTranscriptFile(fullPath);
+                SessionActionError = true;
+                SessionActionMessage =
+                    "The transcript could not be stored. Please try again.";
+                return RedirectToPage(new { bookingId });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                DeleteTranscriptFile(fullPath);
+                SessionActionError = true;
+                SessionActionMessage =
+                    "The transcript could not be stored. Please try again.";
+                return RedirectToPage(new { bookingId });
+            }
+
+            transcriptStoragePath = Path.Combine(relativeDirectory, storedFileName)
+                .Replace('\\', '/');
+            transcriptContentType = extension switch
+            {
+                ".pdf" => "application/pdf",
+                ".doc" => "application/msword",
+                _ => "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            };
+            transcriptSizeBytes = transcript.Length;
+        }
+
+        var evaluation = new TutorStudentEvaluation
         {
             BookingId = bookingId,
             SessionPlan = EvaluationInput.SessionPlan!.Value,
@@ -404,9 +493,27 @@ public class SessionDetailsModel : PageModel
             StudentFocus = studentFocus,
             StudentIssues = studentIssues,
             TutorComments = tutorComments,
-            RecordingLink = recordingLink
-        });
-        await _context.SaveChangesAsync(cancellationToken);
+            RecordingLink = recordingLink,
+            TranscriptOriginalFileName = transcriptOriginalFileName,
+            TranscriptStoragePath = transcriptStoragePath,
+            TranscriptContentType = transcriptContentType,
+            TranscriptSizeBytes = transcriptSizeBytes
+        };
+        _context.TutorStudentEvaluations.Add(evaluation);
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            if (transcriptStoragePath is not null)
+            {
+                DeleteTranscriptFile(Path.Combine(
+                    _environment.ContentRootPath,
+                    transcriptStoragePath));
+            }
+            throw;
+        }
         SessionActionMessage = "Your student evaluation was submitted.";
         return RedirectToPage(new { bookingId });
     }
@@ -517,6 +624,79 @@ public class SessionDetailsModel : PageModel
         {
             FileDownloadName = document.OriginalFileName
         };
+    }
+
+    public async Task<IActionResult> OnGetTranscriptAsync(
+        int bookingId,
+        CancellationToken cancellationToken)
+    {
+        int? tutorId = await GetCurrentTutorIdAsync(cancellationToken);
+        if (!tutorId.HasValue)
+        {
+            return Forbid();
+        }
+
+        TutorStudentEvaluation? evaluation = await _context
+            .TutorStudentEvaluations
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item =>
+                item.BookingId == bookingId &&
+                item.Booking.TutorId == tutorId.Value,
+                cancellationToken);
+        if (evaluation is null)
+        {
+            return NotFound();
+        }
+
+        return TranscriptFile(evaluation);
+    }
+
+    private IActionResult TranscriptFile(TutorStudentEvaluation evaluation)
+    {
+        if (string.IsNullOrWhiteSpace(evaluation.TranscriptStoragePath) ||
+            string.IsNullOrWhiteSpace(evaluation.TranscriptOriginalFileName) ||
+            string.IsNullOrWhiteSpace(evaluation.TranscriptContentType))
+        {
+            return NotFound();
+        }
+
+        string transcriptRoot = Path.GetFullPath(Path.Combine(
+            _environment.ContentRootPath,
+            "App_Data",
+            "tutor-review-transcripts"));
+        string fullPath = Path.GetFullPath(Path.Combine(
+            _environment.ContentRootPath,
+            evaluation.TranscriptStoragePath));
+        string allowedPrefix = transcriptRoot.TrimEnd(
+            Path.DirectorySeparatorChar,
+            Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        if (!fullPath.StartsWith(allowedPrefix, StringComparison.OrdinalIgnoreCase) ||
+            !System.IO.File.Exists(fullPath))
+        {
+            return NotFound();
+        }
+
+        return new PhysicalFileResult(fullPath, evaluation.TranscriptContentType)
+        {
+            FileDownloadName = evaluation.TranscriptOriginalFileName
+        };
+    }
+
+    private static void DeleteTranscriptFile(string path)
+    {
+        try
+        {
+            if (System.IO.File.Exists(path))
+            {
+                System.IO.File.Delete(path);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 
     public static string FormatFileSize(long sizeBytes)

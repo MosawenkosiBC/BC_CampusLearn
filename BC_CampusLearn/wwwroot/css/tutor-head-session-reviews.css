@@ -1,0 +1,385 @@
+.tutor-head-review-results {
+    margin: 0 auto;
+    max-width: 76rem;
+    width: 100%;
+}
+
+@media (min-width: 1200px) {
+    .tutor-head-empty-workspace {
+        align-items: stretch;
+    }
+
+    .tutor-head-empty-workspace .tutor-head-review-results,
+    .tutor-head-empty-workspace .bookings-section,
+    .tutor-head-empty-workspace .bookings-empty-results {
+        height: 100%;
+    }
+
+    .tutor-head-empty-workspace .bookings-empty-results {
+        min-height: 0;
+        width: 100%;
+    }
+}
+
+.tutor-head-period-overview {
+    margin: 1rem auto 1.5rem;
+    max-width: 92rem;
+}
+
+.tutor-head-period-stats {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.tutor-head-period-stat {
+    background: #fff;
+    border-radius: 0.25rem;
+    box-shadow: var(--campus-card-shadow);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 4.5rem;
+    padding: 0.6rem 0.9rem;
+}
+
+.tutor-head-period-stat--interactive {
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+        box-shadow 180ms ease,
+        transform 180ms ease;
+}
+
+.tutor-head-period-stat--interactive:hover {
+    box-shadow: 0 0.65rem 1.35rem rgba(25, 30, 38, 0.16);
+    color: inherit;
+    transform: translateY(-0.2rem);
+}
+
+.tutor-head-period-stat--interactive:focus-visible {
+    box-shadow:
+        0 0 0 3px rgba(74, 193, 193, 0.35),
+        0 0.65rem 1.35rem rgba(25, 30, 38, 0.16);
+    color: inherit;
+    outline: none;
+    transform: translateY(-0.2rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tutor-head-period-stat--interactive {
+        transition: none;
+    }
+
+    .tutor-head-period-stat--interactive:hover,
+    .tutor-head-period-stat--interactive:focus-visible {
+        transform: none;
+    }
+}
+
+.tutor-head-period-stat h2 {
+    color: #050505;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.25;
+    margin: 0 0 0.25rem;
+    text-align: center;
+}
+
+.tutor-head-period-stat p {
+    color: #050505;
+    font-family: "Valley Sans", sans-serif;
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1;
+    margin: 0;
+}
+
+.tutor-head-period-stat:not(.tutor-head-period-stat--deadline) p {
+    text-align: center;
+}
+
+.tutor-head-period-stat--deadline p {
+    font-size: 1.15rem;
+    line-height: 1.2;
+}
+
+.tutor-head-period-stat--deadline {
+    align-items: center;
+    text-align: center;
+}
+
+.tutor-head-period-stat small {
+    color: #747b84;
+    display: block;
+    font-size: 0.72rem;
+    margin-top: 0.2rem;
+}
+
+.tutor-head-filter-label {
+    color: #333;
+    display: block;
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 0.6rem;
+}
+
+.tutor-head-date-range {
+    display: grid;
+    gap: 0.7rem;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.tutor-head-date-field {
+    min-width: 0;
+}
+
+.tutor-head-date-field input {
+    min-width: 0;
+    width: 100%;
+}
+
+.tutor-head-date-field > label {
+    color: #5d6269;
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+
+.tutor-head-date-range-error {
+    color: #b32647;
+    display: block;
+    font-size: 0.75rem;
+    margin-top: 0.45rem;
+}
+
+.tutor-head-session-reviews-table {
+    min-width: 60rem;
+}
+
+@media (max-width: 991.98px) {
+    .tutor-head-mobile-filter-trigger {
+        margin-bottom: 1rem;
+        width: 100%;
+    }
+}
+
+.bookings-page .tutor-head-session-reviews-table th:nth-child(1) {
+    width: 17%;
+}
+
+.bookings-page .tutor-head-session-reviews-table th:nth-child(2) {
+    width: 17%;
+}
+
+.bookings-page .tutor-head-session-reviews-table th:nth-child(3) {
+    width: 19%;
+}
+
+.bookings-page .tutor-head-session-reviews-table th:nth-child(4) {
+    text-align: center;
+    width: 17%;
+}
+
+.bookings-page .tutor-head-session-reviews-table th:nth-child(5) {
+    width: 12%;
+}
+
+.bookings-page .tutor-head-session-reviews-table th:nth-child(6) {
+    text-align: center;
+    width: 18%;
+}
+
+.bookings-page .tutor-head-session-reviews-table td:nth-child(4),
+.bookings-page .tutor-head-session-reviews-table td:nth-child(6) {
+    text-align: center;
+}
+
+.tutor-head-review-status {
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 0.38rem 0.65rem;
+    white-space: nowrap;
+}
+
+.tutor-head-review-status--awaiting {
+    background-color: #e5e7ea;
+    color: #4b5057;
+}
+
+.tutor-head-review-status--reviewed {
+    background-color: #e2f4e7;
+    color: #246b35;
+}
+
+
+.tutor-head-view-session {
+    background-color: #e5e7ea;
+    border: 0;
+    border-radius: 0.4rem;
+    color: #34383f;
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.9rem;
+    transition:
+        background-color 160ms ease,
+        transform 160ms ease;
+}
+
+.tutor-head-view-session:hover,
+.tutor-head-view-session:focus-visible {
+    background-color: #d8dbe0;
+    color: #202328;
+    transform: translateY(-0.05rem);
+}
+
+.tutor-head-view-session:focus-visible {
+    outline: 3px solid rgba(173, 1, 81, 0.22);
+    outline-offset: 2px;
+}
+
+@media (max-width: 767.98px) {
+    .tutor-head-period-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tutor-head-period-stat {
+        min-height: 4.35rem;
+        padding: 0.55rem 0.75rem;
+    }
+
+    .bookings-page .tutor-head-session-reviews-table {
+        min-width: 0;
+    }
+
+    .bookings-page .tutor-head-session-reviews-table tbody tr {
+        grid-template-areas:
+            "tutor tutor action"
+            "student student student"
+            "module module module"
+            "datetime datetime datetime"
+            "status status status";
+        grid-template-columns: minmax(0, 1fr) auto 2.75rem;
+    }
+
+    .bookings-page .tutor-head-session-reviews-table td:nth-child(1) {
+        grid-area: tutor;
+    }
+
+    .bookings-page .tutor-head-session-reviews-table td:nth-child(2) {
+        grid-area: student;
+    }
+
+    .bookings-page .tutor-head-session-reviews-table td:nth-child(3) {
+        grid-area: datetime;
+    }
+
+    .bookings-page .tutor-head-session-reviews-table td:nth-child(4) {
+        grid-area: status;
+    }
+
+    .bookings-page .tutor-head-session-reviews-table td:nth-child(5) {
+        grid-area: module;
+    }
+
+    .bookings-page .tutor-head-session-reviews-table td:nth-child(6) {
+        grid-area: action;
+        text-align: center;
+    }
+
+    .tutor-head-view-session {
+        min-height: 36px;
+        padding: 0.35rem 0.8rem;
+    }
+
+    .bookings-page .tutor-head-session-reviews-table td:nth-child(4) {
+        padding-top: 0.25rem;
+        text-align: left;
+    }
+}
+
+/* Tutor Head session review typography floors. */
+.tutor-head-session-reviews-page {
+    font-size: 16px;
+}
+
+.tutor-head-session-reviews-page .tutor-head-period-stat {
+    min-height: 5.5rem;
+    padding: 0.9rem 1rem;
+}
+
+.tutor-head-session-reviews-page .tutor-head-period-stat h2 {
+    font-size: 18px;
+}
+
+.tutor-head-session-reviews-page .tutor-head-period-stat--deadline p {
+    font-size: 18px;
+}
+
+.tutor-head-session-reviews-page .tutor-head-period-stat small,
+.tutor-head-session-reviews-page .tutor-head-date-range-error,
+.tutor-head-session-reviews-page .tutor-head-review-status,
+.tutor-head-session-reviews-page .tutor-session-time {
+    font-size: 12px;
+}
+
+.tutor-head-session-reviews-page .tutor-head-date-field > label,
+.tutor-head-session-reviews-page .tutor-head-filter-label,
+.tutor-head-session-reviews-page .filter-heading a,
+.tutor-head-session-reviews-page .filter-group > label,
+.tutor-head-session-reviews-page .filter-search input,
+.tutor-head-session-reviews-page .apply-filters,
+.tutor-head-session-reviews-page .mobile-filter-trigger,
+.tutor-head-session-reviews-page .tutor-head-view-session,
+.tutor-head-session-reviews-page .tutor-sessions-empty,
+.tutor-head-session-reviews-page .tutor-sessions-table th,
+.tutor-head-session-reviews-page .tutor-sessions-table td {
+    font-size: 16px;
+}
+
+.tutor-head-session-reviews-page .tutor-head-date-field > label {
+    margin-bottom: 0.45rem;
+}
+
+.tutor-head-session-reviews-page .apply-filters,
+.tutor-head-session-reviews-page .mobile-filter-trigger,
+.tutor-head-session-reviews-page .filter-search input {
+    min-height: 44px;
+}
+
+.tutor-head-session-reviews-page .tutor-head-review-status {
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+@media (max-width: 767.98px) {
+    .tutor-head-session-reviews-page .tutor-head-period-stat {
+        min-height: 6.5rem;
+        padding: 0.8rem;
+    }
+
+    .bookings-page.tutor-head-session-reviews-page .tutor-head-session-reviews-table tbody tr {
+        grid-template-columns: minmax(0, 1fr) minmax(5.5rem, auto) minmax(4.75rem, auto);
+        padding: 1rem;
+        row-gap: 0.55rem;
+    }
+
+    .bookings-page.tutor-head-session-reviews-page .tutor-head-session-reviews-table td,
+    .bookings-page.tutor-head-session-reviews-page .tutor-head-session-reviews-table td:nth-child(1),
+    .bookings-page.tutor-head-session-reviews-page .tutor-head-session-reviews-table td:nth-child(2),
+    .bookings-page.tutor-head-session-reviews-page .tutor-head-session-reviews-table td:nth-child(3),
+    .bookings-page.tutor-head-session-reviews-page .tutor-head-session-reviews-table td:nth-child(4) {
+        font-size: 16px;
+    }
+
+    .tutor-head-session-reviews-page .tutor-head-view-session {
+        padding-inline: 0.8rem;
+        width: 100%;
+    }
+}

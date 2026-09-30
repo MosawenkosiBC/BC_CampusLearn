@@ -45,6 +45,10 @@
         !isManageResources;
     bool isTutor = User.IsInRole(nameof(BcUserRole.Tutor)) ||
         User.IsInRole(nameof(BcUserRole.HeadOfTutors));
+    bool isTutorHead = User.IsInRole(nameof(BcUserRole.HeadOfTutors));
+    bool isSessionReviews = currentPage.StartsWith(
+        "/TutorHead/Session",
+        StringComparison.OrdinalIgnoreCase);
 }
 
 <div class="navigation-drawer-component" data-navigation-drawer>
@@ -151,6 +155,20 @@
                aria-current="@(isTutorApplication ? "page" : null)">
                 <span>Become a Tutor</span>
             </a>
+
+            @if (isTutorHead)
+            {
+                <div class="navigation-drawer-section" aria-labelledby="tutor-head-navigation-title">
+                    <hr />
+                    <h3 id="tutor-head-navigation-title">Tutor Head</h3>
+                </div>
+
+                <a asp-page="/TutorHead/SessionReviews"
+                   class="navigation-drawer-link @(isSessionReviews ? "is-active" : null)"
+                   aria-current="@(isSessionReviews ? "page" : null)">
+                    <span>Session Reviews</span>
+                </a>
+            }
         </nav>
     </aside>
 </div>

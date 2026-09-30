@@ -175,6 +175,11 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
 
         await _context.SaveChangesAsync();
 
+        if (developmentRole == BcUserRole.HeadOfTutors)
+        {
+            await EnsureDevelopmentTutorHeadProfileAsync(user);
+        }
+
         string? tutorProfileImagePath = user.Role is
                 BcUserRole.Tutor or BcUserRole.HeadOfTutors
             ? await _context.Tutors
@@ -192,6 +197,41 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
             user.PersonnelNumber);
 
         return principal;
+    }
+
+    private async Task EnsureDevelopmentTutorHeadProfileAsync(BcUser user)
+    {
+        bool hasTutorProfile = await _context.Tutors
+            .AnyAsync(tutor => tutor.BcUserId == user.BcUserId);
+
+        if (hasTutorProfile)
+        {
+            return;
+        }
+
+        DateTime now = DateTime.UtcNow;
+        _context.Tutors.Add(new Tutor
+        {
+            BcUserId = user.BcUserId,
+            ProgrammeId = 1,
+            OverallAverage = 80m,
+            YearOfStudy = 3,
+            ReasonForTutoring = "Development Tutor Head account.",
+            TeachingStyle = "Supportive and practical.",
+            PreviousTutoringExperience = "Development account experience.",
+            PreferredTutoringMode = PreferredTutoringMode.Both,
+            CampusOfStudy = "Pretoria",
+            DemonstrationVideoUrl = "https://example.com/development-tutor-head",
+            Status = TutorStatus.Approved,
+            ApplicationStage = TutorApplicationStage.Placement,
+            SubmittedAt = now,
+            CreatedAt = now,
+            UpdatedAt = now,
+            Biography = "Development Tutor Head account used to preview Tutor Head functionality.",
+            IsActive = true
+        });
+
+        await _context.SaveChangesAsync();
     }
 
     private static string? GetStudentNumberFromPreferredUsername(

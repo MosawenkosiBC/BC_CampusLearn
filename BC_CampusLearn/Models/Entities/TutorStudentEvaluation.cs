@@ -26,5 +26,13 @@ public class TutorStudentEvaluation
 
     public string RecordingLink { get; set; } = string.Empty;
 
+    public string? TranscriptOriginalFileName { get; set; }
+
+    public string? TranscriptStoragePath { get; set; }
+
+    public string? TranscriptContentType { get; set; }
+
+    public long? TranscriptSizeBytes { get; set; }
+
     public Booking Booking { get; set; } = null!;
 }
