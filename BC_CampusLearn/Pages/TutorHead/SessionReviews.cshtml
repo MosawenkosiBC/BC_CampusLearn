@@ -2,7 +2,7 @@
 @model BC_CampusLearn.Pages.TutorHead.SessionReviewsModel
 
 @{
-    ViewData["Title"] = "Session reviews";
+    ViewData["Title"] = "Session Reviews";
 }
 
 @section Styles {
@@ -38,25 +38,36 @@
 
 <main class="container py-4 bookings-page tutor-head-session-reviews-page">
     <header class="bookings-heading">
-        <h1>Session reviews</h1>
+        <h1>Session Reviews</h1>
     </header>
 
     <section class="tutor-head-period-overview"
              aria-label="Session review statistics">
         <div class="tutor-head-period-stats">
-            <article class="tutor-head-period-stat">
+            <a asp-page="/TutorHead/SessionReviews"
+               class="tutor-head-period-stat tutor-head-period-stat--interactive @(Model.ReviewStatusFilter is null ? "is-active" : null)"
+               aria-current="@(Model.ReviewStatusFilter is null ? "true" : null)"
+               aria-label="Show all sessions in this review period">
                 <h2>Sessions this period</h2>
                 <p>@Model.PeriodSummary.TotalSessions</p>
-            </article>
-            <article class="tutor-head-period-stat tutor-head-period-stat--awaiting">
+            </a>
+            <a asp-page="/TutorHead/SessionReviews"
+               asp-route-ReviewStatusFilter="awaiting"
+               class="tutor-head-period-stat tutor-head-period-stat--interactive tutor-head-period-stat--awaiting @(Model.ReviewStatusFilter == "awaiting" ? "is-active" : null)"
+               aria-current="@(Model.ReviewStatusFilter == "awaiting" ? "true" : null)"
+               aria-label="Show sessions awaiting Tutor Head review">
                 <h2>Awaiting review</h2>
                 <p>@Model.PeriodSummary.AwaitingReview</p>
-            </article>
-            <article class="tutor-head-period-stat tutor-head-period-stat--reviewed">
+            </a>
+            <a asp-page="/TutorHead/SessionReviews"
+               asp-route-ReviewStatusFilter="reviewed"
+               class="tutor-head-period-stat tutor-head-period-stat--interactive tutor-head-period-stat--reviewed @(Model.ReviewStatusFilter == "reviewed" ? "is-active" : null)"
+               aria-current="@(Model.ReviewStatusFilter == "reviewed" ? "true" : null)"
+               aria-label="Show sessions with completed Tutor Head reviews">
                 <h2>Reviewed</h2>
                 <p>@Model.PeriodSummary.Reviewed</p>
-            </article>
-            <article class="tutor-head-period-stat tutor-head-period-stat--deadline">
+            </a>
+            <div class="tutor-head-period-stat tutor-head-period-stat--deadline">
                 <h2>Deadline</h2>
                 <p>
                     <time datetime="@Model.PeriodSummary.Deadline.ToString("yyyy-MM-dd")">
@@ -64,11 +75,11 @@
                     </time>
                 </p>
                 <small>@Model.PeriodSummary.DeadlineStatus</small>
-            </article>
+            </div>
         </div>
     </section>
 
-    <div class="bookings-workspace">
+    <div class="bookings-workspace @(Model.Sessions.Count == 0 && Model.HasActiveFilters ? "tutor-head-empty-workspace" : null)">
         <aside id="tutor-head-session-review-filter-panel"
                class="tutor-filters bookings-filters"
                aria-labelledby="tutor-head-session-review-filter-title"
@@ -88,6 +99,12 @@
             </div>
 
             <form method="get">
+                @if (Model.ReviewStatusFilter is not null)
+                {
+                    <input type="hidden"
+                           name="ReviewStatusFilter"
+                           value="@Model.ReviewStatusFilter" />
+                }
                 <div class="filter-group">
                     <label asp-for="TutorFilter">Search by tutor</label>
                     <div class="filter-search">
@@ -161,19 +178,35 @@
 
             <section class="bookings-section"
                      aria-label="Session review results">
-                <div class="tutor-sessions">
-                <div class="tutor-sessions-table-wrap">
-                    <table id="tutor-head-session-reviews-table"
-                           class="tutor-sessions-table bookings-table tutor-head-session-reviews-table">
+                @if (Model.Sessions.Count == 0 && Model.HasActiveFilters)
+                {
+                    <div class="empty-tutors bookings-empty-results">
+                        <span class="bookings-empty-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <circle cx="10.5" cy="10.5" r="6.5" />
+                                <path d="m15.4 15.4 4.1 4.1" />
+                            </svg>
+                        </span>
+                        <h2>No sessions match those filters</h2>
+                        <p>
+                            Try clearing a filter or searching for another session.
+                        </p>
+                        <a asp-page="/TutorHead/SessionReviews">Clear all filters</a>
+                    </div>
+                }
+                else
+                {
+                    <div class="tutor-sessions">
+                        <div class="tutor-sessions-table-wrap">
+                            <table id="tutor-head-session-reviews-table"
+                                   class="tutor-sessions-table bookings-table tutor-head-session-reviews-table">
                         <thead>
                             <tr>
                                 <th scope="col">Tutor Name</th>
                                 <th scope="col">Student Name</th>
                                 <th scope="col">Date &amp; Time</th>
                                 <th scope="col">Status</th>
-                                <th scope="col">
-                                    <span class="visually-hidden">Submitted reviews</span>
-                                </th>
+                                <th scope="col">Module</th>
                                 <th scope="col">Action</th>
                             </tr>
                         </thead>
@@ -216,31 +249,9 @@
                                                 @session.ReviewStatus
                                             </span>
                                         </td>
-                                        <td data-label="Submitted Reviews"
-                                            class="tutor-head-review-cell">
-                                            <span class="tutor-head-review-icons">
-                                                <span class="bookings-pending-review-icon bookings-pending-review-icon--submitted tutor-head-review-icon"
-                                                      aria-label="Student review submitted"
-                                                      data-review-tooltip="Student review"
-                                                      tabindex="0">
-                                                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                                                        <path d="M0 0h24v24H0z" fill="none" />
-                                                        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.5 2v3m-9-3v3M11 2v3m8 7v-1.5c0-3.3 0-4.95-1.025-5.975S15.3 3.5 12 3.5h-2c-3.3 0-4.95 0-5.975 1.025S3 7.2 3 10.5V15c0 3.3 0 4.95 1.025 5.975S6.7 22 10 22h1m-4-7h4m-4-4h8m.737 10.653L14 22l.347-1.737c.07-.352.244-.676.499-.93l4.065-4.066a.91.91 0 0 1 1.288 0l.534.534a.91.91 0 0 1 0 1.288l-4.065 4.065a1.8 1.8 0 0 1-.931.499" />
-                                                    </svg>
-                                                </span>
-                                                <span class="bookings-pending-review-icon bookings-pending-review-icon--submitted tutor-head-review-icon"
-                                                      aria-label="Tutor review submitted"
-                                                      data-review-tooltip="Tutor review"
-                                                      tabindex="0">
-                                                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                                                        <path d="M0 0h24v24H0z" fill="none" />
-                                                        <g fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5">
-                                                            <path d="m16.425 4.605l.99-.99a2.1 2.1 0 0 1 2.97 2.97l-.99.99m-2.97-2.97l-6.66 6.66a3.96 3.96 0 0 0-1.041 1.84L8 16l2.896-.724a3.96 3.96 0 0 0 1.84-1.042l6.659-6.659m-2.97-2.97l2.97 2.97" />
-                                                            <path stroke-linecap="round" d="M19 13.5c0 3.288 0 4.931-.908 6.038a4 4 0 0 1-.554.554C16.43 21 14.788 21 11.5 21H11c-3.771 0-5.657 0-6.828-1.172S3 16.771 3 13v-.5c0-3.287 0-4.931.908-6.038q.25-.304.554-.554C5.57 5 7.212 5 10.5 5" />
-                                                        </g>
-                                                    </svg>
-                                                </span>
-                                            </span>
+                                        <td data-label="Module"
+                                            title="@session.ModuleCode">
+                                            @session.ModuleCode
                                         </td>
                                         <td data-label="Action">
                                             <form method="get"
@@ -257,19 +268,20 @@
                                 }
                             }
                         </tbody>
-                    </table>
-                </div>
+                            </table>
+                        </div>
 
-                @await Component.InvokeAsync(
-                    "Pagination",
-                    new
-                    {
-                        targetId = "tutor-head-session-reviews-table",
-                        mobilePageSize = 7,
-                        defaultPageSize = 11,
-                        ariaLabel = "Tutor Head session review table pages"
-                    })
-                </div>
+                        @await Component.InvokeAsync(
+                            "Pagination",
+                            new
+                            {
+                                targetId = "tutor-head-session-reviews-table",
+                                mobilePageSize = 7,
+                                defaultPageSize = 11,
+                                ariaLabel = "Tutor Head session review table pages"
+                            })
+                    </div>
+                }
             </section>
         </div>
     </div>

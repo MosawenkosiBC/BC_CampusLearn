@@ -47,9 +47,19 @@
         const rowIndex = [...form.querySelectorAll("[data-pagination-row]")]
             .indexOf(firstQuestion);
         const pageNumber = Math.floor(rowIndex / 5) + 1;
-        const pageButton = [...form.querySelectorAll(".campus-pagination__page")]
-            .find((button) => button.textContent.trim() === String(pageNumber));
-        pageButton?.click();
+        const pagination = form.querySelector(".admin-session-review-pagination");
+        const pageStatus = pagination?.querySelector("[data-review-page-status]");
+        const currentPage = Number.parseInt(
+            pageStatus?.textContent.match(/Page\s+(\d+)/i)?.[1] ?? "1",
+            10);
+        const direction = pageNumber > currentPage
+            ? pagination?.querySelector("[data-review-next]")
+            : pagination?.querySelector("[data-review-previous]");
+
+        for (let page = currentPage; page !== pageNumber;) {
+            direction?.click();
+            page += pageNumber > currentPage ? 1 : -1;
+        }
 
         firstQuestion.scrollIntoView({
             behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches

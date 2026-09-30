@@ -49,6 +49,7 @@ public class TutorHeadSessionReviewsTests
             Assert.Single(page.Sessions);
         Assert.Equal("Ready Student", session.StudentName);
         Assert.Equal("Taylor Tutor", session.TutorDisplayName);
+        Assert.Equal("PROG101", session.ModuleCode);
         Assert.False(session.HasTutorHeadReview);
         Assert.Equal("Awaiting review", session.ReviewStatus);
         Assert.Equal(1, page.PeriodSummary.TotalSessions);
@@ -64,6 +65,14 @@ public class TutorHeadSessionReviewsTests
 
         Assert.Single(filteredPage.Sessions);
         Assert.True(filteredPage.HasActiveFilters);
+
+        SessionReviewsModel awaitingPage = CreatePage(context);
+        awaitingPage.ReviewStatusFilter = "awaiting";
+        await awaitingPage.OnGetAsync(CancellationToken.None);
+
+        Assert.Single(awaitingPage.Sessions);
+        Assert.All(awaitingPage.Sessions, session =>
+            Assert.False(session.HasTutorHeadReview));
     }
 
     [Fact]
@@ -108,6 +117,14 @@ public class TutorHeadSessionReviewsTests
         Assert.Equal(1, page.PeriodSummary.TotalSessions);
         Assert.Equal(0, page.PeriodSummary.AwaitingReview);
         Assert.Equal(1, page.PeriodSummary.Reviewed);
+
+        SessionReviewsModel reviewedPage = CreatePage(context);
+        reviewedPage.ReviewStatusFilter = "reviewed";
+        await reviewedPage.OnGetAsync(CancellationToken.None);
+
+        Assert.Single(reviewedPage.Sessions);
+        Assert.All(reviewedPage.Sessions, session =>
+            Assert.True(session.HasTutorHeadReview));
     }
 
     [Fact]
@@ -154,6 +171,53 @@ public class TutorHeadSessionReviewsTests
         Assert.Equal(
             "https://example.com/session-recording",
             page.RecordingUrl?.TrimEnd('/'));
+    }
+
+    [Fact]
+    public async Task PagePrioritizesSessionsAwaitingTutorHeadReview()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorCourseModule assignment = CreateAssignment();
+        Booking awaiting = CreateBooking(
+            1,
+            assignment,
+            "Awaiting Student",
+            BookingStatus.Completed,
+            new StudentEvaluation(),
+            new TutorStudentEvaluation());
+        Booking reviewed = CreateBooking(
+            2,
+            assignment,
+            "Reviewed Student",
+            BookingStatus.Completed,
+            new StudentEvaluation(),
+            new TutorStudentEvaluation());
+        var tutorHead = new BcUser
+        {
+            BcUserId = 2,
+            PersonnelNumber = "TH001",
+            DisplayName = "Tutor Head",
+            Role = BcUserRole.HeadOfTutors
+        };
+        reviewed.SessionReviews.Add(new SessionReview
+        {
+            Booking = reviewed,
+            Reviewer = tutorHead,
+            ReviewerBcUserId = tutorHead.BcUserId,
+            Rating = 5,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        context.TutorCourseModules.Add(assignment);
+        context.Bookings.AddRange(awaiting, reviewed);
+        await context.SaveChangesAsync();
+
+        var page = CreatePage(context);
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Collection(
+            page.Sessions,
+            session => Assert.False(session.HasTutorHeadReview),
+            session => Assert.True(session.HasTutorHeadReview));
     }
 
     [Fact]

@@ -28,11 +28,6 @@
     text-align: center;
 }
 
-.tutor-head-details-heading > .tutor-head-review-status {
-    grid-column: 3;
-    justify-self: end;
-}
-
 .tutor-head-review-status {
     border-radius: 999px;
     flex: 0 0 auto;
@@ -43,7 +38,6 @@
 
 .tutor-head-review-status--awaiting { background: #e5e7ea; color: #4b5057; }
 .tutor-head-review-status--reviewed { background: #e2f4e7; color: #246b35; }
-.tutor-head-review-status--mobile { display: none; }
 
 .tutor-head-summary-actions {
     align-items: center;
@@ -54,19 +48,42 @@
 
 .tutor-head-review-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
+.tutor-head-review-tabs .admin-session-review-tab {
+    border-bottom: 0.3rem solid transparent;
+    transition:
+        box-shadow 180ms ease,
+        transform 180ms ease;
+}
+
+.tutor-head-review-tabs .admin-session-review-tab:hover {
+    background: #fff;
+    box-shadow: 0 0.65rem 1.25rem rgba(25, 30, 32, 0.17);
+    transform: translateY(-0.18rem);
+}
+
 .tutor-head-session-details-page .admin-session-summary-button span,
 .tutor-head-session-details-page .admin-session-review-tab > span {
     font-weight: 600;
 }
 
 .tutor-head-review-tabs .admin-session-review-tab.is-active {
-    background: #d4d9d9;
+    background: #fff;
+    border-bottom-color: #7d8586;
     color: #272b2c;
 }
 
-.tutor-head-review-tabs .admin-session-review-tab.is-active:hover,
 .tutor-head-review-tabs .admin-session-review-tab.is-active:focus-visible {
-    background: #c9cfcf;
+    background: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tutor-head-review-tabs .admin-session-review-tab {
+        transition: none;
+    }
+
+    .tutor-head-review-tabs .admin-session-review-tab:hover {
+        transform: none;
+    }
 }
 
 .tutor-head-review-tabs .admin-session-review-tab.is-active strong.is-submitted {
@@ -95,10 +112,6 @@
 .tutor-head-session-details-page .admin-session-answers > div:not([hidden]) ~ div:not([hidden]) {
     border-top: 1px solid #f0f1f3;
     padding-top: 1rem;
-}
-
-.tutor-head-session-details-page .admin-session-review-body > .campus-pagination {
-    margin: 1.25rem -1.25rem -1.25rem;
 }
 
 .tutor-head-recording-button {
@@ -145,26 +158,30 @@
 
 .tutor-head-own-review-answers { min-height: 8rem; }
 
+.tutor-head-review-form #tutor-head-review-form-steps {
+    display: grid;
+    gap: 1rem;
+}
+
 .tutor-head-review-form fieldset,
 .tutor-head-review-comments {
-    padding: 1rem 0 0.75rem;
+    border-bottom: 0;
+    padding: 0 0 1rem;
 }
 
 .tutor-head-review-form fieldset {
     min-height: 0;
 }
 
+.tutor-head-review-form #tutor-head-review-form-steps
+    > :is(fieldset, .tutor-head-review-comments):not([hidden])
+    ~ :is(fieldset, .tutor-head-review-comments):not([hidden]) {
+    border-top: 1px solid #f0f1f3;
+    padding-top: 1rem;
+}
+
 .tutor-head-review-form-body {
     padding-top: 0.75rem;
-}
-
-.tutor-head-review-form fieldset:nth-child(1),
-.tutor-head-review-form fieldset:nth-child(6) {
-    padding-top: 0.25rem;
-}
-
-.tutor-head-review-form fieldset:nth-child(5) {
-    border-bottom: 0;
 }
 
 .tutor-head-review-comments {
@@ -261,8 +278,6 @@
         text-align: center;
     }
 
-    .tutor-head-details-heading .tutor-head-review-status { display: none; }
-    .tutor-head-review-status--mobile { display: inline-flex; }
 }
 
 @media (max-width: 575.98px) {
@@ -288,6 +303,12 @@
 .tutor-head-session-details-page .tutor-head-own-review-placeholder button,
 .admin-session-summary-modal .admin-session-summary-grid dd {
     font-size: 16px;
+}
+
+@media (min-width: 768px) {
+    .tutor-head-session-details-page .tutor-head-recording-button {
+        font-size: 13px;
+    }
 }
 
 .tutor-head-session-details-page .admin-session-summary-button,
@@ -331,10 +352,6 @@
     padding: 1.5rem;
 }
 
-.tutor-head-session-details-page .admin-session-review-body > .campus-pagination {
-    margin: 1.5rem -1.5rem -1.5rem;
-}
-
 .navbar .nav-link,
 .navbar .dropdown-item,
 .navbar .sign-in-button,
@@ -358,7 +375,7 @@ body > footer small {
 
 @media (max-width: 767.98px) {
     .tutor-head-session-details-page .admin-session-review-tab {
-        font-size: 16px;
+        font-size: 13px;
         min-height: 4.25rem;
         padding: 0.75rem;
     }

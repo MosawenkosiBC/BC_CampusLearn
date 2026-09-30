@@ -27,6 +27,9 @@ public class SessionReviewsModel(
     [BindProperty(SupportsGet = true)]
     public DateOnly? DateTo { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public string? ReviewStatusFilter { get; set; }
+
     public string? DateRangeError { get; private set; }
 
     public IReadOnlyList<SessionReviewListItem> Sessions { get; private set; }
@@ -39,7 +42,8 @@ public class SessionReviewsModel(
         !string.IsNullOrWhiteSpace(TutorFilter) ||
         !string.IsNullOrWhiteSpace(StudentFilter) ||
         DateFrom.HasValue ||
-        DateTo.HasValue;
+        DateTo.HasValue ||
+        ReviewStatusFilter is not null;
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
@@ -49,6 +53,11 @@ public class SessionReviewsModel(
         StudentFilter = string.IsNullOrWhiteSpace(StudentFilter)
             ? null
             : StudentFilter.Trim();
+        ReviewStatusFilter = ReviewStatusFilter?.Trim().ToLowerInvariant();
+        if (ReviewStatusFilter is not ("awaiting" or "reviewed"))
+        {
+            ReviewStatusFilter = null;
+        }
 
         DateTimeOffset now = (timeProvider ?? TimeProvider.System)
             .GetUtcNow()
@@ -146,8 +155,21 @@ public class SessionReviewsModel(
             }
         }
 
+        if (ReviewStatusFilter == "reviewed")
+        {
+            query = query.Where(booking => booking.SessionReviews.Any(review =>
+                review.Reviewer.Role == BcUserRole.HeadOfTutors));
+        }
+        else if (ReviewStatusFilter == "awaiting")
+        {
+            query = query.Where(booking => !booking.SessionReviews.Any(review =>
+                review.Reviewer.Role == BcUserRole.HeadOfTutors));
+        }
+
         Sessions = await query
-            .OrderByDescending(booking =>
+            .OrderBy(booking => booking.SessionReviews.Any(review =>
+                review.Reviewer.Role == BcUserRole.HeadOfTutors))
+            .ThenByDescending(booking =>
                 booking.CompletedAt ?? booking.ScheduledStartTime)
             .ThenByDescending(booking => booking.BookingId)
             .Select(booking => new SessionReviewListItem(
@@ -155,6 +177,7 @@ public class SessionReviewsModel(
                 booking.TutorCourseModule.Tutor.BcUser.DisplayName,
                 booking.TutorCourseModule.Tutor.BcUser.PersonnelNumber,
                 booking.StudentName,
+                booking.ProgrammeModule.ModuleCode,
                 booking.SessionReviews.Any(review =>
                     review.Reviewer.Role == BcUserRole.HeadOfTutors),
                 booking.ScheduledStartTime,
@@ -171,6 +194,7 @@ public class SessionReviewsModel(
         string TutorName,
         string TutorPersonnelNumber,
         string StudentName,
+        string ModuleCode,
         bool HasTutorHeadReview,
         DateTimeOffset ScheduledStartTime,
         SessionDuration Duration)
