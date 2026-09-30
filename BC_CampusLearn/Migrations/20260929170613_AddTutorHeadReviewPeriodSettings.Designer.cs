@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929170613_AddTutorHeadReviewPeriodSettings")]
+    partial class AddTutorHeadReviewPeriodSettings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -110,19 +113,6 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(320)
                         .HasColumnType("nvarchar(320)");
 
-                    b.Property<string>("EncryptedEntraObjectId")
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)");
-
-                    b.Property<string>("EncryptedEntraTenantId")
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)");
-
-                    b.Property<string>("EntraIdentityLookupHash")
-                        .HasMaxLength(64)
-                        .HasColumnType("nchar(64)")
-                        .IsFixedLength();
-
                     b.Property<bool>("IsAdministrativeAccessActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -137,6 +127,7 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("PersonnelNumber")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -154,13 +145,8 @@ namespace BC_CampusLearn.Migrations
 
                     b.HasKey("BcUserId");
 
-                    b.HasIndex("EntraIdentityLookupHash")
-                        .IsUnique()
-                        .HasFilter("[EntraIdentityLookupHash] IS NOT NULL");
-
                     b.HasIndex("PersonnelNumber")
-                        .IsUnique()
-                        .HasFilter("[PersonnelNumber] IS NOT NULL");
+                        .IsUnique();
 
                     b.ToTable("BcUsers", null, t =>
                         {
@@ -852,32 +838,8 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
-                    b.Property<string>("ConcernLevel")
-                        .HasMaxLength(24)
-                        .HasColumnType("nvarchar(24)");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Decision")
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
-                    b.Property<string>("EvidenceConsistency")
-                        .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
-
-                    b.Property<string>("ExplanationClarity")
-                        .HasMaxLength(24)
-                        .HasColumnType("nvarchar(24)");
-
-                    b.Property<string>("ModuleAndTopicCoverage")
-                        .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
-
-                    b.Property<string>("OverallAssessment")
-                        .HasMaxLength(24)
-                        .HasColumnType("nvarchar(24)");
 
                     b.Property<byte>("Rating")
                         .HasColumnType("tinyint");
@@ -887,14 +849,6 @@ namespace BC_CampusLearn.Migrations
 
                     b.Property<int>("ReviewerBcUserId")
                         .HasColumnType("int");
-
-                    b.Property<string>("SessionStructure")
-                        .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
-
-                    b.Property<string>("StudentEngagement")
-                        .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
 
                     b.HasKey("SessionReviewId");
 

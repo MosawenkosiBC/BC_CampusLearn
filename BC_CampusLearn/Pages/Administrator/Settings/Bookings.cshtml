@@ -12,10 +12,19 @@
     <div class="settings-layout">
         <partial name="_SettingsNavigation" />
         <section class="settings-section" aria-labelledby="bookings-title">
-            <header class="settings-section-heading"><div><h2 id="bookings-title">Bookings and sessions</h2><p>Edit the terms students review before confirming a session.</p></div><span class="settings-status settings-status--live">Live</span></header>
+            <header class="settings-section-heading"><div><h2 id="bookings-title">Bookings and sessions</h2><p>Manage booking terms and the active Tutor Head session-review period.</p></div><span class="settings-status settings-status--live">Live</span></header>
             <form method="post" class="settings-form">
+                <div asp-validation-summary="ModelOnly" class="settings-validation"></div>
                 <div class="settings-field settings-field--wide"><label asp-for="Input.Terms"></label><textarea asp-for="Input.Terms" rows="15"></textarea><small>Enter one condition per line. Blank lines are removed when saved.</small><span asp-validation-for="Input.Terms"></span></div>
-                <footer class="settings-form-footer"><button type="submit" class="settings-primary-button">Save booking terms</button></footer>
+                <div class="settings-subsection">
+                    <div class="settings-subsection-copy"><h3>Tutor Head review period</h3><p>Sessions completed within this date range are prioritised on the Session Reviews page.</p></div>
+                    <div class="settings-field-grid">
+                        <div class="settings-field"><label asp-for="Input.PeriodStartDate"></label><input asp-for="Input.PeriodStartDate" type="date" /><small>First session-completion date included in the active period.</small><span asp-validation-for="Input.PeriodStartDate"></span></div>
+                        <div class="settings-field"><label asp-for="Input.PeriodEndDate"></label><input asp-for="Input.PeriodEndDate" type="date" /><small>Sessions completed after this date fall outside the active period.</small><span asp-validation-for="Input.PeriodEndDate"></span></div>
+                        <div class="settings-field"><label asp-for="Input.ReviewDeadline"></label><input asp-for="Input.ReviewDeadline" type="date" /><small>Date by which the Tutor Head should complete this period's reviews.</small><span asp-validation-for="Input.ReviewDeadline"></span></div>
+                    </div>
+                </div>
+                <footer class="settings-form-footer"><button type="submit" class="settings-primary-button">Save booking and session settings</button></footer>
             </form>
         </section>
     </div>

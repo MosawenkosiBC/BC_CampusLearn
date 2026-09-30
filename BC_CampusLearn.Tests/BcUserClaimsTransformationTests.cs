@@ -55,6 +55,30 @@ public class BcUserClaimsTransformationTests
     }
 
     [Fact]
+    public async Task DevelopmentTutorHeadLoginCreatesActiveTutorProfileAndRoleClaim()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        var transformation = new BcUserClaimsTransformation(
+            context,
+            new TestWebHostEnvironment(Environments.Development),
+            CreateIdentityProtector());
+        ClaimsPrincipal principal = CreatePrincipal(
+            new Claim(
+                EntraClaimTypes.DevelopmentRole,
+                nameof(BcUserRole.HeadOfTutors)));
+
+        await transformation.TransformAsync(principal);
+
+        BcUser user = await context.BcUsers.SingleAsync();
+        Tutor tutor = await context.Tutors.SingleAsync();
+        Assert.Equal(BcUserRole.HeadOfTutors, user.Role);
+        Assert.Equal(user.BcUserId, tutor.BcUserId);
+        Assert.Equal(TutorStatus.Approved, tutor.Status);
+        Assert.True(tutor.IsActive);
+        Assert.True(principal.IsInRole(nameof(BcUserRole.HeadOfTutors)));
+    }
+
+    [Fact]
     public async Task StudentNumberFallsBackToNumericPreferredUsername()
     {
         await using ApplicationDbContext context = CreateContext();

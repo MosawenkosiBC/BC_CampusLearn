@@ -20,19 +20,22 @@ public class SignInModel : PageModel
     private readonly DevelopmentUserOptions _developmentUser;
     private readonly DevelopmentStudentOptions _developmentStudent;
     private readonly DevelopmentAdminOptions _developmentAdmin;
+    private readonly DevelopmentTutorHeadOptions _developmentTutorHead;
 
     public SignInModel(
         IWebHostEnvironment environment,
         IConfiguration configuration,
         IOptions<DevelopmentUserOptions> developmentUserOptions,
         IOptions<DevelopmentStudentOptions> developmentStudentOptions,
-        IOptions<DevelopmentAdminOptions> developmentAdminOptions)
+        IOptions<DevelopmentAdminOptions> developmentAdminOptions,
+        IOptions<DevelopmentTutorHeadOptions> developmentTutorHeadOptions)
     {
         _environment = environment;
         _configuration = configuration;
         _developmentUser = developmentUserOptions.Value;
         _developmentStudent = developmentStudentOptions.Value;
         _developmentAdmin = developmentAdminOptions.Value;
+        _developmentTutorHead = developmentTutorHeadOptions.Value;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -49,6 +52,9 @@ public class SignInModel : PageModel
 
     public string DevelopmentAdminDisplayName =>
         _developmentAdmin.DisplayName;
+
+    public string DevelopmentTutorHeadDisplayName =>
+        _developmentTutorHead.DisplayName;
 
     public bool IsDevelopmentAuthentication =>
         _environment.IsDevelopment() &&
@@ -79,15 +85,19 @@ public class SignInModel : PageModel
                 OpenIdConnectDefaults.AuthenticationScheme);
         }
 
-        bool isDevelopmentAdmin = string.Equals(
-            DevelopmentAccount,
-            "admin",
-            StringComparison.OrdinalIgnoreCase);
+        BcUserRole? developmentRole =
+            DevelopmentAccount?.ToLowerInvariant() switch
+            {
+                "admin" => BcUserRole.Admin,
+                "tutor-head" => BcUserRole.HeadOfTutors,
+                _ => null
+            };
 
         DevelopmentUserOptions selectedUser = DevelopmentAccount?.ToLowerInvariant() switch
         {
             "student" => _developmentStudent,
             "admin" => _developmentAdmin,
+            "tutor-head" => _developmentTutorHead,
             _ => _developmentUser
         };
 
@@ -132,11 +142,11 @@ public class SignInModel : PageModel
                 selectedUser.PersonnelNumber)
         };
 
-        if (isDevelopmentAdmin)
+        if (developmentRole.HasValue)
         {
             claims.Add(new Claim(
                 EntraClaimTypes.DevelopmentRole,
-                nameof(BcUserRole.Admin)));
+                developmentRole.Value.ToString()));
         }
 
         var identity = new ClaimsIdentity(

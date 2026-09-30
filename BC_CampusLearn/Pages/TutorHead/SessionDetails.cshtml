@@ -1,0 +1,293 @@
+@page "{id:int}"
+@model BC_CampusLearn.Pages.TutorHead.SessionDetailsModel
+@using BC_CampusLearn.Models.Entities
+
+@{
+    ViewData["Title"] = "Session review details";
+    Booking session = Model.Session;
+    BcUser tutorUser = session.TutorCourseModule.Tutor.BcUser;
+    string tutorName = string.IsNullOrWhiteSpace(tutorUser.DisplayName)
+        ? tutorUser.PersonnelNumber
+        : tutorUser.DisplayName;
+    DateTimeOffset localStart = session.ScheduledStartTime.ToOffset(TimeSpan.FromHours(2));
+    DateTimeOffset localEnd = localStart.AddHours((int)session.Duration);
+}
+
+@section Styles {
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Valley+Sans:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/Dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/tutor-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-session-details.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/tutor-head-session-details.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/navigation-drawer.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/pagination.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync("~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<main class="container py-4 admin-dashboard admin-session-information tutor-head-session-details-page"
+      aria-labelledby="session-review-details-title">
+    <header class="admin-dashboard-header tutor-head-details-heading">
+        <h1 id="session-review-details-title">Session review details</h1>
+        <span class="tutor-head-review-status @(Model.TutorHeadReview is null ? "tutor-head-review-status--awaiting" : "tutor-head-review-status--reviewed")">
+            @(Model.TutorHeadReview is null ? "Awaiting review" : "Reviewed")
+        </span>
+    </header>
+
+    <div class="admin-session-content">
+        <div class="tutor-head-summary-actions">
+            <button type="button" class="admin-session-summary-button"
+                    data-bs-toggle="modal" data-bs-target="#session-summary-modal"
+                    aria-controls="session-summary-modal">
+                <span>View Session Summary</span>
+            </button>
+            <span class="tutor-head-review-status tutor-head-review-status--mobile @(Model.TutorHeadReview is null ? "tutor-head-review-status--awaiting" : "tutor-head-review-status--reviewed")">
+                @(Model.TutorHeadReview is null ? "Awaiting review" : "Reviewed")
+            </span>
+        </div>
+
+        <section class="admin-session-reviews" aria-labelledby="session-reviews-title">
+            <h2 id="session-reviews-title" class="visually-hidden">Session reviews</h2>
+            <div class="admin-session-review-tabs tutor-head-review-tabs" role="tablist" aria-label="Session reviews">
+                <button type="button" class="admin-session-review-tab tutor-head-review-tab is-active"
+                        id="tutor-head-review-tab" role="tab" aria-controls="tutor-head-review-panel"
+                        aria-selected="true" data-review-tab="tutor-head-review-panel">
+                    <span>Tutor Head Review</span>
+                    <strong class="@(Model.TutorHeadReview is not null ? "is-submitted" : "is-missing")">
+                        @(Model.TutorHeadReview is not null ? "Submitted" : "Not submitted")
+                    </strong>
+                </button>
+                <button type="button" class="admin-session-review-tab"
+                        id="tutor-review-tab" role="tab" aria-controls="tutor-review-panel"
+                        aria-selected="false" tabindex="-1" data-review-tab="tutor-review-panel">
+                    <span>Tutor Review</span>
+                    <strong class="is-submitted">Submitted</strong>
+                </button>
+                <button type="button" class="admin-session-review-tab"
+                        id="student-review-tab" role="tab" aria-controls="student-review-panel"
+                        aria-selected="false" tabindex="-1" data-review-tab="student-review-panel">
+                    <span>Student Review</span>
+                    <strong class="is-submitted">Submitted</strong>
+                </button>
+            </div>
+
+            <section class="admin-session-review-panel-card" id="tutor-head-review-panel"
+                     role="tabpanel" aria-labelledby="tutor-head-review-tab" tabindex="0" data-review-panel>
+                <header class="admin-session-review-panel-heading">
+                    <div>
+                        <h2>Tutor Head Review</h2>
+                        <p>Review the session information and record the Tutor Head assessment.</p>
+                    </div>
+                    @if (Model.TutorHeadReview is { } recordedReview)
+                    {
+                        <span class="admin-session-recorded-at">
+                            Recorded @recordedReview.CreatedAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
+                        </span>
+                    }
+                </header>
+                <div class="admin-session-review-body @(Model.TutorHeadReview is null ? "tutor-head-review-form-body" : null)">
+                    @if (!string.IsNullOrWhiteSpace(Model.TutorHeadReviewMessage))
+                    {
+                        <div class="alert alert-success" role="status">
+                            @Model.TutorHeadReviewMessage
+                        </div>
+                    }
+                    @if (Model.TutorHeadReview is { } review)
+                    {
+                        <dl class="admin-session-answers tutor-head-own-review-answers"
+                            id="tutor-head-review-answers">
+                            <div data-pagination-row><dt>Was the correct module and topic covered?</dt><dd>@(review.ModuleAndTopicCoverage ?? "Not provided")</dd></div>
+                            <div data-pagination-row><dt>How clear were the tutor's explanations?</dt><dd>@(review.ExplanationClarity ?? "Not provided")</dd></div>
+                            <div data-pagination-row><dt>Was the session structured effectively?</dt><dd>@(review.SessionStructure ?? "Not provided")</dd></div>
+                            <div data-pagination-row><dt>Did the tutor engage the student appropriately?</dt><dd>@(review.StudentEngagement ?? "Not provided")</dd></div>
+                            <div data-pagination-row><dt>Do the recording and submitted reviews match?</dt><dd>@(review.EvidenceConsistency ?? "Not provided")</dd></div>
+                            <div data-pagination-row><dt>Were any concerns identified?</dt><dd>@(review.ConcernLevel ?? "Not provided")</dd></div>
+                            <div data-pagination-row><dt>Overall session assessment</dt><dd>@(review.OverallAssessment ?? $"{review.Rating}/5")</dd></div>
+                            <div data-pagination-row><dt>Decision</dt><dd>@(review.Decision ?? "Not provided")</dd></div>
+                            <div data-pagination-row><dt>Additional comments</dt><dd>@(string.IsNullOrWhiteSpace(review.Comment) ? "No additional comments." : review.Comment)</dd></div>
+                        </dl>
+                        @await Component.InvokeAsync(
+                            "Pagination",
+                            new
+                            {
+                                targetId = "tutor-head-review-answers",
+                                mobilePageSize = 5,
+                                defaultPageSize = 5,
+                                ariaLabel = "Tutor Head review pages"
+                            })
+                    }
+                    else
+                    {
+                        <form method="post" asp-page-handler="TutorHeadReview"
+                              asp-route-id="@session.BookingId"
+                              class="admin-session-review-form tutor-head-review-form"
+                              data-tutor-head-review-form novalidate>
+                            <div asp-validation-summary="All" class="text-danger"></div>
+                            <div id="tutor-head-review-form-steps">
+                                @foreach (var question in new[] {
+                                    new { Number = 1, Name = "ModuleAndTopicCoverage", Text = "Was the correct module and topic covered?", Options = new[] { "Yes", "Partially", "No" }, Answer = Model.TutorHeadReviewInput.ModuleAndTopicCoverage },
+                                    new { Number = 2, Name = "ExplanationClarity", Text = "How clear were the tutor's explanations?", Options = new[] { "Excellent", "Good", "Satisfactory", "Needs improvement" }, Answer = Model.TutorHeadReviewInput.ExplanationClarity },
+                                    new { Number = 3, Name = "SessionStructure", Text = "Was the session structured effectively?", Options = new[] { "Yes", "Partially", "No" }, Answer = Model.TutorHeadReviewInput.SessionStructure },
+                                    new { Number = 4, Name = "StudentEngagement", Text = "Did the tutor engage the student appropriately?", Options = new[] { "Yes", "Partially", "No" }, Answer = Model.TutorHeadReviewInput.StudentEngagement },
+                                    new { Number = 5, Name = "EvidenceConsistency", Text = "Do the recording and submitted reviews match?", Options = new[] { "Yes", "Partially", "No" }, Answer = Model.TutorHeadReviewInput.EvidenceConsistency },
+                                    new { Number = 6, Name = "ConcernLevel", Text = "Were any concerns identified?", Options = new[] { "No concerns", "Minor concerns", "Serious concerns" }, Answer = Model.TutorHeadReviewInput.ConcernLevel },
+                                    new { Number = 7, Name = "OverallAssessment", Text = "Overall session assessment", Options = new[] { "Excellent", "Good", "Satisfactory", "Needs improvement" }, Answer = Model.TutorHeadReviewInput.OverallAssessment },
+                                    new { Number = 8, Name = "Decision", Text = "Decision", Options = new[] { "Approve", "Approve with feedback", "Request clarification", "Escalate" }, Answer = Model.TutorHeadReviewInput.Decision }
+                                })
+                                {
+                                    <fieldset data-pagination-row data-option-question>
+                                        <legend>@question.Number. @question.Text</legend>
+                                        <div class="admin-session-review-options">
+                                            @foreach (string option in question.Options)
+                                            {
+                                                string optionId = $"tutor-head-{question.Name}-{option.Replace(" ", "-").ToLowerInvariant()}";
+                                                <label for="@optionId">
+                                                    <input type="radio"
+                                                           id="@optionId"
+                                                           name="TutorHeadReviewInput.@question.Name"
+                                                           value="@option"
+                                                           checked="@(question.Answer == option)" />
+                                                    @option
+                                                </label>
+                                            }
+                                        </div>
+                                    </fieldset>
+                                }
+                                <div class="tutor-head-review-comments" data-pagination-row>
+                                    <label asp-for="TutorHeadReviewInput.AdditionalComments">
+                                        9. Additional comments
+                                    </label>
+                                    <textarea asp-for="TutorHeadReviewInput.AdditionalComments"
+                                              rows="3" maxlength="500"
+                                              placeholder="Add a short comment if needed"></textarea>
+                                    <span asp-validation-for="TutorHeadReviewInput.AdditionalComments"
+                                          class="text-danger"></span>
+                                </div>
+                                <div class="tutor-head-review-submit" data-pagination-row>
+                                    <button type="submit">Save review</button>
+                                </div>
+                            </div>
+                            @await Component.InvokeAsync(
+                                "Pagination",
+                                new
+                                {
+                                    targetId = "tutor-head-review-form-steps",
+                                    mobilePageSize = 5,
+                                    defaultPageSize = 5,
+                                    ariaLabel = "Tutor Head review form pages"
+                                })
+                        </form>
+                    }
+                </div>
+            </section>
+
+            <section class="admin-session-review-panel-card" id="tutor-review-panel"
+                     role="tabpanel" aria-labelledby="tutor-review-tab" tabindex="0" hidden
+                     data-review-panel>
+                <header class="admin-session-review-panel-heading">
+                    <div>
+                        <h2>Tutor Review</h2>
+                        <p>Submitted form responses for this session.</p>
+                    </div>
+                    @if (Model.CanWatchRecording)
+                    {
+                        <a class="tutor-head-recording-button"
+                           href="@Model.RecordingUrl" target="_blank" rel="noopener noreferrer">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" fill="currentColor" /></svg>
+                            Watch recording
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="tutor-head-recording-unavailable">Recording unavailable</span>
+                    }
+                </header>
+                <div class="admin-session-review-body">
+                    <dl class="admin-session-answers" id="tutor-review-answers">
+                        @foreach (var answer in Model.TutorReviewAnswers)
+                        {
+                            <div data-pagination-row><dt>@answer.Question</dt><dd>@answer.Value</dd></div>
+                        }
+                    </dl>
+                    @await Component.InvokeAsync(
+                        "Pagination",
+                        new
+                        {
+                            targetId = "tutor-review-answers",
+                            mobilePageSize = 5,
+                            defaultPageSize = 5,
+                            ariaLabel = "Tutor review pages"
+                        })
+                </div>
+            </section>
+
+            <section class="admin-session-review-panel-card" id="student-review-panel"
+                     role="tabpanel" aria-labelledby="student-review-tab" tabindex="0" hidden
+                     data-review-panel>
+                <header class="admin-session-review-panel-heading">
+                    <div>
+                        <h2>Student Review</h2>
+                        <p>Submitted form responses for this session.</p>
+                    </div>
+                </header>
+                <div class="admin-session-review-body">
+                    <dl class="admin-session-answers" id="student-review-answers">
+                        @foreach (var answer in Model.StudentReviewAnswers)
+                        {
+                            <div data-pagination-row><dt>@answer.Question</dt><dd>@answer.Value</dd></div>
+                        }
+                    </dl>
+                    @await Component.InvokeAsync(
+                        "Pagination",
+                        new
+                        {
+                            targetId = "student-review-answers",
+                            mobilePageSize = 5,
+                            defaultPageSize = 5,
+                            ariaLabel = "Student review pages"
+                        })
+                </div>
+            </section>
+        </section>
+    </div>
+</main>
+
+@section Modals {
+    <div class="modal fade admin-session-summary-modal" id="session-summary-modal"
+         tabindex="-1" aria-labelledby="session-summary-title" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title" id="session-summary-title">Session Summary</h2>
+                        <p>Complete session, tutor, and student information.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="admin-session-summary-grid">
+                        <div><dt>Tutor</dt><dd>@tutorName</dd></div>
+                        <div><dt>Student</dt><dd>@session.StudentName</dd></div>
+                        <div><dt>Module</dt><dd>@session.ProgrammeModule.ModuleCode · @session.ProgrammeModule.ModuleName</dd></div>
+                        <div><dt>Date and time</dt><dd>@localStart.ToString("dd MMM yyyy"), @localStart.ToString("HH:mm")&ndash;@localEnd.ToString("HH:mm")</dd></div>
+                        <div><dt>Location</dt><dd>@session.Location</dd></div>
+                        <div><dt>Duration</dt><dd>@((int)session.Duration) hour@(session.Duration == SessionDuration.OneHour ? "" : "s")</dd></div>
+                        <div class="admin-session-summary-wide">
+                            <dt>Session summary</dt>
+                            <dd class="admin-session-prose">@(string.IsNullOrWhiteSpace(session.Summary) ? "No session summary was provided." : session.Summary)</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="~/js/admin-session-details.js" asp-append-version="true"></script>
+    <script src="~/js/components/pagination.js" asp-append-version="true"></script>
+    <script src="~/js/tutor-head-session-details.js" asp-append-version="true"></script>
+}

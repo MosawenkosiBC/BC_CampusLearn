@@ -1,0 +1,377 @@
+.tutor-head-session-details-page {
+    color: #25282d;
+    max-width: 92rem;
+}
+
+@media (min-width: 768px) {
+    .tutor-head-session-details-page {
+        min-height: 768px;
+    }
+}
+
+.tutor-head-details-heading {
+    align-items: end;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    width: 100%;
+}
+
+.tutor-head-details-heading h1 {
+    color: #171717;
+    font-family: var(--campus-font-family);
+    font-size: clamp(2rem, 3vw, 2.5rem);
+    font-weight: 600;
+    grid-column: 2;
+    letter-spacing: -0.035em;
+    margin: 0;
+    text-align: center;
+}
+
+.tutor-head-details-heading > .tutor-head-review-status {
+    grid-column: 3;
+    justify-self: end;
+}
+
+.tutor-head-review-status {
+    border-radius: 999px;
+    flex: 0 0 auto;
+    font-size: 0.78rem;
+    font-weight: 650;
+    padding: 0.45rem 0.75rem;
+}
+
+.tutor-head-review-status--awaiting { background: #e5e7ea; color: #4b5057; }
+.tutor-head-review-status--reviewed { background: #e2f4e7; color: #246b35; }
+.tutor-head-review-status--mobile { display: none; }
+
+.tutor-head-summary-actions {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.tutor-head-review-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.tutor-head-session-details-page .admin-session-summary-button span,
+.tutor-head-session-details-page .admin-session-review-tab > span {
+    font-weight: 600;
+}
+
+.tutor-head-review-tabs .admin-session-review-tab.is-active {
+    background: #d4d9d9;
+    color: #272b2c;
+}
+
+.tutor-head-review-tabs .admin-session-review-tab.is-active:hover,
+.tutor-head-review-tabs .admin-session-review-tab.is-active:focus-visible {
+    background: #c9cfcf;
+}
+
+.tutor-head-review-tabs .admin-session-review-tab.is-active strong.is-submitted {
+    background: #d6eadc;
+    color: #25643d;
+}
+
+.tutor-head-review-tabs .admin-session-review-tab.is-active strong.is-missing {
+    background: #f1f2f2;
+    color: #62696a;
+}
+
+.tutor-head-session-details-page .admin-session-review-panel-card,
+.tutor-head-session-details-page .admin-session-answers {
+    text-align: left;
+}
+
+.tutor-head-session-details-page .admin-session-review-panel-card {
+    border: 0;
+}
+
+.tutor-head-session-details-page .admin-session-answers > div {
+    border-bottom: 0;
+}
+
+.tutor-head-session-details-page .admin-session-answers > div:not([hidden]) ~ div:not([hidden]) {
+    border-top: 1px solid #f0f1f3;
+    padding-top: 1rem;
+}
+
+.tutor-head-session-details-page .admin-session-review-body > .campus-pagination {
+    margin: 1.25rem -1.25rem -1.25rem;
+}
+
+.tutor-head-recording-button {
+    align-items: center;
+    background: #363c3d;
+    border-radius: 0.4rem;
+    color: #fff;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 0.78rem;
+    font-weight: 650;
+    gap: 0.35rem;
+    padding: 0.55rem 0.8rem;
+    text-decoration: none;
+}
+
+.tutor-head-recording-button:hover,
+.tutor-head-recording-button:focus-visible { background: #202526; color: #fff; }
+.tutor-head-recording-button svg { height: 1rem; width: 1rem; }
+.tutor-head-recording-unavailable { color: #737a83; font-size: 0.76rem; }
+
+.tutor-head-own-review-placeholder {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    min-height: 8rem;
+    text-align: left;
+}
+
+.tutor-head-own-review-placeholder h3 { font-size: 0.9rem; font-weight: 650; margin: 0; }
+.tutor-head-own-review-placeholder p { color: #69717a; font-size: 0.78rem; margin: 0.3rem 0 0; }
+.tutor-head-own-review-placeholder button {
+    background: #e5e7ea;
+    border: 0;
+    border-radius: 0.4rem;
+    color: #7a8087;
+    flex: 0 0 auto;
+    font-size: 0.8rem;
+    font-weight: 650;
+    min-height: 2.5rem;
+    padding: 0.55rem 1rem;
+}
+
+.tutor-head-own-review-answers { min-height: 8rem; }
+
+.tutor-head-review-form fieldset,
+.tutor-head-review-comments {
+    padding: 1rem 0 0.75rem;
+}
+
+.tutor-head-review-form fieldset {
+    min-height: 0;
+}
+
+.tutor-head-review-form-body {
+    padding-top: 0.75rem;
+}
+
+.tutor-head-review-form fieldset:nth-child(1),
+.tutor-head-review-form fieldset:nth-child(6) {
+    padding-top: 0.25rem;
+}
+
+.tutor-head-review-form fieldset:nth-child(5) {
+    border-bottom: 0;
+}
+
+.tutor-head-review-comments {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.tutor-head-review-comments > label {
+    color: #414849;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.tutor-head-review-comments > label span {
+    color: #69717a;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.tutor-head-review-comments textarea {
+    border: 1px solid #cfd4da;
+    border-radius: 0.4rem;
+    font-size: 16px;
+    min-height: 7rem;
+    padding: 0.75rem;
+    resize: vertical;
+    width: 100%;
+}
+
+.tutor-head-review-comments textarea:focus {
+    border-color: #7d8587;
+    box-shadow: 0 0 0 3px rgba(79, 135, 165, 0.2);
+    outline: none;
+}
+
+.tutor-head-review-submit {
+    align-items: flex-end;
+    display: flex;
+    justify-content: flex-end;
+    min-height: 4.5rem;
+    padding: 0.75rem 0;
+}
+
+.tutor-head-question-error {
+    color: #b42318;
+    font-size: 12px;
+    margin: 0.5rem 0 0;
+}
+
+.tutor-head-review-submit button {
+    background: #363c3d;
+    border: 0;
+    border-radius: 0.5rem;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    min-height: 44px;
+    padding: 0.65rem 1.25rem;
+}
+
+.tutor-head-review-submit button:hover,
+.tutor-head-review-submit button:focus-visible {
+    background: #242a2b;
+}
+
+.tutor-head-review-submit button:focus-visible {
+    box-shadow: 0 0 0 3px rgba(79, 135, 165, 0.35);
+    outline: none;
+}
+
+@media (max-width: 767.98px) {
+    .tutor-head-review-tabs {
+        gap: 0.5rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .tutor-head-review-tabs .admin-session-review-tab {
+        align-content: center;
+        font-size: 0.75rem;
+        min-height: 3.25rem;
+        padding: 0.55rem 0.6rem;
+    }
+
+    .tutor-head-review-tabs .admin-session-review-tab strong {
+        display: none;
+    }
+
+    .tutor-head-summary-actions {
+        gap: 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .tutor-head-details-heading {
+        text-align: center;
+    }
+
+    .tutor-head-details-heading .tutor-head-review-status { display: none; }
+    .tutor-head-review-status--mobile { display: inline-flex; }
+}
+
+@media (max-width: 575.98px) {
+    .tutor-head-details-heading,
+    .tutor-head-own-review-placeholder { align-items: stretch; flex-direction: column; }
+    .tutor-head-details-heading { align-items: center; }
+    .tutor-head-own-review-placeholder button { justify-content: center; width: 100%; }
+}
+
+/* Tutor Head session details typography floors. */
+.tutor-head-session-details-page,
+.admin-session-summary-modal {
+    font-size: 16px;
+}
+
+.tutor-head-session-details-page .admin-session-summary-button span,
+.tutor-head-session-details-page .admin-session-review-tab,
+.tutor-head-session-details-page .admin-session-review-form legend,
+.tutor-head-session-details-page .admin-session-review-options label,
+.tutor-head-session-details-page .admin-session-answers dt,
+.tutor-head-session-details-page .admin-session-answers dd,
+.tutor-head-session-details-page .tutor-head-recording-button,
+.tutor-head-session-details-page .tutor-head-own-review-placeholder button,
+.admin-session-summary-modal .admin-session-summary-grid dd {
+    font-size: 16px;
+}
+
+.tutor-head-session-details-page .admin-session-summary-button,
+.tutor-head-session-details-page .tutor-head-recording-button,
+.tutor-head-session-details-page .tutor-head-own-review-placeholder button {
+    min-height: 44px;
+}
+
+.tutor-head-session-details-page .admin-session-review-panel-heading h2,
+.tutor-head-session-details-page .tutor-head-own-review-placeholder h3 {
+    font-size: 18px;
+}
+
+.admin-session-summary-modal .modal-title {
+    font-size: 20px;
+}
+
+.tutor-head-session-details-page .tutor-head-review-status,
+.tutor-head-session-details-page .admin-session-review-tab strong,
+.tutor-head-session-details-page .admin-session-review-panel-heading p,
+.tutor-head-session-details-page .admin-session-recorded-at,
+.tutor-head-session-details-page .tutor-head-recording-unavailable,
+.tutor-head-session-details-page .tutor-head-own-review-placeholder p,
+.admin-session-summary-modal .modal-header p,
+.admin-session-summary-modal .admin-session-summary-grid dt {
+    font-size: 12px;
+}
+
+.tutor-head-session-details-page .admin-session-review-tab strong,
+.tutor-head-session-details-page .tutor-head-review-status {
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.tutor-head-session-details-page .admin-session-review-tab {
+    min-height: 5.5rem;
+    padding: 1rem;
+}
+
+.tutor-head-session-details-page .admin-session-review-body {
+    padding: 1.5rem;
+}
+
+.tutor-head-session-details-page .admin-session-review-body > .campus-pagination {
+    margin: 1.5rem -1.5rem -1.5rem;
+}
+
+.navbar .nav-link,
+.navbar .dropdown-item,
+.navbar .sign-in-button,
+.navbar .user-menu-button,
+.navigation-drawer-link,
+body > footer p,
+body > footer li,
+body > footer a {
+    font-size: 16px;
+}
+
+.navigation-drawer-header h2 {
+    font-size: 18px;
+}
+
+.navigation-drawer-brand p,
+.navigation-drawer-section h3,
+body > footer small {
+    font-size: 12px;
+}
+
+@media (max-width: 767.98px) {
+    .tutor-head-session-details-page .admin-session-review-tab {
+        font-size: 16px;
+        min-height: 4.25rem;
+        padding: 0.75rem;
+    }
+
+    .tutor-head-session-details-page .admin-session-review-panel-heading {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        padding: 1rem;
+    }
+
+    .tutor-head-session-details-page .tutor-head-recording-button {
+        justify-content: center;
+        margin-left: auto;
+        padding-inline: 1rem;
+    }
+}
