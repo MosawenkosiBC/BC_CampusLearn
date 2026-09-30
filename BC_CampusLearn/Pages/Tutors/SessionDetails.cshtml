@@ -680,7 +680,7 @@
      aria-labelledby="review-session-title" aria-hidden="true">
     <div class="modal-dialog tutor-evaluation-modal">
         <div class="modal-content">
-            <form method="post" asp-page-handler="Review" novalidate data-tutor-evaluation-form>
+            <form method="post" asp-page-handler="Review" enctype="multipart/form-data" novalidate data-tutor-evaluation-form>
                 <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
                 <div class="modal-header">
                     <div><h2 id="review-session-title">Evaluate @Model.Session.StudentName</h2></div>
@@ -738,6 +738,11 @@
                     <div class="evaluation-question" data-evaluation-required data-evaluation-url>
                         <label asp-for="EvaluationInput.RecordingLink">10. Recording link for the meeting <span aria-hidden="true">*</span></label>
                         <input asp-for="EvaluationInput.RecordingLink" type="text" inputmode="url" maxlength="2048" placeholder="https://..." />
+                    </div>
+                    <div class="evaluation-question" data-evaluation-required data-evaluation-file>
+                        <label asp-for="EvaluationInput.Transcript">11. Meeting transcript <span aria-hidden="true">*</span></label>
+                        <input asp-for="EvaluationInput.Transcript" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required />
+                        <small>Upload a PDF or Word document up to 10 MB.</small>
                     </div>
                 </div>
                 <div class="modal-footer">

@@ -189,6 +189,13 @@
                     {
                         <span class="tutor-head-recording-unavailable">Recording unavailable</span>
                     }
+                    @if (Model.HasTranscript)
+                    {
+                        <a class="tutor-head-recording-button"
+                           asp-page-handler="Transcript" asp-route-id="@session.BookingId">
+                            Download transcript
+                        </a>
+                    }
                 </header>
                 <div class="admin-session-review-body">
                     <dl class="admin-session-answers" id="tutor-review-answers">

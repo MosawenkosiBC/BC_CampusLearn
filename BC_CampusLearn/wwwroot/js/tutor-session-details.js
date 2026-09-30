@@ -95,7 +95,9 @@
             return false;
         }
 
-        const value = control?.value.trim() ?? "";
+        const value = control?.type === "file"
+            ? control.files?.[0]?.name ?? ""
+            : control?.value.trim() ?? "";
         if (control && isRequired && !value) {
             showEvaluationError(question, "This response is required.", index);
             return false;
@@ -116,6 +118,27 @@
                 "Enter a valid HTTP or HTTPS recording link.",
                 index);
             return false;
+        }
+
+        if (control?.type === "file" && control.files?.length) {
+            const file = control.files[0];
+            const extension = file.name.includes(".")
+                ? file.name.slice(file.name.lastIndexOf(".")).toLowerCase()
+                : "";
+            if (![".pdf", ".doc", ".docx"].includes(extension)) {
+                showEvaluationError(
+                    question,
+                    "Upload a PDF or Word document.",
+                    index);
+                return false;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                showEvaluationError(
+                    question,
+                    "The transcript must be 10 MB or smaller.",
+                    index);
+                return false;
+            }
         }
 
         clearEvaluationError(question);

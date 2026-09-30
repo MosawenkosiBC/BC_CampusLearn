@@ -3,9 +3,11 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Pages.TutorHead;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Xunit;
 
 namespace BC_CampusLearn.Tests;
@@ -154,7 +156,13 @@ public class TutorHeadSessionReviewsTests
                 StudentFocus = "The student remained focused.",
                 StudentIssues = "No issues.",
                 TutorComments = "Good progress was made.",
-                RecordingLink = "https://example.com/session-recording"
+                RecordingLink = "https://example.com/session-recording",
+                TranscriptOriginalFileName = "session-transcript.docx",
+                TranscriptStoragePath =
+                    "App_Data/tutor-review-transcripts/1/transcript.docx",
+                TranscriptContentType =
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                TranscriptSizeBytes = 1024
             });
         context.TutorCourseModules.Add(assignment);
         context.Bookings.Add(booking);
@@ -168,6 +176,7 @@ public class TutorHeadSessionReviewsTests
         Assert.NotEmpty(page.StudentReviewAnswers);
         Assert.NotEmpty(page.TutorReviewAnswers);
         Assert.True(page.CanWatchRecording);
+        Assert.True(page.HasTranscript);
         Assert.Equal(
             "https://example.com/session-recording",
             page.RecordingUrl?.TrimEnd('/'));
@@ -292,6 +301,7 @@ public class TutorHeadSessionReviewsTests
                 "Tutor Head",
                 "tutorhead@example.com",
                 BcUserRole.HeadOfTutors)),
+            new TestWebHostEnvironment(),
             new FixedTimeProvider(new DateTimeOffset(
                 2026, 9, 29, 10, 0, 0, TimeSpan.Zero)));
 
@@ -398,5 +408,17 @@ public class TutorHeadSessionReviewsTests
         public bool IsAuthenticated => true;
 
         public CurrentUser GetRequiredUser() => user;
+    }
+
+    private sealed class TestWebHostEnvironment : IWebHostEnvironment
+    {
+        public string ApplicationName { get; set; } = "BC_CampusLearn.Tests";
+        public IFileProvider WebRootFileProvider { get; set; } =
+            new NullFileProvider();
+        public string WebRootPath { get; set; } = string.Empty;
+        public string EnvironmentName { get; set; } = "Testing";
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+        public IFileProvider ContentRootFileProvider { get; set; } =
+            new NullFileProvider();
     }
 }
