@@ -47,7 +47,81 @@
                     aria-controls="session-summary-modal">
                 <span>View Session Summary</span>
             </button>
+            <form method="post" asp-page-handler="GenerateAiAssessment"
+                  asp-route-id="@session.BookingId">
+                <button type="submit" class="tutor-head-ai-assessment-button"
+                        disabled="@(!Model.HasGeminiApiKey)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3a7 7 0 0 0-4.7 12.18c.73.66 1.2 1.42 1.2 2.32h7c0-.9.47-1.66 1.2-2.32A7 7 0 0 0 12 3Z" />
+                        <path d="M9.5 21h5M9 17.5h6" />
+                    </svg>
+                    Generate AI assessment
+                </button>
+            </form>
         </div>
+
+        @if (!Model.HasGeminiApiKey)
+        {
+            <p class="tutor-head-ai-setup-note">
+                Configure your Gemini API key from the helper on
+                <a asp-page="/TutorHead/SessionReviews">Session Reviews</a>
+                to use AI assessments.
+            </p>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Model.AiAssessmentError))
+        {
+            <div class="tutor-head-ai-error" role="alert">
+                @Model.AiAssessmentError
+            </div>
+        }
+
+        @if (Model.AiAssessment is { } assessment)
+        {
+            <section class="tutor-head-ai-assessment"
+                     aria-labelledby="ai-assessment-title">
+                <header>
+                    <div>
+                        <span>Gemini advisory assessment</span>
+                        <h2 id="ai-assessment-title">Session evidence summary</h2>
+                    </div>
+                    <span class="tutor-head-ai-advisory">Human review required</span>
+                </header>
+                <div class="tutor-head-ai-verdicts">
+                    <div><strong>Session validity</strong><span>@assessment.Validity</span></div>
+                    <div><strong>Topic coverage</strong><span>@assessment.TopicCoverage</span></div>
+                </div>
+                <p>@assessment.Summary</p>
+                <div class="tutor-head-ai-lists">
+                    <div>
+                        <h3>Evidence considered</h3>
+                        @if (assessment.Evidence.Count == 0)
+                        {
+                            <p>No supporting evidence identified.</p>
+                        }
+                        else
+                        {
+                            <ul>@foreach (string item in assessment.Evidence) { <li>@item</li> }</ul>
+                        }
+                    </div>
+                    <div>
+                        <h3>Concerns or gaps</h3>
+                        @if (assessment.Concerns.Count == 0)
+                        {
+                            <p>No concerns identified in the supplied evidence.</p>
+                        }
+                        else
+                        {
+                            <ul>@foreach (string item in assessment.Concerns) { <li>@item</li> }</ul>
+                        }
+                    </div>
+                </div>
+                <div class="tutor-head-ai-recommendation">
+                    <strong>Suggested next step</strong>
+                    <p>@assessment.Recommendation</p>
+                </div>
+            </section>
+        }
 
         <section class="admin-session-reviews" aria-labelledby="session-reviews-title">
             <h2 id="session-reviews-title" class="visually-hidden">Session reviews</h2>

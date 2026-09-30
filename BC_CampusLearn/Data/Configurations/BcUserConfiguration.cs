@@ -16,6 +16,8 @@ public class BcUserConfiguration : IEntityTypeConfiguration<BcUser>
         builder.Property(user => user.EntraIdentityLookupHash)
             .HasMaxLength(64)
             .IsFixedLength();
+        builder.Property(user => user.EncryptedGeminiApiKey)
+            .HasMaxLength(2048);
         builder.Property(user => user.DisplayName).HasMaxLength(200).IsRequired();
         builder.Property(user => user.Email).HasMaxLength(320);
         builder.Property(user => user.Role)

@@ -7,6 +7,7 @@ public class BcUser
     public string? EncryptedEntraTenantId { get; set; }
     public string? EncryptedEntraObjectId { get; set; }
     public string? EntraIdentityLookupHash { get; set; }
+    public string? EncryptedGeminiApiKey { get; set; }
     public string DisplayName { get; set; } = string.Empty;
     public string? Email { get; set; }
     public BcUserRole Role { get; set; } = BcUserRole.Student;

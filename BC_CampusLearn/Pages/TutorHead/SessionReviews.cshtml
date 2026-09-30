@@ -37,9 +37,29 @@
     "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
 
 <main class="container py-4 bookings-page tutor-head-session-reviews-page">
-    <header class="bookings-heading">
+    <header class="bookings-heading tutor-head-reviews-heading">
         <h1>Session Reviews</h1>
+        <button type="button"
+                class="tutor-head-ai-helper"
+                data-bs-toggle="modal"
+                data-bs-target="#gemini-key-modal"
+                aria-controls="gemini-key-modal"
+                aria-label="Set up Gemini AI review helper"
+                title="Gemini AI review helper">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3a7 7 0 0 0-4.7 12.18c.73.66 1.2 1.42 1.2 2.32h7c0-.9.47-1.66 1.2-2.32A7 7 0 0 0 12 3Z" />
+                <path d="M9.5 21h5M9 17.5h6" />
+            </svg>
+            <span class="visually-hidden">Open Gemini settings</span>
+        </button>
     </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.GeminiKeyMessage))
+    {
+        @await Html.PartialAsync(
+            "_CampusAlert",
+            new CampusAlertViewModel(Model.GeminiKeyMessage))
+    }
 
     <section class="tutor-head-period-overview"
              aria-label="Session review statistics">
@@ -287,11 +307,71 @@
     </div>
 </main>
 
+@section Modals {
+    <div class="modal fade tutor-head-gemini-modal" id="gemini-key-modal"
+         tabindex="-1" aria-labelledby="gemini-key-modal-title"
+         aria-hidden="true" data-open="@Model.OpenGeminiModal.ToString().ToLowerInvariant()">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <span class="tutor-head-gemini-eyebrow">AI review helper</span>
+                        <h2 class="modal-title" id="gemini-key-modal-title">
+                            Connect Gemini
+                        </h2>
+                    </div>
+                    <button type="button" class="btn-close"
+                            data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" asp-page-handler="SaveGeminiKey">
+                    <div class="modal-body">
+                        <p>
+                            Gemini can compare the student's booking summary,
+                            both reviews, and the session message transcript to
+                            produce an advisory session assessment.
+                        </p>
+                        <div class="tutor-head-gemini-privacy" role="note">
+                            Session evidence is sent to Google's Gemini API only
+                            when you request an assessment. Always verify its
+                            findings before completing your review.
+                        </div>
+                        <label asp-for="GeminiApiKey"></label>
+                        <div class="tutor-head-gemini-key-field">
+                            <input asp-for="GeminiApiKey" type="password"
+                                   autocomplete="new-password"
+                                   placeholder="Paste your Gemini API key"
+                                   aria-describedby="gemini-key-help" />
+                            <button type="button" data-toggle-api-key
+                                    aria-label="Show API key">Show</button>
+                        </div>
+                        <span asp-validation-for="GeminiApiKey"
+                              class="text-danger"></span>
+                        <small id="gemini-key-help">
+                            @(Model.HasGeminiApiKey
+                                ? "A key is already configured. Saving replaces it."
+                                : "Your key is encrypted before it is stored and is never shown again.")
+                        </small>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light"
+                                data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="tutor-head-gemini-save">
+                            @(Model.HasGeminiApiKey ? "Replace key" : "Save key")
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
 @section Scripts {
     <script src="~/js/components/navigation-drawer.js"
             asp-append-version="true"></script>
     <script src="~/js/tutors.js"
             asp-append-version="true"></script>
     <script src="~/js/components/pagination.js"
+            asp-append-version="true"></script>
+    <script src="~/js/tutor-head-session-reviews.js"
             asp-append-version="true"></script>
 }

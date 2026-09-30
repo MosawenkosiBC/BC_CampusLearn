@@ -3,6 +3,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Pages.TutorHead;
+using BC_CampusLearn.Services.Gemini;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,44 @@ namespace BC_CampusLearn.Tests;
 
 public class TutorHeadSessionReviewsTests
 {
+    [Fact]
+    public async Task TutorHeadCanSaveEncryptedGeminiApiKey()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        context.BcUsers.Add(new BcUser
+        {
+            BcUserId = 2,
+            PersonnelNumber = "TH001",
+            DisplayName = "Tutor Head",
+            Role = BcUserRole.HeadOfTutors
+        });
+        await context.SaveChangesAsync();
+
+        var protector = new TestGeminiApiKeyProtector();
+        var page = new SessionReviewsModel(
+            context,
+            new FixedTimeProvider(DateTimeOffset.UtcNow),
+            new TestCurrentUserService(new CurrentUser(
+                2,
+                "TH001",
+                "Tutor Head",
+                "tutorhead@example.com",
+                BcUserRole.HeadOfTutors)),
+            protector)
+        {
+            GeminiApiKey = "gemini-secret-key"
+        };
+
+        IActionResult result = await page.OnPostSaveGeminiKeyAsync(
+            CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        BcUser user = await context.BcUsers.SingleAsync(item =>
+            item.BcUserId == 2);
+        Assert.Equal("protected:gemini-secret-key", user.EncryptedGeminiApiKey);
+        Assert.DoesNotContain("gemini-secret-key", page.GeminiKeyMessage ?? "");
+    }
+
     [Fact]
     public async Task PageOnlyShowsCompletedSessionsWithBothReviews()
     {
@@ -272,6 +311,54 @@ public class TutorHeadSessionReviewsTests
         Assert.Equal("Follow up on student engagement.", review.Comment);
     }
 
+    [Fact]
+    public async Task AiAssessmentUsesSavedKeyAndSessionEvidence()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorCourseModule assignment = CreateAssignment();
+        Booking booking = CreateBooking(
+            1,
+            assignment,
+            "Reviewed Student",
+            BookingStatus.Completed,
+            new StudentEvaluation { TutorTopic = "Loops" },
+            new TutorStudentEvaluation { TutorComments = "Covered loops." });
+        booking.Summary = "Please cover loops.";
+        context.TutorCourseModules.Add(assignment);
+        context.BcUsers.Add(new BcUser
+        {
+            BcUserId = 2,
+            PersonnelNumber = "TH001",
+            DisplayName = "Tutor Head",
+            Role = BcUserRole.HeadOfTutors,
+            EncryptedGeminiApiKey = "protected:gemini-secret-key"
+        });
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var assessmentService = new TestGeminiAssessmentService();
+        var page = new SessionDetailsModel(
+            context,
+            new TestCurrentUserService(new CurrentUser(
+                2,
+                "TH001",
+                "Tutor Head",
+                "tutorhead@example.com",
+                BcUserRole.HeadOfTutors)),
+            new FixedTimeProvider(DateTimeOffset.UtcNow),
+            new TestGeminiApiKeyProtector(),
+            assessmentService);
+
+        IActionResult result = await page.OnPostGenerateAiAssessmentAsync(
+            1,
+            CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.NotNull(page.AiAssessment);
+        Assert.Equal("gemini-secret-key", assessmentService.ApiKey);
+        Assert.Equal("Please cover loops.", assessmentService.Evidence?.BookingSummary);
+        Assert.Contains("Loops", assessmentService.Evidence?.StudentReview.Values ?? []);
+    }
+
     private static ApplicationDbContext CreateContext() => new(
         new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -398,5 +485,37 @@ public class TutorHeadSessionReviewsTests
         public bool IsAuthenticated => true;
 
         public CurrentUser GetRequiredUser() => user;
+    }
+
+    private sealed class TestGeminiApiKeyProtector : IGeminiApiKeyProtector
+    {
+        public string Protect(string apiKey) => $"protected:{apiKey}";
+
+        public string Unprotect(string protectedApiKey) =>
+            protectedApiKey["protected:".Length..];
+    }
+
+    private sealed class TestGeminiAssessmentService
+        : IGeminiSessionAssessmentService
+    {
+        public string? ApiKey { get; private set; }
+
+        public GeminiSessionEvidence? Evidence { get; private set; }
+
+        public Task<GeminiSessionAssessment> AssessAsync(
+            string apiKey,
+            GeminiSessionEvidence evidence,
+            CancellationToken cancellationToken)
+        {
+            ApiKey = apiKey;
+            Evidence = evidence;
+            return Task.FromResult(new GeminiSessionAssessment(
+                "Valid",
+                "All requested topics covered",
+                "The evidence is consistent.",
+                ["The reviews mention loops."],
+                [],
+                "Verify and complete the human review."));
+        }
     }
 }

@@ -2,6 +2,8 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
+using BC_CampusLearn.Services.Gemini;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -13,7 +15,9 @@ namespace BC_CampusLearn.Pages.TutorHead;
 public class SessionDetailsModel(
     ApplicationDbContext context,
     ICurrentUserService currentUserService,
-    TimeProvider timeProvider) : PageModel
+    TimeProvider timeProvider,
+    IGeminiApiKeyProtector? apiKeyProtector = null,
+    IGeminiSessionAssessmentService? assessmentService = null) : PageModel
 {
     public Booking Session { get; private set; } = null!;
 
@@ -34,6 +38,12 @@ public class SessionDetailsModel(
     public string? RecordingUrl { get; private set; }
 
     public bool CanWatchRecording => RecordingUrl is not null;
+
+    public bool HasGeminiApiKey { get; private set; }
+
+    public GeminiSessionAssessment? AiAssessment { get; private set; }
+
+    public string? AiAssessmentError { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(
         int id,
@@ -109,6 +119,66 @@ public class SessionDetailsModel(
         return RedirectToPage(new { id });
     }
 
+    public async Task<IActionResult> OnPostGenerateAiAssessmentAsync(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        IActionResult loadResult = await LoadPageAsync(
+            id,
+            populateInput: true,
+            cancellationToken);
+        if (loadResult is not PageResult)
+        {
+            return loadResult;
+        }
+
+        CurrentUser currentUser = currentUserService.GetRequiredUser();
+        string? protectedKey = await context.BcUsers
+            .AsNoTracking()
+            .Where(user => user.BcUserId == currentUser.BcUserId)
+            .Select(user => user.EncryptedGeminiApiKey)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(protectedKey))
+        {
+            AiAssessmentError =
+                "Add a Gemini API key from the Session Reviews helper first.";
+            return Page();
+        }
+
+        if (apiKeyProtector is null || assessmentService is null)
+        {
+            AiAssessmentError = "The AI review helper is not available right now.";
+            return Page();
+        }
+
+        string apiKey;
+        try
+        {
+            apiKey = apiKeyProtector.Unprotect(protectedKey);
+        }
+        catch (CryptographicException)
+        {
+            AiAssessmentError =
+                "The saved Gemini API key could not be read. Please replace it from Session Reviews.";
+            return Page();
+        }
+
+        try
+        {
+            AiAssessment = await assessmentService.AssessAsync(
+                apiKey,
+                BuildEvidence(),
+                cancellationToken);
+        }
+        catch (GeminiAssessmentException exception)
+        {
+            AiAssessmentError = exception.Message;
+        }
+
+        return Page();
+    }
+
     private async Task<IActionResult> LoadPageAsync(
         int id,
         bool populateInput,
@@ -120,6 +190,8 @@ public class SessionDetailsModel(
             .Include(booking => booking.ProgrammeModule)
             .Include(booking => booking.StudentEvaluation)
             .Include(booking => booking.TutorEvaluation)
+            .Include(booking => booking.SessionMessages)
+                .ThenInclude(message => message.Sender)
             .Include(booking => booking.SessionReviews)
                 .ThenInclude(review => review.Reviewer)
             .Include(booking => booking.TutorCourseModule)
@@ -160,8 +232,42 @@ public class SessionDetailsModel(
             };
         }
         RecordingUrl = ValidHttpUrl(session.TutorEvaluation!.RecordingLink);
+        int currentUserId = currentUserService.GetRequiredUser().BcUserId;
+        HasGeminiApiKey = await context.BcUsers
+            .AsNoTracking()
+            .Where(user => user.BcUserId == currentUserId)
+            .AnyAsync(user => user.EncryptedGeminiApiKey != null,
+                cancellationToken);
         return Page();
     }
+
+    private GeminiSessionEvidence BuildEvidence()
+    {
+        IReadOnlyList<string> transcript = Session.SessionMessages
+            .Where(message => message.DeletedAt is null)
+            .OrderBy(message => message.SentAt)
+            .Take(100)
+            .Select(message =>
+                $"[{message.SentAt.ToOffset(TimeSpan.FromHours(2)):yyyy-MM-dd HH:mm}] " +
+                $"{DisplayName(message.Sender)}: {message.MessageText}")
+            .ToList();
+
+        return new GeminiSessionEvidence(
+            Answer(Session.Summary),
+            $"{Session.ProgrammeModule.ModuleCode} - {Session.ProgrammeModule.ModuleName}",
+            StudentReviewAnswers.ToDictionary(
+                answer => answer.Question,
+                answer => answer.Value),
+            TutorReviewAnswers.ToDictionary(
+                answer => answer.Question,
+                answer => answer.Value),
+            transcript);
+    }
+
+    private static string DisplayName(BcUser user) =>
+        string.IsNullOrWhiteSpace(user.DisplayName)
+            ? user.PersonnelNumber ?? "Session participant"
+            : user.DisplayName;
 
     private static byte AssessmentRating(string assessment) => assessment switch
     {

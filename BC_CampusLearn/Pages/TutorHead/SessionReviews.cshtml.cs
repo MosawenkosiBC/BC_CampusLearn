@@ -1,5 +1,8 @@
 using BC_CampusLearn.Data;
+using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Gemini;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,7 +13,9 @@ namespace BC_CampusLearn.Pages.TutorHead;
 [Authorize(Roles = nameof(BcUserRole.HeadOfTutors))]
 public class SessionReviewsModel(
     ApplicationDbContext context,
-    TimeProvider? timeProvider = null) : PageModel
+    TimeProvider? timeProvider = null,
+    ICurrentUserService? currentUserService = null,
+    IGeminiApiKeyProtector? apiKeyProtector = null) : PageModel
 {
     private static readonly TimeSpan SouthAfricaOffset =
         TimeSpan.FromHours(2);
@@ -30,6 +35,20 @@ public class SessionReviewsModel(
     [BindProperty(SupportsGet = true)]
     public string? ReviewStatusFilter { get; set; }
 
+    [BindProperty]
+    [Required(ErrorMessage = "Enter a Gemini API key.")]
+    [StringLength(512, MinimumLength = 10,
+        ErrorMessage = "Enter a valid Gemini API key.")]
+    [Display(Name = "Gemini API key")]
+    public string? GeminiApiKey { get; set; }
+
+    public bool HasGeminiApiKey { get; private set; }
+
+    public bool OpenGeminiModal { get; private set; }
+
+    [TempData]
+    public string? GeminiKeyMessage { get; set; }
+
     public string? DateRangeError { get; private set; }
 
     public IReadOnlyList<SessionReviewListItem> Sessions { get; private set; }
@@ -47,6 +66,16 @@ public class SessionReviewsModel(
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
+        if (currentUserService is not null)
+        {
+            int userId = currentUserService.GetRequiredUser().BcUserId;
+            HasGeminiApiKey = await context.BcUsers
+                .AsNoTracking()
+                .Where(user => user.BcUserId == userId)
+                .AnyAsync(user => user.EncryptedGeminiApiKey != null,
+                    cancellationToken);
+        }
+
         TutorFilter = string.IsNullOrWhiteSpace(TutorFilter)
             ? null
             : TutorFilter.Trim();
@@ -183,6 +212,36 @@ public class SessionReviewsModel(
                 booking.ScheduledStartTime,
                 booking.Duration))
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IActionResult> OnPostSaveGeminiKeyAsync(
+        CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            OpenGeminiModal = true;
+            await OnGetAsync(cancellationToken);
+            return Page();
+        }
+
+        if (currentUserService is null || apiKeyProtector is null)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable);
+        }
+
+        int userId = currentUserService.GetRequiredUser().BcUserId;
+        BcUser? user = await context.BcUsers.SingleOrDefaultAsync(
+            item => item.BcUserId == userId,
+            cancellationToken);
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        user.EncryptedGeminiApiKey = apiKeyProtector.Protect(GeminiApiKey!);
+        await context.SaveChangesAsync(cancellationToken);
+        GeminiKeyMessage = "Gemini API key saved securely.";
+        return RedirectToPage();
     }
 
     private static DateTimeOffset StartOfDay(DateOnly date) => new(
