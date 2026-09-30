@@ -9,7 +9,7 @@ namespace BC_CampusLearn.Tests;
 public class AdminBookingsAndSessionsTests
 {
     [Fact]
-    public async Task PageShowsCompletedSessionsAndReviewQueues()
+    public async Task PageShowsOnlyCompletedSessionsWithAllThreeReviews()
     {
         await using ApplicationDbContext context = CreateContext();
         TutorCourseModule assignment = CreateAssignment();
@@ -41,24 +41,18 @@ public class AdminBookingsAndSessionsTests
         var page = new BookingsAndSessionsModel(context, new FixedTimeProvider());
         await page.OnGetAsync(CancellationToken.None);
 
-        Assert.Equal(3, page.CompletedSessionCount);
-        Assert.Equal(2, page.RequireAdminReviewCount);
-        Assert.Equal(2, page.RequireTutorHeadReviewCount);
-        Assert.Equal(3, page.DisplayedSessionCount);
+        Assert.Equal(1, page.FilteredSessionCount);
+        Assert.Equal(1, page.DisplayedSessionCount);
         Assert.DoesNotContain(page.Sessions, session => session.StudentName == "Dana Student");
+        Assert.DoesNotContain(page.Sessions, session => session.StudentName == "Alex Student");
+        Assert.DoesNotContain(page.Sessions, session => session.StudentName == "Bianca Student");
         Assert.Equal("Approved", page.Sessions
             .Single(session => session.StudentName == "Chris Student")
-            .AdminApprovalLabel);
-        Assert.Equal("Pending approval", page.Sessions
-            .Single(session => session.StudentName == "Alex Student")
-            .AdminApprovalLabel);
-        Assert.Equal("Awaiting reviews", page.Sessions
-            .Single(session => session.StudentName == "Bianca Student")
             .AdminApprovalLabel);
     }
 
     [Fact]
-    public async Task PageFiltersByQueueSearchAndApproval()
+    public async Task PageFiltersReviewedSessionsBySearchAndApproval()
     {
         await using ApplicationDbContext context = CreateContext();
         TutorCourseModule assignment = CreateAssignment();
@@ -70,33 +64,28 @@ public class AdminBookingsAndSessionsTests
             DisplayName = "Admin User",
             Role = BcUserRole.Admin
         });
+        BcUser tutorHead = CreateTutorHead();
+        context.BcUsers.Add(tutorHead);
         context.Bookings.AddRange(
             CreateBooking(1, assignment, "Alex Student", "Online",
                 studentReview: new StudentEvaluation(),
-                tutorReview: new TutorStudentEvaluation()),
+                tutorReview: new TutorStudentEvaluation(),
+                tutorHeadReviewer: tutorHead),
             CreateBooking(2, assignment, "Bianca Student", "Pretoria Campus",
                 studentReview: new StudentEvaluation()),
             CreateBooking(3, assignment, "Chris Student", "Online",
                 studentReview: new StudentEvaluation(),
                 tutorReview: new TutorStudentEvaluation(),
-                adminReview: ApprovedReview()));
+                adminReview: ApprovedReview(),
+                tutorHeadReviewer: tutorHead));
         await context.SaveChangesAsync();
 
-        var adminQueue = new BookingsAndSessionsModel(context, new FixedTimeProvider()) { Queue = "admin" };
-        await adminQueue.OnGetAsync(CancellationToken.None);
-        Assert.Equal(2, adminQueue.Sessions.Count);
-        Assert.Contains(adminQueue.Sessions, session => session.StudentName == "Alex Student");
-        Assert.Contains(adminQueue.Sessions, session => session.StudentName == "Bianca Student");
-
-        var tutorHeadQueue = new BookingsAndSessionsModel(context, new FixedTimeProvider()) { Queue = "head" };
-        await tutorHeadQueue.OnGetAsync(CancellationToken.None);
-        Assert.Equal(3, tutorHeadQueue.Sessions.Count);
-        Assert.Equal("Approved", tutorHeadQueue.Sessions
-            .Single(session => session.StudentName == "Chris Student")
-            .AdminApprovalLabel);
-        Assert.Equal("Pending approval", tutorHeadQueue.Sessions
-            .Single(session => session.StudentName == "Alex Student")
-            .AdminApprovalLabel);
+        var pending = new BookingsAndSessionsModel(context, new FixedTimeProvider())
+        {
+            Approval = "pending"
+        };
+        await pending.OnGetAsync(CancellationToken.None);
+        Assert.Equal("Alex Student", Assert.Single(pending.Sessions).StudentName);
 
         var approved = new BookingsAndSessionsModel(context, new FixedTimeProvider())
         {
@@ -113,16 +102,26 @@ public class AdminBookingsAndSessionsTests
         await using ApplicationDbContext context = CreateContext();
         TutorCourseModule assignment = CreateAssignment();
         context.TutorCourseModules.Add(assignment);
+        BcUser tutorHead = CreateTutorHead();
+        context.BcUsers.Add(tutorHead);
         context.Bookings.AddRange(
-            CreateBooking(1, assignment, "Monday Student", "Online"),
-            CreateBooking(9, assignment, "Current Day Student", "Online"),
-            CreateBookingWithDate(20, assignment, "Older Student", new DateTimeOffset(2026, 8, 15, 10, 0, 0, TimeSpan.Zero)));
+            CreateBooking(1, assignment, "Monday Student", "Online",
+                studentReview: new StudentEvaluation(),
+                tutorReview: new TutorStudentEvaluation(),
+                tutorHeadReviewer: tutorHead),
+            CreateBooking(9, assignment, "Current Day Student", "Online",
+                studentReview: new StudentEvaluation(),
+                tutorReview: new TutorStudentEvaluation(),
+                tutorHeadReviewer: tutorHead),
+            CreateBookingWithDate(20, assignment, "Older Student",
+                new DateTimeOffset(2026, 8, 15, 10, 0, 0, TimeSpan.Zero),
+                tutorHead));
         await context.SaveChangesAsync();
 
         var monthly = new BookingsAndSessionsModel(context, new FixedTimeProvider());
         await monthly.OnGetAsync(CancellationToken.None);
         Assert.Equal("September 2026", monthly.PeriodLabel);
-        Assert.Equal(2, monthly.CompletedSessionCount);
+        Assert.Equal(2, monthly.FilteredSessionCount);
 
         var daily = new BookingsAndSessionsModel(context, new FixedTimeProvider())
         {
@@ -154,13 +153,16 @@ public class AdminBookingsAndSessionsTests
         await using ApplicationDbContext context = CreateContext();
         TutorCourseModule assignment = CreateAssignment();
         context.TutorCourseModules.Add(assignment);
+        BcUser tutorHead = CreateTutorHead();
+        context.BcUsers.Add(tutorHead);
         for (int id = 1; id <= 10; id++)
         {
             context.Bookings.Add(CreateBookingWithDate(
                 id,
                 assignment,
                 $"Student {id}",
-                new DateTimeOffset(2026, 9, 10 + id, 10, 0, 0, TimeSpan.Zero)));
+                new DateTimeOffset(2026, 9, 10 + id, 10, 0, 0, TimeSpan.Zero),
+                tutorHead));
         }
         await context.SaveChangesAsync();
 
@@ -273,7 +275,8 @@ public class AdminBookingsAndSessionsTests
         int id,
         TutorCourseModule assignment,
         string studentName,
-        DateTimeOffset sessionDate) => new()
+        DateTimeOffset sessionDate,
+        BcUser tutorHeadReviewer) => new()
         {
             BookingId = id,
             TutorId = assignment.Tutor.TutorId,
@@ -285,7 +288,16 @@ public class AdminBookingsAndSessionsTests
             Status = BookingStatus.Completed,
             ScheduledStartTime = sessionDate,
             DateBooked = sessionDate.AddDays(-5),
-            CompletedAt = sessionDate.AddHours(1)
+            CompletedAt = sessionDate.AddHours(1),
+            StudentEvaluation = new StudentEvaluation(),
+            TutorEvaluation = new TutorStudentEvaluation(),
+            SessionReviews = [new SessionReview
+            {
+                ReviewerBcUserId = tutorHeadReviewer.BcUserId,
+                Reviewer = tutorHeadReviewer,
+                Rating = 5,
+                CreatedAt = sessionDate.AddHours(2)
+            }]
         };
 
     private static AdminSessionReview ApprovedReview() => new()

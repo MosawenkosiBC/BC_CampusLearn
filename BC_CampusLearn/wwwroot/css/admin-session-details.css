@@ -48,7 +48,7 @@
 .admin-session-review-panel-heading p { color: #747d87; font-size: .78rem; margin: .25rem 0 0; }
 .admin-session-review-empty { align-items: center; color: #626b78; display: flex; justify-content: center; min-height: 8rem; text-align: center; }
 .admin-session-prose { white-space: pre-wrap; }
-.admin-session-answers { margin: 0; display: grid; gap: 1rem; text-align: center; }
+.admin-session-answers { margin: 0; display: grid; gap: 1rem; text-align: left; }
 .admin-session-answers > div { border-bottom: 1px solid #f0f1f3; padding-bottom: 1rem; }
 .admin-session-answers > div[hidden] { display: none; }
 .admin-session-answers dt,

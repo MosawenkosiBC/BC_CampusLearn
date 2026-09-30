@@ -20,6 +20,10 @@ public class SessionDetailsModel(
 
     public IReadOnlyList<ReviewAnswer> TutorReviewAnswers { get; private set; } = [];
 
+    public SessionReview? TutorHeadReview { get; private set; }
+
+    public IReadOnlyList<ReviewAnswer> TutorHeadReviewAnswers { get; private set; } = [];
+
     public sealed record ReviewAnswer(string Question, string Value);
 
     [BindProperty]
@@ -31,7 +35,8 @@ public class SessionDetailsModel(
     public bool CanRecordAdminReview =>
         Session.Status == BookingStatus.Completed &&
         Session.StudentEvaluation is not null &&
-        Session.TutorEvaluation is not null;
+        Session.TutorEvaluation is not null &&
+        TutorHeadReview is not null;
 
     public async Task<IActionResult> OnGetAsync(int id, CancellationToken cancellationToken) =>
         await LoadPageAsync(id, populateInput: true, cancellationToken);
@@ -57,6 +62,9 @@ public class SessionDetailsModel(
         Session = session;
         StudentReviewAnswers = BuildStudentReviewAnswers(session);
         TutorReviewAnswers = BuildTutorReviewAnswers(session);
+        TutorHeadReview = session.SessionReviews.FirstOrDefault(review =>
+            review.Reviewer.Role == BcUserRole.HeadOfTutors);
+        TutorHeadReviewAnswers = BuildTutorHeadReviewAnswers(TutorHeadReview);
         if (populateInput && session.AdminSessionReview is { } saved)
         {
             AdminReviewInput = new AdminSessionReviewInput
@@ -93,12 +101,15 @@ public class SessionDetailsModel(
             .Include(item => item.StudentEvaluation)
             .Include(item => item.TutorEvaluation)
             .Include(item => item.AdminSessionReview)
+            .Include(item => item.SessionReviews).ThenInclude(item => item.Reviewer)
             .SingleOrDefaultAsync(item => item.BookingId == id,
                 cancellationToken);
         if (booking is null) return NotFound();
         if (booking.Status != BookingStatus.Completed ||
             booking.StudentEvaluation is null ||
-            booking.TutorEvaluation is null)
+            booking.TutorEvaluation is null ||
+            !booking.SessionReviews.Any(review =>
+                review.Reviewer.Role == BcUserRole.HeadOfTutors))
         {
             return BadRequest();
         }
@@ -190,6 +201,22 @@ public class SessionDetailsModel(
         }
         return answers;
     }
+
+    private static IReadOnlyList<ReviewAnswer> BuildTutorHeadReviewAnswers(
+        SessionReview? review) => review is null
+        ? []
+        :
+        [
+            new("1. Was the correct module and topic covered?", Answer(review.ModuleAndTopicCoverage)),
+            new("2. How clear were the tutor's explanations?", Answer(review.ExplanationClarity)),
+            new("3. Was the session structured effectively?", Answer(review.SessionStructure)),
+            new("4. Did the tutor engage the student appropriately?", Answer(review.StudentEngagement)),
+            new("5. Do the recording and submitted reviews match?", Answer(review.EvidenceConsistency)),
+            new("6. Were any concerns identified?", Answer(review.ConcernLevel)),
+            new("7. Overall session assessment", Answer(review.OverallAssessment)),
+            new("8. Decision", Answer(review.Decision)),
+            new("Additional comments", Answer(review.Comment))
+        ];
 
     private static string Answer(string? value) =>
         string.IsNullOrWhiteSpace(value) ? "Not provided" : value;
