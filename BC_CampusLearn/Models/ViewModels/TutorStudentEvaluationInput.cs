@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace BC_CampusLearn.Models.ViewModels;
 
@@ -38,4 +39,7 @@ public class TutorStudentEvaluationInput
     [StringLength(2048)]
     [Url(ErrorMessage = "Enter a valid recording URL.")]
     public string RecordingLink { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Upload the meeting transcript.")]
+    public IFormFile? Transcript { get; set; }
 }

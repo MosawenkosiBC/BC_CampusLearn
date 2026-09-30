@@ -31,6 +31,12 @@ public class TutorStudentEvaluationConfiguration
         builder.Property(item => item.RecordingLink)
             .HasMaxLength(2048)
             .IsRequired();
+        builder.Property(item => item.TranscriptOriginalFileName)
+            .HasMaxLength(255);
+        builder.Property(item => item.TranscriptStoragePath)
+            .HasMaxLength(500);
+        builder.Property(item => item.TranscriptContentType)
+            .HasMaxLength(100);
         builder.HasOne(item => item.Booking)
             .WithOne(booking => booking.TutorEvaluation)
             .HasForeignKey<TutorStudentEvaluation>(item => item.BookingId)
