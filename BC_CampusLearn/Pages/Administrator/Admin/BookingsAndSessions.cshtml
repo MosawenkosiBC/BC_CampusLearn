@@ -23,14 +23,9 @@
         <div class="approval-status-help-card" id="approval-status-help-card" role="tooltip">
             <h2>Approval status guide</h2>
             <div>
-                <span class="session-approval is-waiting">Awaiting reviews</span>
-                <span aria-hidden="true">–</span>
-                <p>The student or tutor review has not yet been submitted.</p>
-            </div>
-            <div>
                 <span class="session-approval is-pending">Pending approval</span>
                 <span aria-hidden="true">–</span>
-                <p>The Tutor Head review or administrator approval is still pending.</p>
+                <p>The administrator approval is still pending.</p>
             </div>
             <div>
                 <span class="session-approval is-approved">Approved</span>
@@ -51,15 +46,13 @@
                     <h2 id="session-filters-title">Filter</h2>
                     <span>@Model.PeriodLabel</span>
                 </div>
-                @if (Model.Search is not null || Model.Approval != "all" || Model.Queue != "all" || Model.Period != "month")
+                @if (Model.Search is not null || Model.Approval != "all" || Model.Period != "month")
                 {
                     <a asp-page="/Administrator/Admin/BookingsAndSessions">Clear all</a>
                 }
             </div>
 
             <form method="get">
-                <input type="hidden" name="Queue" value="@Model.Queue" />
-
                 <label class="session-filter-field">
                     <span>Search sessions</span>
                     <input asp-for="Search"
@@ -71,7 +64,6 @@
                     <span>Admin approval</span>
                     <select asp-for="Approval">
                         <option value="all">All approval statuses</option>
-                        <option value="awaiting">Awaiting reviews</option>
                         <option value="pending">Pending approval</option>
                         <option value="approved">Approved</option>
                     </select>
@@ -103,46 +95,10 @@
         </aside>
 
         <div class="sessions-main-column">
-            <nav class="session-statistics" aria-label="Session review queues">
-                <a asp-page="/Administrator/Admin/BookingsAndSessions"
-                   asp-route-Queue="all"
-                   asp-route-Search="@Model.Search"
-                   asp-route-Approval="@Model.Approval"
-                   asp-route-Period="@Model.Period"
-                   asp-route-From="@Model.From?.ToString("yyyy-MM-dd")"
-                   asp-route-To="@Model.To?.ToString("yyyy-MM-dd")"
-                   class="session-statistic-card @(Model.Queue == "all" ? "is-active" : null)"
-                   aria-current="@(Model.Queue == "all" ? "page" : null)">
-                    <span>Completed Sessions</span>
-                    <strong>@Model.CompletedSessionCount</strong>
-                </a>
-
-                <a asp-page="/Administrator/Admin/BookingsAndSessions"
-                   asp-route-Queue="admin"
-                   asp-route-Search="@Model.Search"
-                   asp-route-Approval="all"
-                   asp-route-Period="@Model.Period"
-                   asp-route-From="@Model.From?.ToString("yyyy-MM-dd")"
-                   asp-route-To="@Model.To?.ToString("yyyy-MM-dd")"
-                   class="session-statistic-card @(Model.Queue == "admin" ? "is-active" : null)"
-                   aria-current="@(Model.Queue == "admin" ? "page" : null)">
-                    <span>Require Admin Review</span>
-                    <strong>@Model.RequireAdminReviewCount</strong>
-                </a>
-
-                <a asp-page="/Administrator/Admin/BookingsAndSessions"
-                   asp-route-Queue="head"
-                   asp-route-Search="@Model.Search"
-                   asp-route-Approval="@Model.Approval"
-                   asp-route-Period="@Model.Period"
-                   asp-route-From="@Model.From?.ToString("yyyy-MM-dd")"
-                   asp-route-To="@Model.To?.ToString("yyyy-MM-dd")"
-                   class="session-statistic-card @(Model.Queue == "head" ? "is-active" : null)"
-                   aria-current="@(Model.Queue == "head" ? "page" : null)">
-                    <span>Require Tutor Head Review</span>
-                    <strong>@Model.RequireTutorHeadReviewCount</strong>
-                </a>
-            </nav>
+            <section class="session-count-card" aria-label="Session count">
+                <span>Sessions</span>
+                <strong>@Model.FilteredSessionCount</strong>
+            </section>
 
             <section class="completed-sessions" aria-label="Completed sessions">
             <div class="completed-session-table-wrap" tabindex="0">

@@ -117,7 +117,9 @@
                         id="tutor-head-review-tab" aria-controls="tutor-head-review-panel"
                         aria-selected="false" tabindex="-1" data-review-tab="tutor-head-review-panel">
                     <span>Tutor Head Review</span>
-                    <strong class="is-missing">Not submitted</strong>
+                    <strong class="@(Model.TutorHeadReview is not null ? "is-submitted" : "is-missing")">
+                        @(Model.TutorHeadReview is not null ? "Submitted" : "Not submitted")
+                    </strong>
                 </button>
                 <button type="button" class="admin-session-review-tab" role="tab"
                         id="tutor-review-tab" aria-controls="tutor-review-panel"
@@ -196,9 +198,30 @@
                         <h2>Tutor Head Review</h2>
                         <p>Submitted form responses for this session.</p>
                     </div>
+                    @if (Model.TutorHeadReview is { } tutorHeadReview)
+                    {
+                        <span class="admin-session-recorded-at">
+                            Recorded @tutorHeadReview.CreatedAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
+                        </span>
+                    }
                 </header>
                 <div class="admin-session-review-body">
-                    <p class="admin-session-review-empty">No Tutor Head review submitted.</p>
+                    @if (Model.TutorHeadReviewAnswers.Count == 0)
+                    {
+                        <p class="admin-session-review-empty">No Tutor Head review submitted.</p>
+                    }
+                    else
+                    {
+                        <dl class="admin-session-answers">
+                            @foreach (var answer in Model.TutorHeadReviewAnswers)
+                            {
+                                <div data-review-answer>
+                                    <dt>@answer.Question</dt>
+                                    <dd>@answer.Value</dd>
+                                </div>
+                            }
+                        </dl>
+                    }
                 </div>
             </section>
 
@@ -246,7 +269,7 @@
                     }
                     else
                     {
-                        <p class="admin-session-review-empty">The administrator review is available after the completed session has both a student and tutor review.</p>
+                        <p class="admin-session-review-empty">The administrator review is available after the completed session has student, tutor, and Tutor Head reviews.</p>
                     }
                 </div>
             </section>

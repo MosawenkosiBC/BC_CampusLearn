@@ -11,16 +11,12 @@ public class BookingsAndSessionsModel(
     TimeProvider? timeProvider = null) : PageModel
 {
     public const int PageSize = 8;
-    private static readonly string[] ValidQueues = ["all", "admin", "head"];
     private static readonly string[] ValidApprovalFilters =
-        ["all", "awaiting", "pending", "approved"];
+        ["all", "pending", "approved"];
     private static readonly string[] ValidPeriods =
         ["month", "week", "day", "custom"];
     private static readonly TimeSpan CampusOffset = TimeSpan.FromHours(2);
     private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
-
-    [BindProperty(SupportsGet = true)]
-    public string Queue { get; set; } = "all";
 
     [BindProperty(SupportsGet = true)]
     public string? Search { get; set; }
@@ -40,9 +36,6 @@ public class BookingsAndSessionsModel(
     [BindProperty(SupportsGet = true)]
     public int SessionPage { get; set; } = 1;
 
-    public int CompletedSessionCount { get; private set; }
-    public int RequireAdminReviewCount { get; private set; }
-    public int RequireTutorHeadReviewCount { get; private set; }
     public int FilteredSessionCount { get; private set; }
     public int TotalPages { get; private set; }
     public int DisplayedSessionCount => Sessions.Count;
@@ -51,9 +44,6 @@ public class BookingsAndSessionsModel(
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        Queue = ValidQueues.Contains(Queue, StringComparer.OrdinalIgnoreCase)
-            ? Queue.ToLowerInvariant()
-            : "all";
         Approval = ValidApprovalFilters.Contains(Approval, StringComparer.OrdinalIgnoreCase)
             ? Approval.ToLowerInvariant()
             : "all";
@@ -64,33 +54,18 @@ public class BookingsAndSessionsModel(
 
         (DateTimeOffset periodStart, DateTimeOffset periodEnd) = ResolvePeriod();
 
-        IQueryable<Booking> completed = context.Bookings
+        IQueryable<Booking> reviewedSessions = context.Bookings
             .AsNoTracking()
             .Where(booking =>
                 booking.Status == BookingStatus.Completed &&
                 booking.ScheduledStartTime >= periodStart &&
-                booking.ScheduledStartTime < periodEnd);
-
-        CompletedSessionCount = await completed.CountAsync(cancellationToken);
-        RequireAdminReviewCount = await completed.CountAsync(booking =>
-            booking.AdminSessionReview == null,
-            cancellationToken);
-        RequireTutorHeadReviewCount = await completed.CountAsync(booking =>
-            !booking.SessionReviews.Any(review =>
-                review.Reviewer.Role == BcUserRole.HeadOfTutors),
-            cancellationToken);
-
-        IQueryable<Booking> filtered = completed;
-        if (Queue == "admin")
-        {
-            filtered = filtered.Where(booking => booking.AdminSessionReview == null);
-        }
-        else if (Queue == "head")
-        {
-            filtered = filtered.Where(booking =>
-                !booking.SessionReviews.Any(review =>
+                booking.ScheduledStartTime < periodEnd &&
+                booking.StudentEvaluation != null &&
+                booking.TutorEvaluation != null &&
+                booking.SessionReviews.Any(review =>
                     review.Reviewer.Role == BcUserRole.HeadOfTutors));
-        }
+
+        IQueryable<Booking> filtered = reviewedSessions;
 
         if (Search is not null)
         {
@@ -104,12 +79,7 @@ public class BookingsAndSessionsModel(
 
         filtered = Approval switch
         {
-            "awaiting" => filtered.Where(booking =>
-                booking.StudentEvaluation == null ||
-                booking.TutorEvaluation == null),
             "pending" => filtered.Where(booking =>
-                booking.StudentEvaluation != null &&
-                booking.TutorEvaluation != null &&
                 (booking.AdminSessionReview == null ||
                  !booking.AdminSessionReview.AllReviewsSubmitted ||
                  !booking.AdminSessionReview.HeadConfirmedSession ||
