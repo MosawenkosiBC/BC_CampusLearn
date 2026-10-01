@@ -12,14 +12,21 @@ public class IndexModel(
     CampusEventImageStore imageStore,
     TimeProvider timeProvider) : PageModel
 {
+    private const int EventPageSize = 4;
+
     public IReadOnlyList<AdminEventListItem> Events { get; private set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public string EventTab { get; set; } = "active";
 
+    [BindProperty(SupportsGet = true)]
+    public int EventPage { get; set; } = 1;
+
     public int ActiveEventCount { get; private set; }
     public int DraftEventCount { get; private set; }
     public int PastEventCount { get; private set; }
+    public int FilteredEventCount { get; private set; }
+    public int TotalPages { get; private set; } = 1;
 
     [TempData]
     public string? EventMessage { get; set; }
@@ -54,7 +61,7 @@ public class IndexModel(
             "past" => "past",
             _ => "active"
         };
-        Events = EventTab switch
+        List<AdminEventListItem> filteredEvents = EventTab switch
         {
             "drafts" => allEvents
                 .Where(item => !item.IsPublished && item.EndsAt >= now)
@@ -69,6 +76,16 @@ public class IndexModel(
                 .OrderBy(item => item.StartsAt)
                 .ToList()
         };
+
+        FilteredEventCount = filteredEvents.Count;
+        TotalPages = Math.Max(
+            1,
+            (int)Math.Ceiling(FilteredEventCount / (double)EventPageSize));
+        EventPage = Math.Clamp(EventPage, 1, TotalPages);
+        Events = filteredEvents
+            .Skip((EventPage - 1) * EventPageSize)
+            .Take(EventPageSize)
+            .ToList();
     }
 
     public async Task<IActionResult> OnPostDeleteAsync(
@@ -87,7 +104,7 @@ public class IndexModel(
         await context.SaveChangesAsync(cancellationToken);
         imageStore.Delete(campusEvent.BannerImagePath);
         EventMessage = $"{campusEvent.Title} was removed.";
-        return RedirectToPage(new { EventTab });
+        return RedirectToPage(new { EventTab, EventPage });
     }
 
     public async Task<IActionResult> OnPostPublishAsync(

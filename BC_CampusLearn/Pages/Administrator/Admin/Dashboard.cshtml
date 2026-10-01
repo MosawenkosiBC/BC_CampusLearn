@@ -269,62 +269,81 @@
                 <div>
                     <h2 id="admin-events-title">Upcoming events</h2>
                 </div>
-                <span class="admin-events-link" aria-label="View Events page coming soon">
+                <a asp-page="/Administrator/Events/Index" class="admin-events-link">
                     <span>View Events</span>
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M0 0h24v24H0z" fill="none" />
                         <path fill="currentColor"
                               d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
                     </svg>
-                </span>
+                </a>
             </div>
-            <figure class="admin-event-preview"
-                    data-admin-event-carousel
-                    aria-roledescription="carousel"
-                    aria-label="Upcoming events">
-                <div class="admin-event-slides" aria-live="polite">
-                    <div class="admin-event-slide is-active"
-                         data-admin-event-slide
-                         aria-hidden="false">
-                        <img src="/Media/events/2026%20Industry%20connect_PTA%20%26%20KP.png"
-                             alt="Industry Connect Day on 29 July 2026 from 09:00 to 17:00" />
+            @if (Model.CurrentEvents.Count == 0)
+            {
+                <p class="admin-events-empty">There are no events.</p>
+            }
+            else
+            {
+                <figure class="admin-event-preview"
+                        data-admin-event-carousel
+                        aria-roledescription="carousel"
+                        aria-label="Current events">
+                    <div class="admin-event-slides" aria-live="polite">
+                        @for (int index = 0; index < Model.CurrentEvents.Count; index++)
+                        {
+                            var campusEvent = Model.CurrentEvents[index];
+                            <div class="admin-event-slide @(index == 0 ? "is-active" : null)"
+                                 data-admin-event-slide
+                                 aria-hidden="@(index == 0 ? "false" : "true")"
+                                 aria-label="@campusEvent.Title">
+                                @if (!string.IsNullOrWhiteSpace(campusEvent.BannerImagePath))
+                                {
+                                    <img src="@campusEvent.BannerImagePath"
+                                         alt="Banner for @campusEvent.Title" />
+                                }
+                                else
+                                {
+                                    <div class="admin-event-slide-placeholder">
+                                        <strong>@campusEvent.Title</strong>
+                                        <span>@campusEvent.StartsAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")</span>
+                                    </div>
+                                }
+                            </div>
+                        }
                     </div>
-                    <div class="admin-event-slide admin-event-slide--placeholder"
-                         data-admin-event-slide
-                         aria-hidden="true"
-                         aria-label="Empty event image placeholder"></div>
-                </div>
-                <div class="admin-event-navigation">
-                    <button type="button"
-                            class="admin-event-nav-button"
-                            data-admin-event-previous
-                            aria-label="Previous event">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="m15 5l-7 7l7 7" />
-                        </svg>
-                    </button>
-                    <div class="admin-event-dots" aria-label="Event carousel navigation">
-                        <button type="button"
-                                class="admin-event-dot is-active"
-                                data-admin-event-dot="0"
-                                aria-label="Show event 1"
-                                aria-current="true"></button>
-                        <button type="button"
-                                class="admin-event-dot"
-                                data-admin-event-dot="1"
-                                aria-label="Show event 2"
-                                aria-current="false"></button>
-                    </div>
-                    <button type="button"
-                            class="admin-event-nav-button"
-                            data-admin-event-next
-                            aria-label="Next event">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="m9 5l7 7l-7 7" />
-                        </svg>
-                    </button>
-                </div>
-            </figure>
+                    @if (Model.CurrentEvents.Count > 1)
+                    {
+                        <div class="admin-event-navigation">
+                            <button type="button"
+                                    class="admin-event-nav-button"
+                                    data-admin-event-previous
+                                    aria-label="Previous event">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="m15 5l-7 7l7 7" />
+                                </svg>
+                            </button>
+                            <div class="admin-event-dots" aria-label="Event carousel navigation">
+                                @for (int index = 0; index < Model.CurrentEvents.Count; index++)
+                                {
+                                    <button type="button"
+                                            class="admin-event-dot @(index == 0 ? "is-active" : null)"
+                                            data-admin-event-dot="@index"
+                                            aria-label="Show event @(index + 1)"
+                                            aria-current="@(index == 0 ? "true" : "false")"></button>
+                                }
+                            </div>
+                            <button type="button"
+                                    class="admin-event-nav-button"
+                                    data-admin-event-next
+                                    aria-label="Next event">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="m9 5l7 7l-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+                    }
+                </figure>
+            }
         </section>
 
         <section class="admin-dashboard-panel admin-most-booked-panel"

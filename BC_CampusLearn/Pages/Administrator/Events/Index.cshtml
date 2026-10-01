@@ -7,6 +7,7 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin-events.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/pagination.css" asp-append-version="true" />
 }
 
 <section class="admin-dashboard admin-events-page" aria-labelledby="admin-events-title">
@@ -46,7 +47,7 @@
         </a>
     </nav>
 
-    @if (Model.Events.Count == 0)
+    @if (Model.FilteredEventCount == 0)
     {
         <section class="admin-events-empty">
             <span class="admin-events-empty-icon"><i class="bi bi-calendar2-star"></i></span>
@@ -60,7 +61,7 @@
     }
     else
     {
-        <div class="admin-event-list">
+        <div class="admin-event-list" id="event-list">
             @foreach (var item in Model.Events)
             {
                 string status = Model.Status(item);
@@ -114,6 +115,7 @@
                                class="admin-event-secondary-button">Edit</a>
                             <form method="post" asp-page-handler="Delete" asp-route-id="@item.CampusEventId"
                                   asp-route-eventTab="@Model.EventTab"
+                                  asp-route-eventPage="@Model.EventPage"
                                   data-delete-event data-event-title="@item.Title">
                                 <button type="button" class="admin-event-delete-button"
                                         data-delete-event-trigger>Remove</button>
@@ -123,6 +125,17 @@
                 </article>
             }
         </div>
+        @if (Model.TotalPages > 1)
+        {
+            @await Component.InvokeAsync("Pagination", new
+            {
+                currentPage = Model.EventPage,
+                totalPages = Model.TotalPages,
+                pageRouteValueName = "EventPage",
+                fragment = "event-list",
+                ariaLabel = $"{Model.EventTab} event pages"
+            })
+        }
     }
 </section>
 

@@ -35,6 +35,8 @@ public class DashboardModel : PageModel
     { get; private set; } = [];
     public IReadOnlyList<BookedModuleItem> MostBookedModules
     { get; private set; } = [];
+    public IReadOnlyList<DashboardEventItem> CurrentEvents
+    { get; private set; } = [];
 
     public sealed record SessionActivityBucket(
         string Label,
@@ -74,6 +76,12 @@ public class DashboardModel : PageModel
         string Code,
         string Name,
         int CompletedSessions);
+
+    public sealed record DashboardEventItem(
+        int CampusEventId,
+        string Title,
+        DateTimeOffset StartsAt,
+        string BannerImagePath);
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
@@ -119,6 +127,25 @@ public class DashboardModel : PageModel
         await LoadSessionActivityAsync(cancellationToken);
         await LoadTutorPerformanceAsync(cancellationToken);
         await LoadMostBookedModulesAsync(cancellationToken);
+        await LoadCurrentEventsAsync(cancellationToken);
+    }
+
+    private async Task LoadCurrentEventsAsync(
+        CancellationToken cancellationToken)
+    {
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+        CurrentEvents = await _context.CampusEvents
+            .AsNoTracking()
+            .Where(item => item.IsPublished &&
+                item.PublishAt <= now &&
+                item.EndsAt >= now)
+            .OrderBy(item => item.StartsAt)
+            .Select(item => new DashboardEventItem(
+                item.CampusEventId,
+                item.Title,
+                item.StartsAt,
+                item.BannerImagePath))
+            .ToListAsync(cancellationToken);
     }
 
     private async Task LoadSessionActivityAsync(
