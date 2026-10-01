@@ -46,6 +46,17 @@
         case "/Administrator/Admin/BookingsAndSessions":
             breadcrumbs.Add(("Bookings and Sessions", null));
             break;
+        case "/Administrator/Events/Index":
+            breadcrumbs.Add(("Events", null));
+            break;
+        case "/Administrator/Events/Create":
+            breadcrumbs.Add(("Events", "/Administrator/Events/Index"));
+            breadcrumbs.Add(("Create Event", null));
+            break;
+        case "/Administrator/Events/Edit":
+            breadcrumbs.Add(("Events", "/Administrator/Events/Index"));
+            breadcrumbs.Add(("Edit Event", null));
+            break;
         case "/Administrator/Admin/ApplicationDetails":
             breadcrumbs.Add(("Applications", "/Administrator/Admin/Applications"));
             breadcrumbs.Add(("Application Details", null));

@@ -8,6 +8,7 @@ using BC_CampusLearn.Services.Sessions;
 using BC_CampusLearn.Services.Students;
 using BC_CampusLearn.Services.Notifications;
 using BC_CampusLearn.Services.Settings;
+using BC_CampusLearn.Services.Events;
 using BC_CampusLearn.Hubs;
 using BC_CampusLearn.Models.Entities;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -157,6 +158,7 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IBookingService,
     BookingService>();
+builder.Services.AddScoped<CampusEventImageStore>();
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<

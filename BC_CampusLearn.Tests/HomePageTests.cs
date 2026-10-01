@@ -55,6 +55,47 @@ public class HomePageTests
         Assert.False(page.TutorApplicationsOpen);
     }
 
+    [Fact]
+    public async Task ShowsOnlyPublishedEventsThatHaveNotEnded()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        context.CampusEvents.AddRange(
+            CreateEvent("Visible event", now.AddDays(-1), now.AddDays(1),
+                now.AddDays(-2), true),
+            CreateEvent("Draft event", now.AddDays(1), now.AddDays(2),
+                now.AddDays(-1), false),
+            CreateEvent("Scheduled announcement", now.AddDays(2), now.AddDays(3),
+                now.AddHours(1), true),
+            CreateEvent("Ended event", now.AddDays(-2), now.AddDays(-1),
+                now.AddDays(-3), true));
+        await context.SaveChangesAsync();
+
+        var page = new Pages.IndexModel(context, new EmptyTutorService());
+        await page.OnGetAsync(CancellationToken.None);
+
+        var visible = Assert.Single(page.ActiveEvents);
+        Assert.Equal("Visible event", visible.Title);
+    }
+
+    private static CampusEvent CreateEvent(
+        string title,
+        DateTimeOffset startsAt,
+        DateTimeOffset endsAt,
+        DateTimeOffset publishAt,
+        bool isPublished) => new()
+    {
+        Title = title,
+        Description = "Event description",
+        Location = "Pretoria Campus",
+        StartsAt = startsAt,
+        EndsAt = endsAt,
+        PublishAt = publishAt,
+        IsPublished = isPublished,
+        BannerImagePath = "/uploads/events/banner.jpg",
+        CreatedAt = DateTimeOffset.UtcNow
+    };
+
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

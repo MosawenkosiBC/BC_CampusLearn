@@ -1,0 +1,161 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Events.IndexModel
+@using BC_CampusLearn.Models.ViewModels
+@{
+    ViewData["Title"] = "Events";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-events.css" asp-append-version="true" />
+}
+
+<section class="admin-dashboard admin-events-page" aria-labelledby="admin-events-title">
+    <header class="admin-event-page-header">
+        <div>
+            <h1 id="admin-events-title">Events</h1>
+            <p>Create and schedule campus events displayed on the home page.</p>
+        </div>
+        <a asp-page="Create" class="admin-event-primary-button">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> Create event
+        </a>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.EventMessage))
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.EventMessage))
+    }
+
+    <nav class="admin-event-tabs" aria-label="Event categories">
+        <a asp-page="Index" asp-route-eventTab="active"
+           class="@(Model.EventTab == "active" ? "is-active" : null)"
+           aria-current="@(Model.EventTab == "active" ? "page" : null)">
+            <span>Active Events</span>
+            <strong>@Model.ActiveEventCount</strong>
+        </a>
+        <a asp-page="Index" asp-route-eventTab="drafts"
+           class="@(Model.EventTab == "drafts" ? "is-active" : null)"
+           aria-current="@(Model.EventTab == "drafts" ? "page" : null)">
+            <span>Drafts</span>
+            <strong>@Model.DraftEventCount</strong>
+        </a>
+        <a asp-page="Index" asp-route-eventTab="past"
+           class="@(Model.EventTab == "past" ? "is-active" : null)"
+           aria-current="@(Model.EventTab == "past" ? "page" : null)">
+            <span>Past Events</span>
+            <strong>@Model.PastEventCount</strong>
+        </a>
+    </nav>
+
+    @if (Model.Events.Count == 0)
+    {
+        <section class="admin-events-empty">
+            <span class="admin-events-empty-icon"><i class="bi bi-calendar2-star"></i></span>
+            <h2>@Model.EmptyTitle</h2>
+            <p>@Model.EmptyMessage</p>
+            @if (Model.EventTab == "active")
+            {
+                <a asp-page="Create" class="admin-event-primary-button">Create event</a>
+            }
+        </section>
+    }
+    else
+    {
+        <div class="admin-event-list">
+            @foreach (var item in Model.Events)
+            {
+                string status = Model.Status(item);
+                <article class="admin-event-card">
+                    <div class="admin-event-card-banner">
+                        @if (!string.IsNullOrWhiteSpace(item.BannerImagePath))
+                        {
+                            <img src="@item.BannerImagePath" alt="" loading="lazy" />
+                        }
+                        else
+                        {
+                            <div class="admin-event-banner-placeholder" aria-hidden="true">
+                                <i class="bi bi-calendar-event"></i>
+                                <span>No banner image</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="admin-event-card-body">
+                        <div>
+                            <h2>@item.Title</h2>
+                            <p><i class="bi bi-geo-alt" aria-hidden="true"></i> @item.Location</p>
+                            <p><i class="bi bi-calendar-event" aria-hidden="true"></i>
+                                Event: @item.StartsAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
+                            </p>
+                            @if (Model.EventTab == "active" && status == "Scheduled")
+                            {
+                                <p><i class="bi bi-clock" aria-hidden="true"></i>
+                                    Scheduled for @item.PublishAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
+                                </p>
+                            }
+                            else if (Model.EventTab == "drafts")
+                            {
+                                <p><i class="bi bi-file-earmark" aria-hidden="true"></i> Saved as draft</p>
+                            }
+                            @if (item.CustomFieldCount > 0)
+                            {
+                                <small>@item.CustomFieldCount additional @(item.CustomFieldCount == 1 ? "detail" : "details")</small>
+                            }
+                        </div>
+                        <div class="admin-event-card-actions">
+                            @if (Model.EventTab == "drafts")
+                            {
+                                <form method="post" asp-page-handler="Publish"
+                                      asp-route-id="@item.CampusEventId">
+                                    <button type="submit" class="admin-event-primary-button">
+                                        Publish event
+                                    </button>
+                                </form>
+                            }
+                            <a asp-page="Edit" asp-route-id="@item.CampusEventId"
+                               class="admin-event-secondary-button">Edit</a>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@item.CampusEventId"
+                                  asp-route-eventTab="@Model.EventTab"
+                                  data-delete-event data-event-title="@item.Title">
+                                <button type="button" class="admin-event-delete-button"
+                                        data-delete-event-trigger>Remove</button>
+                            </form>
+                        </div>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</section>
+
+<div class="modal fade admin-event-delete-modal" id="delete-event-modal"
+     tabindex="-1" aria-labelledby="delete-event-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title" id="delete-event-modal-title">Remove event?</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <span class="admin-event-delete-warning-icon" aria-hidden="true">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </span>
+                <p>
+                    Are you sure you want to remove
+                    <strong data-delete-event-name>this event</strong>?
+                    Its banner and event information will be permanently deleted.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="admin-event-secondary-button"
+                        data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="admin-event-delete-button"
+                        data-confirm-event-delete>Remove event</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="~/js/admin-events.js" asp-append-version="true"></script>
+}

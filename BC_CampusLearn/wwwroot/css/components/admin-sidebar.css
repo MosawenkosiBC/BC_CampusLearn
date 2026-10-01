@@ -400,7 +400,7 @@ body.administrator-area > .admin-topbar {
     z-index: 1;
 }
 
-a.admin-sidebar-link:focus-visible,
+.admin-sidebar-link:focus-visible,
 .admin-sidebar-logo:focus-visible {
     outline: 3px solid rgba(74, 193, 193, 0.75);
     outline-offset: 2px;
