@@ -10,6 +10,8 @@ public class BookingPreviewViewModel
 
     public string TutorName { get; set; } = string.Empty;
 
+    public string TutorEmail { get; set; } = string.Empty;
+
     public List<BookingModuleOptionViewModel> Modules { get; set; } = new();
 
     public DateTimeOffset AvailableTime { get; set; }
