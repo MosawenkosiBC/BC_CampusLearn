@@ -30,6 +30,8 @@ public class BcUserConfiguration : IEntityTypeConfiguration<BcUser>
         builder.Property(user => user.IsPublicActivityEnabled).HasDefaultValue(true);
         builder.Property(user => user.PublicActivityDisabledReason).HasMaxLength(500);
         builder.Property(user => user.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+        builder.Property(user => user.SessionReviewsLastViewedAt)
+            .HasColumnType("datetimeoffset");
         builder.HasIndex(user => user.PersonnelNumber)
             .IsUnique()
             .HasFilter("[PersonnelNumber] IS NOT NULL");

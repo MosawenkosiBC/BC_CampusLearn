@@ -13,7 +13,13 @@ public sealed record GeminiSessionEvidence(
     string Module,
     IReadOnlyDictionary<string, string> StudentReview,
     IReadOnlyDictionary<string, string> TutorReview,
-    IReadOnlyList<string> Transcript);
+    GeminiTranscriptDocument? UploadedTranscript);
+
+public sealed record GeminiTranscriptDocument(
+    string FileName,
+    string ContentType,
+    string? ExtractedText,
+    string? Base64Data);
 
 public sealed record GeminiSessionAssessment(
     string Validity,
@@ -21,7 +27,8 @@ public sealed record GeminiSessionAssessment(
     string Summary,
     IReadOnlyList<string> Evidence,
     IReadOnlyList<string> Concerns,
-    string Recommendation);
+    string Recommendation,
+    string TranscriptDuration = "Could not determine from transcript");
 
 public sealed class GeminiAssessmentException(
     string message,

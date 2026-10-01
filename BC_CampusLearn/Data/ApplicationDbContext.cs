@@ -70,6 +70,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<AdminSessionReview> AdminSessionReviews =>
         Set<AdminSessionReview>();
 
+    public DbSet<SessionAiAssessment> SessionAiAssessments =>
+        Set<SessionAiAssessment>();
+
     public DbSet<TutorStudentEvaluation> TutorStudentEvaluations =>
         Set<TutorStudentEvaluation>();
 

@@ -66,14 +66,20 @@ public class SessionReviewsModel(
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
+        DateTimeOffset currentUtc = (timeProvider ?? TimeProvider.System)
+            .GetUtcNow();
         if (currentUserService is not null)
         {
             int userId = currentUserService.GetRequiredUser().BcUserId;
-            HasGeminiApiKey = await context.BcUsers
-                .AsNoTracking()
-                .Where(user => user.BcUserId == userId)
-                .AnyAsync(user => user.EncryptedGeminiApiKey != null,
-                    cancellationToken);
+            BcUser? user = await context.BcUsers.SingleOrDefaultAsync(
+                item => item.BcUserId == userId,
+                cancellationToken);
+            if (user is not null)
+            {
+                HasGeminiApiKey = user.EncryptedGeminiApiKey is not null;
+                user.SessionReviewsLastViewedAt = currentUtc;
+                await context.SaveChangesAsync(cancellationToken);
+            }
         }
 
         TutorFilter = string.IsNullOrWhiteSpace(TutorFilter)
@@ -88,9 +94,7 @@ public class SessionReviewsModel(
             ReviewStatusFilter = null;
         }
 
-        DateTimeOffset now = (timeProvider ?? TimeProvider.System)
-            .GetUtcNow()
-            .ToOffset(SouthAfricaOffset);
+        DateTimeOffset now = currentUtc.ToOffset(SouthAfricaOffset);
         DateOnly today = DateOnly.FromDateTime(now.DateTime);
         ReviewPeriodDates? configuredPeriod = await context.PlatformSettings
             .AsNoTracking()

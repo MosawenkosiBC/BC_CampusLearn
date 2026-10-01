@@ -11,6 +11,8 @@ namespace BC_CampusLearn.Hubs;
 [Authorize]
 public class SessionHub : Hub
 {
+    public const string TutorHeadsGroupName = "tutor-heads";
+
     private readonly ApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly TimeProvider _timeProvider;
@@ -31,7 +33,47 @@ public class SessionHub : Hub
         await Groups.AddToGroupAsync(
             Context.ConnectionId,
             GetUserGroupName(user.BcUserId));
+        if (user.Role == BcUserRole.HeadOfTutors)
+        {
+            await Groups.AddToGroupAsync(
+                Context.ConnectionId,
+                TutorHeadsGroupName);
+        }
         await base.OnConnectedAsync();
+    }
+
+    public async Task<int> GetUnreadSessionReviewCount()
+    {
+        CurrentUser user = RequireTutorHead();
+        DateTimeOffset? lastViewedAt = await _context.BcUsers
+            .AsNoTracking()
+            .Where(item => item.BcUserId == user.BcUserId)
+            .Select(item => item.SessionReviewsLastViewedAt)
+            .SingleAsync(Context.ConnectionAborted);
+
+        return await _context.Bookings
+            .AsNoTracking()
+            .CountAsync(booking =>
+                booking.TutorHeadReviewAvailableAt != null &&
+                (!lastViewedAt.HasValue ||
+                 booking.TutorHeadReviewAvailableAt > lastViewedAt),
+                Context.ConnectionAborted);
+    }
+
+    public async Task MarkSessionReviewsViewed()
+    {
+        CurrentUser user = RequireTutorHead();
+        DateTimeOffset viewedAt = _timeProvider.GetUtcNow();
+        BcUser account = await _context.BcUsers.SingleAsync(
+            item => item.BcUserId == user.BcUserId,
+            Context.ConnectionAborted);
+        account.SessionReviewsLastViewedAt = viewedAt;
+        await _context.SaveChangesAsync(Context.ConnectionAborted);
+
+        await Clients.Group(GetUserGroupName(user.BcUserId)).SendAsync(
+            "SessionReviewsViewed",
+            new { ViewedAt = viewedAt },
+            Context.ConnectionAborted);
     }
 
     public async Task JoinSession(int bookingId)
@@ -222,6 +264,18 @@ public class SessionHub : Hub
         }
 
         return participant!;
+    }
+
+    private CurrentUser RequireTutorHead()
+    {
+        CurrentUser user = _currentUserService.GetRequiredUser();
+        if (user.Role != BcUserRole.HeadOfTutors)
+        {
+            throw new HubException(
+                "Only Tutor Heads can access session review notifications.");
+        }
+
+        return user;
     }
 
     private static string GetGroupName(int bookingId) =>

@@ -4,6 +4,10 @@ using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Gemini;
 using System.Security.Cryptography;
+using System.IO.Compression;
+using System.Text.Json;
+using System.Xml;
+using System.Xml.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -16,11 +20,13 @@ public class SessionDetailsModel(
     ApplicationDbContext context,
     ICurrentUserService currentUserService,
     IWebHostEnvironment environment,
-    TimeProvider timeProvider) : PageModel
     TimeProvider timeProvider,
     IGeminiApiKeyProtector? apiKeyProtector = null,
     IGeminiSessionAssessmentService? assessmentService = null) : PageModel
 {
+    private static readonly JsonSerializerOptions AssessmentJsonOptions = new(
+        JsonSerializerDefaults.Web);
+
     public Booking Session { get; private set; } = null!;
 
     public IReadOnlyList<ReviewAnswer> StudentReviewAnswers { get; private set; }
@@ -47,6 +53,10 @@ public class SessionDetailsModel(
     public bool HasGeminiApiKey { get; private set; }
 
     public GeminiSessionAssessment? AiAssessment { get; private set; }
+
+    public DateTimeOffset? AiAssessmentGeneratedAt { get; private set; }
+
+    public bool OpenAiAssessmentModal { get; private set; }
 
     public string? AiAssessmentError { get; private set; }
 
@@ -173,8 +183,28 @@ public class SessionDetailsModel(
         {
             AiAssessment = await assessmentService.AssessAsync(
                 apiKey,
-                BuildEvidence(),
+                await BuildEvidenceAsync(cancellationToken),
                 cancellationToken);
+            SessionAiAssessment storedAssessment = await context
+                .SessionAiAssessments
+                .SingleOrDefaultAsync(item => item.BookingId == id,
+                    cancellationToken) ?? new SessionAiAssessment
+                    {
+                        BookingId = id
+                    };
+            storedAssessment.GeneratedByBcUserId = currentUser.BcUserId;
+            storedAssessment.GeneratedAt = timeProvider.GetUtcNow();
+            storedAssessment.AssessmentJson = JsonSerializer.Serialize(
+                AiAssessment,
+                AssessmentJsonOptions);
+            if (storedAssessment.SessionAiAssessmentId == 0)
+            {
+                context.SessionAiAssessments.Add(storedAssessment);
+            }
+            await context.SaveChangesAsync(cancellationToken);
+            AiAssessmentGeneratedAt = storedAssessment.GeneratedAt;
+            OpenAiAssessmentModal = true;
+            TutorHeadReviewMessage = "AI assessment generated and saved.";
         }
         catch (GeminiAssessmentException exception)
         {
@@ -195,8 +225,6 @@ public class SessionDetailsModel(
             .Include(booking => booking.ProgrammeModule)
             .Include(booking => booking.StudentEvaluation)
             .Include(booking => booking.TutorEvaluation)
-            .Include(booking => booking.SessionMessages)
-                .ThenInclude(message => message.Sender)
             .Include(booking => booking.SessionReviews)
                 .ThenInclude(review => review.Reviewer)
             .Include(booking => booking.TutorCourseModule)
@@ -243,19 +271,35 @@ public class SessionDetailsModel(
             .Where(user => user.BcUserId == currentUserId)
             .AnyAsync(user => user.EncryptedGeminiApiKey != null,
                 cancellationToken);
+        SessionAiAssessment? storedAssessment = await context
+            .SessionAiAssessments
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item => item.BookingId == id,
+                cancellationToken);
+        if (storedAssessment is not null)
+        {
+            try
+            {
+                AiAssessment = JsonSerializer.Deserialize<
+                    GeminiSessionAssessment>(
+                    storedAssessment.AssessmentJson,
+                    AssessmentJsonOptions);
+                AiAssessmentGeneratedAt = storedAssessment.GeneratedAt;
+            }
+            catch (JsonException)
+            {
+                AiAssessmentError =
+                    "The saved AI assessment could not be read. Generate it again.";
+            }
+        }
         return Page();
     }
 
-    private GeminiSessionEvidence BuildEvidence()
+    private async Task<GeminiSessionEvidence> BuildEvidenceAsync(
+        CancellationToken cancellationToken)
     {
-        IReadOnlyList<string> transcript = Session.SessionMessages
-            .Where(message => message.DeletedAt is null)
-            .OrderBy(message => message.SentAt)
-            .Take(100)
-            .Select(message =>
-                $"[{message.SentAt.ToOffset(TimeSpan.FromHours(2)):yyyy-MM-dd HH:mm}] " +
-                $"{DisplayName(message.Sender)}: {message.MessageText}")
-            .ToList();
+        GeminiTranscriptDocument? uploadedTranscript =
+            await ReadUploadedTranscriptAsync(cancellationToken);
 
         return new GeminiSessionEvidence(
             Answer(Session.Summary),
@@ -266,7 +310,91 @@ public class SessionDetailsModel(
             TutorReviewAnswers.ToDictionary(
                 answer => answer.Question,
                 answer => answer.Value),
-            transcript);
+            uploadedTranscript);
+    }
+
+    private async Task<GeminiTranscriptDocument?> ReadUploadedTranscriptAsync(
+        CancellationToken cancellationToken)
+    {
+        TutorStudentEvaluation evaluation = Session.TutorEvaluation!;
+        if (string.IsNullOrWhiteSpace(evaluation.TranscriptStoragePath) ||
+            string.IsNullOrWhiteSpace(evaluation.TranscriptOriginalFileName) ||
+            string.IsNullOrWhiteSpace(evaluation.TranscriptContentType))
+        {
+            return null;
+        }
+
+        if (!TryResolveTranscriptPath(evaluation, out string fullPath))
+        {
+            throw new GeminiAssessmentException(
+                "The uploaded transcript file could not be found. Ask the tutor to upload it again.");
+        }
+
+        string extension = Path.GetExtension(
+            evaluation.TranscriptOriginalFileName);
+        if (extension.Equals(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            byte[] bytes = await System.IO.File.ReadAllBytesAsync(
+                fullPath,
+                cancellationToken);
+            return new GeminiTranscriptDocument(
+                evaluation.TranscriptOriginalFileName,
+                "application/pdf",
+                null,
+                Convert.ToBase64String(bytes));
+        }
+
+        if (extension.Equals(".docx", StringComparison.OrdinalIgnoreCase))
+        {
+            string text;
+            try
+            {
+                text = ExtractDocxText(fullPath);
+            }
+            catch (Exception exception) when (exception is IOException or
+                XmlException)
+            {
+                throw new GeminiAssessmentException(
+                    "The uploaded Word transcript could not be read. Ask the tutor to upload it again.",
+                    exception);
+            }
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                throw new GeminiAssessmentException(
+                    "No readable text was found in the uploaded Word transcript.");
+            }
+
+            return new GeminiTranscriptDocument(
+                evaluation.TranscriptOriginalFileName,
+                "text/plain",
+                text,
+                null);
+        }
+
+        throw new GeminiAssessmentException(
+            "Legacy .doc transcripts cannot be read by the AI helper. Upload the transcript as a PDF or .docx file.");
+    }
+
+    private static string ExtractDocxText(string fullPath)
+    {
+        using ZipArchive archive = ZipFile.OpenRead(fullPath);
+        ZipArchiveEntry? documentEntry = archive.GetEntry("word/document.xml");
+        if (documentEntry is null)
+        {
+            return string.Empty;
+        }
+
+        using Stream stream = documentEntry.Open();
+        XDocument document = XDocument.Load(stream);
+        XNamespace word =
+            "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+        return string.Join(
+            Environment.NewLine,
+            document.Descendants(word + "p")
+                .Select(paragraph => string.Concat(
+                    paragraph.Descendants(word + "t")
+                        .Select(text => text.Value)))
+                .Where(text => !string.IsNullOrWhiteSpace(text)));
     }
 
     public async Task<IActionResult> OnGetTranscriptAsync(
@@ -289,32 +417,101 @@ public class SessionDetailsModel(
             return NotFound();
         }
 
-        string transcriptRoot = Path.GetFullPath(Path.Combine(
-            environment.ContentRootPath,
-            "App_Data",
-            "tutor-review-transcripts"));
-        string fullPath = Path.GetFullPath(Path.Combine(
-            environment.ContentRootPath,
-            evaluation.TranscriptStoragePath));
-        string allowedPrefix = transcriptRoot.TrimEnd(
-            Path.DirectorySeparatorChar,
-            Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
-        if (!fullPath.StartsWith(allowedPrefix, StringComparison.OrdinalIgnoreCase) ||
-            !System.IO.File.Exists(fullPath))
+        if (!TryResolveTranscriptPath(evaluation, out string fullPath))
         {
             return NotFound();
         }
 
-        return new PhysicalFileResult(fullPath, evaluation.TranscriptContentType)
+        string extension = Path.GetExtension(
+            evaluation.TranscriptOriginalFileName);
+        if (extension.Equals(".docx", StringComparison.OrdinalIgnoreCase))
         {
-            FileDownloadName = evaluation.TranscriptOriginalFileName
-        };
+            string transcriptText;
+            try
+            {
+                transcriptText = ExtractDocxText(fullPath);
+            }
+            catch (Exception exception) when (exception is IOException or
+                XmlException)
+            {
+                return Content(
+                    BuildTranscriptPreview(
+                        evaluation.TranscriptOriginalFileName,
+                        "This Word transcript could not be previewed."),
+                    "text/html; charset=utf-8");
+            }
+
+            return Content(
+                BuildTranscriptPreview(
+                    evaluation.TranscriptOriginalFileName,
+                    transcriptText),
+                "text/html; charset=utf-8");
+        }
+
+        if (extension.Equals(".doc", StringComparison.OrdinalIgnoreCase))
+        {
+            return Content(
+                BuildTranscriptPreview(
+                    evaluation.TranscriptOriginalFileName,
+                    "This legacy Word transcript cannot be previewed in the browser. Ask the tutor to upload it as a PDF or .docx file."),
+                "text/html; charset=utf-8");
+        }
+
+        return new PhysicalFileResult(fullPath, "application/pdf");
     }
 
-    private static string DisplayName(BcUser user) =>
-        string.IsNullOrWhiteSpace(user.DisplayName)
-            ? user.PersonnelNumber ?? "Session participant"
-            : user.DisplayName;
+    private static string BuildTranscriptPreview(
+        string fileName,
+        string transcriptText)
+    {
+        string encodedTitle = System.Net.WebUtility.HtmlEncode(fileName);
+        string paragraphs = string.Join(
+            Environment.NewLine,
+            transcriptText.Split(
+                    ["\r\n", "\n", "\r"],
+                    StringSplitOptions.RemoveEmptyEntries)
+                .Select(line =>
+                    $"<p>{System.Net.WebUtility.HtmlEncode(line)}</p>"));
+        return $$"""
+            <!doctype html>
+            <html lang="en">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>{{encodedTitle}}</title>
+                <style>
+                    body { color: #25282d; font-family: Arial, sans-serif; line-height: 1.6; margin: 0 auto; max-width: 900px; padding: 2rem; }
+                    h1 { border-bottom: 1px solid #e1e5e6; font-size: 1.25rem; margin: 0 0 1.5rem; padding-bottom: 1rem; }
+                    p { margin: 0 0 1rem; white-space: pre-wrap; }
+                </style>
+            </head>
+            <body>
+                <h1>{{encodedTitle}}</h1>
+                <main>{{paragraphs}}</main>
+            </body>
+            </html>
+            """;
+    }
+
+    private bool TryResolveTranscriptPath(
+        TutorStudentEvaluation evaluation,
+        out string fullPath)
+    {
+        string transcriptRoot = Path.GetFullPath(Path.Combine(
+            environment.ContentRootPath,
+            "App_Data",
+            "tutor-review-transcripts"));
+        fullPath = Path.GetFullPath(Path.Combine(
+            environment.ContentRootPath,
+            evaluation.TranscriptStoragePath!));
+        string allowedPrefix = transcriptRoot.TrimEnd(
+            Path.DirectorySeparatorChar,
+            Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return fullPath.StartsWith(
+                allowedPrefix,
+                StringComparison.OrdinalIgnoreCase) &&
+            System.IO.File.Exists(fullPath);
+    }
 
     private static byte AssessmentRating(string assessment) => assessment switch
     {

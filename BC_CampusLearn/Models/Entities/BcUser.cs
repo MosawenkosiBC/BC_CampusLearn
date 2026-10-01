@@ -17,6 +17,7 @@ public class BcUser
     public DateTime? PublicActivityDisabledAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
+    public DateTimeOffset? SessionReviewsLastViewedAt { get; set; }
     public Tutor? Tutor { get; set; }
     public Admin? Admin { get; set; }
     public ICollection<ResourceComment> ResourceComments { get; set; }

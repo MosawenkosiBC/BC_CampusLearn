@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260930142137_StoreSessionAiAssessments")]
+    partial class StoreSessionAiAssessments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -156,9 +159,6 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(1);
 
-                    b.Property<DateTimeOffset?>("SessionReviewsLastViewedAt")
-                        .HasColumnType("datetimeoffset");
-
                     b.HasKey("BcUserId");
 
                     b.HasIndex("EntraIdentityLookupHash")
@@ -235,9 +235,6 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<DateTimeOffset?>("TutorHeadReviewAvailableAt")
-                        .HasColumnType("datetimeoffset");
-
                     b.Property<int>("TutorId")
                         .HasColumnType("int");
 
@@ -246,8 +243,6 @@ namespace BC_CampusLearn.Migrations
                     b.HasIndex("ProgrammeModuleId");
 
                     b.HasIndex("StudentBcUserId");
-
-                    b.HasIndex("TutorHeadReviewAvailableAt");
 
                     b.HasIndex("TutorId", "ProgrammeModuleId");
 

@@ -31,6 +31,8 @@ builder.Services.AddOptions<IdentityProtectionOptions>()
     .ValidateOnStart();
 
 builder.Services.AddScoped<UserNotificationSignalRInterceptor>();
+builder.Services.AddScoped<ITutorHeadSessionReviewNotifier,
+    TutorHeadSessionReviewNotifier>();
 builder.Services.AddScoped<SettingsAuditService>();
 
 string connectionString =

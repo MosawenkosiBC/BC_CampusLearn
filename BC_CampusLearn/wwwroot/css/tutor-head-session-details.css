@@ -48,6 +48,37 @@
 
 .tutor-head-summary-actions form { margin: 0; }
 
+.tutor-head-summary-view-actions {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.tutor-head-view-ai-button {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #ad0151;
+    border-radius: 0.5rem;
+    color: #ad0151;
+    display: inline-flex;
+    font-size: 16px;
+    font-weight: 650;
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+}
+
+.tutor-head-view-ai-button:hover,
+.tutor-head-view-ai-button:focus-visible {
+    background: #fff5fa;
+    border-color: #8f0043;
+    color: #8f0043;
+}
+
+.tutor-head-view-ai-button:focus-visible {
+    box-shadow: 0 0 0 3px rgba(173, 1, 81, 0.2);
+    outline: 0;
+}
+
 .tutor-head-ai-assessment-button {
     align-items: center;
     background: #363c3d;
@@ -97,13 +128,19 @@
 
 .tutor-head-ai-setup-note a { color: #8f174f; }
 
-.tutor-head-ai-error {
-    background: #fff2f0;
-    border-left: 0.25rem solid #b42318;
-    border-radius: 0.35rem;
-    color: #7a271a;
-    margin-bottom: 1rem;
-    padding: 0.85rem 1rem;
+.tutor-head-ai-button-spinner {
+    animation: tutor-head-ai-button-spin 700ms linear infinite;
+    border: 2px solid rgba(255, 255, 255, 0.45);
+    border-radius: 50%;
+    border-top-color: #fff;
+    height: 1rem;
+    width: 1rem;
+}
+
+.tutor-head-ai-button-spinner[hidden] { display: none; }
+
+@keyframes tutor-head-ai-button-spin {
+    to { transform: rotate(360deg); }
 }
 
 .tutor-head-ai-assessment {
@@ -111,7 +148,7 @@
     border: 1px solid #e1e5e6;
     border-radius: 0.65rem;
     box-shadow: 0 0.35rem 1rem rgba(25, 30, 32, 0.08);
-    margin-bottom: 1.5rem;
+    margin: 0;
     padding: 1.35rem;
     text-align: left;
 }
@@ -126,27 +163,43 @@
     padding-bottom: 1rem;
 }
 
-.tutor-head-ai-assessment > header > div > span {
-    color: #687173;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
 .tutor-head-ai-assessment h2 {
     font-size: 20px;
     margin: 0.2rem 0 0;
 }
 
-.tutor-head-ai-advisory {
-    background: #eef4f4;
-    border-radius: 999px;
-    color: #356466;
+#ai-assessment-modal .modal-header small {
+    color: #687173;
+    display: block;
     font-size: 12px;
-    font-weight: 650;
-    padding: 0.4rem 0.7rem;
-    white-space: nowrap;
+    margin-top: 0.25rem;
+}
+
+.tutor-head-ai-title-row {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.tutor-head-ai-review-notice {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.35;
+}
+
+#ai-assessment-modal .modal-content,
+#ai-assessment-modal .modal-body { background: #fff; }
+
+#ai-assessment-modal .modal-content {
+    border: 0;
+    border-radius: 0.65rem;
+    overflow: hidden;
+}
+
+.tutor-head-ai-assessment > header h3 {
+    font-size: 18px;
+    margin: 0;
 }
 
 .tutor-head-ai-verdicts,
@@ -154,6 +207,10 @@
     display: grid;
     gap: 1rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tutor-head-ai-verdicts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .tutor-head-ai-verdicts { margin-bottom: 1rem; }
@@ -181,6 +238,48 @@
 .tutor-head-ai-lists ul { margin: 0; padding-left: 1.15rem; }
 .tutor-head-ai-lists li + li { margin-top: 0.35rem; }
 .tutor-head-ai-lists p { color: #697173; margin: 0; }
+
+.tutor-head-ai-lists > .tutor-head-ai-list {
+    border-color: #edf0f1;
+    padding: 1rem 0 0;
+}
+
+.tutor-head-ai-list--winning {
+    color: #166534;
+}
+
+.tutor-head-ai-list--winning h3,
+.tutor-head-ai-list--winning p { color: #166534; }
+
+.tutor-head-ai-list--winning li::marker { color: #15803d; }
+
+.tutor-head-ai-list--discrepancy {
+    color: #9f241b;
+}
+
+.tutor-head-ai-list--discrepancy h3,
+.tutor-head-ai-list--discrepancy p { color: #9f241b; }
+
+.tutor-head-ai-list--discrepancy li::marker { color: #b42318; }
+
+.tutor-head-ai-highlight {
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    border-radius: 0.2rem;
+    color: inherit;
+    line-height: 1.65;
+    padding: 0.12rem 0.28rem;
+}
+
+.tutor-head-ai-highlight--winning {
+    background: #d7f7e2;
+    color: #14532d;
+}
+
+.tutor-head-ai-highlight--discrepancy {
+    background: #ffe0dd;
+    color: #8f1d16;
+}
 
 .tutor-head-ai-recommendation {
     background: #f5f7f7;
@@ -228,6 +327,10 @@
 
     .tutor-head-review-tabs .admin-session-review-tab:hover {
         transform: none;
+    }
+
+    .tutor-head-ai-button-spinner {
+        animation: none;
     }
 }
 
@@ -277,6 +380,15 @@
 .tutor-head-recording-button:focus-visible { background: #202526; color: #fff; }
 .tutor-head-recording-button svg { height: 1rem; width: 1rem; }
 .tutor-head-recording-unavailable { color: #737a83; font-size: 0.76rem; }
+
+.tutor-head-evidence-actions {
+    align-items: center;
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0.65rem;
+    justify-content: flex-end;
+    margin-left: auto;
+}
 
 .tutor-head-own-review-placeholder {
     align-items: center;
@@ -438,9 +550,13 @@
     .tutor-head-summary-actions { align-items: stretch; flex-direction: column; }
     .tutor-head-summary-actions form,
     .tutor-head-ai-assessment-button,
-    .tutor-head-summary-actions .admin-session-summary-button { width: 100%; }
+    .tutor-head-summary-view-actions,
+    .tutor-head-summary-actions .admin-session-summary-button,
+    .tutor-head-view-ai-button { width: 100%; }
+    .tutor-head-summary-view-actions { align-items: stretch; flex-direction: column; }
     .tutor-head-ai-assessment-button,
-    .tutor-head-summary-actions .admin-session-summary-button { justify-content: center; }
+    .tutor-head-summary-actions .admin-session-summary-button,
+    .tutor-head-view-ai-button { justify-content: center; }
     .tutor-head-ai-setup-note { margin-top: -0.25rem; text-align: left; }
 }
 
@@ -544,8 +660,21 @@ body > footer small {
     }
 
     .tutor-head-session-details-page .tutor-head-recording-button {
+        font-size: 13px;
         justify-content: center;
+        min-height: 38px;
+        padding: 0.45rem 0.65rem;
+    }
+
+    .tutor-head-session-details-page .tutor-head-evidence-actions {
+        gap: 0.4rem;
         margin-left: auto;
-        padding-inline: 1rem;
+        max-width: 100%;
+    }
+
+    .tutor-head-session-details-page .tutor-head-review-submit button {
+        font-size: 13px;
+        min-height: 38px;
+        padding: 0.45rem 0.65rem;
     }
 }

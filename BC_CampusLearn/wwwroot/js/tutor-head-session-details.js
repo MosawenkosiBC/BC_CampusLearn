@@ -1,4 +1,52 @@
 (() => {
+    const aiAssessmentModal = document.getElementById("ai-assessment-modal");
+    if (aiAssessmentModal?.dataset.openOnLoad === "true" && window.bootstrap) {
+        bootstrap.Modal.getOrCreateInstance(aiAssessmentModal).show();
+    }
+
+    const aiAssessmentForm = document.querySelector(
+        "[data-ai-assessment-form]");
+    const aiAssessmentButton = aiAssessmentForm?.querySelector(
+        "button[type='submit']");
+    const aiAssessmentSpinner = aiAssessmentButton?.querySelector(
+        "[data-ai-assessment-spinner]");
+    const aiAssessmentIcon = aiAssessmentButton?.querySelector(
+        "[data-ai-assessment-icon]");
+    const aiAssessmentLabel = aiAssessmentButton?.querySelector(
+        "[data-ai-assessment-label]");
+    const aiAssessmentInitiallyDisabled = aiAssessmentButton?.disabled ?? false;
+    aiAssessmentForm?.addEventListener("submit", () => {
+        if (aiAssessmentButton) {
+            aiAssessmentButton.disabled = true;
+            aiAssessmentButton.setAttribute("aria-busy", "true");
+        }
+        if (aiAssessmentSpinner) {
+            aiAssessmentSpinner.hidden = false;
+        }
+        if (aiAssessmentIcon) {
+            aiAssessmentIcon.hidden = true;
+        }
+        if (aiAssessmentLabel) {
+            aiAssessmentLabel.textContent = "Generating assessment...";
+        }
+    });
+
+    window.addEventListener("pageshow", () => {
+        if (aiAssessmentButton) {
+            aiAssessmentButton.disabled = aiAssessmentInitiallyDisabled;
+            aiAssessmentButton.removeAttribute("aria-busy");
+        }
+        if (aiAssessmentSpinner) {
+            aiAssessmentSpinner.hidden = true;
+        }
+        if (aiAssessmentIcon) {
+            aiAssessmentIcon.hidden = false;
+        }
+        if (aiAssessmentLabel) {
+            aiAssessmentLabel.textContent = "Generate AI assessment";
+        }
+    });
+
     const form = document.querySelector("[data-tutor-head-review-form]");
     if (!form) {
         return;

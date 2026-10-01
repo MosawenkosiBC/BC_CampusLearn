@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using BC_CampusLearn.Services.Sessions;
+using BC_CampusLearn.Services.Notifications;
 
 namespace BC_CampusLearn.Pages.Tutors;
 
@@ -23,19 +24,22 @@ public class SessionDetailsModel : PageModel
     private readonly IWebHostEnvironment _environment;
     private readonly ISessionLifecycleService _lifecycleService;
     private readonly TimeProvider _timeProvider;
+    private readonly ITutorHeadSessionReviewNotifier? _reviewNotifier;
 
     public SessionDetailsModel(
         ApplicationDbContext context,
         ICurrentUserService currentUserService,
         IWebHostEnvironment environment,
         ISessionLifecycleService lifecycleService,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ITutorHeadSessionReviewNotifier? reviewNotifier = null)
     {
         _context = context;
         _currentUserService = currentUserService;
         _environment = environment;
         _lifecycleService = lifecycleService;
         _timeProvider = timeProvider;
+        _reviewNotifier = reviewNotifier;
     }
 
     public Booking Session { get; private set; } = null!;
@@ -513,6 +517,12 @@ public class SessionDetailsModel : PageModel
                     transcriptStoragePath));
             }
             throw;
+        }
+        if (_reviewNotifier is not null)
+        {
+            await _reviewNotifier.NotifyIfAvailableAsync(
+                bookingId,
+                cancellationToken);
         }
         SessionActionMessage = "Your student evaluation was submitted.";
         return RedirectToPage(new { bookingId });

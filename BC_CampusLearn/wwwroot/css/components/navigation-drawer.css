@@ -172,6 +172,25 @@
         transform 160ms ease;
 }
 
+.navigation-drawer-count {
+    align-items: center;
+    background: #ad0151;
+    border-radius: 999px;
+    color: #fff;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 700;
+    justify-content: center;
+    line-height: 1;
+    margin-left: auto;
+    min-height: 1.5rem;
+    min-width: 1.5rem;
+    padding: 0.25rem 0.4rem;
+}
+
+.navigation-drawer-count[hidden] { display: none; }
+
 .navigation-drawer-section {
     margin-top: 2rem;
 }

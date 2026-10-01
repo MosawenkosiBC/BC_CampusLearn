@@ -33,6 +33,8 @@ public class Booking
 
     public DateTimeOffset? ReminderSentAt { get; set; }
 
+    public DateTimeOffset? TutorHeadReviewAvailableAt { get; set; }
+
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     public ProgrammeModule ProgrammeModule { get; set; } = null!;
@@ -59,6 +61,8 @@ public class Booking
     public StudentEvaluation? StudentEvaluation { get; set; }
 
     public AdminSessionReview? AdminSessionReview { get; set; }
+
+    public SessionAiAssessment? AiAssessment { get; set; }
 
     public ICollection<BookingPreparationLink> PreparationLinks
     { get; set; } = new List<BookingPreparationLink>();
