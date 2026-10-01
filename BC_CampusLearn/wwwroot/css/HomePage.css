@@ -375,11 +375,25 @@
     margin: 0;
 }
 
+.home-event-track {
+    display: grid;
+    isolation: isolate;
+    position: relative;
+}
+
+.home-event-track.is-transitioning {
+    overflow: clip;
+}
+
 .home-event-card {
     align-items: start;
+    align-self: start;
     display: grid;
     gap: 1.5rem;
+    grid-area: 1 / 1;
     grid-template-columns: minmax(0, 1.45fr) minmax(20rem, .85fr);
+    transform-origin: center;
+    will-change: opacity, transform, filter;
 }
 
 .home-event-card[hidden] {
@@ -399,6 +413,8 @@
     display: block;
     height: 100%;
     object-fit: contain;
+    transform-origin: center;
+    will-change: transform;
     width: 100%;
 }
 
@@ -442,6 +458,7 @@
     justify-content: space-between;
     padding: 1.5rem;
     text-align: left;
+    will-change: opacity, transform;
 }
 
 .home-event-information h3 {
@@ -571,18 +588,60 @@
     border: 1px solid #fff;
     border-radius: 50%;
     height: .65rem;
+    overflow: hidden;
     padding: 0;
+    position: relative;
+    transition: width .35s cubic-bezier(.22, 1, .36, 1),
+        border-radius .35s ease, background-color .2s ease;
     width: .65rem;
 }
 
 .home-event-dots button.is-active {
-    background: #4ac1c1;
+    background: rgba(255, 255, 255, .18);
     border-color: #4ac1c1;
+    border-radius: 999px;
+    width: 2.25rem;
+}
+
+.home-event-dots button.is-active::after {
+    animation: home-event-progress 6s linear forwards;
+    background: #4ac1c1;
+    content: "";
+    inset: 0;
+    position: absolute;
+    transform: scaleX(0);
+    transform-origin: left center;
+}
+
+.home-events.is-auto-paused .home-event-dots button.is-active::after {
+    animation-play-state: paused;
 }
 
 .home-event-dots button:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 3px;
+}
+
+@keyframes home-event-progress {
+    to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-event-card,
+    .home-event-banner img,
+    .home-event-information {
+        will-change: auto;
+    }
+
+    .home-event-dots button,
+    .home-event-dots button.is-active::after {
+        animation: none;
+        transition: none;
+    }
+
+    .home-event-dots button.is-active {
+        background: #4ac1c1;
+    }
 }
 
 .review {
