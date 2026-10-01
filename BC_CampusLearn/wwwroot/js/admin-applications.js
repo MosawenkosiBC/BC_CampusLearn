@@ -244,7 +244,7 @@ Meeting link: [Add meeting link]
 Please reply to confirm that you are available.
 
 Kind regards,
-BC CampusLearn Tutor Team`
+Mzala Connect Tutor Team`
         },
         availability: {
             subject: "Confirm your tutor interview availability",
@@ -257,7 +257,7 @@ Your tutor application has progressed to the interview preparation stage. Please
 Once we receive your availability, we will confirm the interview details.
 
 Kind regards,
-BC CampusLearn Tutor Team`
+Mzala Connect Tutor Team`
         },
         information: {
             subject: "Additional information required for your tutor application",
@@ -270,7 +270,7 @@ We are currently preparing your shortlisted tutor application for the interview 
 Please reply by [add deadline].
 
 Kind regards,
-BC CampusLearn Tutor Team`
+Mzala Connect Tutor Team`
         },
         followup: {
             subject: "Thank you for attending your tutor interview",
@@ -281,7 +281,7 @@ Thank you for taking the time to attend your tutor interview. We appreciate the 
 We will contact you once the interview review has been completed.
 
 Kind regards,
-BC CampusLearn Tutor Team`
+Mzala Connect Tutor Team`
         },
         custom: {
             subject: "",
@@ -290,7 +290,7 @@ BC CampusLearn Tutor Team`
 [Write your message here]
 
 Kind regards,
-BC CampusLearn Tutor Team`
+Mzala Connect Tutor Team`
         }
     });
 
@@ -435,7 +435,7 @@ Meeting link: ${location}
 Please reply to confirm that you are available.
 
 Kind regards,
-BC CampusLearn Tutor Team`;
+Mzala Connect Tutor Team`;
                 body.dispatchEvent(new Event("input"));
             }
 
