@@ -39,12 +39,23 @@ public class IndexModel : PageModel
         TutorApplicationsOpen = applicationSettings?.IsAcceptingApplications(
             DateTime.UtcNow) ?? false;
 
-        FeaturedTutors = (await _tutorService.GetTutorsAsync(
+        List<TutorCardViewModel> tutors = (await _tutorService.GetTutorsAsync(
                 programmeModuleId: null,
                 preferredCampus: null,
                 cancellationToken))
-            .Take(4)
             .ToList();
+        int featuredTutorCount = Math.Min(4, tutors.Count);
+
+        // Partially shuffle the list so every approved tutor has an equal
+        // chance of appearing without doing unnecessary work on the rest.
+        for (int index = 0; index < featuredTutorCount; index++)
+        {
+            int randomIndex = Random.Shared.Next(index, tutors.Count);
+            (tutors[index], tutors[randomIndex]) =
+                (tutors[randomIndex], tutors[index]);
+        }
+
+        FeaturedTutors = tutors.Take(featuredTutorCount).ToList();
 
         DateTimeOffset now = DateTimeOffset.UtcNow;
         ActiveEvents = await _context.CampusEvents

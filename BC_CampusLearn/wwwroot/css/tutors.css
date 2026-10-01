@@ -862,13 +862,14 @@
     background-color: #f2f3f5;
     border: 0;
     border-radius: 0.5rem;
+    box-sizing: border-box;
     color: #20242a;
     display: inline-flex;
     font-size: 1rem;
     font-weight: 500;
     gap: 0.5rem;
+    height: 48px;
     justify-content: center;
-    min-height: 48px;
     padding: 0.7rem 1rem;
     transition:
       background-color 160ms ease,
@@ -901,8 +902,9 @@
   }
 
   .campus-select {
+    box-sizing: border-box;
+    height: 48px;
     justify-content: center;
-    min-height: 48px;
     min-width: 0;
     width: 100%;
   }
