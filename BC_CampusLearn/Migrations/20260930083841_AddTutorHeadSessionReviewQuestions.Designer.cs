@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260930083841_AddTutorHeadSessionReviewQuestions")]
+    partial class AddTutorHeadSessionReviewQuestions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -367,101 +370,6 @@ namespace BC_CampusLearn.Migrations
                     b.HasIndex("BookingId", "ChangedAt");
 
                     b.ToTable("BookingStatusHistory", (string)null);
-                });
-
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.CampusEvent", b =>
-                {
-                    b.Property<int>("CampusEventId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CampusEventId"));
-
-                    b.Property<string>("BannerImagePath")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetimeoffset")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
-
-                    b.Property<string>("Disclaimer")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<DateTimeOffset>("EndsAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<bool>("IsPublished")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<DateTimeOffset>("PublishAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset>("StartsAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("CampusEventId");
-
-                    b.HasIndex("IsPublished", "PublishAt", "EndsAt");
-
-                    b.ToTable("CampusEvent", (string)null);
-                });
-
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.CampusEventDetail", b =>
-                {
-                    b.Property<int>("CampusEventDetailId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CampusEventDetailId"));
-
-                    b.Property<int>("CampusEventId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("DataType")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<int>("Position")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.HasKey("CampusEventDetailId");
-
-                    b.HasIndex("CampusEventId", "Position");
-
-                    b.ToTable("CampusEventDetail", (string)null);
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.LearningResource", b =>
@@ -1614,21 +1522,6 @@ namespace BC_CampusLearn.Migrations
                     b.Property<bool>("StudentPunctuality")
                         .HasColumnType("bit");
 
-                    b.Property<string>("TranscriptContentType")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("TranscriptOriginalFileName")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<long?>("TranscriptSizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("TranscriptStoragePath")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
                     b.Property<string>("TutorComments")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1774,17 +1667,6 @@ namespace BC_CampusLearn.Migrations
                     b.Navigation("Booking");
 
                     b.Navigation("ChangedByBcUser");
-                });
-
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.CampusEventDetail", b =>
-                {
-                    b.HasOne("BC_CampusLearn.Models.Entities.CampusEvent", "CampusEvent")
-                        .WithMany("Details")
-                        .HasForeignKey("CampusEventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CampusEvent");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.LearningResource", b =>
@@ -2130,11 +2012,6 @@ namespace BC_CampusLearn.Migrations
                     b.Navigation("StudentEvaluation");
 
                     b.Navigation("TutorEvaluation");
-                });
-
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.CampusEvent", b =>
-                {
-                    b.Navigation("Details");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.LearningResource", b =>

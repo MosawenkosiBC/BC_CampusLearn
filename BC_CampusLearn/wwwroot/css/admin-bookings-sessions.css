@@ -110,36 +110,22 @@
     margin: 0;
 }
 
-.session-statistics {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin: 0 0 1rem;
-}
-
-.session-statistic-card {
+.session-count-card {
     align-items: center;
     background: #fff;
     border: 1px solid #f0f1f2;
     border-radius: 0.45rem;
     box-shadow: 0 0.4rem 1rem rgba(25, 30, 32, 0.08);
     color: #272b2c;
-    display: grid;
+    display: flex;
     font-size: 0.86rem;
     font-weight: 650;
-    gap: 0.8rem;
-    grid-template-columns: 1fr auto;
+    justify-content: space-between;
     min-height: 4.2rem;
+    margin: 0 0 1rem;
     padding: 0.8rem 1rem;
-    text-decoration: none;
 }
 
-.session-statistic-card:hover,
-.session-statistic-card:focus-visible {
-    color: #272b2c;
-}
-
-.session-statistic-card:focus-visible,
 .session-filters :is(input, select, button, a):focus-visible,
 .session-view-link:focus-visible,
 .completed-session-table-wrap:focus-visible {
@@ -147,13 +133,7 @@
     outline-offset: 2px;
 }
 
-.session-statistic-card.is-active {
-    background: #363c3d;
-    border-color: #363c3d;
-    color: #fff;
-}
-
-.session-statistic-card strong {
+.session-count-card strong {
     align-items: center;
     background: #eef0f0;
     border-radius: 0.45rem;
@@ -164,11 +144,6 @@
     justify-content: center;
     min-width: 1.8rem;
     padding: 0 0.35rem;
-}
-
-.session-statistic-card.is-active strong {
-    background: rgba(255, 255, 255, 0.16);
-    color: #fff;
 }
 
 .sessions-workspace {
@@ -361,10 +336,6 @@
 }
 
 @media (max-width: 991.98px) {
-    .session-statistics {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
     .sessions-workspace {
         grid-template-columns: 1fr;
     }
@@ -372,13 +343,6 @@
     .session-filters {
         margin-top: 0;
     }
-}
-
-@media (max-width: 767.98px) {
-    .session-statistics {
-        grid-template-columns: 1fr;
-    }
-
 }
 
 @media (max-width: 575.98px) {

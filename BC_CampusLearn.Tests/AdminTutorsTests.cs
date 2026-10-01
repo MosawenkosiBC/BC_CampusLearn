@@ -32,7 +32,20 @@ public class AdminTutorsTests
             ProgrammeModuleId = assignment.ProgrammeModuleId,
             Status = BookingStatus.Completed,
             StudentEvaluation = new StudentEvaluation(),
-            TutorEvaluation = new TutorStudentEvaluation()
+            TutorEvaluation = new TutorStudentEvaluation(),
+            SessionReviews = [new SessionReview
+            {
+                ReviewerBcUserId = 50,
+                Reviewer = new BcUser
+                {
+                    BcUserId = 50,
+                    PersonnelNumber = "H50",
+                    DisplayName = "Tutor Head",
+                    Role = BcUserRole.HeadOfTutors
+                },
+                Rating = 5,
+                CreatedAt = new DateTimeOffset(2026, 9, 21, 9, 0, 0, TimeSpan.Zero)
+            }]
         };
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
@@ -65,6 +78,64 @@ public class AdminTutorsTests
         Assert.True(saved.ConcernsResolvedOrDocumented);
         Assert.False(saved.EvidenceSupportsApproval);
         Assert.Equal(recordedAt, saved.RecordedAt);
+    }
+
+    [Fact]
+    public async Task SessionDetailsLoadsTutorHeadReviewFromSessionReviews()
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        TutorCourseModule assignment = await context.TutorCourseModules.FirstAsync();
+        var tutorHead = new BcUser
+        {
+            BcUserId = 50,
+            PersonnelNumber = "H50",
+            DisplayName = "Tutor Head",
+            Role = BcUserRole.HeadOfTutors
+        };
+        var review = new SessionReview
+        {
+            Reviewer = tutorHead,
+            ReviewerBcUserId = tutorHead.BcUserId,
+            Rating = 4,
+            ModuleAndTopicCoverage = "Yes",
+            ExplanationClarity = "Good",
+            SessionStructure = "Yes",
+            StudentEngagement = "Yes",
+            EvidenceConsistency = "Yes",
+            ConcernLevel = "No concerns",
+            OverallAssessment = "Good",
+            Decision = "Approve",
+            Comment = "Strong session.",
+            CreatedAt = new DateTimeOffset(2026, 9, 22, 9, 0, 0, TimeSpan.Zero)
+        };
+        var booking = new Booking
+        {
+            TutorId = assignment.TutorId,
+            TutorCourseModule = assignment,
+            ProgrammeModuleId = assignment.ProgrammeModuleId,
+            Status = BookingStatus.Completed,
+            StudentEvaluation = new StudentEvaluation(),
+            TutorEvaluation = new TutorStudentEvaluation(),
+            SessionReviews = [review]
+        };
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+
+        var page = new SessionDetailsModel(
+            context, new TestWebHostEnvironment(), new TestCurrentUserService(),
+            TimeProvider.System);
+        SetPageContext(page);
+
+        Assert.IsType<PageResult>(
+            await page.OnGetAsync(booking.BookingId, CancellationToken.None));
+        Assert.Equal(review.SessionReviewId, page.TutorHeadReview?.SessionReviewId);
+        Assert.True(page.CanRecordAdminReview);
+        Assert.Contains(page.TutorHeadReviewAnswers,
+            answer => answer.Question == "8. Decision" && answer.Value == "Approve");
+        Assert.Contains(page.TutorHeadReviewAnswers,
+            answer => answer.Question == "Additional comments" &&
+                answer.Value == "Strong session.");
     }
 
     [Fact]

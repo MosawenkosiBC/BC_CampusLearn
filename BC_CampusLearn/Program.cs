@@ -64,6 +64,10 @@ builder.Services.Configure<DevelopmentAdminOptions>(
     builder.Configuration.GetSection(
         DevelopmentAdminOptions.SectionName));
 
+builder.Services.Configure<DevelopmentTutorHeadOptions>(
+    builder.Configuration.GetSection(
+        DevelopmentTutorHeadOptions.SectionName));
+
 bool useDevelopmentAuthentication =
     builder.Environment.IsDevelopment() &&
     builder.Configuration.GetValue<bool>(

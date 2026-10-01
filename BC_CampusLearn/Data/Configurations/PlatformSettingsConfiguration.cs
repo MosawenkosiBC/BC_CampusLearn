@@ -17,6 +17,12 @@ public class PlatformSettingsConfiguration :
             table.HasCheckConstraint(
                 "CK_PlatformSettings_AcademicYear",
                 "[AcademicYear] BETWEEN 2000 AND 2200");
+            table.HasCheckConstraint(
+                "CK_PlatformSettings_TutorHeadReviewPeriod",
+                "[TutorHeadReviewPeriodEndDate] >= " +
+                "[TutorHeadReviewPeriodStartDate] AND " +
+                "[TutorHeadReviewDeadline] >= " +
+                "[TutorHeadReviewPeriodEndDate]");
         });
         builder.HasKey(settings => settings.PlatformSettingsId);
         builder.Property(settings => settings.SupportEmail)
@@ -50,6 +56,9 @@ public class PlatformSettingsConfiguration :
             AcademicSemester = "Semester 1",
             DateTimeFormat = "dd MMMM yyyy, HH:mm",
             BookingTermsAndConditions = PlatformSettings.DefaultBookingTerms,
+            TutorHeadReviewPeriodStartDate = new DateOnly(2026, 9, 1),
+            TutorHeadReviewPeriodEndDate = new DateOnly(2026, 9, 30),
+            TutorHeadReviewDeadline = new DateOnly(2026, 10, 5),
             UpdatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
         });
     }

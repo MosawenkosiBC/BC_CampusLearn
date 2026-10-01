@@ -49,7 +49,10 @@ public class AdminSettingsTests
         BookingsModel page = CreateBookingsPage(context, BcUserRole.Admin);
         page.Input = new BookingsModel.BookingTermsInput
         {
-            Terms = "Arrive prepared.\r\n\r\nRespect your tutor.  "
+            Terms = "Arrive prepared.\r\n\r\nRespect your tutor.  ",
+            PeriodStartDate = new DateOnly(2026, 10, 1),
+            PeriodEndDate = new DateOnly(2026, 10, 31),
+            ReviewDeadline = new DateOnly(2026, 11, 5)
         };
 
         IActionResult result = await page.OnPostAsync(
@@ -61,6 +64,15 @@ public class AdminSettingsTests
                 .BookingTermsAndConditions);
         Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
             log => log.SettingName == "Booking terms and conditions");
+        PlatformSettings settings = await context.PlatformSettings.SingleAsync();
+        Assert.Equal(new DateOnly(2026, 10, 1),
+            settings.TutorHeadReviewPeriodStartDate);
+        Assert.Equal(new DateOnly(2026, 10, 31),
+            settings.TutorHeadReviewPeriodEndDate);
+        Assert.Equal(new DateOnly(2026, 11, 5),
+            settings.TutorHeadReviewDeadline);
+        Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
+            log => log.SettingName == "Tutor Head review deadline");
     }
 
     [Fact]
