@@ -16,6 +16,15 @@ public class UsersAccessModel(
     TimeProvider timeProvider,
     SettingsAuditService auditService) : PageModel
 {
+    [BindProperty(SupportsGet = true)]
+    public string? SearchTerm { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public List<BcUserRole> Roles { get; set; } = [];
+
+    [BindProperty(SupportsGet = true)]
+    public List<AccessStatusFilter> AccessStatus { get; set; } = [];
+
     [BindProperty]
     public AccessInput Input { get; set; } = new();
 
@@ -28,6 +37,8 @@ public class UsersAccessModel(
     public bool CanManageAccess { get; private set; }
     public int CurrentUserId { get; private set; }
     public IReadOnlyList<AccessUserRow> AccessUsers { get; private set; } = [];
+    public int TotalAccessUsers { get; private set; }
+    public int FilteredAccessUsers { get; private set; }
 
     public async Task OnGetAsync(CancellationToken cancellationToken) =>
         await LoadAsync(cancellationToken);
@@ -186,11 +197,35 @@ public class UsersAccessModel(
         CurrentUserId = currentUser.BcUserId;
         CanManageAccess = currentUser.Role == BcUserRole.SuperAdmin;
         if (populateInput) Input = new AccessInput();
-        AccessUsers = await context.BcUsers.AsNoTracking()
+        IQueryable<BcUser> query = context.BcUsers.AsNoTracking()
             .Where(user => user.Role == BcUserRole.HeadOfTutors ||
                 user.Role == BcUserRole.Admin ||
                 user.Role == BcUserRole.SuperAdmin ||
-                user.Role == BcUserRole.Dev)
+                user.Role == BcUserRole.Dev);
+        TotalAccessUsers = await query.CountAsync(cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            string search = SearchTerm.Trim();
+            query = query.Where(user =>
+                user.DisplayName.Contains(search) ||
+                (user.PersonnelNumber != null &&
+                    user.PersonnelNumber.Contains(search)) ||
+                (user.Email != null && user.Email.Contains(search)));
+        }
+        if (Roles.Count > 0)
+        {
+            query = query.Where(user => Roles.Contains(user.Role));
+        }
+        if (AccessStatus.Count == 1)
+        {
+            bool isActive = AccessStatus[0] == AccessStatusFilter.Active;
+            query = query.Where(user =>
+                user.IsAdministrativeAccessActive == isActive);
+        }
+
+        FilteredAccessUsers = await query.CountAsync(cancellationToken);
+        AccessUsers = await query
             .OrderByDescending(user => user.Role)
             .ThenBy(user => user.DisplayName)
             .Select(user => new AccessUserRow(
@@ -316,4 +351,10 @@ public class UsersAccessModel(
         BcUserRole Role,
         bool IsActive,
         DateTime? LastLoginAt);
+
+    public enum AccessStatusFilter
+    {
+        Active,
+        Inactive
+    }
 }

@@ -224,12 +224,18 @@ public class CreateModel : PageModel
     private async Task LoadPlatformSettingsAsync(
         CancellationToken cancellationToken)
     {
-        StudyAreas = await _context.StudyAreas
+        List<StudyArea> activeStudyAreas = await _context.StudyAreas
             .AsNoTracking()
             .Where(studyArea => studyArea.IsActive)
             .OrderBy(studyArea => studyArea.DisplayOrder)
             .ThenBy(studyArea => studyArea.Name)
             .ToListAsync(cancellationToken);
+        StudyAreas = activeStudyAreas
+            .Where(studyArea =>
+                TutoringModeLocationPolicy.AllowsLocation(
+                    Preview.PreferredTutoringMode,
+                    studyArea.Name))
+            .ToList();
 
         var settings = await _context.PlatformSettings
             .AsNoTracking()

@@ -7,7 +7,10 @@ namespace BC_CampusLearn.Models.ViewModels;
 public class TutorApplicationStageThreeInput
 {
     [Required(ErrorMessage = "Select your preferred tutoring mode.")]
-    [Display(Name = "Preferred Tutoring Mode")]
+    [EnumDataType(
+        typeof(PreferredTutoringMode),
+        ErrorMessage = "Select a valid tutoring mode.")]
+    [Display(Name = "Tutoring Preference")]
     public PreferredTutoringMode? PreferredTutoringMode { get; set; }
 
     [Required(ErrorMessage = "Attach your academic transcript.")]

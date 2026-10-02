@@ -1,3 +1,5 @@
+using BC_CampusLearn.Models.Entities;
+
 namespace BC_CampusLearn.Models.ViewModels;
 
 public class BookingPreviewViewModel
@@ -11,6 +13,8 @@ public class BookingPreviewViewModel
     public string TutorName { get; set; } = string.Empty;
 
     public string TutorEmail { get; set; } = string.Empty;
+
+    public PreferredTutoringMode PreferredTutoringMode { get; set; }
 
     public List<BookingModuleOptionViewModel> Modules { get; set; } = new();
 
