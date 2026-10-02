@@ -97,6 +97,155 @@
                 !messageText);
         };
 
+        const locationPicker = bookingForm.querySelector(
+            "[data-booking-location-picker]");
+        const locationSelect = locationPicker?.querySelector(
+            "[data-booking-location-select]");
+        const locationTrigger = locationPicker?.querySelector(
+            "[data-booking-location-trigger]");
+        const locationValue = locationPicker?.querySelector(
+            "[data-booking-location-value]");
+        const locationPanel = locationPicker?.querySelector(
+            "[data-booking-location-panel]");
+        const locationSearch = locationPicker?.querySelector(
+            "[data-booking-location-search]");
+        const locationOptions = Array.from(
+            locationPicker?.querySelectorAll(
+                "[data-booking-location-option]") ?? []);
+        const locationEmpty = locationPicker?.querySelector(
+            "[data-booking-location-empty]");
+
+        const validateLocation = () => {
+            if (!locationSelect) {
+                return true;
+            }
+
+            const isValid = Boolean(locationSelect.value);
+            setFallbackError(
+                locationSelect,
+                isValid ? "" : "Select a location.");
+            locationTrigger?.classList.toggle(
+                "input-validation-error",
+                !isValid);
+            return isValid;
+        };
+
+        const filterLocations = () => {
+            const query = locationSearch?.value
+                .trim()
+                .toLocaleLowerCase() ?? "";
+            let visibleCount = 0;
+
+            locationOptions.forEach((option) => {
+                const searchableText =
+                    `${option.dataset.locationName ?? ""} ` +
+                    `${option.dataset.locationSubtext ?? ""}`;
+                const isVisible = searchableText
+                    .toLocaleLowerCase()
+                    .includes(query);
+
+                option.hidden = !isVisible;
+                visibleCount += isVisible ? 1 : 0;
+            });
+
+            if (locationEmpty) {
+                locationEmpty.hidden = visibleCount !== 0;
+            }
+        };
+
+        const closeLocationPicker = (restoreFocus = false) => {
+            if (!locationPanel || !locationTrigger) {
+                return;
+            }
+
+            locationPanel.hidden = true;
+            locationTrigger.setAttribute("aria-expanded", "false");
+
+            if (restoreFocus) {
+                locationTrigger.focus();
+            }
+        };
+
+        const openLocationPicker = () => {
+            if (!locationPanel || !locationTrigger) {
+                return;
+            }
+
+            locationPanel.hidden = false;
+            locationTrigger.setAttribute("aria-expanded", "true");
+
+            if (locationSearch) {
+                locationSearch.value = "";
+                filterLocations();
+                locationSearch.focus();
+            }
+        };
+
+        const syncLocationPicker = () => {
+            const selectedOption = locationSelect?.selectedOptions[0];
+            const selectedValue = locationSelect?.value ?? "";
+
+            if (locationValue) {
+                locationValue.textContent = selectedValue
+                    ? selectedOption?.dataset.locationName ??
+                        selectedOption?.textContent?.trim() ?? ""
+                    : "Choose a study area";
+            }
+
+            locationOptions.forEach((option) =>
+                option.setAttribute(
+                    "aria-selected",
+                    String(
+                        option.dataset.locationId === selectedValue)));
+        };
+
+        locationTrigger?.addEventListener("click", () => {
+            if (locationPanel?.hidden) {
+                openLocationPicker();
+            } else {
+                closeLocationPicker();
+            }
+        });
+
+        locationSearch?.addEventListener("input", filterLocations);
+
+        locationOptions.forEach((option) => {
+            option.addEventListener("click", () => {
+                if (!locationSelect) {
+                    return;
+                }
+
+                locationSelect.value = option.dataset.locationId ?? "";
+                locationSelect.dispatchEvent(
+                    new Event("change", { bubbles: true }));
+                syncLocationPicker();
+                validateLocation();
+                closeLocationPicker(true);
+            });
+        });
+
+        locationSelect?.addEventListener("change", () => {
+            syncLocationPicker();
+            if (locationSelect.value) {
+                validateLocation();
+            }
+        });
+
+        document.addEventListener("pointerdown", (event) => {
+            if (locationPicker &&
+                !locationPicker.contains(event.target)) {
+                closeLocationPicker();
+            }
+        });
+
+        locationPicker?.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeLocationPicker(true);
+            }
+        });
+
+        syncLocationPicker();
+
         const validateStage = (stageNumber) => {
             const stage = bookingForm.querySelector(
                 `[data-booking-stage='${stageNumber}']`);
@@ -110,6 +259,13 @@
             let invalidField = null;
 
             fields.forEach((field) => {
+                if (field === locationSelect) {
+                    if (!validateLocation() && !invalidField) {
+                        invalidField = field;
+                    }
+                    return;
+                }
+
                 if (window.jQuery?.validator) {
                     const isValid =
                         window.jQuery(field).valid();
@@ -122,9 +278,9 @@
 
                 let errorMessage = "";
 
-                if (field.name === "Input.Location" &&
-                    !field.value.trim()) {
-                    errorMessage = "Enter the session location.";
+                if (field.name === "Input.StudyAreaId" &&
+                    !field.value) {
+                    errorMessage = "Select a location.";
                 }
 
                 if (field.name === "Input.Summary") {
@@ -155,7 +311,11 @@
                 return true;
             }
 
-            invalidField.focus();
+            if (invalidField === locationSelect) {
+                locationTrigger?.focus();
+            } else {
+                invalidField.focus();
+            }
             return false;
         };
 
@@ -170,7 +330,7 @@
 
         const updateConfirmation = () => {
             const location = bookingForm.querySelector(
-                "[name='Input.Location']");
+                "[name='Input.StudyAreaId']");
             const summary = bookingForm.querySelector(
                 "[name='Input.Summary']");
             const confirmationLocation = bookingForm.querySelector(
@@ -194,7 +354,8 @@
 
             if (confirmationLocation) {
                 confirmationLocation.textContent =
-                    location?.value.trim() || "Not provided";
+                    location?.selectedOptions[0]?.dataset.locationName ||
+                    "Not provided";
             }
 
             if (confirmationSummary) {
@@ -308,6 +469,13 @@
         });
 
         bookingForm.addEventListener("submit", (event) => {
+            if (!validateLocation()) {
+                event.preventDefault();
+                showStage("1", false);
+                locationTrigger?.focus();
+                return;
+            }
+
             if (!mobileLayout.matches ||
                 !window.jQuery?.validator) {
                 return;

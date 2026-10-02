@@ -334,6 +334,168 @@
     opacity: 1;
 }
 
+.booking-location-field {
+    position: relative;
+}
+
+.booking-location-native {
+    height: 1px;
+    margin: -1px;
+    opacity: 0;
+    overflow: hidden;
+    padding: 0;
+    pointer-events: none;
+    position: absolute;
+    width: 1px;
+}
+
+.booking-location-trigger {
+    align-items: center;
+    background: #f7f7f8;
+    border: 1px solid transparent;
+    border-radius: 0.15rem;
+    color: #252525;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    min-height: 2.75rem;
+    padding: 0.65rem 0.8rem;
+    text-align: left;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+    width: 100%;
+}
+
+.booking-location-trigger > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.booking-location-trigger svg {
+    flex: 0 0 0.9rem;
+    height: 0.9rem;
+    transition: transform 160ms ease;
+    width: 0.9rem;
+}
+
+.booking-location-trigger:focus-visible,
+.booking-location-trigger[aria-expanded="true"] {
+    background: #fff;
+    border-color: #c8c8cb;
+    box-shadow: 0 0 0 3px rgba(90, 90, 95, 0.1);
+    outline: 0;
+}
+
+.booking-location-trigger.input-validation-error {
+    border-color: #c40000;
+}
+
+.booking-location-trigger[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+}
+
+.booking-location-panel {
+    background: #fff;
+    border: 1px solid #dedee3;
+    border-radius: 0.65rem;
+    box-shadow: 0 0.75rem 1.8rem rgba(30, 32, 38, 0.14);
+    left: 0;
+    margin-top: 0.35rem;
+    overflow: hidden;
+    padding: 0.65rem;
+    position: absolute;
+    right: 0;
+    top: calc(100% - 0.15rem);
+    z-index: 20;
+}
+
+.booking-location-panel[hidden] {
+    display: none;
+}
+
+.booking-location-search {
+    align-items: center;
+    border: 1px solid #d7d7dc;
+    border-radius: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+    padding: 0 0.65rem;
+}
+
+.booking-location-search:focus-within {
+    border-color: #cfd1d5;
+}
+
+.booking-location-search svg {
+    color: #777b82;
+    flex: 0 0 1rem;
+    height: 1rem;
+    width: 1rem;
+}
+
+.booking-field .booking-location-search input {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 44px;
+    min-width: 0;
+    outline: 0;
+    padding: 0.6rem 0;
+}
+
+.booking-location-options {
+    display: grid;
+    gap: 0.25rem;
+    margin-top: 0.55rem;
+    max-height: 250px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.booking-location-option {
+    align-items: flex-start;
+    background: transparent;
+    border: 0;
+    border-radius: 0.45rem;
+    color: #303036;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-height: 48px;
+    padding: 0.6rem 0.7rem;
+    text-align: left;
+    width: 100%;
+}
+
+.booking-location-option:hover,
+.booking-location-option:focus-visible,
+.booking-location-option[aria-selected="true"] {
+    background: #e9ebee;
+    color: #464b52;
+}
+
+.booking-location-option:focus-visible {
+    outline: 2px solid #242429;
+    outline-offset: -2px;
+}
+
+.booking-location-option strong {
+    font-weight: 650;
+}
+
+.booking-location-option span {
+    color: #6b6e75;
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.booking-location-empty {
+    color: #777b82;
+    margin: 0.8rem 0.4rem 0.35rem;
+    text-align: center;
+}
+
 .booking-field--wide {
     margin-top: 1rem;
 }

@@ -38,6 +38,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Booking> Bookings => Set<Booking>();
 
+    public DbSet<StudyArea> StudyAreas => Set<StudyArea>();
+
     public DbSet<BookingPreparationLink> BookingPreparationLinks =>
         Set<BookingPreparationLink>();
 

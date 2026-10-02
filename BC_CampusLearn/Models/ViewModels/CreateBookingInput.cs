@@ -14,9 +14,9 @@ public class CreateBookingInput
     [Display(Name = "Module")]
     public int ProgrammeModuleId { get; set; }
 
-    [Required]
-    [MaxLength(200)]
-    public string Location { get; set; } = string.Empty;
+    [Range(1, int.MaxValue, ErrorMessage = "Select a location.")]
+    [Display(Name = "Location")]
+    public int StudyAreaId { get; set; }
 
     [Required(ErrorMessage = "Enter a session summary.")]
     [MinLength(

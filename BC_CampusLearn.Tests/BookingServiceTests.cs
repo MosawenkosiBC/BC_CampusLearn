@@ -20,6 +20,13 @@ public class BookingServiceTests
         TutorAvailability availability = AddTutorAvailability(
             context,
             scheduledStart);
+        context.StudyAreas.Add(new StudyArea
+        {
+            StudyAreaId = 1,
+            Name = "Online",
+            DisplayOrder = 1,
+            IsActive = true
+        });
         await context.SaveChangesAsync();
 
         var currentUser = new CurrentUser(
@@ -37,11 +44,14 @@ public class BookingServiceTests
             {
                 TutorAvailabilityId = availability.TutorAvailabilityId,
                 ProgrammeModuleId = 3,
-                Location = "Teams",
+                StudyAreaId = 1,
                 AcceptedTerms = true
             });
 
         Assert.True(result.Succeeded);
+        Booking booking = await context.Bookings.SingleAsync();
+        Assert.Equal(1, booking.StudyAreaId);
+        Assert.Equal("Online", booking.Location);
         List<UserNotification> notifications = await context
             .UserNotifications
             .OrderBy(item => item.RecipientBcUserId)
@@ -56,7 +66,7 @@ public class BookingServiceTests
         Assert.All(notifications, item =>
         {
             Assert.Contains("MOD101 (Module)", item.Message);
-            Assert.Contains("Teams", item.Message);
+            Assert.Contains("Online", item.Message);
             Assert.Contains(
                 scheduledStart.ToOffset(TimeSpan.FromHours(2))
                     .ToString("d MMMM yyyy"),
@@ -101,7 +111,7 @@ public class BookingServiceTests
             {
                 TutorAvailabilityId = 45,
                 ProgrammeModuleId = 3,
-                Location = "Study room",
+                StudyAreaId = 1,
                 AcceptedTerms = true
             });
 
@@ -166,7 +176,7 @@ public class BookingServiceTests
             {
                 TutorAvailabilityId = availability.TutorAvailabilityId,
                 ProgrammeModuleId = 1,
-                Location = "Study room",
+                StudyAreaId = 1,
                 Summary = new string('A', 75),
                 AcceptedTerms = true
             });

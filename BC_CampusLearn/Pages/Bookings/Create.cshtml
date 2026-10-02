@@ -13,6 +13,14 @@
         ? string.Empty
         : $"{selectedModule.ModuleCode} - {selectedModule.ModuleName}";
 
+    string GetStudyAreaSubtext(string studyAreaName) =>
+        string.Equals(
+            studyAreaName,
+            "Online",
+            StringComparison.OrdinalIgnoreCase)
+            ? "Microsoft Teams"
+            : "Pretoria Campus";
+
     var existingLinks = Model.Input.PreparationLinks
         .Where(link => !string.IsNullOrWhiteSpace(link))
         .Take(3)
@@ -22,7 +30,7 @@
     bool startOnSecondStage =
         ViewContext.HttpContext.Request.Method == "POST" &&
         ViewData.ModelState.GetFieldValidationState(
-            "Input.Location") !=
+            "Input.StudyAreaId") !=
         Microsoft.AspNetCore.Mvc.ModelBinding
             .ModelValidationState.Invalid;
 }
@@ -189,16 +197,103 @@
                            disabled />
                 </div>
 
-                <div class="booking-field">
-                    <label asp-for="Input.Location">
+                <div class="booking-field booking-location-field"
+                     data-booking-location-picker>
+                    <label asp-for="Input.StudyAreaId">
                         Location
                         <span class="required-indicator"
                               aria-hidden="true">*</span>
                     </label>
-                    <input asp-for="Input.Location"
-                           aria-required="true"
-                           placeholder="Choose a campus study area for the session" />
-                    <span asp-validation-for="Input.Location"
+
+                    <select asp-for="Input.StudyAreaId"
+                            class="booking-location-native"
+                            data-booking-location-select
+                            aria-required="true"
+                            tabindex="-1">
+                        <option value="">Choose a study area</option>
+                        @foreach (var studyArea in Model.StudyAreas)
+                        {
+                            <option value="@studyArea.StudyAreaId"
+                                    data-location-name="@studyArea.Name"
+                                    data-location-subtext="@GetStudyAreaSubtext(studyArea.Name)">
+                                @studyArea.Name
+                            </option>
+                        }
+                    </select>
+
+                    <button type="button"
+                            class="booking-location-trigger"
+                            data-booking-location-trigger
+                            aria-expanded="false"
+                            aria-controls="booking-location-panel">
+                        <span data-booking-location-value>
+                            Choose a study area
+                        </span>
+                        <svg viewBox="0 0 16 16"
+                             aria-hidden="true">
+                            <path d="m4 6 4 4 4-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="1.6" />
+                        </svg>
+                    </button>
+
+                    <div id="booking-location-panel"
+                         class="booking-location-panel"
+                         data-booking-location-panel
+                         hidden>
+                        <label class="visually-hidden"
+                               for="booking-location-search">
+                            Search study areas
+                        </label>
+                        <div class="booking-location-search">
+                            <svg viewBox="0 0 24 24"
+                                 aria-hidden="true">
+                                <circle cx="11" cy="11" r="7"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.8" />
+                                <path d="m16.25 16.25 4 4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      stroke-linecap="round"
+                                      stroke-width="1.8" />
+                            </svg>
+                            <input id="booking-location-search"
+                                   type="search"
+                                   data-booking-location-search
+                                   placeholder="Search study areas"
+                                   autocomplete="off" />
+                        </div>
+
+                        <div class="booking-location-options"
+                             role="listbox"
+                             aria-label="Available study areas">
+                            @foreach (var studyArea in Model.StudyAreas)
+                            {
+                                <button type="button"
+                                        class="booking-location-option"
+                                        data-booking-location-option
+                                        data-location-id="@studyArea.StudyAreaId"
+                                        data-location-name="@studyArea.Name"
+                                        data-location-subtext="@GetStudyAreaSubtext(studyArea.Name)"
+                                        role="option"
+                                        aria-selected="@(Model.Input.StudyAreaId == studyArea.StudyAreaId ? "true" : "false")">
+                                    <strong>@studyArea.Name</strong>
+                                    <span>@GetStudyAreaSubtext(
+                                        studyArea.Name)</span>
+                                </button>
+                            }
+                        </div>
+                        <p class="booking-location-empty"
+                           data-booking-location-empty
+                           hidden>
+                            No matching study areas found.
+                        </p>
+                    </div>
+                    <span asp-validation-for="Input.StudyAreaId"
                           class="text-danger"></span>
                 </div>
 
