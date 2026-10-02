@@ -203,16 +203,20 @@
 .settings-row-actions button { background: #f0f3f3; border: 0; border-radius: .45rem; font-size: .72rem; font-weight: 700; padding: .55rem; }
 .settings-row-actions button.is-danger { background: #fff0f2; color: #a32443; }
 
-.settings-study-areas-workspace { padding: 1.5rem; }
-.settings-study-areas-workspace .admin-filter-heading h3 { font-size: 1.25rem; font-weight: 500; margin: 0; }
-.settings-study-areas-table { min-width: 60rem; }
+.settings-study-areas-workspace,
+.settings-access-workspace { padding: 1.5rem; }
+.settings-study-areas-workspace .admin-filter-heading h3,
+.settings-access-workspace .admin-filter-heading h3 { font-size: 1.25rem; font-weight: 500; margin: 0; }
+.settings-study-areas-table,
+.settings-access-table { min-width: 60rem; }
 .admin-settings .settings-section-heading h2 { font-weight: 600; }
 .admin-settings .settings-navigation a,
 .admin-settings .settings-switch strong { font-weight: 500; }
 .admin-settings .settings-field label,
 .admin-settings .admin-filter-group > label,
 .admin-settings .admin-filter-years legend { font-weight: 500; }
-.settings-study-areas-page .admin-tutor-results { scroll-margin-top: calc(var(--admin-header-height) + 1rem); }
+.settings-study-areas-page .admin-tutor-results,
+.settings-users-access-page .admin-tutor-results { scroll-margin-top: calc(var(--admin-header-height) + 1rem); }
 .settings-study-areas-page .admin-tutor-result-count { font-weight: 400; }
 .settings-study-areas-page .admin-tutor-result-count strong { font-weight: 600; }
 .settings-study-areas-page .admin-tutors-table thead th,
@@ -226,6 +230,10 @@
 .settings-study-area-description { color: #626b78; display: block; max-width: 26rem; }
 .settings-study-area-status.is-active { background: #e7f8f3; color: #14725d; }
 .settings-study-area-status.is-inactive { background: #fff0f2; color: #9a2340; }
+.settings-access-user strong,
+.settings-access-user span { display: block; }
+.settings-access-user strong { font-weight: 500; }
+.settings-access-user span { color: #747d7e; font-size: .72rem; font-weight: 400; margin-top: .2rem; }
 .settings-study-area-action { border: 0; font-size: .8rem; }
 .settings-study-area-modal .modal-content { border: 0; border-radius: .75rem; overflow: hidden; }
 .settings-study-area-modal .modal-header { align-items: start; }
@@ -250,7 +258,8 @@
 .settings-study-area-delete-modal .modal-footer { border-top: 1px solid #edf0f0; }
 
 @media (max-width: 1300px) {
-    .settings-study-areas-workspace { grid-template-columns: 1fr; }
+    .settings-study-areas-workspace,
+    .settings-access-workspace { grid-template-columns: 1fr; }
 }
 
 .settings-permission-skeleton { background: #f8fafa; border-top: 1px solid #e8ecec; padding: 1.2rem 1.5rem; }
@@ -292,7 +301,8 @@
     .settings-navigation a span { display: none; }
     .settings-navigation a { justify-content: center; min-width: 2.8rem; }
     .settings-status { font-size: .58rem; }
-    .settings-study-areas-workspace { padding: 1.1rem; }
+    .settings-study-areas-workspace,
+    .settings-access-workspace { padding: 1.1rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

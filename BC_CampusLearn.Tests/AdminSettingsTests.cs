@@ -339,6 +339,50 @@ public class AdminSettingsTests
                 log.Reason == "Support the tutoring programme");
     }
 
+    [Fact]
+    public async Task AdministrativeUsersCanBeFilteredBySearchRoleAndStatus()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        context.BcUsers.AddRange(
+            new BcUser
+            {
+                BcUserId = 2,
+                PersonnelNumber = "TARGET1",
+                Email = "target@campus.test",
+                DisplayName = "Target Administrator",
+                Role = BcUserRole.SuperAdmin,
+                IsAdministrativeAccessActive = false,
+                CreatedAt = DateTime.UtcNow
+            },
+            new BcUser
+            {
+                BcUserId = 3,
+                PersonnelNumber = "OTHER1",
+                Email = "other@campus.test",
+                DisplayName = "Other Administrator",
+                Role = BcUserRole.Admin,
+                IsAdministrativeAccessActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+        await context.SaveChangesAsync();
+        UsersAccessModel page = CreateAccessPage(
+            context,
+            BcUserRole.SuperAdmin);
+        page.SearchTerm = "target";
+        page.Roles = [BcUserRole.SuperAdmin];
+        page.AccessStatus =
+            [UsersAccessModel.AccessStatusFilter.Inactive];
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(3, page.TotalAccessUsers);
+        Assert.Equal(1, page.FilteredAccessUsers);
+        Assert.Equal(
+            "Target Administrator",
+            Assert.Single(page.AccessUsers).DisplayName);
+    }
+
     private static ApplicationDbContext CreateContext() => new(
         new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
