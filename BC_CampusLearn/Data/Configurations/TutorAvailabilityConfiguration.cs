@@ -15,6 +15,9 @@ public class TutorAvailabilityConfiguration
         builder.Property(slot => slot.AvailableTime)
             .HasColumnType("datetimeoffset");
 
+        builder.Property(slot => slot.ReservationExpiresAt)
+            .HasColumnType("datetimeoffset");
+
         builder.Property(slot => slot.RowVersion)
             .IsRowVersion();
 
@@ -29,5 +32,7 @@ public class TutorAvailabilityConfiguration
             slot.AvailableTime
         })
             .IsUnique();
+
+        builder.HasIndex(slot => slot.ReservationExpiresAt);
     }
 }

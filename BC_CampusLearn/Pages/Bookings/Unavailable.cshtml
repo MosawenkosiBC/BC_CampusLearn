@@ -2,9 +2,15 @@
 @model BC_CampusLearn.Pages.Bookings.UnavailableModel
 
 @{
-    ViewData["Title"] = Model.WasBooked
-        ? "Session already booked"
-        : "Session unavailable";
+    ViewData["Title"] = Model.IsReserved
+        ? "Session temporarily reserved"
+        : Model.ReservationExpired
+            ? "Reservation expired"
+        : Model.HasExpired
+        ? "Session time has passed"
+        : Model.WasBooked
+            ? "Session already booked"
+            : "Session unavailable";
 }
 
 @section Styles {
@@ -20,19 +26,67 @@
     "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
 
 <main class="container booking-unavailable-page">
-    <section class="booking-unavailable-card" role="status">
-        <div class="booking-unavailable-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="9"></circle>
-                <path d="M8.5 12h7"></path>
-            </svg>
-        </div>
-
-        <p class="booking-unavailable-label">Booking update</p>
-
-        @if (Model.WasBooked)
+    <section class="booking-unavailable-card"
+             role="@(Model.IsReserved ? "alertdialog" : "status")"
+             aria-modal="@(Model.IsReserved ? "true" : null)"
+             aria-labelledby="booking-unavailable-title"
+             data-expired-booking="@Model.HasExpired.ToString().ToLowerInvariant()"
+             data-redirect-url="@Url.Page("/Tutors/Index")"
+             data-redirect-seconds="10">
+        @if (Model.HasExpired)
         {
-            <h1>This session has already been booked</h1>
+            <h1 id="booking-unavailable-title">This session time has passed</h1>
+            <p>
+                Unfortunately, this time slot has already passed and can no
+                longer be booked. Please check the available tutors and choose
+                another session that works for you.
+            </p>
+            <p class="booking-unavailable-countdown" aria-live="polite">
+                <span>
+                    You will be redirected to the All Tutors page in
+                    <span class="booking-countdown-timer">
+                        <span class="booking-countdown-hourglass"
+                              aria-hidden="true">
+                            <svg viewBox="0 0 24 24" focusable="false">
+                                <path class="booking-hourglass-frame"
+                                      d="M7 3h10M7 21h10M8 3c0 4 1.2 6.2 4 9-2.8 2.8-4 5-4 9m8-18c0 4-1.2 6.2-4 9 2.8 2.8 4 5 4 9" />
+                                <path class="booking-hourglass-upper-sand"
+                                      d="M9.2 6h5.6c-.35 1.75-1.2 3.15-2.8 4.7-1.6-1.55-2.45-2.95-2.8-4.7Z" />
+                                <path class="booking-hourglass-lower-sand"
+                                      d="M12 13.2 16 20.1H8l4-6.9Z" />
+                                <path class="booking-hourglass-sand-stream"
+                                      d="M12 10.5v9.6" />
+                            </svg>
+                        </span>
+                        <strong data-booking-redirect-countdown>10 seconds</strong>
+                    </span>.
+                </span>
+            </p>
+        }
+        else if (Model.IsReserved)
+        {
+            <h1 id="booking-unavailable-title">This session is temporarily reserved</h1>
+            <p>
+                Another student is currently completing their booking for
+                this time slot. It may become available again if they leave
+                the booking form or do not finish their booking. Please
+                explore other tutors and available session times in the
+                meantime.
+            </p>
+        }
+        else if (Model.ReservationExpired)
+        {
+            <h1 id="booking-unavailable-title">Your reservation has ended</h1>
+            <p>
+                The time allowed to complete this booking has ended, so the
+                session is available to other students again. Please return
+                to the tutor's profile to check whether it is still available,
+                or explore other tutors.
+            </p>
+        }
+        else if (Model.WasBooked)
+        {
+            <h1 id="booking-unavailable-title">This session has already been booked</h1>
             <p>
                 Another student reserved this time before your booking could
                 be completed. No booking was created for you.
@@ -40,7 +94,7 @@
         }
         else
         {
-            <h1>This session is no longer available</h1>
+            <h1 id="booking-unavailable-title">This session is no longer available</h1>
             <p>
                 This time may have just been booked by another student or
                 withdrawn by the tutor. Please choose another available session.
@@ -50,12 +104,22 @@
         <div class="booking-unavailable-actions">
             <a asp-page="/Tutors/Index"
                class="booking-unavailable-primary">
-                Choose another session
+                @(Model.HasExpired || Model.IsReserved || Model.ReservationExpired
+                    ? "View available tutors"
+                    : "Choose another session")
             </a>
-            <a asp-page="/Bookings/Index"
-               class="booking-unavailable-secondary">
-                View my sessions
-            </a>
+            @if (!Model.HasExpired && !Model.IsReserved && !Model.ReservationExpired)
+            {
+                <a asp-page="/Bookings/Index"
+                   class="booking-unavailable-secondary">
+                    View my sessions
+                </a>
+            }
         </div>
     </section>
 </main>
+
+@section Scripts {
+    <script src="~/js/bookings-unavailable.js"
+            asp-append-version="true"></script>
+}

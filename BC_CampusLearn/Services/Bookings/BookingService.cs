@@ -12,6 +12,8 @@ namespace BC_CampusLearn.Services.Bookings;
 public class BookingService : IBookingService
 {
     private const long MaximumDocumentSize = 10 * 1024 * 1024;
+    private static readonly TimeSpan ReservationDuration =
+        TimeSpan.FromMinutes(20);
 
     private static readonly HashSet<string> AllowedDocumentExtensions =
         new(StringComparer.OrdinalIgnoreCase)
@@ -101,6 +103,106 @@ public class BookingService : IBookingService
         => await _context.Database.CreateExecutionStrategy().ExecuteAsync(
             () => CreateBookingCoreAsync(input, cancellationToken));
 
+    public async Task<BookingReservationResult> TryReserveSlotAsync(
+        int tutorAvailabilityId,
+        CancellationToken cancellationToken = default)
+    {
+        CurrentUser student = _currentUserService.GetRequiredUser();
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        Guid token = Guid.NewGuid();
+        DateTimeOffset reservationExpiresAt = now.Add(ReservationDuration);
+
+        int updatedCount;
+        if (_context.Database.IsRelational())
+        {
+            updatedCount = await _context.TutorAvailabilities
+                .Where(slot =>
+                    slot.TutorAvailabilityId == tutorAvailabilityId &&
+                    slot.AvailableTime > now &&
+                    (slot.ReservedByBcUserId == null ||
+                     slot.ReservationExpiresAt <= now))
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(
+                            slot => slot.ReservedByBcUserId,
+                            student.BcUserId)
+                        .SetProperty(
+                            slot => slot.ReservationToken,
+                            token)
+                        .SetProperty(
+                            slot => slot.ReservationExpiresAt,
+                            reservationExpiresAt),
+                    cancellationToken);
+        }
+        else
+        {
+            TutorAvailability? slot = await _context.TutorAvailabilities
+                .SingleOrDefaultAsync(
+                    item => item.TutorAvailabilityId == tutorAvailabilityId,
+                    cancellationToken);
+
+            bool canReserve = slot is not null &&
+                slot.AvailableTime > now &&
+                (slot.ReservedByBcUserId is null ||
+                 slot.ReservationExpiresAt <= now);
+
+            if (canReserve)
+            {
+                slot!.ReservedByBcUserId = student.BcUserId;
+                slot.ReservationToken = token;
+                slot.ReservationExpiresAt = reservationExpiresAt;
+                await _context.SaveChangesAsync(cancellationToken);
+                updatedCount = 1;
+            }
+            else
+            {
+                updatedCount = 0;
+            }
+        }
+
+        if (updatedCount == 1)
+        {
+            return BookingReservationResult.Acquired(token);
+        }
+
+        var availability = await _context.TutorAvailabilities
+            .AsNoTracking()
+            .Where(slot => slot.TutorAvailabilityId == tutorAvailabilityId)
+            .Select(slot => new
+            {
+                slot.AvailableTime,
+                slot.ReservedByBcUserId,
+                slot.ReservationToken,
+                slot.ReservationExpiresAt
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (availability is null)
+        {
+            return BookingReservationResult.Failed(
+                BookingReservationStatus.Unavailable);
+        }
+
+        if (availability.AvailableTime <= now)
+        {
+            return BookingReservationResult.Failed(
+                BookingReservationStatus.Expired);
+        }
+
+        // A refresh or second tab from the same authenticated student keeps
+        // the original token and deadline instead of granting more time.
+        if (availability.ReservedByBcUserId == student.BcUserId &&
+            availability.ReservationToken.HasValue &&
+            availability.ReservationExpiresAt > now)
+        {
+            return BookingReservationResult.Acquired(
+                availability.ReservationToken.Value);
+        }
+
+        return BookingReservationResult.Failed(
+            BookingReservationStatus.ReservedByAnotherStudent);
+    }
+
     private async Task<BookingCreationResult> CreateBookingCoreAsync(
         CreateBookingInput input,
         CancellationToken cancellationToken)
@@ -140,7 +242,8 @@ public class BookingService : IBookingService
         if (slot is null)
         {
             return BookingCreationResult.Failure(
-                "The selected availability slot does not exist.");
+                "The selected availability slot does not exist.",
+                failureReason: BookingFailureReason.Unavailable);
         }
 
         if (slot.Tutor.BcUserId == student.BcUserId)
@@ -152,7 +255,21 @@ public class BookingService : IBookingService
         if (slot.AvailableTime <= DateTimeOffset.UtcNow)
         {
             return BookingCreationResult.Failure(
-                "This availability slot is no longer available.");
+                "This availability slot is no longer available.",
+                failureReason: BookingFailureReason.Expired);
+        }
+
+        DateTimeOffset reservationNow = DateTimeOffset.UtcNow;
+        bool ownsActiveReservation =
+            slot.ReservedByBcUserId == student.BcUserId &&
+            slot.ReservationToken == input.ReservationToken &&
+            slot.ReservationExpiresAt > reservationNow;
+
+        if (!ownsActiveReservation)
+        {
+            return BookingCreationResult.Failure(
+                "This session is currently reserved by another student.",
+                failureReason: BookingFailureReason.Reserved);
         }
 
         bool tutorCanTeachModule =
@@ -398,7 +515,8 @@ public class BookingService : IBookingService
 
             return BookingCreationResult.Failure(
                 "Another student booked this slot first. " +
-                "Please select another time.");
+                "Please select another time.",
+                failureReason: BookingFailureReason.AlreadyBooked);
         }
         catch (DbUpdateException)
         {
@@ -406,7 +524,8 @@ public class BookingService : IBookingService
 
             return BookingCreationResult.Failure(
                 "The booking could not be saved. " +
-                "The slot may already have been booked.");
+                "The slot may already have been booked.",
+                failureReason: BookingFailureReason.AlreadyBooked);
         }
         catch
         {

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace BC_CampusLearn.Tests;
@@ -82,7 +83,8 @@ public class TutorProfileModuleChangeTests
         var page = new ProfileModel(
             context,
             new TestCurrentUserService(currentUser),
-            new TestWebHostEnvironment());
+            new TestWebHostEnvironment(),
+            NullLogger<ProfileModel>.Instance);
         var httpContext = new DefaultHttpContext();
         page.PageContext = new PageContext { HttpContext = httpContext };
         page.TempData = new TempDataDictionary(httpContext, new MemoryTempDataProvider());

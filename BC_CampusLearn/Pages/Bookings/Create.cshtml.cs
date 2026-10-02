@@ -37,6 +37,9 @@ public class CreateModel : PageModel
     [BindProperty]
     public bool MobileTermsAccepted { get; set; }
 
+    [BindProperty]
+    public long SlotStartUnixTimeSeconds { get; set; }
+
     public BookingPreviewViewModel Preview
     { get; private set; }
         = null!;
@@ -63,9 +66,17 @@ public class CreateModel : PageModel
 
         if (preview is null)
         {
+            bool slotHasExpired = await _context.TutorAvailabilities
+                .AsNoTracking()
+                .AnyAsync(
+                    slot =>
+                        slot.TutorAvailabilityId == slotId &&
+                        slot.AvailableTime <= DateTimeOffset.UtcNow,
+                    cancellationToken);
+
             return RedirectToPage(
                 "/Bookings/Unavailable",
-                new { reason = "unavailable" });
+                new { reason = slotHasExpired ? "expired" : "unavailable" });
         }
 
         if (preview.TutorBcUserId ==
@@ -79,11 +90,37 @@ public class CreateModel : PageModel
         }
 
         Preview = preview;
+        SlotStartUnixTimeSeconds = preview.AvailableTime.ToUnixTimeSeconds();
         await LoadPlatformSettingsAsync(cancellationToken);
 
         ShowPendingReviewModal =
             await _bookingService.HasPendingStudentReviewAsync(
                 cancellationToken);
+
+        if (!ShowPendingReviewModal)
+        {
+            BookingReservationResult reservation =
+                await _bookingService.TryReserveSlotAsync(
+                    slotId,
+                    cancellationToken);
+
+            if (reservation.Status != BookingReservationStatus.Acquired)
+            {
+                string reason = reservation.Status switch
+                {
+                    BookingReservationStatus.Expired => "expired",
+                    BookingReservationStatus.ReservedByAnotherStudent =>
+                        "reserved",
+                    _ => "unavailable"
+                };
+
+                return RedirectToPage(
+                    "/Bookings/Unavailable",
+                    new { reason });
+            }
+
+            Input.ReservationToken = reservation.ReservationToken!.Value;
+        }
 
         Input.TutorAvailabilityId = slotId;
 
@@ -114,6 +151,15 @@ public class CreateModel : PageModel
     public async Task<IActionResult> OnPostAsync(
         CancellationToken cancellationToken)
     {
+        if (SlotStartUnixTimeSeconds > 0 &&
+            SlotStartUnixTimeSeconds <=
+                DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+        {
+            return RedirectToPage(
+                "/Bookings/Unavailable",
+                new { reason = "expired" });
+        }
+
         if (await _bookingService.HasPendingStudentReviewAsync(
             cancellationToken))
         {
@@ -157,6 +203,13 @@ public class CreateModel : PageModel
 
         if (!result.Succeeded)
         {
+            if (result.FailureReason == BookingFailureReason.Reserved)
+            {
+                return RedirectToPage(
+                    "/Bookings/Unavailable",
+                    new { reason = "reserved" });
+            }
+
             ShowPendingReviewModal = result.PendingReviewRequired;
             if (!result.PendingReviewRequired)
             {
@@ -169,7 +222,8 @@ public class CreateModel : PageModel
             return await ReloadPageAsync(
                 Input.TutorAvailabilityId,
                 cancellationToken,
-                bookingAttemptFailed: true);
+                bookingAttemptFailed: true,
+                failureReason: result.FailureReason);
         }
 
         TempData["SuccessMessage"] =
@@ -195,7 +249,8 @@ public class CreateModel : PageModel
     private async Task<IActionResult> ReloadPageAsync(
         int slotId,
         CancellationToken cancellationToken,
-        bool bookingAttemptFailed = false)
+        bool bookingAttemptFailed = false,
+        BookingFailureReason failureReason = BookingFailureReason.None)
     {
         BookingPreviewViewModel? preview =
             await _bookingService.GetBookingPreviewAsync(
@@ -209,7 +264,11 @@ public class CreateModel : PageModel
                 new
                 {
                     reason = bookingAttemptFailed
-                        ? "booked"
+                        ? failureReason == BookingFailureReason.Expired
+                            ? "expired"
+                            : failureReason == BookingFailureReason.Unavailable
+                                ? "unavailable"
+                                : "booked"
                         : "unavailable"
                 });
         }
