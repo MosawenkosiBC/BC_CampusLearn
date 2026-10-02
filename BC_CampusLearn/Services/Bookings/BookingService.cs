@@ -66,6 +66,9 @@ public class BookingService : IBookingService
                         ? slot.Tutor.BcUser.PersonnelNumber
                         : slot.Tutor.BcUser.DisplayName,
 
+                    TutorEmail = slot.Tutor.BcUser.Email
+                        ?? string.Empty,
+
                     Modules = slot.Tutor.TutorCourseModules.Where(a => a.IsActive)
                         .OrderBy(assignment =>
                             assignment.ProgrammeModule.ModuleCode)

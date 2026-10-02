@@ -166,6 +166,7 @@
                     </label>
                     <input id="booking-tutor-email"
                            type="email"
+                           value="@Model.Preview.TutorEmail"
                            placeholder="Not available yet"
                            disabled />
                 </div>
@@ -184,7 +185,7 @@
                     <label for="booking-date-time">Date and Time</label>
                     <input id="booking-date-time"
                            type="text"
-                           value="@Model.Preview.AvailableTime.ToLocalTime().ToString("dd MMMM yyyy, HH:mm")"
+                           value="@Model.Preview.AvailableTime.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMMM yyyy, HH:mm")"
                            disabled />
                 </div>
 
@@ -196,7 +197,7 @@
                     </label>
                     <input asp-for="Input.Location"
                            aria-required="true"
-                           placeholder="Enter the session location" />
+                           placeholder="Choose a campus study area for the session" />
                     <span asp-validation-for="Input.Location"
                           class="text-danger"></span>
                 </div>
@@ -456,7 +457,7 @@
                     </div>
                     <div>
                         <dt>Date and Time</dt>
-                        <dd>@Model.Preview.AvailableTime.ToLocalTime().ToString("dd MMMM yyyy, HH:mm")</dd>
+                        <dd>@Model.Preview.AvailableTime.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMMM yyyy, HH:mm")</dd>
                     </div>
                     <div>
                         <dt>Duration</dt>
