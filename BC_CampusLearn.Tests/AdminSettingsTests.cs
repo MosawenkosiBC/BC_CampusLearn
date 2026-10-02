@@ -76,6 +76,204 @@ public class AdminSettingsTests
     }
 
     [Fact]
+    public async Task AdministratorCanAddStudyArea()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.Admin);
+        await context.SaveChangesAsync();
+        StudyAreasModel page = CreateStudyAreasPage(context, BcUserRole.Admin);
+
+        IActionResult result = await page.OnPostCreateAsync(
+            new StudyAreasModel.StudyAreaInput
+            {
+                Name = "  Innovation Hub  ",
+                Description = "  Located beside reception.  ",
+                DisplayOrder = 9,
+                IsActive = true
+            },
+            CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        StudyArea area = await context.StudyAreas.SingleAsync();
+        Assert.Equal("Innovation Hub", area.Name);
+        Assert.Equal("Located beside reception.", area.Description);
+        Assert.Equal(9, area.DisplayOrder);
+        Assert.True(area.IsActive);
+        Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
+            log => log.Category == "Study areas" &&
+                log.SettingName == "Study area: Innovation Hub");
+    }
+
+    [Fact]
+    public async Task StudyAreaFiltersSearchDescriptionAndAvailability()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.Admin);
+        context.StudyAreas.AddRange(
+            new StudyArea
+            {
+                StudyAreaId = 10,
+                Name = "Innovation Hub",
+                Description = "Located beside reception.",
+                DisplayOrder = 1,
+                IsActive = true
+            },
+            new StudyArea
+            {
+                StudyAreaId = 11,
+                Name = "Old Lab",
+                Description = "Located beside reception.",
+                DisplayOrder = 2,
+                IsActive = false
+            },
+            new StudyArea
+            {
+                StudyAreaId = 12,
+                Name = "Library",
+                Description = "Ground floor.",
+                DisplayOrder = 3,
+                IsActive = true
+            });
+        await context.SaveChangesAsync();
+        StudyAreasModel page = CreateStudyAreasPage(context, BcUserRole.Admin);
+        page.SearchTerm = "reception";
+        page.Availability =
+            [StudyAreasModel.AvailabilityFilter.Available];
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(3, page.TotalStudyAreas);
+        Assert.Equal(1, page.FilteredStudyAreas);
+        Assert.Equal("Innovation Hub", Assert.Single(page.StudyAreas).Name);
+    }
+
+    [Fact]
+    public async Task StudyAreasArePaginatedAfterEightEntries()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.Admin);
+        context.StudyAreas.AddRange(Enumerable.Range(1, 10).Select(index =>
+            new StudyArea
+            {
+                StudyAreaId = index,
+                Name = $"Study area {index}",
+                DisplayOrder = index,
+                IsActive = true
+            }));
+        await context.SaveChangesAsync();
+        StudyAreasModel page = CreateStudyAreasPage(context, BcUserRole.Admin);
+        page.StudyAreaPage = 2;
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(2, page.TotalPages);
+        Assert.Equal(2, page.StudyAreas.Count);
+        Assert.Equal("Study area 9", page.StudyAreas[0].Name);
+    }
+
+    [Fact]
+    public async Task AdministratorCanUpdateStudyArea()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.Admin);
+        context.StudyAreas.Add(new StudyArea
+        {
+            StudyAreaId = 10,
+            Name = "Old name",
+            Description = "Old description",
+            DisplayOrder = 3,
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+        var campusLabelStore = new StudyAreaCampusLabelStore();
+        StudyAreasModel page = CreateStudyAreasPage(
+            context,
+            BcUserRole.Admin,
+            campusLabelStore);
+
+        IActionResult result = await page.OnPostUpdateAsync(
+            10,
+            new StudyAreasModel.StudyAreaInput
+            {
+                Name = "New name",
+                Description = "New description",
+                CampusLabel = "Midrand Campus",
+                DisplayOrder = 4,
+                IsActive = false
+            },
+            CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        StudyArea area = await context.StudyAreas.SingleAsync();
+        Assert.Equal("New name", area.Name);
+        Assert.Equal("New description", area.Description);
+        Assert.Equal(4, area.DisplayOrder);
+        Assert.False(area.IsActive);
+        Assert.Equal(
+            "Midrand Campus",
+            await campusLabelStore.GetLabelAsync(area.StudyAreaId, area.Name));
+    }
+
+    [Fact]
+    public async Task AdministratorCanDeleteUnusedStudyArea()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.Admin);
+        context.StudyAreas.Add(new StudyArea
+        {
+            StudyAreaId = 10,
+            Name = "Temporary location",
+            DisplayOrder = 10,
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+        StudyAreasModel page = CreateStudyAreasPage(context, BcUserRole.Admin);
+
+        IActionResult result = await page.OnPostDeleteAsync(
+            10,
+            CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Empty(await context.StudyAreas.ToListAsync());
+        Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
+            log => log.Category == "Study areas" && log.NewValue == null);
+    }
+
+    [Fact]
+    public async Task StudyAreaUsedByBookingCannotBeDeleted()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.Admin);
+        context.StudyAreas.Add(new StudyArea
+        {
+            StudyAreaId = 10,
+            Name = "Used location",
+            DisplayOrder = 10,
+            IsActive = true
+        });
+        context.Bookings.Add(new Booking
+        {
+            BookingId = 20,
+            StudyAreaId = 10,
+            StudentName = "Student",
+            Location = "Used location",
+            ScheduledStartTime = DateTimeOffset.UtcNow,
+            DateBooked = DateTimeOffset.UtcNow,
+            Duration = SessionDuration.OneHour
+        });
+        await context.SaveChangesAsync();
+        StudyAreasModel page = CreateStudyAreasPage(context, BcUserRole.Admin);
+
+        IActionResult result = await page.OnPostDeleteAsync(
+            10,
+            CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.NotNull(await context.StudyAreas.FindAsync(10));
+        Assert.Contains("cannot be deleted", page.ErrorMessage);
+    }
+
+    [Fact]
     public async Task OnlySuperAdminCanGrantAdministrativeAccess()
     {
         await using ApplicationDbContext context = CreateContext();
@@ -187,6 +385,15 @@ public class AdminSettingsTests
             CurrentUserService(role),
             TimeProvider.System,
             new SettingsAuditService(context, TimeProvider.System));
+
+    private static StudyAreasModel CreateStudyAreasPage(
+        ApplicationDbContext context,
+        BcUserRole role,
+        StudyAreaCampusLabelStore? campusLabelStore = null) => new(
+            context,
+            CurrentUserService(role),
+            new SettingsAuditService(context, TimeProvider.System),
+            campusLabelStore ?? new StudyAreaCampusLabelStore());
 
     private static UsersAccessModel CreateAccessPage(
         ApplicationDbContext context,

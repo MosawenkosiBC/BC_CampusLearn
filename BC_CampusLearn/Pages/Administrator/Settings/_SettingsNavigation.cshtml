@@ -6,26 +6,62 @@
 <nav class="settings-navigation" aria-label="Settings sections">
     <a asp-page="/Administrator/Settings/General"
        class="@(currentPage.EndsWith("/General", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
-        <i class="bi bi-sliders" aria-hidden="true"></i><span>General</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M0 0h24v24H0z" fill="none" />
+            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" d="M4 5h6m3 0h7m-4 4v6M10 2v6m2 8v6m4-10h4M4 12h9m-1 7h8M4 19h5" />
+        </svg><span>General</span>
     </a>
     <a asp-page="/Administrator/Settings/Bookings"
        class="@(currentPage.EndsWith("/Bookings", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
-        <i class="bi bi-calendar2-check" aria-hidden="true"></i><span>Bookings &amp; sessions</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" aria-hidden="true">
+            <path d="M0 0h24v24H0z" fill="none" stroke="none" />
+            <path d="M16 2v4M8 2v4m13 7v-1c0-3.771 0-5.657-1.172-6.828S16.771 4 13 4h-2C7.229 4 5.343 4 4.172 5.172S3 8.229 3 12v2c0 3.771 0 5.657 1.172 6.828S7.229 22 11 22M3 10h18M17.5 18.5a2 2 0 1 0 0-4a2 2 0 0 0 0 4Zm0 0A3.5 3.5 0 0 1 21 22m-3.5-3.5A3.5 3.5 0 0 0 14 22" />
+        </svg><span>Bookings &amp; sessions</span>
+    </a>
+    <a asp-page="/Administrator/Settings/StudyAreas"
+       class="@(currentPage.EndsWith("/StudyAreas", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M0 0h24v24H0z" fill="none" />
+            <g fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14.5 9a2.5 2.5 0 1 1-5 0a2.5 2.5 0 0 1 5 0Z" />
+                <path d="M13.257 17.494a1.813 1.813 0 0 1-2.514 0c-3.089-2.993-7.228-6.336-5.21-11.19C6.626 3.679 9.246 2 12 2s5.375 1.68 6.467 4.304c2.016 4.847-2.113 8.207-5.21 11.19Z" />
+                <path stroke-linecap="round" d="M18 20c0 1.105-2.686 2-6 2s-6-.895-6-2" />
+            </g>
+        </svg><span>Study areas</span>
     </a>
     <a asp-page="/Administrator/Settings/TutorPayments"
        class="@(currentPage.EndsWith("/TutorPayments", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
-        <i class="bi bi-wallet2" aria-hidden="true"></i><span>Tutor payments</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M0 0h24v24H0z" fill="none" />
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                <path d="M3 8.5h12c2.828 0 4.243 0 5.121.879c.879.878.879 2.293.879 5.121v1c0 2.828 0 4.243-.879 5.121c-.878.879-2.293.879-5.121.879H9c-2.828 0-4.243 0-5.121-.879C3 19.743 3 18.328 3 15.5zm12-.002V4.11a1.61 1.61 0 0 0-2.347-1.432L3.763 7.25A1.4 1.4 0 0 0 3 8.5" />
+                <path d="M17.5 15.5a.5.5 0 0 0 0-1m0 1a.5.5 0 0 1 0-1m0 1v-1" />
+            </g>
+        </svg><span>Tutor payments</span>
     </a>
     <a asp-page="/Administrator/Settings/Notifications"
        class="@(currentPage.EndsWith("/Notifications", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
-        <i class="bi bi-bell" aria-hidden="true"></i><span>Notifications</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M0 0h24v24H0z" fill="none" />
+            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8.352 20.242A4.63 4.63 0 0 0 12 22a4.63 4.63 0 0 0 3.648-1.758a27.2 27.2 0 0 1-7.296 0M18.75 9v.704c0 .845.24 1.671.692 2.374l1.108 1.723c1.011 1.574.239 3.713-1.52 4.21a25.8 25.8 0 0 1-14.06 0c-1.759-.497-2.531-2.636-1.52-4.21l1.108-1.723a4.4 4.4 0 0 0 .693-2.374V9c0-3.866 3.022-7 6.749-7s6.75 3.134 6.75 7" />
+        </svg><span>Notifications</span>
     </a>
     <a asp-page="/Administrator/Settings/UsersAccess"
        class="@(currentPage.EndsWith("/UsersAccess", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
-        <i class="bi bi-people" aria-hidden="true"></i><span>Users &amp; access</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M0 0h24v24H0z" fill="none" />
+            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.5 7a4 4 0 1 1-8 0a4 4 0 0 1 8 0M8 11a3 3 0 0 1 0-6m6.5 9C9.813 14 7 16.5 7 19c0 1.105.84 2 1.875 2h11.25C21.16 21 22 20.105 22 19c0-2.5-2.812-5-7.5-5M4 20h-.5c-.828 0-1.5-.768-1.5-1.715c0-1.612 1.273-3.224 3.5-3.924" />
+        </svg><span>Users &amp; access</span>
     </a>
     <a asp-page="/Administrator/Settings/AuditHistory"
        class="@(currentPage.EndsWith("/AuditHistory", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
-        <i class="bi bi-clock-history" aria-hidden="true"></i><span>Audit history</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M0 0h24v24H0z" fill="none" />
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5">
+                <path stroke-linejoin="round" d="M19 11v-1c0-3.771 0-5.657-1.172-6.828S14.771 2 11 2S5.343 2 4.172 3.172S3 6.229 3 10v4c0 3.771 0 5.657 1.172 6.828S7.229 22 11 22" />
+                <path d="m21 22l-1.714-1.714m.571-2.857a3.429 3.429 0 1 1-6.857 0a3.429 3.429 0 0 1 6.857 0Z" />
+                <path stroke-linejoin="round" d="M7 7h8m-8 4h4" />
+            </g>
+        </svg><span>Audit history</span>
     </a>
 </nav>

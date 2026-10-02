@@ -32,6 +32,7 @@ builder.Services.AddOptions<IdentityProtectionOptions>()
 
 builder.Services.AddScoped<UserNotificationSignalRInterceptor>();
 builder.Services.AddScoped<SettingsAuditService>();
+builder.Services.AddSingleton<StudyAreaCampusLabelStore>();
 
 string connectionString =
     builder.Configuration.GetConnectionString(
