@@ -4,6 +4,182 @@
     width: 100%;
 }
 
+.tutor-head-reviews-heading {
+    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(3.5rem, 1fr) auto minmax(3.5rem, 1fr);
+    margin-bottom: 1.75rem;
+}
+
+.tutor-head-reviews-heading h1 {
+    grid-column: 2;
+}
+
+.tutor-head-ai-helper {
+    align-items: center;
+    align-self: center;
+    background: #363c3d;
+    border: 0;
+    border-radius: 50%;
+    box-shadow: 0 0.35rem 0.9rem rgba(25, 30, 32, 0.18);
+    color: #fff;
+    display: inline-flex;
+    grid-column: 3;
+    height: 3rem;
+    justify-content: center;
+    justify-self: end;
+    margin: 0.5rem 1rem 0.5rem 2rem;
+    transition: box-shadow 160ms ease, transform 160ms ease;
+    width: 3rem;
+}
+
+.tutor-head-ai-helper:hover,
+.tutor-head-ai-helper:focus-visible {
+    background: #202526;
+    box-shadow: 0 0.55rem 1.1rem rgba(25, 30, 32, 0.25);
+    color: #fff;
+    transform: translateY(-0.1rem);
+}
+
+.tutor-head-ai-helper:focus-visible {
+    outline: 3px solid rgba(74, 193, 193, 0.4);
+    outline-offset: 3px;
+}
+
+.tutor-head-ai-helper svg {
+    fill: none;
+    height: 1.45rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+    width: 1.45rem;
+}
+
+.tutor-head-gemini-modal .modal-content {
+    border: 0;
+    border-radius: 0.75rem;
+    box-shadow: 0 1rem 3rem rgba(25, 30, 32, 0.2);
+}
+
+.tutor-head-gemini-modal .modal-header,
+.tutor-head-gemini-modal .modal-body,
+.tutor-head-gemini-modal .modal-footer {
+    padding: 1.25rem 1.5rem;
+}
+
+.tutor-head-gemini-modal .modal-title {
+    font-size: 1.35rem;
+    font-weight: 650;
+}
+
+.tutor-head-gemini-eyebrow {
+    color: #687173;
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.2rem;
+    text-transform: uppercase;
+}
+
+.tutor-head-gemini-modal .modal-body > p {
+    color: #4f5759;
+    margin-bottom: 1rem;
+}
+
+.tutor-head-gemini-privacy {
+    background: #f3f6f6;
+    border-left: 0.22rem solid #4a8f91;
+    border-radius: 0.3rem;
+    color: #3f494b;
+    margin-bottom: 1.25rem;
+    padding: 0.8rem 0.9rem;
+}
+
+.tutor-head-gemini-modal label {
+    display: block;
+    font-weight: 650;
+    margin-bottom: 0.45rem;
+}
+
+.tutor-head-gemini-key-field {
+    display: flex;
+}
+
+.tutor-head-gemini-key-field input {
+    border: 1px solid #c9cfd1;
+    border-radius: 0.45rem 0 0 0.45rem;
+    min-height: 44px;
+    min-width: 0;
+    padding: 0.65rem 0.75rem;
+    width: 100%;
+}
+
+.tutor-head-gemini-key-field input:focus {
+    border-color: #4a8f91;
+    box-shadow: 0 0 0 3px rgba(74, 143, 145, 0.18);
+    outline: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.tutor-head-gemini-key-field button {
+    background: #edf0f1;
+    border: 1px solid #c9cfd1;
+    border-left: 0;
+    border-radius: 0 0.45rem 0.45rem 0;
+    color: #343b3d;
+    font-weight: 650;
+    min-width: 4.25rem;
+}
+
+.tutor-head-gemini-modal small {
+    color: #6b7375;
+    display: block;
+    margin-top: 0.45rem;
+}
+
+.tutor-head-gemini-save {
+    background: #363c3d;
+    border: 0;
+    border-radius: 0.45rem;
+    color: #fff;
+    font-weight: 650;
+    min-height: 44px;
+    padding: 0.65rem 1.1rem;
+}
+
+.tutor-head-gemini-save:hover,
+.tutor-head-gemini-save:focus-visible {
+    background: #202526;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tutor-head-ai-helper { transition: none; }
+    .tutor-head-ai-helper:hover,
+    .tutor-head-ai-helper:focus-visible { transform: none; }
+}
+
+@media (max-width: 575.98px) {
+    .tutor-head-reviews-heading {
+        grid-template-columns: 3rem minmax(0, 1fr) 3rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .tutor-head-ai-helper {
+        height: 2.75rem;
+        margin: 0.5rem 0 0.5rem 0.25rem;
+        width: 2.75rem;
+    }
+
+    .tutor-head-gemini-modal .modal-header,
+    .tutor-head-gemini-modal .modal-body,
+    .tutor-head-gemini-modal .modal-footer {
+        padding-inline: 1rem;
+    }
+}
+
 @media (min-width: 1200px) {
     .tutor-head-empty-workspace {
         align-items: stretch;

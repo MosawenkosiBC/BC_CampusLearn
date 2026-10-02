@@ -49,6 +49,9 @@
     bool isSessionReviews = currentPage.StartsWith(
         "/TutorHead/Session",
         StringComparison.OrdinalIgnoreCase);
+    bool isSessionReviewsIndex = currentPage.Equals(
+        "/TutorHead/SessionReviews",
+        StringComparison.OrdinalIgnoreCase);
 }
 
 <div class="navigation-drawer-component" data-navigation-drawer>
@@ -165,8 +168,15 @@
 
                 <a asp-page="/TutorHead/SessionReviews"
                    class="navigation-drawer-link @(isSessionReviews ? "is-active" : null)"
+                   data-session-reviews-link
+                   data-session-reviews-current="@isSessionReviewsIndex.ToString().ToLowerInvariant()"
                    aria-current="@(isSessionReviews ? "page" : null)">
                     <span>Session Reviews</span>
+                    <span class="navigation-drawer-count"
+                          data-session-review-count
+                          aria-label="0 unseen session reviews"
+                          aria-live="polite"
+                          hidden>0</span>
                 </a>
             }
         </nav>

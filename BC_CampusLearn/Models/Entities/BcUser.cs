@@ -7,6 +7,7 @@ public class BcUser
     public string? EncryptedEntraTenantId { get; set; }
     public string? EncryptedEntraObjectId { get; set; }
     public string? EntraIdentityLookupHash { get; set; }
+    public string? EncryptedGeminiApiKey { get; set; }
     public string DisplayName { get; set; } = string.Empty;
     public string? Email { get; set; }
     public BcUserRole Role { get; set; } = BcUserRole.Student;
@@ -16,6 +17,7 @@ public class BcUser
     public DateTime? PublicActivityDisabledAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
+    public DateTimeOffset? SessionReviewsLastViewedAt { get; set; }
     public Tutor? Tutor { get; set; }
     public Admin? Admin { get; set; }
     public ICollection<ResourceComment> ResourceComments { get; set; }

@@ -3,6 +3,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Pages.TutorHead;
+using BC_CampusLearn.Services.Gemini;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -14,6 +15,75 @@ namespace BC_CampusLearn.Tests;
 
 public class TutorHeadSessionReviewsTests
 {
+    [Fact]
+    public async Task TutorHeadCanSaveEncryptedGeminiApiKey()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        context.BcUsers.Add(new BcUser
+        {
+            BcUserId = 2,
+            PersonnelNumber = "TH001",
+            DisplayName = "Tutor Head",
+            Role = BcUserRole.HeadOfTutors
+        });
+        await context.SaveChangesAsync();
+
+        var protector = new TestGeminiApiKeyProtector();
+        var page = new SessionReviewsModel(
+            context,
+            new FixedTimeProvider(DateTimeOffset.UtcNow),
+            new TestCurrentUserService(new CurrentUser(
+                2,
+                "TH001",
+                "Tutor Head",
+                "tutorhead@example.com",
+                BcUserRole.HeadOfTutors)),
+            protector)
+        {
+            GeminiApiKey = "gemini-secret-key"
+        };
+
+        IActionResult result = await page.OnPostSaveGeminiKeyAsync(
+            CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        BcUser user = await context.BcUsers.SingleAsync(item =>
+            item.BcUserId == 2);
+        Assert.Equal("protected:gemini-secret-key", user.EncryptedGeminiApiKey);
+        Assert.DoesNotContain("gemini-secret-key", page.GeminiKeyMessage ?? "");
+    }
+
+    [Fact]
+    public async Task OpeningSessionReviewsRecordsTutorHeadLastViewedTime()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        context.BcUsers.Add(new BcUser
+        {
+            BcUserId = 2,
+            PersonnelNumber = "TH001",
+            DisplayName = "Tutor Head",
+            Role = BcUserRole.HeadOfTutors
+        });
+        await context.SaveChangesAsync();
+        DateTimeOffset now = new(
+            2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
+        var page = new SessionReviewsModel(
+            context,
+            new FixedTimeProvider(now),
+            new TestCurrentUserService(new CurrentUser(
+                2,
+                "TH001",
+                "Tutor Head",
+                "tutorhead@example.com",
+                BcUserRole.HeadOfTutors)));
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(
+            now,
+            context.BcUsers.Single().SessionReviewsLastViewedAt);
+    }
+
     [Fact]
     public async Task PageOnlyShowsCompletedSessionsWithBothReviews()
     {
@@ -281,6 +351,216 @@ public class TutorHeadSessionReviewsTests
         Assert.Equal("Follow up on student engagement.", review.Comment);
     }
 
+    [Fact]
+    public async Task AiAssessmentUsesSavedKeyAndSessionEvidence()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorCourseModule assignment = CreateAssignment();
+        Booking booking = CreateBooking(
+            1,
+            assignment,
+            "Reviewed Student",
+            BookingStatus.Completed,
+            new StudentEvaluation { TutorTopic = "Loops" },
+            new TutorStudentEvaluation { TutorComments = "Covered loops." });
+        booking.Summary = "Please cover loops.";
+        context.TutorCourseModules.Add(assignment);
+        context.BcUsers.Add(new BcUser
+        {
+            BcUserId = 2,
+            PersonnelNumber = "TH001",
+            DisplayName = "Tutor Head",
+            Role = BcUserRole.HeadOfTutors,
+            EncryptedGeminiApiKey = "protected:gemini-secret-key"
+        });
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var assessmentService = new TestGeminiAssessmentService();
+        var page = new SessionDetailsModel(
+            context,
+            new TestCurrentUserService(new CurrentUser(
+                2,
+                "TH001",
+                "Tutor Head",
+                "tutorhead@example.com",
+                BcUserRole.HeadOfTutors)),
+            new TestWebHostEnvironment(),
+            new FixedTimeProvider(DateTimeOffset.UtcNow),
+            new TestGeminiApiKeyProtector(),
+            assessmentService);
+
+        IActionResult result = await page.OnPostGenerateAiAssessmentAsync(
+            1,
+            CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.NotNull(page.AiAssessment);
+        Assert.True(page.OpenAiAssessmentModal);
+        Assert.Equal(
+            "52 minutes from transcript timestamps",
+            page.AiAssessment.TranscriptDuration);
+        Assert.Equal("gemini-secret-key", assessmentService.ApiKey);
+        Assert.Equal("Please cover loops.", assessmentService.Evidence?.BookingSummary);
+        Assert.Contains("Loops", assessmentService.Evidence?.StudentReview.Values ?? []);
+
+        SessionAiAssessment storedAssessment = Assert.Single(
+            context.SessionAiAssessments);
+        Assert.Equal(booking.BookingId, storedAssessment.BookingId);
+        Assert.Equal(2, storedAssessment.GeneratedByBcUserId);
+        Assert.Contains(
+            "The evidence is consistent.",
+            storedAssessment.AssessmentJson);
+
+        Assert.IsType<PageResult>(await page.OnPostGenerateAiAssessmentAsync(
+            booking.BookingId,
+            CancellationToken.None));
+        Assert.Equal(
+            storedAssessment.SessionAiAssessmentId,
+            Assert.Single(context.SessionAiAssessments)
+                .SessionAiAssessmentId);
+
+        SessionDetailsModel reloadedPage = CreateDetailsPage(context);
+        Assert.IsType<PageResult>(await reloadedPage.OnGetAsync(
+            booking.BookingId,
+            CancellationToken.None));
+        Assert.Equal(
+            "The evidence is consistent.",
+            reloadedPage.AiAssessment?.Summary);
+        Assert.Equal(
+            storedAssessment.GeneratedAt,
+            reloadedPage.AiAssessmentGeneratedAt);
+        Assert.False(reloadedPage.OpenAiAssessmentModal);
+    }
+
+    [Fact]
+    public async Task AiAssessmentIncludesUploadedPdfTranscript()
+    {
+        string contentRoot = Directory.CreateTempSubdirectory(
+            "campus-learn-ai-transcript-").FullName;
+        try
+        {
+            const string relativePath =
+                "App_Data/tutor-review-transcripts/1/transcript.pdf";
+            string fullPath = Path.Combine(contentRoot, relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            byte[] transcriptBytes = "%PDF transcript evidence"u8.ToArray();
+            await File.WriteAllBytesAsync(fullPath, transcriptBytes);
+
+            await using ApplicationDbContext context = CreateContext();
+            TutorCourseModule assignment = CreateAssignment();
+            Booking booking = CreateBooking(
+                1,
+                assignment,
+                "Reviewed Student",
+                BookingStatus.Completed,
+                new StudentEvaluation { TutorTopic = "Loops" },
+                new TutorStudentEvaluation
+                {
+                    TutorComments = "Covered loops.",
+                    TranscriptOriginalFileName = "transcript.pdf",
+                    TranscriptStoragePath = relativePath,
+                    TranscriptContentType = "application/pdf",
+                    TranscriptSizeBytes = transcriptBytes.Length
+                });
+            context.TutorCourseModules.Add(assignment);
+            context.BcUsers.Add(new BcUser
+            {
+                BcUserId = 2,
+                PersonnelNumber = "TH001",
+                DisplayName = "Tutor Head",
+                Role = BcUserRole.HeadOfTutors,
+                EncryptedGeminiApiKey = "protected:gemini-secret-key"
+            });
+            context.Bookings.Add(booking);
+            await context.SaveChangesAsync();
+            var assessmentService = new TestGeminiAssessmentService();
+            var page = new SessionDetailsModel(
+                context,
+                new TestCurrentUserService(new CurrentUser(
+                    2,
+                    "TH001",
+                    "Tutor Head",
+                    "tutorhead@example.com",
+                    BcUserRole.HeadOfTutors)),
+                new TestWebHostEnvironment(contentRoot),
+                new FixedTimeProvider(DateTimeOffset.UtcNow),
+                new TestGeminiApiKeyProtector(),
+                assessmentService);
+
+            IActionResult result = await page.OnPostGenerateAiAssessmentAsync(
+                1,
+                CancellationToken.None);
+
+            Assert.IsType<PageResult>(result);
+            GeminiTranscriptDocument transcript = Assert.IsType<
+                GeminiTranscriptDocument>(
+                assessmentService.Evidence?.UploadedTranscript);
+            Assert.Equal("application/pdf", transcript.ContentType);
+            Assert.Equal(
+                Convert.ToBase64String(transcriptBytes),
+                transcript.Base64Data);
+        }
+        finally
+        {
+            Directory.Delete(contentRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task TranscriptOpensInlineForBrowserPreview()
+    {
+        string contentRoot = Directory.CreateTempSubdirectory(
+            "campus-learn-transcript-preview-").FullName;
+        try
+        {
+            const string relativePath =
+                "App_Data/tutor-review-transcripts/1/transcript.pdf";
+            string fullPath = Path.Combine(contentRoot, relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            await File.WriteAllBytesAsync(
+                fullPath,
+                "%PDF transcript evidence"u8.ToArray());
+
+            await using ApplicationDbContext context = CreateContext();
+            TutorCourseModule assignment = CreateAssignment();
+            Booking booking = CreateBooking(
+                1,
+                assignment,
+                "Reviewed Student",
+                BookingStatus.Completed,
+                new StudentEvaluation(),
+                new TutorStudentEvaluation
+                {
+                    TranscriptOriginalFileName = "transcript.pdf",
+                    TranscriptStoragePath = relativePath,
+                    TranscriptContentType = "application/pdf"
+                });
+            context.TutorCourseModules.Add(assignment);
+            context.Bookings.Add(booking);
+            await context.SaveChangesAsync();
+            var page = new SessionDetailsModel(
+                context,
+                new TestCurrentUserService(new CurrentUser(
+                    2,
+                    "TH001",
+                    "Tutor Head",
+                    "tutorhead@example.com",
+                    BcUserRole.HeadOfTutors)),
+                new TestWebHostEnvironment(contentRoot),
+                new FixedTimeProvider(DateTimeOffset.UtcNow));
+
+            PhysicalFileResult result = Assert.IsType<PhysicalFileResult>(
+                await page.OnGetTranscriptAsync(1, CancellationToken.None));
+
+            Assert.Equal("application/pdf", result.ContentType);
+            Assert.True(string.IsNullOrEmpty(result.FileDownloadName));
+        }
+        finally
+        {
+            Directory.Delete(contentRoot, recursive: true);
+        }
+    }
+
     private static ApplicationDbContext CreateContext() => new(
         new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -410,14 +690,49 @@ public class TutorHeadSessionReviewsTests
         public CurrentUser GetRequiredUser() => user;
     }
 
-    private sealed class TestWebHostEnvironment : IWebHostEnvironment
+    private sealed class TestGeminiApiKeyProtector : IGeminiApiKeyProtector
+    {
+        public string Protect(string apiKey) => $"protected:{apiKey}";
+
+        public string Unprotect(string protectedApiKey) =>
+            protectedApiKey["protected:".Length..];
+    }
+
+    private sealed class TestGeminiAssessmentService
+        : IGeminiSessionAssessmentService
+    {
+        public string? ApiKey { get; private set; }
+
+        public GeminiSessionEvidence? Evidence { get; private set; }
+
+        public Task<GeminiSessionAssessment> AssessAsync(
+            string apiKey,
+            GeminiSessionEvidence evidence,
+            CancellationToken cancellationToken)
+        {
+            ApiKey = apiKey;
+            Evidence = evidence;
+            return Task.FromResult(new GeminiSessionAssessment(
+                "Valid",
+                "All requested topics covered",
+                "The evidence is consistent.",
+                ["The reviews mention loops."],
+                [],
+                "Verify and complete the human review.",
+                "52 minutes from transcript timestamps"));
+        }
+    }
+
+    private sealed class TestWebHostEnvironment(
+        string? contentRoot = null) : IWebHostEnvironment
     {
         public string ApplicationName { get; set; } = "BC_CampusLearn.Tests";
         public IFileProvider WebRootFileProvider { get; set; } =
             new NullFileProvider();
         public string WebRootPath { get; set; } = string.Empty;
         public string EnvironmentName { get; set; } = "Testing";
-        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+        public string ContentRootPath { get; set; } =
+            contentRoot ?? AppContext.BaseDirectory;
         public IFileProvider ContentRootFileProvider { get; set; } =
             new NullFileProvider();
     }

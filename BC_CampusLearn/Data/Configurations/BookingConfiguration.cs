@@ -40,6 +40,11 @@ public class BookingConfiguration
         builder.Property(booking => booking.ReminderSentAt)
             .HasColumnType("datetimeoffset");
 
+        builder.Property(booking => booking.TutorHeadReviewAvailableAt)
+            .HasColumnType("datetimeoffset");
+
+        builder.HasIndex(booking => booking.TutorHeadReviewAvailableAt);
+
         builder.Property(booking => booking.ScheduledStartTime)
             .HasColumnType("datetimeoffset")
             .IsRequired();

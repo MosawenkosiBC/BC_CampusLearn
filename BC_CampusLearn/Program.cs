@@ -8,6 +8,7 @@ using BC_CampusLearn.Services.Sessions;
 using BC_CampusLearn.Services.Students;
 using BC_CampusLearn.Services.Notifications;
 using BC_CampusLearn.Services.Settings;
+using BC_CampusLearn.Services.Gemini;
 using BC_CampusLearn.Services.Events;
 using BC_CampusLearn.Hubs;
 using BC_CampusLearn.Models.Entities;
@@ -31,6 +32,8 @@ builder.Services.AddOptions<IdentityProtectionOptions>()
     .ValidateOnStart();
 
 builder.Services.AddScoped<UserNotificationSignalRInterceptor>();
+builder.Services.AddScoped<ITutorHeadSessionReviewNotifier,
+    TutorHeadSessionReviewNotifier>();
 builder.Services.AddScoped<SettingsAuditService>();
 builder.Services.AddSingleton<StudyAreaCampusLabelStore>();
 
@@ -114,6 +117,15 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<
     IEntraIdentityProtector,
     EntraIdentityProtector>();
+builder.Services.AddSingleton<IGeminiApiKeyProtector, GeminiApiKeyProtector>();
+builder.Services.AddHttpClient<
+    IGeminiSessionAssessmentService,
+    GeminiSessionAssessmentService>(client =>
+    {
+        client.BaseAddress = new Uri("https://generativelanguage.googleapis.com/");
+        client.Timeout = TimeSpan.FromSeconds(60);
+        client.MaxResponseContentBufferSize = 256 * 1024;
+    });
 builder.Services.AddScoped<IClaimsTransformation, BcUserClaimsTransformation>();
 
 builder.Services.AddScoped<

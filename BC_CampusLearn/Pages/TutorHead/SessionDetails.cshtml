@@ -42,12 +42,59 @@
 
     <div class="admin-session-content">
         <div class="tutor-head-summary-actions">
-            <button type="button" class="admin-session-summary-button"
-                    data-bs-toggle="modal" data-bs-target="#session-summary-modal"
-                    aria-controls="session-summary-modal">
-                <span>View Session Summary</span>
-            </button>
+            <div class="tutor-head-summary-view-actions">
+                <button type="button" class="admin-session-summary-button"
+                        data-bs-toggle="modal" data-bs-target="#session-summary-modal"
+                        aria-controls="session-summary-modal">
+                    <span>View Session Summary</span>
+                </button>
+                @if (Model.AiAssessment is not null)
+                {
+                    <button type="button" class="tutor-head-view-ai-button"
+                            data-bs-toggle="modal" data-bs-target="#ai-assessment-modal"
+                            aria-controls="ai-assessment-modal">
+                        View AI assessment
+                    </button>
+                }
+            </div>
+            @if (Model.AiAssessment is null)
+            {
+                <form method="post" asp-page-handler="GenerateAiAssessment"
+                      asp-route-id="@session.BookingId"
+                      data-ai-assessment-form>
+                    <button type="submit" class="tutor-head-ai-assessment-button"
+                            disabled="@(!Model.HasGeminiApiKey)">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"
+                             data-ai-assessment-icon>
+                            <path d="M12 3a7 7 0 0 0-4.7 12.18c.73.66 1.2 1.42 1.2 2.32h7c0-.9.47-1.66 1.2-2.32A7 7 0 0 0 12 3Z" />
+                            <path d="M9.5 21h5M9 17.5h6" />
+                        </svg>
+                        <span class="tutor-head-ai-button-spinner"
+                              data-ai-assessment-spinner aria-hidden="true"
+                              hidden></span>
+                        <span data-ai-assessment-label>Generate AI assessment</span>
+                    </button>
+                </form>
+            }
         </div>
+
+        @if (!Model.HasGeminiApiKey && Model.AiAssessment is null)
+        {
+            <p class="tutor-head-ai-setup-note">
+                Configure your Gemini API key from the helper on
+                <a asp-page="/TutorHead/SessionReviews">Session Reviews</a>
+                to use AI assessments.
+            </p>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Model.AiAssessmentError))
+        {
+            @await Html.PartialAsync(
+                "_CampusAlert",
+                new CampusAlertViewModel(
+                    Model.AiAssessmentError,
+                    CampusAlertVariant.Danger))
+        }
 
         <section class="admin-session-reviews" aria-labelledby="session-reviews-title">
             <h2 id="session-reviews-title" class="visually-hidden">Session reviews</h2>
@@ -177,25 +224,31 @@
                     <div>
                         <h2>Tutor Review</h2>
                     </div>
-                    @if (Model.CanWatchRecording)
-                    {
-                        <a class="tutor-head-recording-button"
-                           href="@Model.RecordingUrl" target="_blank" rel="noopener noreferrer">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" fill="currentColor" /></svg>
-                            Watch recording
-                        </a>
-                    }
-                    else
-                    {
-                        <span class="tutor-head-recording-unavailable">Recording unavailable</span>
-                    }
-                    @if (Model.HasTranscript)
-                    {
-                        <a class="tutor-head-recording-button"
-                           asp-page-handler="Transcript" asp-route-id="@session.BookingId">
-                            Download transcript
-                        </a>
-                    }
+                    <div class="tutor-head-evidence-actions">
+                        @if (Model.CanWatchRecording)
+                        {
+                            <a class="tutor-head-recording-button"
+                               href="@Model.RecordingUrl" target="_blank" rel="noopener noreferrer">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" fill="currentColor" /></svg>
+                                Watch recording
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="tutor-head-recording-unavailable">Recording unavailable</span>
+                        }
+                        @if (Model.HasTranscript)
+                        {
+                            <a class="tutor-head-recording-button"
+                               href="@Url.Page(
+                                   "/TutorHead/SessionDetails",
+                                   "Transcript",
+                                   new { id = session.BookingId })"
+                               target="_blank" rel="noopener noreferrer">
+                                Download transcript
+                            </a>
+                        }
+                    </div>
                 </header>
                 <div class="admin-session-review-body">
                     <dl class="admin-session-answers" id="tutor-review-answers">
@@ -239,6 +292,77 @@
 </main>
 
 @section Modals {
+    @if (Model.AiAssessment is { } assessment)
+    {
+        <div class="modal fade" id="ai-assessment-modal" tabindex="-1"
+             data-open-on-load="@Model.OpenAiAssessmentModal.ToString().ToLowerInvariant()"
+             aria-labelledby="ai-assessment-title" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div>
+                            <div class="tutor-head-ai-title-row">
+                                <h2 class="modal-title" id="ai-assessment-title">Session evidence summary</h2>
+                                <span class="tutor-head-ai-review-notice">
+                                    <strong>AI Disclaimer:</strong> AI-generated results may contain errors. Please verify the analysis against the transcript and reviews before making a decision
+                                </span>
+                            </div>
+                            @if (Model.AiAssessmentGeneratedAt is { } generatedAt)
+                            {
+                                <small>
+                                    Generated @generatedAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
+                                </small>
+                            }
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <section class="tutor-head-ai-assessment">
+                            <header>
+                                <h3>AI analysis</h3>
+                            </header>
+                            <div class="tutor-head-ai-verdicts">
+                                <div><strong>Session validity</strong><span>@assessment.Validity</span></div>
+                                <div><strong>Topic coverage</strong><span>@assessment.TopicCoverage</span></div>
+                                <div><strong>Transcript duration</strong><span>@assessment.TranscriptDuration</span></div>
+                            </div>
+                            <p>@assessment.Summary</p>
+                            <div class="tutor-head-ai-lists">
+                                <div class="tutor-head-ai-list tutor-head-ai-list--winning">
+                                    <h3>Winning points</h3>
+                                    @if (assessment.Evidence.Count == 0)
+                                    {
+                                        <p>No winning points identified.</p>
+                                    }
+                                    else
+                                    {
+                                        <ul>@foreach (string item in assessment.Evidence) { <li><mark class="tutor-head-ai-highlight tutor-head-ai-highlight--winning">@item</mark></li> }</ul>
+                                    }
+                                </div>
+                                <div class="tutor-head-ai-list tutor-head-ai-list--discrepancy">
+                                    <h3>Discrepancies</h3>
+                                    @if (assessment.Concerns.Count == 0)
+                                    {
+                                        <p>No discrepancies identified in the supplied evidence.</p>
+                                    }
+                                    else
+                                    {
+                                        <ul>@foreach (string item in assessment.Concerns) { <li><mark class="tutor-head-ai-highlight tutor-head-ai-highlight--discrepancy">@item</mark></li> }</ul>
+                                    }
+                                </div>
+                            </div>
+                            <div class="tutor-head-ai-recommendation">
+                                <strong>Suggested next step</strong>
+                                <p>@assessment.Recommendation</p>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
     <div class="modal fade admin-session-summary-modal" id="session-summary-modal"
          tabindex="-1" aria-labelledby="session-summary-title" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">

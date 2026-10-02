@@ -3,8 +3,11 @@
         "[data-message-notifications]")];
     const userNotificationMenus = [...document.querySelectorAll(
         "[data-user-notifications]")];
+    const sessionReviewLinks = [...document.querySelectorAll(
+        "[data-session-reviews-link]")];
     if ((messageMenus.length === 0 &&
-        userNotificationMenus.length === 0) || !window.signalR) {
+        userNotificationMenus.length === 0 &&
+        sessionReviewLinks.length === 0) || !window.signalR) {
         return;
     }
 
@@ -16,6 +19,33 @@
         .build();
 
     const formatCount = (count) => count > 99 ? "99+" : String(count);
+
+    const updateSessionReviewCount = (count) => {
+        sessionReviewLinks.forEach((link) => {
+            const badge = link.querySelector(
+                "[data-session-review-count]");
+            if (!badge) {
+                return;
+            }
+
+            badge.textContent = formatCount(count);
+            badge.hidden = count === 0;
+            badge.setAttribute(
+                "aria-label",
+                `${count} unseen session reviews`);
+        });
+    };
+
+    const setSessionReviewCount = (count) => {
+        sessionReviewLinks.forEach((link) => {
+            const badge = link.querySelector(
+                "[data-session-review-count]");
+            if (badge) {
+                badge.dataset.count = String(count);
+            }
+        });
+        updateSessionReviewCount(count);
+    };
 
     const updateCount = (menu, count) => {
         menu.dataset.unreadCount = String(count);
@@ -186,13 +216,53 @@
         "ReceiveUserNotification",
         displayUserNotification);
 
+    connection.on("SessionReviewAvailable", async () => {
+        try {
+            const count = await connection.invoke(
+                "GetUnreadSessionReviewCount");
+            setSessionReviewCount(Number(count) || 0);
+        } catch {
+            // Reconnection or the next page load will resynchronize it.
+        }
+    });
+    connection.on(
+        "SessionReviewsViewed",
+        () => setSessionReviewCount(0));
+
+    const syncSessionReviewCount = async () => {
+        if (sessionReviewLinks.length === 0) {
+            return;
+        }
+
+        const isSessionReviewsPage = sessionReviewLinks.some(
+            (link) => link.dataset.sessionReviewsCurrent === "true");
+        if (isSessionReviewsPage) {
+            await connection.invoke("MarkSessionReviewsViewed");
+            setSessionReviewCount(0);
+            return;
+        }
+
+        const count = await connection.invoke(
+            "GetUnreadSessionReviewCount");
+        setSessionReviewCount(Number(count) || 0);
+    };
+
     const startConnection = async () => {
         try {
             await connection.start();
+            await syncSessionReviewCount();
         } catch {
             window.setTimeout(startConnection, 3000);
         }
     };
+
+    connection.onreconnected(async () => {
+        try {
+            await syncSessionReviewCount();
+        } catch {
+            // The next real-time event or page load will resynchronize it.
+        }
+    });
 
     startConnection();
 })();
