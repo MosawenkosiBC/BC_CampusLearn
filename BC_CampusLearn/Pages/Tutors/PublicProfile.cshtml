@@ -163,8 +163,22 @@
                     <span asp-validation-for="Input.Biography"></span>
                 </div>
 
-                <fieldset class="tutor-profile-preference">
+                <fieldset class="tutor-profile-preference"
+                          aria-describedby="tutoring-preference-help">
                     <legend>Tutoring preference</legend>
+                    <div id="tutoring-preference-help"
+                         class="tutor-profile-preference-help">
+                        <p>
+                            Changing this preference changes the Location
+                            options students see when booking a session with
+                            you.
+                        </p>
+                        <ul>
+                            <li><strong>Online:</strong> students can only select Online.</li>
+                            <li><strong>Face-to-Face:</strong> students can only select a physical study area.</li>
+                            <li><strong>Both:</strong> students can select Online or a physical study area.</li>
+                        </ul>
+                    </div>
                     <div class="tutor-profile-preference-options">
                         <label>
                             <input asp-for="Input.PreferredTutoringMode"

@@ -189,6 +189,72 @@ public class BookingServiceTests
         Assert.Single(context.TutorAvailabilities);
     }
 
+    [Theory]
+    [InlineData(PreferredTutoringMode.Online, "Main Library & Study area")]
+    [InlineData(PreferredTutoringMode.FaceToFace, "Online")]
+    public async Task CreateBookingAsync_RejectsLocationOutsideTutorPreference(
+        PreferredTutoringMode tutoringMode,
+        string studyAreaName)
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorAvailability availability = AddTutorAvailability(
+            context,
+            DateTimeOffset.UtcNow.AddDays(2),
+            tutoringMode);
+        context.StudyAreas.Add(new StudyArea
+        {
+            StudyAreaId = 1,
+            Name = studyAreaName,
+            DisplayOrder = 1,
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+
+        var service = new BookingService(
+            context,
+            new TestCurrentUserService(new CurrentUser(
+                21,
+                "STUDENT21",
+                "Student Name",
+                "student@example.com")),
+            new TestWebHostEnvironment());
+
+        BookingCreationResult result = await service.CreateBookingAsync(
+            new CreateBookingInput
+            {
+                TutorAvailabilityId = availability.TutorAvailabilityId,
+                ProgrammeModuleId = 3,
+                StudyAreaId = 1,
+                AcceptedTerms = true
+            });
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(
+            "Select a location that matches this tutor's tutoring preference.",
+            result.ErrorMessage);
+        Assert.Empty(context.Bookings);
+        Assert.Single(context.TutorAvailabilities);
+    }
+
+    [Theory]
+    [InlineData(PreferredTutoringMode.Online, "Online", true)]
+    [InlineData(PreferredTutoringMode.Online, "Chi study", false)]
+    [InlineData(PreferredTutoringMode.FaceToFace, "Online", false)]
+    [InlineData(PreferredTutoringMode.FaceToFace, "Chi study", true)]
+    [InlineData(PreferredTutoringMode.Both, "Online", true)]
+    [InlineData(PreferredTutoringMode.Both, "Chi study", true)]
+    public void LocationPolicyMatchesTutoringPreference(
+        PreferredTutoringMode tutoringMode,
+        string studyAreaName,
+        bool expected)
+    {
+        Assert.Equal(
+            expected,
+            TutoringModeLocationPolicy.AllowsLocation(
+                tutoringMode,
+                studyAreaName));
+    }
+
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -199,7 +265,8 @@ public class BookingServiceTests
 
     private static TutorAvailability AddTutorAvailability(
         ApplicationDbContext context,
-        DateTimeOffset availableTime)
+        DateTimeOffset availableTime,
+        PreferredTutoringMode tutoringMode = PreferredTutoringMode.Both)
     {
         var tutorUser = new BcUser
         {
@@ -219,6 +286,7 @@ public class BookingServiceTests
             PreviousTutoringExperience = "Peer tutoring",
             CampusOfStudy = "Pretoria",
             DemonstrationVideoUrl = string.Empty,
+            PreferredTutoringMode = tutoringMode,
             Status = TutorStatus.Approved,
             IsActive = true,
             SubmittedAt = DateTime.UtcNow,
