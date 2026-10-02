@@ -8,6 +8,8 @@ public class Booking
 
     public int ProgrammeModuleId { get; set; }
 
+    public int? StudyAreaId { get; set; }
+
     public int? StudentBcUserId { get; set; }
 
     // Display snapshots.
@@ -38,6 +40,8 @@ public class Booking
     public ProgrammeModule ProgrammeModule { get; set; } = null!;
 
     public TutorCourseModule TutorCourseModule { get; set; } = null!;
+
+    public StudyArea? StudyArea { get; set; }
 
     public BcUser? StudentBcUser { get; set; }
 

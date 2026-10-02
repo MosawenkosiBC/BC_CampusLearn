@@ -73,5 +73,10 @@ public class BookingConfiguration
             .WithMany()
             .HasForeignKey(booking => booking.StudentBcUserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(booking => booking.StudyArea)
+            .WithMany(studyArea => studyArea.Bookings)
+            .HasForeignKey(booking => booking.StudyAreaId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

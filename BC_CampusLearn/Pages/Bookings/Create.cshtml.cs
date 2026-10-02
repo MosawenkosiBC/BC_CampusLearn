@@ -45,6 +45,8 @@ public class CreateModel : PageModel
 
     public IReadOnlyList<string> BookingTerms { get; private set; } = [];
 
+    public IReadOnlyList<StudyArea> StudyAreas { get; private set; } = [];
+
     public string SupportEmail { get; private set; } =
         "tutors@belgiumcampus.ac.za";
 
@@ -222,6 +224,13 @@ public class CreateModel : PageModel
     private async Task LoadPlatformSettingsAsync(
         CancellationToken cancellationToken)
     {
+        StudyAreas = await _context.StudyAreas
+            .AsNoTracking()
+            .Where(studyArea => studyArea.IsActive)
+            .OrderBy(studyArea => studyArea.DisplayOrder)
+            .ThenBy(studyArea => studyArea.Name)
+            .ToListAsync(cancellationToken);
+
         var settings = await _context.PlatformSettings
             .AsNoTracking()
             .Where(item => item.PlatformSettingsId == PlatformSettings.SingletonId)

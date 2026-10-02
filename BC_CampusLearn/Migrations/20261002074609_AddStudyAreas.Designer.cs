@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261002074609_AddStudyAreas")]
+    partial class AddStudyAreas
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1161,6 +1164,10 @@ namespace BC_CampusLearn.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("StudyAreaId"));
 
+                    b.Property<string>("CampusName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<int>("DisplayOrder")
                         .HasColumnType("int");
 
@@ -1190,6 +1197,7 @@ namespace BC_CampusLearn.Migrations
                         new
                         {
                             StudyAreaId = 2,
+                            CampusName = "Pretoria Campus",
                             DisplayOrder = 2,
                             IsActive = true,
                             Name = "Chi study"
@@ -1197,6 +1205,7 @@ namespace BC_CampusLearn.Migrations
                         new
                         {
                             StudyAreaId = 3,
+                            CampusName = "Pretoria Campus",
                             DisplayOrder = 3,
                             IsActive = true,
                             Name = "Rou"
@@ -1204,6 +1213,7 @@ namespace BC_CampusLearn.Migrations
                         new
                         {
                             StudyAreaId = 4,
+                            CampusName = "Pretoria Campus",
                             DisplayOrder = 4,
                             IsActive = true,
                             Name = "Waterloop"
@@ -1211,6 +1221,7 @@ namespace BC_CampusLearn.Migrations
                         new
                         {
                             StudyAreaId = 5,
+                            CampusName = "Pretoria Campus",
                             DisplayOrder = 5,
                             IsActive = true,
                             Name = "Flourrenville"
@@ -1218,6 +1229,7 @@ namespace BC_CampusLearn.Migrations
                         new
                         {
                             StudyAreaId = 6,
+                            CampusName = "Pretoria Campus",
                             DisplayOrder = 6,
                             IsActive = true,
                             Name = "West Campus"
@@ -1225,6 +1237,7 @@ namespace BC_CampusLearn.Migrations
                         new
                         {
                             StudyAreaId = 7,
+                            CampusName = "Pretoria Campus",
                             DisplayOrder = 7,
                             IsActive = true,
                             Name = "Brugge"
@@ -1232,6 +1245,7 @@ namespace BC_CampusLearn.Migrations
                         new
                         {
                             StudyAreaId = 8,
+                            CampusName = "Pretoria Campus",
                             DisplayOrder = 8,
                             IsActive = true,
                             Name = "Main Library & Study area"

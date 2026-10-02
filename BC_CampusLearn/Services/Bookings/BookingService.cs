@@ -168,6 +168,20 @@ public class BookingService : IBookingService
                 assignment.IsActive &&
                 assignment.ProgrammeModuleId == input.ProgrammeModuleId);
 
+        StudyArea? selectedStudyArea = await _context.StudyAreas
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                studyArea =>
+                    studyArea.StudyAreaId == input.StudyAreaId &&
+                    studyArea.IsActive,
+                cancellationToken);
+
+        if (selectedStudyArea is null)
+        {
+            return BookingCreationResult.Failure(
+                "Select an available location.");
+        }
+
         List<string> preparationLinks = input.PreparationLinks
             .Where(link => !string.IsNullOrWhiteSpace(link))
             .Select(link => link!.Trim())
@@ -211,7 +225,9 @@ public class BookingService : IBookingService
             StudentName = student.DisplayName,
             StudentEmail = student.Email,
 
-            Location = input.Location.Trim(),
+            StudyAreaId = selectedStudyArea.StudyAreaId,
+
+            Location = selectedStudyArea.Name,
 
             Summary = input.Summary?.Trim(),
 
