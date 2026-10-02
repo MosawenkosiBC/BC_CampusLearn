@@ -1,5 +1,6 @@
 @page
 @model BC_CampusLearn.Pages.Bookings.CreateModel
+@inject BC_CampusLearn.Services.Settings.StudyAreaCampusLabelStore CampusLabelStore
 
 @{
     ViewData["Title"] = "Book session";
@@ -205,9 +206,12 @@
                         <option value="">Choose a study area</option>
                         @foreach (var studyArea in Model.StudyAreas)
                         {
+                            string campusLabel = await CampusLabelStore.GetLabelAsync(
+                                studyArea.StudyAreaId,
+                                studyArea.Name);
                             <option value="@studyArea.StudyAreaId"
                                     data-location-name="@studyArea.Name"
-                                    data-location-subtext="@StudyAreaDisplay.GetSubtext(studyArea.Name)"
+                                    data-location-subtext="@campusLabel"
                                     data-location-description="@studyArea.Description">
                                 @studyArea.Name
                             </option>
@@ -267,18 +271,20 @@
                              aria-label="Available study areas">
                             @foreach (var studyArea in Model.StudyAreas)
                             {
+                                string campusLabel = await CampusLabelStore.GetLabelAsync(
+                                    studyArea.StudyAreaId,
+                                    studyArea.Name);
                                 <button type="button"
                                         class="booking-location-option"
                                         data-booking-location-option
                                         data-location-id="@studyArea.StudyAreaId"
                                         data-location-name="@studyArea.Name"
-                                        data-location-subtext="@StudyAreaDisplay.GetSubtext(studyArea.Name)"
+                                        data-location-subtext="@campusLabel"
                                         data-location-description="@studyArea.Description"
                                         role="option"
                                         aria-selected="@(Model.Input.StudyAreaId == studyArea.StudyAreaId ? "true" : "false")">
                                     <strong>@studyArea.Name</strong>
-                                    <span>@StudyAreaDisplay.GetSubtext(
-                                        studyArea.Name)</span>
+                                    <span>@campusLabel</span>
                                     @if (!string.IsNullOrWhiteSpace(
                                         studyArea.Description))
                                     {

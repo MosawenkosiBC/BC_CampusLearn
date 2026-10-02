@@ -9,8 +9,16 @@
 
 <main class="admin-settings" aria-labelledby="settings-title" data-settings-page>
     <header class="admin-dashboard-header"><h1 id="settings-title">Settings</h1></header>
-    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage)) { <div class="settings-alert settings-alert--success" role="status">@Model.SuccessMessage</div> }
-    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <div class="settings-alert settings-alert--error" role="alert">@Model.ErrorMessage</div> }
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.SuccessMessage))
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        @await Html.PartialAsync(
+            "_CampusAlert",
+            new CampusAlertViewModel(Model.ErrorMessage, CampusAlertVariant.Danger))
+    }
     <div class="settings-layout">
         <partial name="_SettingsNavigation" />
         <section class="settings-section" aria-labelledby="access-title">
