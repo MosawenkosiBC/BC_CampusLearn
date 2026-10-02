@@ -15,15 +15,18 @@ public class ProfileModel : PageModel
     private readonly ApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly IWebHostEnvironment _environment;
+    private readonly ILogger<ProfileModel> _logger;
 
     public ProfileModel(
         ApplicationDbContext context,
         ICurrentUserService currentUserService,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        ILogger<ProfileModel> logger)
     {
         _context = context;
         _currentUserService = currentUserService;
         _environment = environment;
+        _logger = logger;
     }
 
     public string DisplayName { get; private set; } = string.Empty;
@@ -291,6 +294,7 @@ public class ProfileModel : PageModel
 
         string fileName = $"{Guid.NewGuid():N}{extension}";
         string filePath = Path.Combine(uploadDirectory, fileName);
+        string? previousProfileImagePath = tutor.ProfileImagePath;
 
         await using (FileStream destination = new(
             filePath,
@@ -307,9 +311,100 @@ public class ProfileModel : PageModel
             $"/{relativeDirectory.Replace('\\', '/')}/{fileName}";
         tutor.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            TryDeleteFile(filePath, "new profile image after a failed database update");
+            throw;
+        }
+
+        TryDeletePreviousProfileImage(
+            previousProfileImagePath,
+            uploadDirectory,
+            tutor.TutorId);
 
         return RedirectAfterProfileImageUpload(returnPage);
+    }
+
+    private void TryDeletePreviousProfileImage(
+        string? previousProfileImagePath,
+        string uploadDirectory,
+        int tutorId)
+    {
+        if (string.IsNullOrWhiteSpace(previousProfileImagePath))
+        {
+            return;
+        }
+
+        string normalizedPath = previousProfileImagePath
+            .Replace('\\', '/')
+            .TrimStart('/');
+        string expectedPrefix = $"uploads/tutor-profiles/{tutorId}/";
+
+        if (!normalizedPath.StartsWith(expectedPrefix, StringComparison.Ordinal))
+        {
+            _logger.LogWarning(
+                "Skipped deleting profile image outside tutor {TutorId}'s upload directory: {ProfileImagePath}",
+                tutorId,
+                previousProfileImagePath);
+            return;
+        }
+
+        string fileName = normalizedPath[expectedPrefix.Length..];
+        if (string.IsNullOrWhiteSpace(fileName) ||
+            fileName.Contains('/') ||
+            fileName.Contains('\\'))
+        {
+            _logger.LogWarning(
+                "Skipped deleting an invalid profile image path for tutor {TutorId}: {ProfileImagePath}",
+                tutorId,
+                previousProfileImagePath);
+            return;
+        }
+
+        string fullUploadDirectory = Path.GetFullPath(uploadDirectory);
+        string oldFilePath = Path.GetFullPath(
+            Path.Combine(fullUploadDirectory, fileName));
+        string directoryPrefix = fullUploadDirectory.TrimEnd(
+            Path.DirectorySeparatorChar,
+            Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        StringComparison pathComparison = OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        if (!oldFilePath.StartsWith(directoryPrefix, pathComparison))
+        {
+            _logger.LogWarning(
+                "Skipped deleting profile image outside tutor {TutorId}'s resolved upload directory: {ProfileImagePath}",
+                tutorId,
+                previousProfileImagePath);
+            return;
+        }
+
+        TryDeleteFile(oldFilePath, "previous profile image");
+    }
+
+    private void TryDeleteFile(string filePath, string description)
+    {
+        try
+        {
+            if (System.IO.File.Exists(filePath))
+            {
+                System.IO.File.Delete(filePath);
+            }
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(
+                exception,
+                "Could not delete {Description} at {FilePath}",
+                description,
+                filePath);
+        }
     }
 
     private IActionResult RedirectAfterProfileImageUpload(

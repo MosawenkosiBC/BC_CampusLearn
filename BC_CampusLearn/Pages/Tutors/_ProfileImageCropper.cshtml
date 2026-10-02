@@ -1,0 +1,67 @@
+<div class="modal fade tutor-account-modal tutor-image-crop-modal"
+     id="profile-image-crop-modal"
+     tabindex="-1"
+     aria-labelledby="profile-image-crop-title"
+     aria-describedby="profile-image-crop-instructions"
+     aria-hidden="true"
+     data-profile-image-cropper>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title" id="profile-image-crop-title">
+                        Position your profile picture
+                    </h2>
+                    <p id="profile-image-crop-instructions">
+                        Drag the photo to reposition it, then use the slider to zoom.
+                        You can also use the arrow keys for precise adjustments.
+                    </p>
+                </div>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="tutor-image-crop-stage">
+                    <canvas width="800"
+                            height="800"
+                            tabindex="0"
+                            role="img"
+                            aria-label="Profile image crop preview. Drag to reposition the image."
+                            data-profile-crop-canvas></canvas>
+                </div>
+                <div class="tutor-image-crop-control">
+                    <label for="profile-image-zoom">Zoom</label>
+                    <div>
+                        <span aria-hidden="true">−</span>
+                        <input id="profile-image-zoom"
+                               type="range"
+                               min="1"
+                               max="3"
+                               step="0.01"
+                               value="1"
+                               data-profile-crop-zoom />
+                        <span aria-hidden="true">+</span>
+                    </div>
+                </div>
+                <p class="tutor-image-crop-error"
+                   role="alert"
+                   data-profile-crop-error
+                   hidden></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button"
+                        class="tutor-modal-cancel"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button"
+                        class="tutor-modal-primary"
+                        data-profile-crop-save>
+                    Save picture
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

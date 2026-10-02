@@ -38,6 +38,16 @@ public class AdminDashboardTests
         context.Bookings.AddRange(
             CreateBooking(1, BookingStatus.Completed),
             CreateBooking(2, BookingStatus.Confirmed));
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        context.CampusEvents.AddRange(
+            CreateEvent("Current event", now.AddDays(-1), now.AddDays(1),
+                isPublished: true, publishAt: now.AddDays(-2)),
+            CreateEvent("Draft event", now.AddDays(-1), now.AddDays(1),
+                isPublished: false, publishAt: now.AddDays(-2)),
+            CreateEvent("Past event", now.AddDays(-2), now.AddDays(-1),
+                isPublished: true, publishAt: now.AddDays(-3)),
+            CreateEvent("Scheduled event", now.AddDays(1), now.AddDays(2),
+                isPublished: true, publishAt: now.AddHours(1)));
         await context.SaveChangesAsync();
 
         var page = new DashboardModel(context);
@@ -47,6 +57,8 @@ public class AdminDashboardTests
         Assert.Equal(2, page.TutorResourceCount);
         Assert.Equal(2, page.PendingAdminRequestCount);
         Assert.Equal(1, page.CompletedSessionCount);
+        var currentEvent = Assert.Single(page.CurrentEvents);
+        Assert.Equal("Current event", currentEvent.Title);
     }
 
     private static Tutor CreateTutor(
@@ -88,5 +100,23 @@ public class AdminDashboardTests
         Duration = SessionDuration.OneHour,
         ScheduledStartTime = DateTimeOffset.UtcNow,
         DateBooked = DateTimeOffset.UtcNow
+    };
+
+    private static CampusEvent CreateEvent(
+        string title,
+        DateTimeOffset startsAt,
+        DateTimeOffset endsAt,
+        bool isPublished,
+        DateTimeOffset publishAt) => new()
+    {
+        Title = title,
+        Description = "Event description",
+        Location = "Pretoria",
+        StartsAt = startsAt,
+        EndsAt = endsAt,
+        IsPublished = isPublished,
+        PublishAt = publishAt,
+        BannerImagePath = "/uploads/events/banner.jpg",
+        CreatedAt = startsAt.AddDays(-1)
     };
 }

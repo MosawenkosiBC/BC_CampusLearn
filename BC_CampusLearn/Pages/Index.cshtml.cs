@@ -25,6 +25,9 @@ public class IndexModel : PageModel
     public IReadOnlyList<TutorCardViewModel> FeaturedTutors
     { get; private set; } = Array.Empty<TutorCardViewModel>();
 
+    public IReadOnlyList<HomeEventViewModel> ActiveEvents
+    { get; private set; } = Array.Empty<HomeEventViewModel>();
+
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         TutorApplicationSettings? applicationSettings = await _context
@@ -36,11 +39,69 @@ public class IndexModel : PageModel
         TutorApplicationsOpen = applicationSettings?.IsAcceptingApplications(
             DateTime.UtcNow) ?? false;
 
-        FeaturedTutors = (await _tutorService.GetTutorsAsync(
+        List<TutorCardViewModel> tutors = (await _tutorService.GetTutorsAsync(
                 programmeModuleId: null,
                 preferredCampus: null,
                 cancellationToken))
-            .Take(4)
             .ToList();
+        int featuredTutorCount = Math.Min(4, tutors.Count);
+
+        // Partially shuffle the list so every approved tutor has an equal
+        // chance of appearing without doing unnecessary work on the rest.
+        for (int index = 0; index < featuredTutorCount; index++)
+        {
+            int randomIndex = Random.Shared.Next(index, tutors.Count);
+            (tutors[index], tutors[randomIndex]) =
+                (tutors[randomIndex], tutors[index]);
+        }
+
+        FeaturedTutors = tutors.Take(featuredTutorCount).ToList();
+
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        ActiveEvents = await _context.CampusEvents
+            .AsNoTracking()
+            .Where(item => item.IsPublished &&
+                item.PublishAt <= now &&
+                item.EndsAt >= now)
+            .OrderBy(item => item.StartsAt)
+            .Select(item => new HomeEventViewModel
+            {
+                CampusEventId = item.CampusEventId,
+                Title = item.Title,
+                Description = item.Description,
+                Disclaimer = item.Disclaimer,
+                Location = item.Location,
+                StartsAt = item.StartsAt,
+                EndsAt = item.EndsAt,
+                BannerImagePath = item.BannerImagePath,
+                Details = item.Details.OrderBy(detail => detail.Position)
+                    .Select(detail => new HomeEventDetailViewModel
+                    {
+                        Title = detail.Title,
+                        DataType = detail.DataType,
+                        Value = detail.Value
+                    }).ToList()
+            })
+            .ToListAsync(cancellationToken);
     }
+}
+
+public sealed class HomeEventViewModel
+{
+    public int CampusEventId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string? Disclaimer { get; set; }
+    public string Location { get; set; } = string.Empty;
+    public DateTimeOffset StartsAt { get; set; }
+    public DateTimeOffset EndsAt { get; set; }
+    public string BannerImagePath { get; set; } = string.Empty;
+    public List<HomeEventDetailViewModel> Details { get; set; } = [];
+}
+
+public sealed class HomeEventDetailViewModel
+{
+    public string Title { get; set; } = string.Empty;
+    public CampusEventDetailDataType DataType { get; set; }
+    public string Value { get; set; } = string.Empty;
 }

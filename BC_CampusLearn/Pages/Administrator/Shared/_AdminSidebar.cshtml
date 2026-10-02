@@ -24,6 +24,9 @@
     bool isStatistics = currentPage.Equals(
         "/Administrator/Admin/Statistics",
         StringComparison.OrdinalIgnoreCase);
+    bool isEvents = currentPage.StartsWith(
+        "/Administrator/Events/",
+        StringComparison.OrdinalIgnoreCase);
     bool isLearningResources = currentPage.StartsWith(
         "/Administrator/LearningResources/",
         StringComparison.OrdinalIgnoreCase) ||
@@ -38,7 +41,7 @@
 <aside class="admin-sidebar" aria-label="Administrator navigation">
     <a asp-page="/Administrator/Admin/Dashboard"
        class="admin-sidebar-logo"
-       aria-label="Campus Learn admin dashboard">
+       aria-label="Mzala Connect admin dashboard">
         <img src="~/Media/common/CampusLearnLogo.png"
              alt=""
              aria-hidden="true" />
@@ -106,6 +109,17 @@
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M0 0h24v24H0z" fill="none" stroke="none" />
                 <path d="m3 11l2.5-2.5c1.017-1.017 1.526-1.526 2.137-1.638a2 2 0 0 1 .726 0c.611.112 1.12.62 2.137 1.638s1.526 1.526 2.137 1.638c.24.045.486.045.726 0c.611-.112 1.12-.621 2.137-1.638L21 3M3 15v6m6-8v8m6-5v5m6-12v12" />
+            </svg>
+        </a>
+
+        <a asp-page="/Administrator/Events/Index"
+              class="admin-sidebar-link @(isEvents ? "is-active" : null)"
+              aria-current="@(isEvents ? "page" : null)"
+              aria-label="Events"
+              data-label="Events">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M0 0h20v20H0z" fill="none" stroke="none" />
+                <path fill="currentColor" stroke="none" d="M17 5.5A2.5 2.5 0 0 0 14.5 3h-9A2.5 2.5 0 0 0 3 5.5v9A2.5 2.5 0 0 0 5.5 17h4.1a5.5 5.5 0 0 1-.393-1H5.5A1.5 1.5 0 0 1 4 14.5V7h12v2.207q.524.149 1 .393zM5.5 4h9A1.5 1.5 0 0 1 16 5.5V6H4v-.5A1.5 1.5 0 0 1 5.5 4M19 14.5a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m-4.024-2.64a.494.494 0 0 0-.952 0l-.477 1.532H12c-.484 0-.686.647-.294.944l1.25.947l-.477 1.532c-.15.48.378.88.77.583l1.25-.947l1.25.947c.392.297.92-.103.77-.583l-.477-1.532l1.25-.947c.392-.297.19-.944-.294-.944h-1.545z" />
             </svg>
         </a>
 

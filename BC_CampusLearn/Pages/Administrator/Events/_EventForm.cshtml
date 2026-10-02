@@ -1,0 +1,124 @@
+@model BC_CampusLearn.Models.ViewModels.CampusEventInput
+@using BC_CampusLearn.Models.Entities
+@using BC_CampusLearn.Services.Events
+
+<div class="admin-event-form-grid">
+    <label class="admin-event-field admin-event-field--wide">
+        <span>Event title</span>
+        <input asp-for="Title" autocomplete="off" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </label>
+    <label class="admin-event-field admin-event-field--wide">
+        <span>Description</span>
+        <textarea asp-for="Description" rows="5"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </label>
+    <label class="admin-event-field admin-event-field--wide">
+        <span>Disclaimer <small>Optional</small></span>
+        <textarea asp-for="Disclaimer" rows="3"></textarea>
+        <span asp-validation-for="Disclaimer" class="text-danger"></span>
+    </label>
+    <label class="admin-event-field admin-event-field--wide">
+        <span>Location</span>
+        <input asp-for="Location" autocomplete="off" />
+        <span asp-validation-for="Location" class="text-danger"></span>
+    </label>
+    <label class="admin-event-field">
+        <span>Event date and time</span>
+        <input asp-for="StartsAt" type="datetime-local"
+               value="@Model.StartsAt.ToString("yyyy-MM-ddTHH:mm")" />
+        <span asp-validation-for="StartsAt" class="text-danger"></span>
+    </label>
+    <label class="admin-event-field">
+        <span>Schedule event <small>Optional</small></span>
+        <input asp-for="PublishAt" type="datetime-local"
+               value="@(Model.PublishAt?.ToString("yyyy-MM-ddTHH:mm") ?? string.Empty)" />
+        <small>Leave blank to show it immediately when publishing is enabled.</small>
+        <span asp-validation-for="PublishAt" class="text-danger"></span>
+    </label>
+    <div class="admin-event-publish-row">
+        <label class="admin-event-publish-toggle">
+            <input asp-for="IsPublished" data-event-publish-toggle />
+            <span>
+                <strong>Publish this event</strong>
+                <small>It will appear automatically at the scheduled time.</small>
+            </span>
+        </label>
+        <p class="admin-event-draft-warning" data-event-draft-warning hidden>
+            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+            This event will be saved as a draft.
+        </p>
+    </div>
+</div>
+
+<section class="admin-event-custom-section" aria-labelledby="custom-fields-title">
+    <div class="admin-event-custom-heading">
+        <div>
+            <h2 id="custom-fields-title">Additional event details</h2>
+            <p>Add information such as dress code, guest speaker, or available seats.</p>
+        </div>
+        <button type="button" class="admin-event-secondary-button" data-add-event-field>
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> Add detail
+        </button>
+    </div>
+    <div class="admin-event-custom-fields" data-event-fields
+         data-short-text-limit="@CampusEventFormValidator.ShortTextCharacterLimit">
+        @for (int index = 0; index < Model.CustomFields.Count; index++)
+        {
+            <div class="admin-event-custom-field" data-event-field>
+                <label>
+                    <span>Title</span>
+                    <input asp-for="CustomFields[index].Title" placeholder="e.g. Dress code" />
+                    <span asp-validation-for="CustomFields[index].Title" class="text-danger"></span>
+                </label>
+                <label>
+                    <span>Data type</span>
+                    <select asp-for="CustomFields[index].DataType" data-event-field-type>
+                        @foreach (CampusEventDetailDataType type in Enum.GetValues<CampusEventDetailDataType>())
+                        {
+                            <option value="@type"
+                                    selected="@(Model.CustomFields[index].DataType == type)">
+                                @CampusEventFormValidator.TypeLabel(type)
+                            </option>
+                        }
+                    </select>
+                </label>
+                <label class="admin-event-custom-value">
+                    <span>Value</span>
+                    <input asp-for="CustomFields[index].Value" data-event-field-value />
+                    <span asp-validation-for="CustomFields[index].Value" class="text-danger"></span>
+                </label>
+                <button type="button" class="admin-event-remove-field"
+                        data-remove-event-field aria-label="Remove this detail">
+                    <i class="bi bi-trash" aria-hidden="true"></i>
+                </button>
+            </div>
+        }
+    </div>
+</section>
+
+<template data-event-field-template>
+    <div class="admin-event-custom-field" data-event-field>
+        <label>
+            <span>Title</span>
+            <input name="Input.CustomFields[__index__].Title" placeholder="e.g. Dress code" required maxlength="120" />
+        </label>
+        <label>
+            <span>Data type</span>
+            <select name="Input.CustomFields[__index__].DataType" data-event-field-type>
+                @foreach (CampusEventDetailDataType type in Enum.GetValues<CampusEventDetailDataType>())
+                {
+                    <option value="@type">@CampusEventFormValidator.TypeLabel(type)</option>
+                }
+            </select>
+        </label>
+        <label class="admin-event-custom-value">
+            <span>Value</span>
+            <input name="Input.CustomFields[__index__].Value" data-event-field-value required maxlength="2000" />
+        </label>
+        <button type="button" class="admin-event-remove-field"
+                data-remove-event-field aria-label="Remove this detail">
+            <i class="bi bi-trash" aria-hidden="true"></i>
+        </button>
+    </div>
+</template>

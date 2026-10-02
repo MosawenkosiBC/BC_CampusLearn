@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260930074415_AddCampusEvents")]
+    partial class AddCampusEvents
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -118,10 +121,6 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
 
-                    b.Property<string>("EncryptedGeminiApiKey")
-                        .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)");
-
                     b.Property<string>("EntraIdentityLookupHash")
                         .HasMaxLength(64)
                         .HasColumnType("nchar(64)")
@@ -155,9 +154,6 @@ namespace BC_CampusLearn.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(1);
-
-                    b.Property<DateTimeOffset?>("SessionReviewsLastViewedAt")
-                        .HasColumnType("datetimeoffset");
 
                     b.HasKey("BcUserId");
 
@@ -235,9 +231,6 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<DateTimeOffset?>("TutorHeadReviewAvailableAt")
-                        .HasColumnType("datetimeoffset");
-
                     b.Property<int>("TutorId")
                         .HasColumnType("int");
 
@@ -246,8 +239,6 @@ namespace BC_CampusLearn.Migrations
                     b.HasIndex("ProgrammeModuleId");
 
                     b.HasIndex("StudentBcUserId");
-
-                    b.HasIndex("TutorHeadReviewAvailableAt");
 
                     b.HasIndex("TutorId", "ProgrammeModuleId");
 
@@ -652,15 +643,6 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(320)
                         .HasColumnType("nvarchar(320)");
 
-                    b.Property<DateOnly>("TutorHeadReviewDeadline")
-                        .HasColumnType("date");
-
-                    b.Property<DateOnly>("TutorHeadReviewPeriodEndDate")
-                        .HasColumnType("date");
-
-                    b.Property<DateOnly>("TutorHeadReviewPeriodStartDate")
-                        .HasColumnType("date");
-
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetimeoffset")
@@ -678,8 +660,6 @@ namespace BC_CampusLearn.Migrations
                             t.HasCheckConstraint("CK_PlatformSettings_AcademicYear", "[AcademicYear] BETWEEN 2000 AND 2200");
 
                             t.HasCheckConstraint("CK_PlatformSettings_Singleton", "[PlatformSettingsId] = 1");
-
-                            t.HasCheckConstraint("CK_PlatformSettings_TutorHeadReviewPeriod", "[TutorHeadReviewPeriodEndDate] >= [TutorHeadReviewPeriodStartDate] AND [TutorHeadReviewDeadline] >= [TutorHeadReviewPeriodEndDate]");
                         });
 
                     b.HasData(
@@ -696,9 +676,6 @@ namespace BC_CampusLearn.Migrations
                             IsMaintenanceModeEnabled = false,
                             RowVersion = new byte[0],
                             SupportEmail = "tutors@belgiumcampus.ac.za",
-                            TutorHeadReviewDeadline = new DateOnly(2026, 10, 5),
-                            TutorHeadReviewPeriodEndDate = new DateOnly(2026, 9, 30),
-                            TutorHeadReviewPeriodStartDate = new DateOnly(2026, 9, 1),
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
                         });
                 });
@@ -869,37 +846,6 @@ namespace BC_CampusLearn.Migrations
                     b.ToTable("ResourceSubscriptions", (string)null);
                 });
 
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.SessionAiAssessment", b =>
-                {
-                    b.Property<int>("SessionAiAssessmentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SessionAiAssessmentId"));
-
-                    b.Property<string>("AssessmentJson")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("BookingId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset>("GeneratedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<int>("GeneratedByBcUserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("SessionAiAssessmentId");
-
-                    b.HasIndex("BookingId")
-                        .IsUnique();
-
-                    b.HasIndex("GeneratedByBcUserId");
-
-                    b.ToTable("SessionAiAssessments", (string)null);
-                });
-
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.SessionExecution", b =>
                 {
                     b.Property<int>("BookingId")
@@ -990,32 +936,8 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
-                    b.Property<string>("ConcernLevel")
-                        .HasMaxLength(24)
-                        .HasColumnType("nvarchar(24)");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Decision")
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
-                    b.Property<string>("EvidenceConsistency")
-                        .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
-
-                    b.Property<string>("ExplanationClarity")
-                        .HasMaxLength(24)
-                        .HasColumnType("nvarchar(24)");
-
-                    b.Property<string>("ModuleAndTopicCoverage")
-                        .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
-
-                    b.Property<string>("OverallAssessment")
-                        .HasMaxLength(24)
-                        .HasColumnType("nvarchar(24)");
 
                     b.Property<byte>("Rating")
                         .HasColumnType("tinyint");
@@ -1025,14 +947,6 @@ namespace BC_CampusLearn.Migrations
 
                     b.Property<int>("ReviewerBcUserId")
                         .HasColumnType("int");
-
-                    b.Property<string>("SessionStructure")
-                        .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
-
-                    b.Property<string>("StudentEngagement")
-                        .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
 
                     b.HasKey("SessionReviewId");
 
@@ -1657,21 +1571,6 @@ namespace BC_CampusLearn.Migrations
                     b.Property<bool>("StudentPunctuality")
                         .HasColumnType("bit");
 
-                    b.Property<string>("TranscriptContentType")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("TranscriptOriginalFileName")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<long?>("TranscriptSizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("TranscriptStoragePath")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
                     b.Property<string>("TutorComments")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1921,25 +1820,6 @@ namespace BC_CampusLearn.Migrations
                     b.Navigation("Resource");
                 });
 
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.SessionAiAssessment", b =>
-                {
-                    b.HasOne("BC_CampusLearn.Models.Entities.Booking", "Booking")
-                        .WithOne("AiAssessment")
-                        .HasForeignKey("BC_CampusLearn.Models.Entities.SessionAiAssessment", "BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("BC_CampusLearn.Models.Entities.BcUser", "GeneratedBy")
-                        .WithMany()
-                        .HasForeignKey("GeneratedByBcUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Booking");
-
-                    b.Navigation("GeneratedBy");
-                });
-
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.SessionExecution", b =>
                 {
                     b.HasOne("BC_CampusLearn.Models.Entities.Booking", "Booking")
@@ -2174,8 +2054,6 @@ namespace BC_CampusLearn.Migrations
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.Booking", b =>
                 {
                     b.Navigation("AdminSessionReview");
-
-                    b.Navigation("AiAssessment");
 
                     b.Navigation("Documents");
 

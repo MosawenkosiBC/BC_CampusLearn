@@ -34,7 +34,7 @@ public sealed class TutorApplicationEmailOptions
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string FromAddress { get; set; } = string.Empty;
-    public string FromName { get; set; } = "BC CampusLearn Tutor Team";
+    public string FromName { get; set; } = "Mzala Connect Tutor Team";
 }
 
 public sealed class TutorApplicationEmailSender(
@@ -64,7 +64,7 @@ public sealed class TutorApplicationEmailSender(
             recipientEmail,
             "Tutor application received",
             $"Dear {recipientName},{Environment.NewLine}{Environment.NewLine}" +
-            "Thank you for applying to become a tutor with BC CampusLearn. " +
+            "Thank you for applying to become a tutor with Mzala Connect. " +
             "We have received your application, and our team will review " +
             "the information and documents you submitted." +
             $"{Environment.NewLine}{Environment.NewLine}" +
@@ -72,7 +72,7 @@ public sealed class TutorApplicationEmailSender(
             "application." +
             $"{Environment.NewLine}{Environment.NewLine}" +
             $"Kind regards,{Environment.NewLine}" +
-            "BC CampusLearn Tutor Team",
+            "Mzala Connect Tutor Team",
             "application submission confirmation",
             cancellationToken);
 
@@ -101,7 +101,7 @@ public sealed class TutorApplicationEmailSender(
                 "We wish you every success with your studies and future goals." +
                 $"{Environment.NewLine}{Environment.NewLine}" +
                 $"Kind regards,{Environment.NewLine}" +
-                "BC CampusLearn Tutor Team",
+                "Mzala Connect Tutor Team",
             "interview rejection",
             cancellationToken);
     }

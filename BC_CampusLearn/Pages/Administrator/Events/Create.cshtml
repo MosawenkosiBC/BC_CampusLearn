@@ -1,0 +1,39 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Events.CreateModel
+@{
+    ViewData["Title"] = "Create Event";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-events.css" asp-append-version="true" />
+}
+
+<section class="admin-dashboard admin-event-editor" aria-labelledby="create-event-title">
+    <header class="admin-event-page-header">
+        <div>
+            <h1 id="create-event-title">Create Event</h1>
+            <p>Create an event now or schedule it to appear later.</p>
+        </div>
+    </header>
+    <form method="post" enctype="multipart/form-data" class="admin-event-form"
+          data-create-event-form>
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <section class="admin-event-form-card">
+            <label class="admin-event-banner-upload">
+                <span>Banner image <small>Optional</small></span>
+                <input asp-for="BannerImage" type="file" accept="image/jpeg,image/png,image/webp" />
+                <small>JPG, PNG, or WebP. Maximum size 5 MB.</small>
+                <span asp-validation-for="BannerImage" class="text-danger"></span>
+            </label>
+            <partial name="_EventForm" for="Input" />
+        </section>
+        <div class="admin-event-form-actions">
+            <a asp-page="Index" class="admin-event-secondary-button">Cancel</a>
+            <button type="submit" class="admin-event-primary-button">Create event</button>
+        </div>
+    </form>
+</section>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin-events.js" asp-append-version="true"></script>
+}

@@ -69,7 +69,8 @@
                       enctype="multipart/form-data"
                       asp-page="/Tutors/Profile"
                       asp-page-handler="UploadProfileImage"
-                      class="tutor-profile-photo-form">
+                      class="tutor-profile-photo-form"
+                      data-profile-image-form>
                     <input type="hidden"
                            name="returnPage"
                            value="/Tutors/StatisticsOverview" />
@@ -88,7 +89,7 @@
                            class="visually-hidden"
                            type="file"
                            accept="image/jpeg,image/png,image/webp"
-                           onchange="this.form.submit()" />
+                           data-profile-image-input />
                 </form>
             </div>
 
@@ -440,6 +441,8 @@
         </div>
     </div>
 </div>
+
+<partial name="_ProfileImageCropper" />
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

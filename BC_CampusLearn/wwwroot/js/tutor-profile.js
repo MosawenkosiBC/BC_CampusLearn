@@ -65,6 +65,267 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    const imageForm = document.querySelector("[data-profile-image-form]");
+    const imageInput = imageForm?.querySelector("[data-profile-image-input]");
+    const cropperElement = document.querySelector("[data-profile-image-cropper]");
+    const cropCanvas = cropperElement?.querySelector("[data-profile-crop-canvas]");
+    const cropZoom = cropperElement?.querySelector("[data-profile-crop-zoom]");
+    const cropSave = cropperElement?.querySelector("[data-profile-crop-save]");
+    const cropError = cropperElement?.querySelector("[data-profile-crop-error]");
+
+    if (imageForm && imageInput && cropperElement && cropCanvas && cropZoom &&
+        cropSave && window.bootstrap) {
+        // Bootstrap appends its backdrop directly to <body>. Keep the modal
+        // there too so page-level stacking contexts cannot cover its controls.
+        document.body.append(cropperElement);
+        const cropContext = cropCanvas.getContext("2d");
+        const cropModal = window.bootstrap.Modal.getOrCreateInstance(cropperElement);
+        const cropState = {
+            image: null,
+            baseScale: 1,
+            zoom: 1,
+            centerX: cropCanvas.width / 2,
+            centerY: cropCanvas.height / 2,
+            activePointerId: null,
+            pointerX: 0,
+            pointerY: 0,
+            dragging: false,
+            submitting: false
+        };
+        const acceptedImageTypes = new Set([
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ]);
+        const maximumImageSize = 5 * 1024 * 1024;
+
+        const constrainPosition = () => {
+            if (!cropState.image) {
+                return;
+            }
+
+            const width = cropState.image.naturalWidth *
+                cropState.baseScale * cropState.zoom;
+            const height = cropState.image.naturalHeight *
+                cropState.baseScale * cropState.zoom;
+            cropState.centerX = Math.min(
+                width / 2,
+                Math.max(cropCanvas.width - (width / 2), cropState.centerX));
+            cropState.centerY = Math.min(
+                height / 2,
+                Math.max(cropCanvas.height - (height / 2), cropState.centerY));
+        };
+
+        const drawCrop = () => {
+            if (!cropContext || !cropState.image) {
+                return;
+            }
+
+            constrainPosition();
+            const width = cropState.image.naturalWidth *
+                cropState.baseScale * cropState.zoom;
+            const height = cropState.image.naturalHeight *
+                cropState.baseScale * cropState.zoom;
+
+            cropContext.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+            cropContext.drawImage(
+                cropState.image,
+                cropState.centerX - (width / 2),
+                cropState.centerY - (height / 2),
+                width,
+                height);
+        };
+
+        const showCropError = (message) => {
+            if (!cropError) {
+                return;
+            }
+
+            cropError.textContent = message;
+            cropError.hidden = !message;
+        };
+
+        imageInput.addEventListener("change", () => {
+            const file = imageInput.files?.[0];
+            if (!file) {
+                return;
+            }
+
+            if (!acceptedImageTypes.has(file.type.toLowerCase())) {
+                imageInput.value = "";
+                showCropError("Choose a JPG, PNG, or WebP image.");
+                cropModal.show();
+                return;
+            }
+
+            if (file.size > maximumImageSize) {
+                imageInput.value = "";
+                showCropError("The profile image must be smaller than 5 MB.");
+                cropModal.show();
+                return;
+            }
+
+            const imageUrl = URL.createObjectURL(file);
+            const selectedImage = new Image();
+
+            selectedImage.addEventListener("load", () => {
+                URL.revokeObjectURL(imageUrl);
+                cropState.image = selectedImage;
+                cropState.baseScale = Math.max(
+                    cropCanvas.width / selectedImage.naturalWidth,
+                    cropCanvas.height / selectedImage.naturalHeight);
+                cropState.zoom = 1;
+                cropState.centerX = cropCanvas.width / 2;
+                cropState.centerY = cropCanvas.height / 2;
+                cropState.submitting = false;
+                cropZoom.value = "1";
+                cropSave.disabled = false;
+                showCropError("");
+                drawCrop();
+                cropModal.show();
+            }, { once: true });
+
+            selectedImage.addEventListener("error", () => {
+                URL.revokeObjectURL(imageUrl);
+                imageInput.value = "";
+                showCropError("We couldn't read that image. Please try another one.");
+                cropModal.show();
+            }, { once: true });
+            selectedImage.src = imageUrl;
+        });
+
+        cropZoom.addEventListener("input", () => {
+            const nextZoom = Number.parseFloat(cropZoom.value);
+            cropState.zoom = Number.isFinite(nextZoom) ? nextZoom : 1;
+            drawCrop();
+        });
+
+        cropCanvas.addEventListener("pointerdown", (event) => {
+            if (!cropState.image || cropState.dragging ||
+                (event.pointerType === "mouse" && event.button !== 0)) {
+                return;
+            }
+
+            event.preventDefault();
+            cropState.dragging = true;
+            cropState.activePointerId = event.pointerId;
+            cropState.pointerX = event.clientX;
+            cropState.pointerY = event.clientY;
+            cropCanvas.setPointerCapture(event.pointerId);
+            cropCanvas.classList.add("is-dragging");
+        });
+
+        cropCanvas.addEventListener("pointermove", (event) => {
+            if (!cropState.dragging ||
+                event.pointerId !== cropState.activePointerId) {
+                return;
+            }
+
+            event.preventDefault();
+            const bounds = cropCanvas.getBoundingClientRect();
+            if (bounds.width === 0 || bounds.height === 0) {
+                return;
+            }
+
+            const scaleX = cropCanvas.width / bounds.width;
+            const scaleY = cropCanvas.height / bounds.height;
+            cropState.centerX += (event.clientX - cropState.pointerX) * scaleX;
+            cropState.centerY += (event.clientY - cropState.pointerY) * scaleY;
+            cropState.pointerX = event.clientX;
+            cropState.pointerY = event.clientY;
+            drawCrop();
+        });
+
+        const finishDragging = (event) => {
+            if (event && cropState.activePointerId !== null &&
+                event.pointerId !== cropState.activePointerId) {
+                return;
+            }
+
+            cropState.dragging = false;
+            cropState.activePointerId = null;
+            cropCanvas.classList.remove("is-dragging");
+        };
+
+        cropCanvas.addEventListener("pointerup", finishDragging);
+        cropCanvas.addEventListener("pointercancel", finishDragging);
+        cropCanvas.addEventListener("lostpointercapture", finishDragging);
+
+        cropperElement.addEventListener("shown.bs.modal", () => {
+            const backdrops = document.querySelectorAll(".modal-backdrop");
+            backdrops[backdrops.length - 1]?.classList.add(
+                "tutor-image-crop-backdrop");
+            if (cropState.image) {
+                cropCanvas.focus({ preventScroll: true });
+            }
+        });
+
+        cropCanvas.addEventListener("keydown", (event) => {
+            const movement = event.shiftKey ? 20 : 6;
+            const directions = {
+                ArrowLeft: [-movement, 0],
+                ArrowRight: [movement, 0],
+                ArrowUp: [0, -movement],
+                ArrowDown: [0, movement]
+            };
+            const direction = directions[event.key];
+            if (!direction) {
+                return;
+            }
+
+            event.preventDefault();
+            cropState.centerX += direction[0];
+            cropState.centerY += direction[1];
+            drawCrop();
+        });
+
+        cropSave.addEventListener("click", () => {
+            if (!cropState.image) {
+                showCropError("Choose an image before saving.");
+                return;
+            }
+
+            cropSave.disabled = true;
+            showCropError("");
+            cropCanvas.toBlob((blob) => {
+                if (!blob) {
+                    cropSave.disabled = false;
+                    showCropError("We couldn't prepare that image. Please try another one.");
+                    return;
+                }
+
+                const croppedFile = new File(
+                    [blob],
+                    "profile-picture.png",
+                    { type: "image/png", lastModified: Date.now() });
+                try {
+                    const transfer = new DataTransfer();
+                    transfer.items.add(croppedFile);
+                    imageInput.files = transfer.files;
+                    cropState.submitting = true;
+                    imageForm.requestSubmit();
+                } catch {
+                    cropSave.disabled = false;
+                    showCropError(
+                        "This browser couldn't prepare the cropped image. Please try a current browser.");
+                }
+            }, "image/png");
+        });
+
+        cropperElement.addEventListener("hidden.bs.modal", () => {
+            if (!cropState.submitting) {
+                imageInput.value = "";
+            }
+            document.querySelectorAll(".tutor-image-crop-backdrop").forEach(
+                (backdrop) => backdrop.classList.remove(
+                    "tutor-image-crop-backdrop"));
+            finishDragging();
+            cropState.image = null;
+            cropSave.disabled = false;
+            showCropError("");
+        });
+    }
+
     const phoneForm = document.querySelector("[data-phone-form]");
     const phoneInput = phoneForm?.querySelector("[data-phone-input]");
 

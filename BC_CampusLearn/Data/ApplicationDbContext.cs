@@ -93,6 +93,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<ResourceComment> ResourceComments =>
         Set<ResourceComment>();
 
+    public DbSet<CampusEvent> CampusEvents => Set<CampusEvent>();
+
+    public DbSet<CampusEventDetail> CampusEventDetails =>
+        Set<CampusEventDetail>();
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         SynchronizeTutorRoles();

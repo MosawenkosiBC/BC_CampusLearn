@@ -1,0 +1,44 @@
+@page "{id:int}"
+@model BC_CampusLearn.Pages.Administrator.Events.EditModel
+@{
+    ViewData["Title"] = "Edit Event";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-events.css" asp-append-version="true" />
+}
+
+<section class="admin-dashboard admin-event-editor" aria-labelledby="edit-event-title">
+    <header class="admin-event-page-header">
+        <div>
+            <h1 id="edit-event-title">Edit Event</h1>
+            <p>Update event information, dates, and publishing settings.</p>
+        </div>
+    </header>
+    <form method="post" enctype="multipart/form-data" class="admin-event-form">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <section class="admin-event-form-card">
+            @if (!string.IsNullOrWhiteSpace(Model.CurrentBannerImagePath))
+            {
+                <div class="admin-event-current-banner">
+                    <img src="@Model.CurrentBannerImagePath" alt="Current event banner" />
+                </div>
+            }
+            <label class="admin-event-banner-upload">
+                <span>Replace banner image <small>Optional</small></span>
+                <input asp-for="BannerImage" type="file" accept="image/jpeg,image/png,image/webp" />
+                <small>Leave empty to keep the current banner. JPG, PNG, or WebP; maximum 5 MB.</small>
+                <span asp-validation-for="BannerImage" class="text-danger"></span>
+            </label>
+            <partial name="_EventForm" for="Input" />
+        </section>
+        <div class="admin-event-form-actions">
+            <a asp-page="Index" class="admin-event-secondary-button">Cancel</a>
+            <button type="submit" class="admin-event-primary-button">Save changes</button>
+        </div>
+    </form>
+</section>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin-events.js" asp-append-version="true"></script>
+}

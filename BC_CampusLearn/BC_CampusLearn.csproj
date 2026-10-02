@@ -28,4 +28,6 @@
     <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.13.0" />
   </ItemGroup>
 
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1development_1json__JsonSchema="https://www.schemastore.org/architectfx.json" /></VisualStudio></ProjectExtensions>
+
 </Project>
