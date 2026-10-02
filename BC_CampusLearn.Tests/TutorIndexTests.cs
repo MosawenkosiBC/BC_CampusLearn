@@ -36,7 +36,7 @@ public class TutorIndexTests
 
         Assert.Equal("Stellenbosch Campus", tutorService.RequestedCampus);
         Assert.Null(page.Campus);
-        Assert.Equal(2, page.Tutors.Count);
+        Assert.Single(page.Tutors);
         Assert.Equal(2, page.CampusOptions.Count);
     }
 
@@ -61,7 +61,8 @@ public class TutorIndexTests
                 2,
                 "Stellenbosch Campus")))
         {
-            Campus = "Pretoria Campus"
+            Campus = "Pretoria Campus",
+            ShowAllTutors = true
         };
 
         await page.OnGetAsync(CancellationToken.None);
@@ -69,6 +70,94 @@ public class TutorIndexTests
         TutorCardViewModel tutor = Assert.Single(page.Tutors);
         Assert.Equal("Pretoria Tutor", tutor.DisplayName);
         Assert.Equal(2, page.CampusOptions.Count);
+    }
+
+    [Fact]
+    public async Task DefaultsToTutorsWithUpcomingAvailability()
+    {
+        var currentUser = new CurrentUser(
+            1,
+            "600001",
+            "Lebo Nkosi",
+            "600001@student.belgiumcampus.ac.za");
+        var page = new IndexModel(
+            new EmptyTutorService(),
+            new TestCurrentUserService(currentUser),
+            new TestStudentDetailsService(new StudentDetails(
+                "600001",
+                "Lebo",
+                null,
+                "Nkosi",
+                "600001@student.belgiumcampus.ac.za",
+                "Bachelor of Computing",
+                2,
+                "Stellenbosch Campus")));
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        TutorCardViewModel tutor = Assert.Single(page.Tutors);
+        Assert.Equal("Stellenbosch Tutor", tutor.DisplayName);
+    }
+
+    [Fact]
+    public async Task AllTutorsFilterIncludesTutorsWithoutAvailability()
+    {
+        var currentUser = new CurrentUser(
+            1,
+            "600001",
+            "Lebo Nkosi",
+            "600001@student.belgiumcampus.ac.za");
+        var page = new IndexModel(
+            new EmptyTutorService(),
+            new TestCurrentUserService(currentUser),
+            new TestStudentDetailsService(new StudentDetails(
+                "600001",
+                "Lebo",
+                null,
+                "Nkosi",
+                "600001@student.belgiumcampus.ac.za",
+                "Bachelor of Computing",
+                2,
+                "Stellenbosch Campus")))
+        {
+            ShowAllTutors = true
+        };
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(2, page.Tutors.Count);
+    }
+
+    [Fact]
+    public async Task AvailableDateFiltersTutorsByUpcomingSlotDate()
+    {
+        var currentUser = new CurrentUser(
+            1,
+            "600001",
+            "Lebo Nkosi",
+            "600001@student.belgiumcampus.ac.za");
+        DateOnly requestedDate = new(2030, 5, 20);
+        var page = new IndexModel(
+            new EmptyTutorService(),
+            new TestCurrentUserService(currentUser),
+            new TestStudentDetailsService(new StudentDetails(
+                "600001",
+                "Lebo",
+                null,
+                "Nkosi",
+                "600001@student.belgiumcampus.ac.za",
+                "Bachelor of Computing",
+                2,
+                "Stellenbosch Campus")))
+        {
+            AvailableDate = requestedDate
+        };
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        TutorCardViewModel tutor = Assert.Single(page.Tutors);
+        Assert.Equal("Stellenbosch Tutor", tutor.DisplayName);
+        Assert.Contains(requestedDate, tutor.UpcomingAvailabilityDates);
     }
 
     private sealed class TestCurrentUserService(CurrentUser user)
@@ -103,7 +192,9 @@ public class TutorIndexTests
                 {
                     TutorId = 1,
                     DisplayName = "Stellenbosch Tutor",
-                    CampusOfStudy = "Stellenbosch Campus"
+                    CampusOfStudy = "Stellenbosch Campus",
+                    UpcomingAvailabilityCount = 1,
+                    UpcomingAvailabilityDates = [new DateOnly(2030, 5, 20)]
                 },
                 new TutorCardViewModel
                 {

@@ -73,6 +73,13 @@ public class TutorService : ITutorService
                     .Select(slot => (DateTimeOffset?)slot.AvailableTime)
                     .OrderBy(value => value)
                     .FirstOrDefault(),
+                UpcomingAvailabilityDates = tutor.TutorAvailabilities
+                    .Where(slot => slot.AvailableTime > DateTimeOffset.UtcNow)
+                    .Select(slot => DateOnly.FromDateTime(
+                        slot.AvailableTime.Date))
+                    .Distinct()
+                    .OrderBy(date => date)
+                    .ToList(),
 
                 Modules = tutor.TutorCourseModules
                     .Select(item =>

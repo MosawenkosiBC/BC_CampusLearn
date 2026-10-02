@@ -2,14 +2,20 @@
 @model BC_CampusLearn.Pages.Tutors.IndexModel
 
 @{
-    ViewData["Title"] = "All Tutors";
+    ViewData["Title"] = "Tutors";
     bool hasActiveFilters =
         !string.IsNullOrWhiteSpace(Model.SearchName) ||
         !string.IsNullOrWhiteSpace(Model.SearchModule) ||
-        Model.ProgrammeId.HasValue ||
         Model.ProgrammeModuleId.HasValue ||
         Model.TutoringMode.HasValue ||
+        Model.ShowAllTutors ||
+        Model.AvailableDate.HasValue ||
         !string.IsNullOrWhiteSpace(Model.Campus);
+    HashSet<int> visibleTutorIds = Model.Tutors
+        .Select(tutor => tutor.TutorId)
+        .ToHashSet();
+    string minimumAvailabilityDate =
+        DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
 }
 
 @section Styles {
@@ -48,12 +54,15 @@
                 </button>
             </div>
 
-            <form id="tutor-filter-form" method="get">
+            <form id="tutor-filter-form"
+                  method="get"
+                  data-live-tutor-search>
                 <div class="filter-group">
                     <label asp-for="SearchName">Search by name</label>
                     <div class="filter-search">
                         <input asp-for="SearchName"
                                type="search"
+                               data-live-tutor-search-input
                                autocomplete="off" />
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
@@ -66,19 +75,12 @@
                     <div class="filter-search">
                         <input asp-for="SearchModule"
                                type="search"
+                               data-live-tutor-search-input
                                autocomplete="off" />
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
                         </svg>
                     </div>
-                </div>
-
-                <div class="filter-group course-filter">
-                    <label asp-for="ProgrammeId">Filter by course</label>
-                    <select asp-for="ProgrammeId"
-                            asp-items="Model.ProgrammeOptions">
-                        <option value="">All courses</option>
-                    </select>
                 </div>
 
                 <div class="filter-group tutoring-mode-filter">
@@ -87,6 +89,22 @@
                             asp-items="Html.GetEnumSelectList<PreferredTutoringMode>()">
                         <option value="">All tutoring modes</option>
                     </select>
+                </div>
+
+                <div class="filter-group availability-filter">
+                    <label asp-for="ShowAllTutors">Availability</label>
+                    <select asp-for="ShowAllTutors">
+                        <option value="false">Available tutors</option>
+                        <option value="true">All tutors</option>
+                    </select>
+                </div>
+
+                <div class="filter-group filter-date">
+                    <label asp-for="AvailableDate">Available on</label>
+                    <input asp-for="AvailableDate"
+                           type="date"
+                           min="@minimumAvailabilityDate"
+                           data-live-tutor-date-input />
                 </div>
 
                 <button type="submit" class="apply-filters">
@@ -102,7 +120,7 @@
         <div class="tutor-results">
             <div class="results-toolbar">
                 <div class="results-count">
-                    Showing <strong>@Model.Tutors.Count</strong> tutors
+                    Showing <strong data-tutor-results-count>@Model.Tutors.Count</strong> tutors
                 </div>
                 <button type="button"
                         class="mobile-filter-trigger @(hasActiveFilters ? "has-active-filters" : null)"
@@ -134,33 +152,50 @@
                 </select>
             </div>
 
-            @if (Model.Tutors.Count == 0)
-            {
-                <div class="empty-tutors">
+            <div data-tutor-results-content
+                 aria-live="polite"
+                 aria-busy="false">
+                <div class="empty-tutors"
+                     data-tutor-empty-results
+                     hidden="@(Model.Tutors.Count == 0 ? null : "hidden")">
                     <span aria-hidden="true">⌕</span>
-                    <h2>No tutors match those filters</h2>
+                    <h2>
+                        @(Model.ShowAllTutors
+                            ? "No tutors match those filters"
+                            : "No available tutors match those filters")
+                    </h2>
                     <p>Try clearing a filter or searching for another module.</p>
                     <a asp-page="/Tutors/Index">Clear all filters</a>
                 </div>
-            }
-            else
-            {
+
                 <div class="tutor-grid">
-                    @foreach (var tutor in Model.Tutors)
+                    @foreach (var tutor in Model.SearchableTutors)
                     {
                         string tutoringModeLabel =
                             tutor.PreferredTutoringMode switch
-                        {
-                            PreferredTutoringMode.FaceToFace =>
-                                "Face-to-face",
-                            PreferredTutoringMode.Online =>
-                                "Online",
-                            PreferredTutoringMode.Both =>
-                                "Face-to-face & online",
-                            _ => "Tutoring mode unavailable"
-                        };
+                            {
+                                PreferredTutoringMode.FaceToFace =>
+                                    "Face-to-face",
+                                PreferredTutoringMode.Online =>
+                                    "Online",
+                                PreferredTutoringMode.Both =>
+                                    "Face-to-face & online",
+                                _ => "Tutoring mode unavailable"
+                            };
+                        string searchableModules = string.Join(
+                            " ",
+                            tutor.Modules.Concat(tutor.ModuleCodes));
+                        string availableDates = string.Join(
+                            " ",
+                            tutor.UpcomingAvailabilityDates.Select(date =>
+                                date.ToString("yyyy-MM-dd")));
 
-                        <article class="tutor-card">
+                        <article class="tutor-card"
+                                 data-tutor-search-card
+                                 data-tutor-name="@tutor.DisplayName"
+                                 data-tutor-modules="@searchableModules"
+                                 data-tutor-available-dates="@availableDates"
+                                 hidden="@(visibleTutorIds.Contains(tutor.TutorId) ? null : "hidden")">
                             <a asp-page="/Tutors/Details"
                                asp-route-id="@tutor.TutorId"
                                class="tutor-card-link"
@@ -204,7 +239,7 @@
                         </article>
                     }
                 </div>
-            }
+            </div>
         </div>
     </div>
 </section>

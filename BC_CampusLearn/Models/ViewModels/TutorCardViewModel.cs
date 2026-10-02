@@ -28,6 +28,9 @@ public class TutorCardViewModel
 
     public DateTimeOffset? NextAvailableAt { get; set; }
 
+    public List<DateOnly> UpcomingAvailabilityDates { get; set; } =
+        new List<DateOnly>();
+
     public List<string> Modules { get; set; } =
         new List<string>();
 

@@ -31,9 +31,6 @@ public class IndexModel : PageModel
     public int? ProgrammeModuleId { get; set; }
 
     [BindProperty(SupportsGet = true)]
-    public int? ProgrammeId { get; set; }
-
-    [BindProperty(SupportsGet = true)]
     public string? SearchName { get; set; }
 
     [BindProperty(SupportsGet = true)]
@@ -45,16 +42,23 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public string? Campus { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public bool ShowAllTutors { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public DateOnly? AvailableDate { get; set; }
+
     public IReadOnlyList<TutorCardViewModel> Tutors
+    { get; private set; }
+        = new List<TutorCardViewModel>();
+
+    public IReadOnlyList<TutorCardViewModel> SearchableTutors
     { get; private set; }
         = new List<TutorCardViewModel>();
 
     public List<SelectListItem> ModuleOptions
     { get; private set; }
         = new List<SelectListItem>();
-
-    public List<SelectListItem> ProgrammeOptions
-    { get; private set; } = new();
 
     public List<SelectListItem> CampusOptions
     { get; private set; } = new();
@@ -86,9 +90,6 @@ public class IndexModel : PageModel
         var modules =
             await _tutorService.GetModulesAsync(
                 cancellationToken);
-        var programmes =
-            await _tutorService.GetProgrammesAsync(
-                cancellationToken);
         IReadOnlyList<string> campuses =
             await _tutorService.GetCampusesAsync(
                 cancellationToken);
@@ -103,14 +104,6 @@ public class IndexModel : PageModel
                     Text =
                         $"{module.ModuleCode} - {module.ModuleName}"
                 })
-            .ToList();
-
-        ProgrammeOptions = programmes
-            .Select(programme => new SelectListItem
-            {
-                Value = programme.Id.ToString(),
-                Text = programme.Name
-            })
             .ToList();
 
         IReadOnlyList<TutorCardViewModel> tutors =
@@ -132,6 +125,12 @@ public class IndexModel : PageModel
             .ToList();
 
         IEnumerable<TutorCardViewModel> filtered = tutors;
+
+        if (!ShowAllTutors)
+        {
+            filtered = filtered.Where(tutor =>
+                tutor.UpcomingAvailabilityCount > 0);
+        }
 
         if (!string.IsNullOrWhiteSpace(Campus))
         {
@@ -156,6 +155,22 @@ public class IndexModel : PageModel
             }
         }
 
+        if (TutoringMode.HasValue)
+        {
+            filtered = filtered.Where(tutor =>
+                tutor.PreferredTutoringMode == TutoringMode.Value);
+        }
+
+        SearchableTutors = filtered.ToList();
+        filtered = SearchableTutors;
+
+        if (AvailableDate.HasValue)
+        {
+            filtered = filtered.Where(tutor =>
+                tutor.UpcomingAvailabilityDates.Contains(
+                    AvailableDate.Value));
+        }
+
         if (!string.IsNullOrWhiteSpace(SearchName))
         {
             filtered = filtered.Where(tutor =>
@@ -172,18 +187,6 @@ public class IndexModel : PageModel
                     module.Contains(moduleSearch, StringComparison.OrdinalIgnoreCase)) ||
                 tutor.ModuleCodes.Any(code =>
                     code.Contains(moduleSearch, StringComparison.OrdinalIgnoreCase)));
-        }
-
-        if (ProgrammeId.HasValue)
-        {
-            filtered = filtered.Where(tutor =>
-                tutor.ProgrammeId == ProgrammeId.Value);
-        }
-
-        if (TutoringMode.HasValue)
-        {
-            filtered = filtered.Where(tutor =>
-                tutor.PreferredTutoringMode == TutoringMode.Value);
         }
 
         Tutors = filtered.ToList();

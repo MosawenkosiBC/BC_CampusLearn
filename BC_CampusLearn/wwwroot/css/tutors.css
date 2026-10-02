@@ -86,14 +86,6 @@
   margin: 1.25rem 0;
 }
 
-.course-filter {
-  margin-bottom: 0;
-}
-
-.course-filter + .tutoring-mode-filter {
-  margin-top: 0.75rem;
-}
-
 .filter-group > label,
 .filter-group legend {
   display: block;
@@ -110,6 +102,7 @@
 }
 
 .filter-search input,
+.filter-date input,
 .filter-group select {
   width: 100%;
   min-height: 44px;
@@ -128,6 +121,7 @@
 }
 
 .filter-search input:focus,
+.filter-date input:focus,
 .filter-group select:focus {
   box-shadow: 0 0 0 3px rgba(191, 0, 80, 0.1);
 }
@@ -567,6 +561,7 @@
 }
 
 .filter-search input,
+.filter-date input,
 .filter-group select {
   background-color: #f3f5f7;
   border-radius: 0.5rem;
@@ -587,6 +582,7 @@
 }
 
 .filter-search input:focus,
+.filter-date input:focus,
 .filter-group select:focus {
   background-color: #fff;
   box-shadow:

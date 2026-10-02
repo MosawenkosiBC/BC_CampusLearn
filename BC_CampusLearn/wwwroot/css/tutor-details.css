@@ -964,6 +964,7 @@
   color: #fff;
   cursor: pointer;
   display: flex;
+  gap: 0.5rem;
   font-size: 0.9rem;
   font-weight: 650;
   justify-content: center;
@@ -980,6 +981,17 @@
 .save-session:hover {
   background: var(--details-accent-dark);
   color: #fff;
+}
+
+.save-session svg {
+  flex: 0 0 auto;
+  font-size: 1.25em;
+}
+
+.save-session.is-unavailable,
+.save-session.is-unavailable:hover {
+  background: #85898f;
+  cursor: not-allowed;
 }
 
 .no-availability {

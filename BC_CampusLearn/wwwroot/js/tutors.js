@@ -72,3 +72,92 @@
 
     setAccessibilityState();
 })();
+
+(() => {
+    const form = document.querySelector("[data-live-tutor-search]");
+    const searchInputs = form?.querySelectorAll(
+        "[data-live-tutor-search-input]");
+    const dateInput = form?.querySelector(
+        "[data-live-tutor-date-input]");
+    const resultsContent = document.querySelector(
+        "[data-tutor-results-content]");
+    const resultsCount = document.querySelector(
+        "[data-tutor-results-count]");
+    const emptyResults = document.querySelector(
+        "[data-tutor-empty-results]");
+    const filterButton = document.querySelector("[data-filter-open]");
+    const tutorCards = [
+        ...document.querySelectorAll("[data-tutor-search-card]")
+    ];
+
+    if (!form || !searchInputs?.length || !dateInput || !resultsContent ||
+        !resultsCount || !emptyResults) {
+        return;
+    }
+
+    const normalize = (value) => value
+        .trim()
+        .toLocaleLowerCase();
+
+    const updateUrl = () => {
+        const parameters = new URLSearchParams(new FormData(form));
+
+        [...parameters.entries()].forEach(([key, value]) => {
+            if (!value.trim() || (key === "ShowAllTutors" && value === "false")) {
+                parameters.delete(key);
+            }
+        });
+
+        const query = parameters.toString();
+        window.history.replaceState(
+            {},
+            "",
+            `${window.location.pathname}${query ? `?${query}` : ""}`);
+    };
+
+    const updateFilterIndicator = () => {
+        if (!filterButton) {
+            return;
+        }
+
+        const values = new FormData(form);
+        const hasActiveFilters = [...values.entries()].some(([key, value]) =>
+            key === "ShowAllTutors"
+                ? value === "true"
+                : value.trim().length > 0);
+        filterButton.classList.toggle(
+            "has-active-filters",
+            hasActiveFilters);
+    };
+
+    const filterTutors = () => {
+        const nameQuery = normalize(searchInputs[0].value);
+        const moduleQuery = normalize(searchInputs[1].value);
+        const dateQuery = dateInput.value;
+        let visibleCount = 0;
+
+        tutorCards.forEach((card) => {
+            const matchesName = normalize(card.dataset.tutorName ?? "")
+                .includes(nameQuery);
+            const matchesModule = normalize(card.dataset.tutorModules ?? "")
+                .includes(moduleQuery);
+            const availableDates = (
+                card.dataset.tutorAvailableDates ?? "").split(" ");
+            const matchesDate = !dateQuery ||
+                availableDates.includes(dateQuery);
+            const isVisible = matchesName && matchesModule && matchesDate;
+
+            card.hidden = !isVisible;
+            visibleCount += isVisible ? 1 : 0;
+        });
+
+        resultsCount.textContent = String(visibleCount);
+        emptyResults.hidden = visibleCount !== 0;
+        updateFilterIndicator();
+        updateUrl();
+    };
+
+    searchInputs.forEach((input) =>
+        input.addEventListener("input", filterTutors));
+    dateInput.addEventListener("change", filterTutors);
+})();
