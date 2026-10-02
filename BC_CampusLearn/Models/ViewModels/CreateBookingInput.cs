@@ -10,6 +10,8 @@ public class CreateBookingInput
     [Required]
     public int TutorAvailabilityId { get; set; }
 
+    public Guid ReservationToken { get; set; }
+
     [Range(1, int.MaxValue, ErrorMessage = "Select a module.")]
     [Display(Name = "Module")]
     public int ProgrammeModuleId { get; set; }

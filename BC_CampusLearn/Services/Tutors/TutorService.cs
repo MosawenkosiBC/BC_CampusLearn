@@ -20,6 +20,7 @@ public class TutorService : ITutorService
             string? preferredCampus = null,
             CancellationToken cancellationToken = default)
     {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
         IQueryable<Tutor> query =
             _context.Tutors
                 .AsNoTracking()
@@ -40,7 +41,9 @@ public class TutorService : ITutorService
                 .ThenInclude(item => item.ProgrammeModule)
             .Include(tutor => tutor.Programme)
             .Include(tutor => tutor.BcUser)
-            .Include(tutor => tutor.TutorAvailabilities)
+            .Include(tutor => tutor.TutorAvailabilities.Where(slot =>
+                slot.ReservationExpiresAt == null ||
+                slot.ReservationExpiresAt <= now))
             .OrderBy(tutor =>
                 !string.IsNullOrWhiteSpace(preferredCampus) &&
                 tutor.CampusOfStudy == preferredCampus.Trim()
@@ -67,14 +70,14 @@ public class TutorService : ITutorService
                 CampusOfStudy = tutor.CampusOfStudy,
                 PreferredTutoringMode = tutor.PreferredTutoringMode,
                 UpcomingAvailabilityCount = tutor.TutorAvailabilities.Count(slot =>
-                    slot.AvailableTime > DateTimeOffset.UtcNow),
+                    slot.AvailableTime > now),
                 NextAvailableAt = tutor.TutorAvailabilities
-                    .Where(slot => slot.AvailableTime > DateTimeOffset.UtcNow)
+                    .Where(slot => slot.AvailableTime > now)
                     .Select(slot => (DateTimeOffset?)slot.AvailableTime)
                     .OrderBy(value => value)
                     .FirstOrDefault(),
                 UpcomingAvailabilityDates = tutor.TutorAvailabilities
-                    .Where(slot => slot.AvailableTime > DateTimeOffset.UtcNow)
+                    .Where(slot => slot.AvailableTime > now)
                     .Select(slot => DateOnly.FromDateTime(
                         slot.AvailableTime.Date))
                     .Distinct()
@@ -108,6 +111,7 @@ public class TutorService : ITutorService
             int tutorId,
             CancellationToken cancellationToken = default)
     {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
         Tutor? tutor = await _context.Tutors
             .AsNoTracking()
             .Where(item =>
@@ -117,7 +121,9 @@ public class TutorService : ITutorService
             .Include(item => item.TutorCourseModules.Where(a => a.IsActive))
                 .ThenInclude(item =>
                     item.ProgrammeModule)
-            .Include(item => item.TutorAvailabilities)
+            .Include(item => item.TutorAvailabilities.Where(slot =>
+                slot.ReservationExpiresAt == null ||
+                slot.ReservationExpiresAt <= now))
             .Include(item => item.BcUser)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -156,7 +162,7 @@ public class TutorService : ITutorService
                 tutor.TutorAvailabilities
                     .Where(slot =>
                         slot.AvailableTime >
-                        DateTimeOffset.UtcNow)
+                        now)
                     .OrderBy(slot => slot.AvailableTime)
                     .Select(slot =>
                         new AvailabilitySlotViewModel

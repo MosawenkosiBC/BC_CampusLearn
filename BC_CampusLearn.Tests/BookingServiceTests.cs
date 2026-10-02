@@ -39,10 +39,15 @@ public class BookingServiceTests
             new TestCurrentUserService(currentUser),
             new TestWebHostEnvironment());
 
+        BookingReservationResult reservation =
+            await service.TryReserveSlotAsync(
+                availability.TutorAvailabilityId);
+
         BookingCreationResult result = await service.CreateBookingAsync(
             new CreateBookingInput
             {
                 TutorAvailabilityId = availability.TutorAvailabilityId,
+                ReservationToken = reservation.ReservationToken!.Value,
                 ProgrammeModuleId = 3,
                 StudyAreaId = 1,
                 AcceptedTerms = true
@@ -75,6 +80,77 @@ public class BookingServiceTests
         Assert.All(notifications, item => Assert.Contains(
             $"/{result.BookingId}",
             item.LinkUrl));
+    }
+
+    [Fact]
+    public async Task TryReserveSlotAsync_BlocksAnotherStudent()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorAvailability availability = AddTutorAvailability(
+            context,
+            DateTimeOffset.UtcNow.AddDays(2));
+        await context.SaveChangesAsync();
+
+        var firstStudentService = new BookingService(
+            context,
+            new TestCurrentUserService(new CurrentUser(
+                21,
+                "STUDENT21",
+                "First Student",
+                "first@example.com")),
+            new TestWebHostEnvironment());
+        var secondStudentService = new BookingService(
+            context,
+            new TestCurrentUserService(new CurrentUser(
+                22,
+                "STUDENT22",
+                "Second Student",
+                "second@example.com")),
+            new TestWebHostEnvironment());
+
+        BookingReservationResult first =
+            await firstStudentService.TryReserveSlotAsync(
+                availability.TutorAvailabilityId);
+        BookingReservationResult second =
+            await secondStudentService.TryReserveSlotAsync(
+                availability.TutorAvailabilityId);
+
+        Assert.Equal(BookingReservationStatus.Acquired, first.Status);
+        Assert.Equal(
+            BookingReservationStatus.ReservedByAnotherStudent,
+            second.Status);
+        Assert.Null(second.ReservationToken);
+    }
+
+    [Fact]
+    public async Task TryReserveSlotAsync_ReloadKeepsOriginalDeadline()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorAvailability availability = AddTutorAvailability(
+            context,
+            DateTimeOffset.UtcNow.AddDays(2));
+        await context.SaveChangesAsync();
+
+        var service = new BookingService(
+            context,
+            new TestCurrentUserService(new CurrentUser(
+                21,
+                "STUDENT21",
+                "Student Name",
+                "student@example.com")),
+            new TestWebHostEnvironment());
+
+        BookingReservationResult first =
+            await service.TryReserveSlotAsync(
+                availability.TutorAvailabilityId);
+        DateTimeOffset? originalExpiry = availability.ReservationExpiresAt;
+        BookingReservationResult reloaded =
+            await service.TryReserveSlotAsync(
+                availability.TutorAvailabilityId);
+
+        Assert.Equal(BookingReservationStatus.Acquired, reloaded.Status);
+        Assert.Equal(first.ReservationToken, reloaded.ReservationToken);
+        Assert.Equal(originalExpiry, availability.ReservationExpiresAt);
     }
 
     [Fact]
@@ -187,6 +263,39 @@ public class BookingServiceTests
             result.ErrorMessage);
         Assert.Empty(context.Bookings);
         Assert.Single(context.TutorAvailabilities);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_IdentifiesExpiredAvailability()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorAvailability availability = AddTutorAvailability(
+            context,
+            DateTimeOffset.UtcNow.AddMinutes(-1));
+        await context.SaveChangesAsync();
+
+        var currentUser = new CurrentUser(
+            21,
+            "STUDENT21",
+            "Student Name",
+            "student@example.com");
+        var service = new BookingService(
+            context,
+            new TestCurrentUserService(currentUser),
+            new TestWebHostEnvironment());
+
+        BookingCreationResult result = await service.CreateBookingAsync(
+            new CreateBookingInput
+            {
+                TutorAvailabilityId = availability.TutorAvailabilityId,
+                ProgrammeModuleId = 3,
+                StudyAreaId = 1,
+                AcceptedTerms = true
+            });
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(BookingFailureReason.Expired, result.FailureReason);
+        Assert.Empty(context.Bookings);
     }
 
     private static ApplicationDbContext CreateContext()

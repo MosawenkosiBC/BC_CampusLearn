@@ -14,41 +14,13 @@
 
 .booking-unavailable-card {
     background-color: #fff;
-    border-radius: 0.65rem;
-    box-shadow: var(--campus-card-shadow);
+    border: 0;
+    border-radius: 1rem;
+    box-shadow: 0 1.5rem 4rem rgba(28, 21, 25, 0.2);
     max-width: 640px;
     padding: clamp(2rem, 5vw, 3.5rem);
     text-align: center;
     width: 100%;
-}
-
-.booking-unavailable-icon {
-    align-items: center;
-    background-color: #f9e6ef;
-    border-radius: 50%;
-    color: #ad0151;
-    display: inline-flex;
-    height: 4rem;
-    justify-content: center;
-    margin-bottom: 1.25rem;
-    width: 4rem;
-}
-
-.booking-unavailable-icon svg {
-    height: 2rem;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-width: 1.8;
-    width: 2rem;
-}
-
-.booking-unavailable-label {
-    color: #ad0151;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    margin: 0 0 0.55rem;
-    text-transform: uppercase;
 }
 
 .booking-unavailable-card h1 {
@@ -57,12 +29,121 @@
     margin: 0;
 }
 
-.booking-unavailable-card > p:not(.booking-unavailable-label) {
+.booking-unavailable-card > p {
     color: #626971;
     font-size: 16px;
     line-height: 1.65;
     margin: 1rem auto 0;
     max-width: 510px;
+}
+
+.booking-unavailable-card .booking-unavailable-countdown {
+    align-items: center;
+    color: #303740;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    justify-content: center;
+    margin-top: 1.25rem;
+}
+
+.booking-countdown-hourglass {
+    display: inline-block;
+    flex: 0 0 auto;
+    height: 2rem;
+    width: 2rem;
+}
+
+.booking-countdown-hourglass svg {
+    display: block;
+    height: 100%;
+    overflow: visible;
+    width: 100%;
+}
+
+.booking-hourglass-frame {
+    fill: none;
+    stroke: #17191c;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+}
+
+.booking-hourglass-upper-sand,
+.booking-hourglass-lower-sand {
+    fill: #17191c;
+    transform-box: fill-box;
+}
+
+.booking-hourglass-upper-sand {
+    animation: booking-upper-sand 10s linear forwards;
+    transform-origin: center bottom;
+}
+
+.booking-hourglass-lower-sand {
+    animation: booking-lower-sand 10s linear forwards;
+    transform-origin: center bottom;
+}
+
+.booking-hourglass-sand-stream {
+    animation: booking-sand-stream 0.65s linear infinite;
+    fill: none;
+    stroke: #17191c;
+    stroke-dasharray: 1 1.2;
+    stroke-linecap: round;
+    stroke-width: 1.1;
+}
+
+@keyframes booking-upper-sand {
+    from {
+        transform: scaleY(1);
+    }
+
+    to {
+        transform: scaleY(0.08);
+    }
+}
+
+@keyframes booking-lower-sand {
+    from {
+        transform: scaleY(0.08);
+    }
+
+    to {
+        transform: scaleY(1);
+    }
+}
+
+@keyframes booking-sand-stream {
+    from {
+        stroke-dashoffset: 0;
+    }
+
+    to {
+        stroke-dashoffset: -2.2;
+    }
+}
+
+.booking-unavailable-countdown strong {
+    color: #ad0151;
+    white-space: nowrap;
+}
+
+.booking-countdown-timer {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.35rem;
+    margin-left: 0.2rem;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .booking-hourglass-upper-sand,
+    .booking-hourglass-lower-sand,
+    .booking-hourglass-sand-stream {
+        animation: none;
+    }
 }
 
 .booking-unavailable-actions {

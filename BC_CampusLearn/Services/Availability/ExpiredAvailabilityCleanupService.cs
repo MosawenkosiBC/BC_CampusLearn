@@ -53,6 +53,23 @@ public class ExpiredAvailabilityCleanupService : BackgroundService
             await lifecycleService.ProcessDueTransitionsAsync(
                 cancellationToken);
 
+            await context.TutorAvailabilities
+                .Where(slot =>
+                    slot.ReservationExpiresAt != null &&
+                    slot.ReservationExpiresAt <= now)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty<int?>(
+                            slot => slot.ReservedByBcUserId,
+                            (int?)null)
+                        .SetProperty<Guid?>(
+                            slot => slot.ReservationToken,
+                            (Guid?)null)
+                        .SetProperty<DateTimeOffset?>(
+                            slot => slot.ReservationExpiresAt,
+                            (DateTimeOffset?)null),
+                    cancellationToken);
+
             int removedCount =
                 await context.TutorAvailabilities
                     .Where(slot => slot.AvailableTime <= now)

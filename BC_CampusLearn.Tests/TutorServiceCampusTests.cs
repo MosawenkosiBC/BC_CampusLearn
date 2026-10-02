@@ -37,6 +37,52 @@ public class TutorServiceCampusTests
         Assert.Equal("Pretoria Tutor", tutors[1].DisplayName);
     }
 
+    [Fact]
+    public async Task GetTutorDetailsHidesActivelyReservedSlots()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        await using var context = new ApplicationDbContext(options);
+        var programme = new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        };
+        Tutor tutor = CreateTutor(
+            1,
+            "Pretoria Tutor",
+            "Pretoria Campus",
+            programme);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        tutor.TutorAvailabilities.Add(new TutorAvailability
+        {
+            TutorAvailabilityId = 1,
+            AvailableTime = now.AddDays(1),
+            ReservedByBcUserId = 21,
+            ReservationToken = Guid.NewGuid(),
+            ReservationExpiresAt = now.AddMinutes(20)
+        });
+        tutor.TutorAvailabilities.Add(new TutorAvailability
+        {
+            TutorAvailabilityId = 2,
+            AvailableTime = now.AddDays(2),
+            ReservedByBcUserId = 22,
+            ReservationToken = Guid.NewGuid(),
+            ReservationExpiresAt = now.AddMinutes(-1)
+        });
+        context.Tutors.Add(tutor);
+        await context.SaveChangesAsync();
+        var service = new TutorService(context);
+
+        TutorDetailsViewModel details =
+            (await service.GetTutorDetailsAsync(tutor.TutorId))!;
+
+        AvailabilitySlotViewModel available =
+            Assert.Single(details.AvailabilitySlots);
+        Assert.Equal(2, available.TutorAvailabilityId);
+    }
+
     private static Tutor CreateTutor(
         int id,
         string displayName,

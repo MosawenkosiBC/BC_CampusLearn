@@ -9,9 +9,14 @@ public class TutorAvailability
 
     public DateTimeOffset AvailableTime { get; set; }
 
+    public int? ReservedByBcUserId { get; set; }
+
+    public Guid? ReservationToken { get; set; }
+
+    public DateTimeOffset? ReservationExpiresAt { get; set; }
+
     // Used to detect two students trying to book the same slot.
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     public Tutor Tutor { get; set; } = null!;
-
 }

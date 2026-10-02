@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace BC_CampusLearn.Tests;
@@ -70,7 +71,8 @@ public class TutorProfileNotificationTests
                 user.DisplayName,
                 user.Email,
                 BcUserRole.Tutor)),
-            new TestWebHostEnvironment())
+            new TestWebHostEnvironment(),
+            NullLogger<ProfileModel>.Instance)
         {
             ModuleRequestInput = new TutorModuleChangeRequestInput
             {
