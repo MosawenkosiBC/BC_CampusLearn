@@ -13,14 +13,6 @@
         ? string.Empty
         : $"{selectedModule.ModuleCode} - {selectedModule.ModuleName}";
 
-    string GetStudyAreaSubtext(string studyAreaName) =>
-        string.Equals(
-            studyAreaName,
-            "Online",
-            StringComparison.OrdinalIgnoreCase)
-            ? "Microsoft Teams"
-            : "Pretoria Campus";
-
     var existingLinks = Model.Input.PreparationLinks
         .Where(link => !string.IsNullOrWhiteSpace(link))
         .Take(3)
@@ -215,12 +207,14 @@
                         {
                             <option value="@studyArea.StudyAreaId"
                                     data-location-name="@studyArea.Name"
-                                    data-location-subtext="@GetStudyAreaSubtext(studyArea.Name)">
+                                    data-location-subtext="@StudyAreaDisplay.GetSubtext(studyArea.Name)"
+                                    data-location-description="@studyArea.Description">
                                 @studyArea.Name
                             </option>
                         }
                     </select>
 
+                    <div class="booking-location-control">
                     <button type="button"
                             class="booking-location-trigger"
                             data-booking-location-trigger
@@ -278,12 +272,18 @@
                                         data-booking-location-option
                                         data-location-id="@studyArea.StudyAreaId"
                                         data-location-name="@studyArea.Name"
-                                        data-location-subtext="@GetStudyAreaSubtext(studyArea.Name)"
+                                        data-location-subtext="@StudyAreaDisplay.GetSubtext(studyArea.Name)"
+                                        data-location-description="@studyArea.Description"
                                         role="option"
                                         aria-selected="@(Model.Input.StudyAreaId == studyArea.StudyAreaId ? "true" : "false")">
                                     <strong>@studyArea.Name</strong>
-                                    <span>@GetStudyAreaSubtext(
+                                    <span>@StudyAreaDisplay.GetSubtext(
                                         studyArea.Name)</span>
+                                    @if (!string.IsNullOrWhiteSpace(
+                                        studyArea.Description))
+                                    {
+                                        <em>@studyArea.Description</em>
+                                    }
                                 </button>
                             }
                         </div>
@@ -293,8 +293,17 @@
                             No matching study areas found.
                         </p>
                     </div>
+                    </div>
                     <span asp-validation-for="Input.StudyAreaId"
                           class="text-danger"></span>
+                    <div class="booking-location-information"
+                         data-booking-location-information
+                         hidden>
+                        <ul>
+                            <li data-booking-location-information-subtext></li>
+                            <li data-booking-location-information-description></li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div class="booking-field">

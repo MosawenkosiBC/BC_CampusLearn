@@ -114,6 +114,12 @@
                 "[data-booking-location-option]") ?? []);
         const locationEmpty = locationPicker?.querySelector(
             "[data-booking-location-empty]");
+        const locationInformation = locationPicker?.querySelector(
+            "[data-booking-location-information]");
+        const locationInformationSubtext = locationPicker?.querySelector(
+            "[data-booking-location-information-subtext]");
+        const locationInformationDescription = locationPicker?.querySelector(
+            "[data-booking-location-information-description]");
 
         const validateLocation = () => {
             if (!locationSelect) {
@@ -139,7 +145,8 @@
             locationOptions.forEach((option) => {
                 const searchableText =
                     `${option.dataset.locationName ?? ""} ` +
-                    `${option.dataset.locationSubtext ?? ""}`;
+                    `${option.dataset.locationSubtext ?? ""} ` +
+                    `${option.dataset.locationDescription ?? ""}`;
                 const isVisible = searchableText
                     .toLocaleLowerCase()
                     .includes(query);
@@ -190,6 +197,22 @@
                     ? selectedOption?.dataset.locationName ??
                         selectedOption?.textContent?.trim() ?? ""
                     : "Choose a study area";
+            }
+
+            if (locationInformation) {
+                locationInformation.hidden = !selectedValue;
+            }
+
+            if (locationInformationSubtext) {
+                locationInformationSubtext.textContent =
+                    selectedOption?.dataset.locationSubtext ?? "";
+            }
+
+            const description =
+                selectedOption?.dataset.locationDescription ?? "";
+            if (locationInformationDescription) {
+                locationInformationDescription.textContent = description;
+                locationInformationDescription.hidden = !description;
             }
 
             locationOptions.forEach((option) =>

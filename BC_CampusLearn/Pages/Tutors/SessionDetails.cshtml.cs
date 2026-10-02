@@ -96,6 +96,7 @@ public class SessionDetailsModel : PageModel
             .AsNoTracking()
             .AsSplitQuery()
             .Include(booking => booking.ProgrammeModule)
+            .Include(booking => booking.StudyArea)
             .Include(booking => booking.PreparationLinks)
             .Include(booking => booking.MeetingLink)
             .Include(booking => booking.Documents)

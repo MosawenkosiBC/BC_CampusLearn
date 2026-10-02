@@ -163,6 +163,20 @@
                                            type="text"
                                            value="@Model.Session.Location"
                                            readonly />
+                                    @if (Model.Session.StudyArea is { } studyArea)
+                                    {
+                                        <div class="session-location-guidance">
+                                            <ul>
+                                                <li>@StudyAreaDisplay.GetSubtext(
+                                                    studyArea.Name)</li>
+                                                @if (!string.IsNullOrWhiteSpace(
+                                                    studyArea.Description))
+                                                {
+                                                    <li>@studyArea.Description</li>
+                                                }
+                                            </ul>
+                                        </div>
+                                    }
                                 </div>
                                 <div class="session-readonly-field">
                                     <label for="session-duration">Duration</label>

@@ -77,6 +77,7 @@ public class SessionDetailsModel : PageModel
             .AsNoTracking()
             .AsSplitQuery()
             .Include(booking => booking.ProgrammeModule)
+            .Include(booking => booking.StudyArea)
             .Include(booking => booking.TutorCourseModule)
                 .ThenInclude(assignment => assignment.Tutor)
                     .ThenInclude(tutor => tutor.BcUser)

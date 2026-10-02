@@ -334,7 +334,7 @@
     opacity: 1;
 }
 
-.booking-location-field {
+.booking-location-control {
     position: relative;
 }
 
@@ -488,6 +488,44 @@
     color: #6b6e75;
     font-size: 14px;
     line-height: 1.35;
+}
+
+.booking-location-option em {
+    color: #555960;
+    font-size: 13px;
+    font-style: normal;
+    line-height: 1.4;
+}
+
+.booking-location-information {
+    background: #f7f8fa;
+    border-radius: 0.2rem;
+    margin-top: 0.65rem;
+    padding: 0.7rem 0.8rem;
+}
+
+.booking-location-information[hidden] {
+    display: none;
+}
+
+.booking-location-information ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.booking-location-information li {
+    color: #45484e;
+    font-size: 14px;
+    line-height: 1.45;
+    padding-left: 0.9rem;
+    position: relative;
+}
+
+.booking-location-information li::before {
+    content: "-";
+    left: 0;
+    position: absolute;
 }
 
 .booking-location-empty {
