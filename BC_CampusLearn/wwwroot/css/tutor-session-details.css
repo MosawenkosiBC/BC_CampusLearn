@@ -416,6 +416,33 @@
     outline: none;
 }
 
+.session-location-guidance {
+    background: #fbfbfb;
+    border-radius: 0.2rem;
+    margin-top: 0.55rem;
+    padding: 0.65rem 0.75rem;
+}
+
+.session-location-guidance ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.session-location-guidance li {
+    color: #3f4349;
+    font-size: 0.87rem;
+    line-height: 1.45;
+    padding-left: 0.9rem;
+    position: relative;
+}
+
+.session-location-guidance li::before {
+    content: "-";
+    left: 0;
+    position: absolute;
+}
+
 .session-summary-panel {
     margin-top: 1rem;
 }
