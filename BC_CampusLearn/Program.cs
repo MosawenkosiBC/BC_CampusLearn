@@ -8,6 +8,7 @@ using BC_CampusLearn.Services.Sessions;
 using BC_CampusLearn.Services.Students;
 using BC_CampusLearn.Services.Notifications;
 using BC_CampusLearn.Services.Settings;
+using BC_CampusLearn.Services.Events;
 using BC_CampusLearn.Services.Gemini;
 using BC_CampusLearn.Services.Events;
 using BC_CampusLearn.Hubs;
