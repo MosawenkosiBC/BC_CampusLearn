@@ -1,9 +1,15 @@
 (() => {
     const pendingReviewModal = document.getElementById(
         "pending-review-booking-modal");
+    const reservationExpiredModal = document.getElementById(
+        "booking-reservation-expired-modal");
     if (pendingReviewModal &&
         pendingReviewModal.parentElement !== document.body) {
         document.body.append(pendingReviewModal);
+    }
+    if (reservationExpiredModal &&
+        reservationExpiredModal.parentElement !== document.body) {
+        document.body.append(reservationExpiredModal);
     }
 
     if (pendingReviewModal?.dataset.openOnLoad === "true" &&
@@ -61,6 +67,118 @@
     const bookingForm = document.querySelector("[data-booking-form]");
 
     if (bookingForm) {
+        const availabilityId = bookingForm.querySelector(
+            "[name='Input.TutorAvailabilityId']")?.value;
+        const reservationToken = bookingForm.querySelector(
+            "[name='Input.ReservationToken']")?.value;
+        const antiForgeryToken = bookingForm.querySelector(
+            "[name='__RequestVerificationToken']")?.value;
+        const releaseUrl = bookingForm.dataset.reservationReleaseUrl;
+        const reservationExpiredUrl =
+            bookingForm.dataset.reservationExpiredUrl;
+        const reservationExpiresAt = Number(
+            bookingForm.dataset.reservationExpiresAt);
+        const reservationServerNow = Number(
+            bookingForm.dataset.reservationServerNow);
+        const hasReservation = Boolean(
+            availabilityId &&
+            reservationToken &&
+            reservationToken !==
+                "00000000-0000-0000-0000-000000000000" &&
+            antiForgeryToken &&
+            releaseUrl &&
+            reservationExpiresAt);
+        let isSubmitting = false;
+        let isReloading = false;
+        let reservationReleased = false;
+
+        const releaseReservation = () => {
+            if (!hasReservation || reservationReleased) {
+                return;
+            }
+
+            reservationReleased = true;
+            const releaseData = new FormData();
+            releaseData.append(
+                "tutorAvailabilityId",
+                availabilityId);
+            releaseData.append(
+                "reservationToken",
+                reservationToken);
+            releaseData.append(
+                "__RequestVerificationToken",
+                antiForgeryToken);
+
+            const beaconQueued = navigator.sendBeacon(
+                releaseUrl,
+                releaseData);
+
+            if (!beaconQueued) {
+                fetch(releaseUrl, {
+                    method: "POST",
+                    body: releaseData,
+                    credentials: "same-origin",
+                    keepalive: true
+                }).catch(() => {
+                    // The fixed server-side expiry remains the final fallback.
+                });
+            }
+        };
+
+        const expireReservation = () => {
+            releaseReservation();
+            bookingForm.querySelectorAll(
+                "button, input, select, textarea")
+                .forEach((control) => {
+                    control.disabled = true;
+                });
+
+            if (reservationExpiredModal && window.bootstrap) {
+                bootstrap.Modal.getOrCreateInstance(
+                    reservationExpiredModal).show();
+                return;
+            }
+
+            window.location.assign(
+                reservationExpiredUrl ?? window.location.href);
+        };
+
+        if (hasReservation) {
+            const remainingTime =
+                reservationExpiresAt - reservationServerNow;
+
+            if (remainingTime <= 0) {
+                expireReservation();
+            } else {
+                window.setTimeout(expireReservation, remainingTime);
+            }
+
+            if (window.navigation) {
+                window.navigation.addEventListener(
+                    "navigate",
+                    (event) => {
+                        isReloading =
+                            event.navigationType === "reload";
+
+                        if (!isReloading && !isSubmitting) {
+                            releaseReservation();
+                        }
+                    });
+            }
+
+            window.addEventListener("pagehide", () => {
+                if (!isSubmitting && !isReloading) {
+                    releaseReservation();
+                }
+            });
+
+            window.addEventListener("pageshow", (event) => {
+                if (event.persisted) {
+                    window.location.reload();
+                }
+            });
+        }
+
         const bookingFlow = bookingForm.closest(
             ".booking-form-content") ?? bookingForm;
         const mobileLayout = window.matchMedia(
@@ -532,6 +650,12 @@
         if (initialStage) {
             showStage(initialStage.dataset.bookingStage, false);
         }
+
+        bookingForm.addEventListener("submit", (event) => {
+            if (!event.defaultPrevented) {
+                isSubmitting = true;
+            }
+        });
     }
 
     const links = document.querySelector("[data-booking-links]");

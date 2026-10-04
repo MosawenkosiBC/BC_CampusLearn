@@ -46,6 +46,9 @@ public class CreateModel : PageModel
 
     public bool ShowPendingReviewModal { get; private set; }
 
+    public long ReservationExpiresAtUnixTimeMilliseconds
+    { get; private set; }
+
     public IReadOnlyList<string> BookingTerms { get; private set; } = [];
 
     public IReadOnlyList<StudyArea> StudyAreas { get; private set; } = [];
@@ -120,6 +123,9 @@ public class CreateModel : PageModel
             }
 
             Input.ReservationToken = reservation.ReservationToken!.Value;
+            ReservationExpiresAtUnixTimeMilliseconds = reservation
+                .ReservationExpiresAt!.Value
+                .ToUnixTimeMilliseconds();
         }
 
         Input.TutorAvailabilityId = slotId;
@@ -210,6 +216,14 @@ public class CreateModel : PageModel
                     new { reason = "reserved" });
             }
 
+            if (result.FailureReason ==
+                BookingFailureReason.ReservationExpired)
+            {
+                return RedirectToPage(
+                    "/Bookings/Unavailable",
+                    new { reason = "reservation-expired" });
+            }
+
             ShowPendingReviewModal = result.PendingReviewRequired;
             if (!result.PendingReviewRequired)
             {
@@ -231,6 +245,19 @@ public class CreateModel : PageModel
         TempData.Remove(MobileTermsAcceptanceKey);
 
         return RedirectToPage("/Bookings/Index");
+    }
+
+    public async Task<IActionResult> OnPostReleaseAsync(
+        int tutorAvailabilityId,
+        Guid reservationToken,
+        CancellationToken cancellationToken)
+    {
+        await _bookingService.ReleaseSlotReservationAsync(
+            tutorAvailabilityId,
+            reservationToken,
+            cancellationToken);
+
+        return new NoContentResult();
     }
 
     private bool HasValidMobileTermsAcceptance(
@@ -274,6 +301,27 @@ public class CreateModel : PageModel
         }
 
         Preview = preview;
+
+        if (Input.ReservationToken != Guid.Empty)
+        {
+            int currentUserId =
+                _currentUserService.GetRequiredUser().BcUserId;
+            DateTimeOffset? reservationExpiresAt = await _context
+                .TutorAvailabilities
+                .AsNoTracking()
+                .Where(slot =>
+                    slot.TutorAvailabilityId == slotId &&
+                    slot.ReservedByBcUserId == currentUserId &&
+                    slot.ReservationToken == Input.ReservationToken)
+                .Select(slot => slot.ReservationExpiresAt)
+                .SingleOrDefaultAsync(cancellationToken);
+
+            if (reservationExpiresAt.HasValue)
+            {
+                ReservationExpiresAtUnixTimeMilliseconds =
+                    reservationExpiresAt.Value.ToUnixTimeMilliseconds();
+            }
+        }
 
         await LoadPlatformSettingsAsync(cancellationToken);
 

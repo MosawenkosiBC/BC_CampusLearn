@@ -96,6 +96,10 @@
             breadcrumbs.Add(("Tutors", "/Tutors/Index"));
             breadcrumbs.Add(("Book Session", null));
             break;
+        case "/Bookings/Unavailable":
+            breadcrumbs.Add(("Tutors", "/Tutors/Index"));
+            breadcrumbs.Add((pageTitle ?? "Session Unavailable", null));
+            break;
         case "/Tutors/Index":
             breadcrumbs.Add(("Tutors", null));
             break;

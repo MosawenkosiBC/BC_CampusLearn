@@ -10,11 +10,17 @@ public enum BookingReservationStatus
 
 public record BookingReservationResult(
     BookingReservationStatus Status,
-    Guid? ReservationToken)
+    Guid? ReservationToken,
+    DateTimeOffset? ReservationExpiresAt)
 {
-    public static BookingReservationResult Acquired(Guid token) =>
-        new(BookingReservationStatus.Acquired, token);
+    public static BookingReservationResult Acquired(
+        Guid token,
+        DateTimeOffset reservationExpiresAt) =>
+        new(
+            BookingReservationStatus.Acquired,
+            token,
+            reservationExpiresAt);
 
     public static BookingReservationResult Failed(
-        BookingReservationStatus status) => new(status, null);
+        BookingReservationStatus status) => new(status, null, null);
 }

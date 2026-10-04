@@ -18,6 +18,11 @@ public interface IBookingService
         int tutorAvailabilityId,
         CancellationToken cancellationToken = default);
 
+    Task ReleaseSlotReservationAsync(
+        int tutorAvailabilityId,
+        Guid reservationToken,
+        CancellationToken cancellationToken = default);
+
     Task<bool> HasPendingStudentReviewAsync(
         CancellationToken cancellationToken = default);
 }
