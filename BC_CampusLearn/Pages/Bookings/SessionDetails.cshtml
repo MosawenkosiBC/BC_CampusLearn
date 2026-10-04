@@ -2,6 +2,7 @@
 @model BC_CampusLearn.Pages.Bookings.SessionDetailsModel
 @using BC_CampusLearn.Models.Entities
 @using BC_CampusLearn.Services.Sessions
+@inject BC_CampusLearn.Services.Settings.StudyAreaCampusLabelStore CampusLabelStore
 
 @{
     ViewData["Title"] = "Session details";
@@ -136,10 +137,12 @@
                                     <input id="session-location" type="text" value="@Model.Session.Location" readonly />
                                     @if (Model.Session.StudyArea is { } studyArea)
                                     {
+                                        string campusLabel = await CampusLabelStore.GetLabelAsync(
+                                            studyArea.StudyAreaId,
+                                            studyArea.Name);
                                         <div class="session-location-guidance">
                                             <ul>
-                                                <li>@StudyAreaDisplay.GetSubtext(
-                                                    studyArea.Name)</li>
+                                                <li>@campusLabel</li>
                                                 @if (!string.IsNullOrWhiteSpace(
                                                     studyArea.Description))
                                                 {

@@ -371,10 +371,25 @@
     justify-content: space-between;
 }
 
-.booking-field-label span {
+.booking-field-label > span {
     color: #6b6b6b;
     font-size: 0.72rem;
     margin-bottom: 0.35rem;
+}
+
+.booking-location-label {
+    justify-content: flex-start;
+}
+
+.booking-location-help {
+    color: #6b6b6b;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    margin: -0.05rem 0 0.45rem;
+}
+
+.booking-duration-alignment {
+    visibility: hidden;
 }
 
 .required-indicator {
@@ -1706,6 +1721,10 @@ a.booking-added-item-label:focus-visible {
 }
 
 @media (max-width: 575.98px) {
+    .booking-duration-alignment {
+        display: none;
+    }
+
     .pending-review-booking-modal .modal-footer > * {
         width: 100%;
     }

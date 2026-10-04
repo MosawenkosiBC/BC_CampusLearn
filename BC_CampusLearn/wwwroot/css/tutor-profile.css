@@ -1127,7 +1127,29 @@ a.tutor-profile-nav-link:focus-visible {
     float: none;
     font-size: 0.95rem;
     font-weight: 600;
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.3rem;
+}
+
+.tutor-profile-preference-help {
+    color: #6b727b;
+    font-size: 12px;
+    line-height: 1.45;
+    margin: 0 0 0.65rem;
+    max-width: 48rem;
+}
+
+.tutor-profile-preference-help p {
+    margin: 0 0 0.3rem;
+}
+
+.tutor-profile-preference-help ul {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+.tutor-profile-preference-help strong {
+    color: inherit;
+    font-weight: 600;
 }
 
 .tutor-profile-preference-options {

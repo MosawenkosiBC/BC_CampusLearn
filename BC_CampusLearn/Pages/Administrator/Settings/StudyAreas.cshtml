@@ -1,0 +1,269 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Settings.StudyAreasModel
+@{ ViewData["Title"] = "Study area settings"; }
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-tutors.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-settings.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/pagination.css" asp-append-version="true" />
+}
+
+<main class="admin-settings settings-study-areas-page" aria-labelledby="settings-title" data-settings-page>
+    <header class="admin-dashboard-header"><h1 id="settings-title">Settings</h1></header>
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+    {
+        @await Html.PartialAsync(
+            "_CampusAlert",
+            new CampusAlertViewModel(Model.SuccessMessage))
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        @await Html.PartialAsync(
+            "_CampusAlert",
+            new CampusAlertViewModel(
+                Model.ErrorMessage,
+                CampusAlertVariant.Danger))
+    }
+    <div class="settings-layout">
+        <partial name="_SettingsNavigation" />
+        <div class="settings-content">
+            <section class="settings-section" aria-labelledby="study-areas-title">
+                <header class="settings-section-heading">
+                    <div>
+                        <h2 id="study-areas-title">Study areas</h2>
+                        <p>Add and manage the locations students can select when booking a session.</p>
+                    </div>
+                    <button type="button" class="settings-primary-button settings-add-study-area" data-bs-toggle="modal" data-bs-target="#study-area-create-modal">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i> Add study area
+                    </button>
+                </header>
+
+                <div class="admin-tutors-workspace settings-study-areas-workspace">
+                    <aside class="admin-tutor-filters" aria-labelledby="study-area-filter-title">
+                        <div class="admin-filter-heading">
+                            <h3 id="study-area-filter-title">Filters</h3>
+                            <a asp-page="/Administrator/Settings/StudyAreas">Clear All</a>
+                        </div>
+                        <form method="get" asp-page="/Administrator/Settings/StudyAreas" asp-fragment="study-area-results">
+                            <div class="admin-filter-group">
+                                <label asp-for="SearchTerm">Search locations</label>
+                                <div class="admin-filter-search">
+                                    <input asp-for="SearchTerm" type="search" placeholder="Name or description" />
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                                </div>
+                            </div>
+                            <fieldset class="admin-filter-years">
+                                <legend>Availability</legend>
+                                <label>
+                                    <input type="checkbox" name="Availability" value="Available" checked="@(Model.Availability.Contains(StudyAreasModel.AvailabilityFilter.Available))" />
+                                    <span>Available</span>
+                                </label>
+                                <label>
+                                    <input type="checkbox" name="Availability" value="Unavailable" checked="@(Model.Availability.Contains(StudyAreasModel.AvailabilityFilter.Unavailable))" />
+                                    <span>Unavailable</span>
+                                </label>
+                            </fieldset>
+                            <button type="submit" class="admin-apply-filters">Apply Filters</button>
+                        </form>
+                    </aside>
+
+                    <div class="admin-tutor-results" id="study-area-results">
+                        <p class="admin-tutor-result-count" role="status">
+                            Showing <strong>@Model.StudyAreas.Count</strong> of <strong>@Model.FilteredStudyAreas</strong> study areas
+                        </p>
+                        <div class="admin-tutors-table-wrap" role="region" aria-label="Study areas table" tabindex="0">
+                            <table class="admin-tutors-table settings-study-areas-table">
+                                <caption class="visually-hidden">Study areas available for session bookings</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Study area</th>
+                                        <th scope="col">Campus label</th>
+                                        <th scope="col">Description</th>
+                                        <th scope="col">Order</th>
+                                        <th scope="col">Bookings</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var area in Model.StudyAreas)
+                                    {
+                                        <tr>
+                                            <th scope="row">@area.Name</th>
+                                            <td>@area.CampusLabel</td>
+                                            <td><span class="settings-study-area-description">@(area.Description ?? "No description")</span></td>
+                                            <td>@area.DisplayOrder</td>
+                                            <td>@area.BookingCount</td>
+                                            <td><span class="admin-tutor-status settings-study-area-status @(area.IsActive ? "is-active" : "is-inactive")">@(area.IsActive ? "Available" : "Unavailable")</span></td>
+                                            <td>
+                                                <button type="button" class="admin-tutor-profile-link settings-study-area-action" data-bs-toggle="modal" data-bs-target="#study-area-modal-@area.Id" aria-label="Edit @area.Name">Edit</button>
+                                            </td>
+                                        </tr>
+                                    }
+                                    @if (Model.StudyAreas.Count == 0)
+                                    {
+                                        <tr><td colspan="7" class="admin-tutors-empty">No study areas found. Try changing or clearing your filters.</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                            @if (Model.TotalPages > 1)
+                            {
+                                @await Component.InvokeAsync("Pagination", new
+                                {
+                                    currentPage = Model.StudyAreaPage,
+                                    totalPages = Model.TotalPages,
+                                    pageRouteValueName = "StudyAreaPage",
+                                    ariaLabel = "Study areas table pages",
+                                    fragment = "study-area-results"
+                                })
+                            }
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+@{
+    bool createHasErrors = Model.EditingStudyAreaId is null &&
+        !ViewData.ModelState.IsValid;
+}
+<div class="modal fade settings-study-area-modal" id="study-area-create-modal" tabindex="-1" aria-labelledby="study-area-create-modal-title" aria-hidden="true" data-settings-modal data-open-on-load="@createHasErrors.ToString().ToLowerInvariant()">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Create">
+                <div class="modal-header">
+                    <div><h2 class="modal-title" id="study-area-create-modal-title">Add a study area</h2><p>Create another location for the booking dropdown.</p></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body settings-form">
+                    @if (createHasErrors)
+                    {
+                        <div asp-validation-summary="All" class="settings-validation"></div>
+                    }
+                    <div class="settings-field-grid">
+                        <div class="settings-field">
+                            <label for="new-study-area-name">Name</label>
+                            <input id="new-study-area-name" name="input.Name" value="@Model.FormInput.Name" maxlength="100" required />
+                        </div>
+                        <div class="settings-field">
+                            <label for="new-study-area-order">Display order</label>
+                            <input id="new-study-area-order" name="input.DisplayOrder" value="@Model.FormInput.DisplayOrder" type="number" min="1" max="9999" required />
+                            <small>Lower numbers appear first in the booking dropdown.</small>
+                        </div>
+                        <div class="settings-field settings-field--wide">
+                            <label for="new-study-area-description">Description</label>
+                            <textarea id="new-study-area-description" name="input.Description" maxlength="300" rows="3" placeholder="Help students find this location.">@Model.FormInput.Description</textarea>
+                        </div>
+                    </div>
+                    <div class="settings-field settings-field--wide settings-campus-label-field">
+                        <label for="new-study-area-campus-label">Campus label</label>
+                        <input id="new-study-area-campus-label" name="input.CampusLabel" value="@Model.FormInput.CampusLabel" maxlength="80" required />
+                    </div>
+                    <label class="settings-switch">
+                        <input name="input.IsActive" type="checkbox" value="true" checked="@(Model.FormInput.IsActive ? "checked" : null)" />
+                        <span aria-hidden="true"></span><strong>Available for booking</strong>
+                    </label>
+                    <input name="input.IsActive" type="hidden" value="false" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="settings-secondary-button" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="settings-primary-button">Add study area</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@foreach (var area in Model.StudyAreas)
+{
+    bool hasErrors = Model.EditingStudyAreaId == area.Id;
+    string name = hasErrors ? Model.FormInput.Name : area.Name;
+    string? description = hasErrors ? Model.FormInput.Description : area.Description;
+    int displayOrder = hasErrors ? Model.FormInput.DisplayOrder : area.DisplayOrder;
+    bool isActive = hasErrors ? Model.FormInput.IsActive : area.IsActive;
+    string campusLabel = hasErrors ? Model.FormInput.CampusLabel : area.CampusLabel;
+    <div class="modal fade settings-study-area-modal" id="study-area-modal-@area.Id" tabindex="-1" aria-labelledby="study-area-modal-title-@area.Id" aria-hidden="true" data-settings-modal data-open-on-load="@hasErrors.ToString().ToLowerInvariant()">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="Update" id="study-area-edit-form-@area.Id">
+                    <input type="hidden" name="studyAreaId" value="@area.Id" />
+                    <input type="hidden" name="StudyAreaPage" value="@Model.StudyAreaPage" />
+                    <input type="hidden" name="SearchTerm" value="@Model.SearchTerm" />
+                    @foreach (var availability in Model.Availability)
+                    {
+                        <input type="hidden" name="Availability" value="@availability" />
+                    }
+                    <div class="modal-header">
+                        <div><h2 class="modal-title" id="study-area-modal-title-@area.Id">Edit study area</h2><p>Changes update the booking form immediately.</p></div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body settings-form">
+                        @if (hasErrors)
+                        {
+                            <div asp-validation-summary="All" class="settings-validation"></div>
+                        }
+                        <div class="settings-field-grid">
+                            <div class="settings-field">
+                                <label for="study-area-name-@area.Id">Name</label>
+                                <input id="study-area-name-@area.Id" name="input.Name" value="@name" maxlength="100" required />
+                            </div>
+                            <div class="settings-field">
+                                <label for="study-area-order-@area.Id">Display order</label>
+                                <input id="study-area-order-@area.Id" name="input.DisplayOrder" value="@displayOrder" type="number" min="1" max="9999" required />
+                            </div>
+                            <div class="settings-field settings-field--wide">
+                                <label for="study-area-description-@area.Id">Description</label>
+                                <textarea id="study-area-description-@area.Id" name="input.Description" maxlength="300" rows="3" placeholder="Help students find this location.">@description</textarea>
+                            </div>
+                        </div>
+                        <div class="settings-field settings-field--wide settings-campus-label-field">
+                            <label for="study-area-campus-label-@area.Id">Campus label</label>
+                            <input id="study-area-campus-label-@area.Id" name="input.CampusLabel" value="@campusLabel" maxlength="80" required />
+                        </div>
+                        <label class="settings-switch">
+                            <input name="input.IsActive" type="checkbox" value="true" checked="@(isActive ? "checked" : null)" />
+                            <span aria-hidden="true"></span><strong>Available for booking</strong>
+                        </label>
+                        <input name="input.IsActive" type="hidden" value="false" />
+                    </div>
+                </form>
+                <div class="modal-footer settings-study-area-modal-actions">
+                    <form method="post" asp-page-handler="Delete" class="settings-study-area-delete" data-study-area-delete data-study-area-name="@area.Name">
+                        <input type="hidden" name="studyAreaId" value="@area.Id" />
+                        <button type="button" class="settings-danger-button" data-study-area-delete-trigger>Delete</button>
+                    </form>
+                    <button type="submit" form="study-area-edit-form-@area.Id" class="settings-primary-button">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade settings-study-area-delete-modal" id="study-area-delete-confirm-modal" tabindex="-1" aria-labelledby="study-area-delete-confirm-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="study-area-delete-confirm-title">Delete study area?</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Are you sure you want to delete
+                    <strong data-study-area-delete-name>this study area</strong>?
+                    This action cannot be undone. Locations used by existing bookings cannot be deleted.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="settings-secondary-button" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="settings-danger-button" data-study-area-delete-confirm>Delete study area</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin-settings.js" asp-append-version="true"></script>
+}

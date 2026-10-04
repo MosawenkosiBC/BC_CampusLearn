@@ -71,6 +71,9 @@ public class BookingService : IBookingService
                     TutorEmail = slot.Tutor.BcUser.Email
                         ?? string.Empty,
 
+                    PreferredTutoringMode =
+                        slot.Tutor.PreferredTutoringMode,
+
                     Modules = slot.Tutor.TutorCourseModules.Where(a => a.IsActive)
                         .OrderBy(assignment =>
                             assignment.ProgrammeModule.ModuleCode)
@@ -357,6 +360,14 @@ public class BookingService : IBookingService
         {
             return BookingCreationResult.Failure(
                 "Select an available location.");
+        }
+
+        if (!TutoringModeLocationPolicy.AllowsLocation(
+            slot.Tutor.PreferredTutoringMode,
+            selectedStudyArea.Name))
+        {
+            return BookingCreationResult.Failure(
+                "Select a location that matches this tutor's tutoring preference.");
         }
 
         List<string> preparationLinks = input.PreparationLinks

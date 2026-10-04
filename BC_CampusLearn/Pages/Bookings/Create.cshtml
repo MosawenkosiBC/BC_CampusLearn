@@ -1,5 +1,7 @@
 @page
 @model BC_CampusLearn.Pages.Bookings.CreateModel
+@using BC_CampusLearn.Models.Entities
+@inject BC_CampusLearn.Services.Settings.StudyAreaCampusLabelStore CampusLabelStore
 
 @{
     ViewData["Title"] = "Book session";
@@ -25,6 +27,17 @@
             "Input.StudyAreaId") !=
         Microsoft.AspNetCore.Mvc.ModelBinding
             .ModelValidationState.Invalid;
+
+    string locationHelpText =
+        Model.Preview.PreferredTutoringMode switch
+        {
+            PreferredTutoringMode.Online =>
+                "This tutor prefers online sessions, so the session will take place online.",
+            PreferredTutoringMode.FaceToFace =>
+                "This tutor prefers face-to-face sessions. Choose where the session will take place.",
+            _ =>
+                "Choose where you would like the tutoring session to take place."
+        };
 }
 
 @section Styles {
@@ -199,23 +212,34 @@
 
                 <div class="booking-field booking-location-field"
                      data-booking-location-picker>
-                    <label asp-for="Input.StudyAreaId">
-                        Location
-                        <span class="required-indicator"
-                              aria-hidden="true">*</span>
-                    </label>
+                    <div class="booking-field-label booking-location-label">
+                        <label asp-for="Input.StudyAreaId">
+                            Location
+                            <span class="required-indicator"
+                                  aria-hidden="true">*</span>
+                        </label>
+                    </div>
+
+                    <p id="booking-location-help"
+                       class="booking-location-help">
+                        @locationHelpText
+                    </p>
 
                     <select asp-for="Input.StudyAreaId"
                             class="booking-location-native"
                             data-booking-location-select
                             aria-required="true"
+                            aria-describedby="booking-location-help"
                             tabindex="-1">
                         <option value="">Choose a study area</option>
                         @foreach (var studyArea in Model.StudyAreas)
                         {
+                            string campusLabel = await CampusLabelStore.GetLabelAsync(
+                                studyArea.StudyAreaId,
+                                studyArea.Name);
                             <option value="@studyArea.StudyAreaId"
                                     data-location-name="@studyArea.Name"
-                                    data-location-subtext="@StudyAreaDisplay.GetSubtext(studyArea.Name)"
+                                    data-location-subtext="@campusLabel"
                                     data-location-description="@studyArea.Description">
                                 @studyArea.Name
                             </option>
@@ -227,6 +251,7 @@
                             class="booking-location-trigger"
                             data-booking-location-trigger
                             aria-expanded="false"
+                            aria-describedby="booking-location-help"
                             aria-controls="booking-location-panel">
                         <span data-booking-location-value>
                             Choose a study area
@@ -275,18 +300,20 @@
                              aria-label="Available study areas">
                             @foreach (var studyArea in Model.StudyAreas)
                             {
+                                string campusLabel = await CampusLabelStore.GetLabelAsync(
+                                    studyArea.StudyAreaId,
+                                    studyArea.Name);
                                 <button type="button"
                                         class="booking-location-option"
                                         data-booking-location-option
                                         data-location-id="@studyArea.StudyAreaId"
                                         data-location-name="@studyArea.Name"
-                                        data-location-subtext="@StudyAreaDisplay.GetSubtext(studyArea.Name)"
+                                        data-location-subtext="@campusLabel"
                                         data-location-description="@studyArea.Description"
                                         role="option"
                                         aria-selected="@(Model.Input.StudyAreaId == studyArea.StudyAreaId ? "true" : "false")">
                                     <strong>@studyArea.Name</strong>
-                                    <span>@StudyAreaDisplay.GetSubtext(
-                                        studyArea.Name)</span>
+                                    <span>@campusLabel</span>
                                     @if (!string.IsNullOrWhiteSpace(
                                         studyArea.Description))
                                     {
@@ -314,8 +341,12 @@
                     </div>
                 </div>
 
-                <div class="booking-field">
+                <div class="booking-field booking-duration-field">
                     <label for="booking-duration">Duration</label>
+                    <p class="booking-location-help booking-duration-alignment"
+                       aria-hidden="true">
+                        @locationHelpText
+                    </p>
                     <input id="booking-duration"
                            type="text"
                            value="1 hour"
