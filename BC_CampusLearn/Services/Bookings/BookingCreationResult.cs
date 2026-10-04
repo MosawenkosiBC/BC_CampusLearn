@@ -6,7 +6,8 @@ public enum BookingFailureReason
     Unavailable,
     Expired,
     AlreadyBooked,
-    Reserved
+    Reserved,
+    ReservationExpired
 }
 
 public record BookingCreationResult(

@@ -13,7 +13,7 @@ public class BookingService : IBookingService
 {
     private const long MaximumDocumentSize = 10 * 1024 * 1024;
     private static readonly TimeSpan ReservationDuration =
-        TimeSpan.FromMinutes(20);
+        TimeSpan.FromMinutes(25);
 
     private static readonly HashSet<string> AllowedDocumentExtensions =
         new(StringComparer.OrdinalIgnoreCase)
@@ -159,7 +159,9 @@ public class BookingService : IBookingService
 
         if (updatedCount == 1)
         {
-            return BookingReservationResult.Acquired(token);
+            return BookingReservationResult.Acquired(
+                token,
+                reservationExpiresAt);
         }
 
         var availability = await _context.TutorAvailabilities
@@ -193,11 +195,60 @@ public class BookingService : IBookingService
             availability.ReservationExpiresAt > now)
         {
             return BookingReservationResult.Acquired(
-                availability.ReservationToken.Value);
+                availability.ReservationToken.Value,
+                availability.ReservationExpiresAt.Value);
         }
 
         return BookingReservationResult.Failed(
             BookingReservationStatus.ReservedByAnotherStudent);
+    }
+
+    public async Task ReleaseSlotReservationAsync(
+        int tutorAvailabilityId,
+        Guid reservationToken,
+        CancellationToken cancellationToken = default)
+    {
+        CurrentUser student = _currentUserService.GetRequiredUser();
+
+        if (_context.Database.IsRelational())
+        {
+            await _context.TutorAvailabilities
+                .Where(slot =>
+                    slot.TutorAvailabilityId == tutorAvailabilityId &&
+                    slot.ReservedByBcUserId == student.BcUserId &&
+                    slot.ReservationToken == reservationToken)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(
+                            slot => slot.ReservedByBcUserId,
+                            (int?)null)
+                        .SetProperty(
+                            slot => slot.ReservationToken,
+                            (Guid?)null)
+                        .SetProperty(
+                            slot => slot.ReservationExpiresAt,
+                            (DateTimeOffset?)null),
+                    cancellationToken);
+            return;
+        }
+
+        TutorAvailability? availability =
+            await _context.TutorAvailabilities.SingleOrDefaultAsync(
+                slot =>
+                    slot.TutorAvailabilityId == tutorAvailabilityId &&
+                    slot.ReservedByBcUserId == student.BcUserId &&
+                    slot.ReservationToken == reservationToken,
+                cancellationToken);
+
+        if (availability is null)
+        {
+            return;
+        }
+
+        availability.ReservedByBcUserId = null;
+        availability.ReservationToken = null;
+        availability.ReservationExpiresAt = null;
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<BookingCreationResult> CreateBookingCoreAsync(
@@ -264,9 +315,18 @@ public class BookingService : IBookingService
 
         if (!ownsActiveReservation)
         {
+            bool ownReservationExpired =
+                slot.ReservedByBcUserId == student.BcUserId &&
+                slot.ReservationToken == input.ReservationToken &&
+                slot.ReservationExpiresAt <= reservationNow;
+
             return BookingCreationResult.Failure(
-                "This session is currently reserved by another student.",
-                failureReason: BookingFailureReason.Reserved);
+                ownReservationExpired
+                    ? "The time allowed to complete this booking has ended."
+                    : "This session is currently reserved by another student.",
+                failureReason: ownReservationExpired
+                    ? BookingFailureReason.ReservationExpired
+                    : BookingFailureReason.Reserved);
         }
 
         bool tutorCanTeachModule =

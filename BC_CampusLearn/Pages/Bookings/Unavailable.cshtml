@@ -3,7 +3,7 @@
 
 @{
     ViewData["Title"] = Model.IsReserved
-        ? "Session temporarily reserved"
+        ? "Session Reserved"
         : Model.ReservationExpired
             ? "Reservation expired"
         : Model.HasExpired
@@ -68,10 +68,8 @@
             <h1 id="booking-unavailable-title">This session is temporarily reserved</h1>
             <p>
                 Another student is currently completing their booking for
-                this time slot. It may become available again if they leave
-                the booking form or do not finish their booking. Please
-                explore other tutors and available session times in the
-                meantime.
+                this time slot. It may become available again, so please try
+                again later or explore other available tutors.
             </p>
         }
         else if (Model.ReservationExpired)

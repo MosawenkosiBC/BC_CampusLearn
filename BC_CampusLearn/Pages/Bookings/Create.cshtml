@@ -129,6 +129,10 @@
               enctype="multipart/form-data"
               class="booking-form-card"
               data-booking-form
+              data-reservation-expires-at="@Model.ReservationExpiresAtUnixTimeMilliseconds"
+              data-reservation-server-now="@DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()"
+              data-reservation-release-url="@Url.Page("/Bookings/Create", "Release")"
+              data-reservation-expired-url="@Url.Page("/Bookings/Unavailable", new { reason = "reservation-expired" })"
               novalidate
               aria-label="Booking confirmation form">
             <input type="hidden"
@@ -611,6 +615,38 @@
 </section>
 
 @section Modals {
+    <div class="modal fade pending-review-booking-modal"
+         id="booking-reservation-expired-modal"
+         tabindex="-1"
+         data-bs-backdrop="static"
+         data-bs-keyboard="false"
+         aria-labelledby="booking-reservation-expired-title"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 id="booking-reservation-expired-title">
+                            Your booking time has ended
+                        </h2>
+                        <p>
+                            You have been on the booking form for 25 minutes,
+                            so this session is now available for other students
+                            to book. Please check the available tutors and
+                            choose a session again.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a asp-page="/Tutors/Index"
+                       class="pending-review-open-sessions">
+                        View available tutors
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade pending-review-booking-modal"
          id="pending-review-booking-modal"
          tabindex="-1"
