@@ -57,12 +57,21 @@ public class SessionLifecycleServiceTests
         Assert.DoesNotContain('\n', notification.Message);
     }
 
-    [Fact]
-    public async Task ProcessDueTransitions_SendsOneReminderToEachParticipant()
+    [Theory]
+    [InlineData(3600, "starts in 60 minutes", "12:00")]
+    [InlineData(2700, "starts in 45 minutes", "11:45")]
+    [InlineData(600, "starts in 10 minutes", "11:10")]
+    [InlineData(90, "starts in 2 minutes", "11:01")]
+    [InlineData(60, "starts in 1 minute", "11:01")]
+    [InlineData(30, "starts in less than a minute", "11:00")]
+    public async Task ProcessDueTransitions_SendsOneAccurateReminderToEachParticipant(
+        int secondsUntilStart,
+        string expectedTiming,
+        string expectedStartTime)
     {
         DateTimeOffset now = new(2026, 8, 31, 9, 0, 0, TimeSpan.Zero);
         await using ApplicationDbContext context = CreateContext();
-        Booking booking = CreateBooking(now.AddMinutes(45));
+        Booking booking = CreateBooking(now.AddSeconds(secondsUntilStart));
         booking.Status = BookingStatus.Confirmed;
         booking.MeetingLink = new MeetingLink
         {
@@ -80,7 +89,7 @@ public class SessionLifecycleServiceTests
 
         Assert.Equal(now, booking.ReminderSentAt);
         List<UserNotification> reminders = await context.UserNotifications
-            .Where(item => item.Title == "Session starts in one hour")
+            .Where(item => item.Title == "Session " + expectedTiming)
             .ToListAsync();
         Assert.Equal(2, reminders.Count);
         Assert.Contains(reminders, item =>
@@ -88,6 +97,9 @@ public class SessionLifecycleServiceTests
         Assert.Contains(reminders, item => item.RecipientBcUserId == 8);
         Assert.All(reminders, item =>
         {
+            Assert.Contains(expectedTiming, item.Message);
+            Assert.Contains($"at {expectedStartTime}", item.Message);
+            Assert.DoesNotContain("in one hour", item.Message);
             Assert.Contains("MOD101 (Module Name)", item.Message);
             Assert.Contains("Teams", item.Message);
             Assert.Contains(

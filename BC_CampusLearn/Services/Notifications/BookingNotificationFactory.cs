@@ -65,8 +65,8 @@ public static class BookingNotificationFactory
         BookingNotificationDetails details,
         DateTimeOffset createdAt) => Create(
             studentBcUserId,
-            "Session starts in one hour",
-            $"Your {FormatModule(details)} session with {details.TutorName} starts in one hour ({FormatScheduledTime(details)}) at {details.Location}; join using {FormatMeetingLink(details)}.",
+            $"Session {FormatReminderTiming(details, createdAt)}",
+            $"Your {FormatModule(details)} session with {details.TutorName} {FormatReminderTiming(details, createdAt)} ({FormatScheduledTime(details)}) at {details.Location}; join using {FormatMeetingLink(details)}.",
             StudentSessionUrl(bookingId),
             createdAt);
 
@@ -76,8 +76,8 @@ public static class BookingNotificationFactory
         BookingNotificationDetails details,
         DateTimeOffset createdAt) => Create(
             tutorBcUserId,
-            "Session starts in one hour",
-            $"Your {FormatModule(details)} session with {details.StudentName} starts in one hour ({FormatScheduledTime(details)}) at {details.Location}; join using {FormatMeetingLink(details)}.",
+            $"Session {FormatReminderTiming(details, createdAt)}",
+            $"Your {FormatModule(details)} session with {details.StudentName} {FormatReminderTiming(details, createdAt)} ({FormatScheduledTime(details)}) at {details.Location}; join using {FormatMeetingLink(details)}.",
             TutorSessionUrl(bookingId),
             createdAt);
 
@@ -147,6 +147,27 @@ public static class BookingNotificationFactory
             : !string.IsNullOrWhiteSpace(details.ModuleName)
                 ? details.ModuleName
                 : "module";
+    }
+
+    private static string FormatReminderTiming(
+        BookingNotificationDetails details,
+        DateTimeOffset createdAt)
+    {
+        TimeSpan remaining = details.ScheduledStartTime - createdAt;
+        if (remaining <= TimeSpan.Zero)
+        {
+            return "is scheduled to start now";
+        }
+
+        if (remaining.TotalMinutes < 1)
+        {
+            return "starts in less than a minute";
+        }
+
+        int minutes = (int)Math.Ceiling(remaining.TotalMinutes);
+        return minutes == 1
+            ? "starts in 1 minute"
+            : $"starts in {minutes} minutes";
     }
 
     private static string FormatScheduledTime(

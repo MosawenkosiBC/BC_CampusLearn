@@ -44,6 +44,11 @@ public class SessionDetailsModel : PageModel
 
     public Booking Session { get; private set; } = null!;
 
+    public bool IsTranscriptRequired => RequiresTranscript(Session.ProgrammeModule.ModuleCode);
+
+    private static bool RequiresTranscript(string moduleCode) =>
+        !moduleCode.StartsWith("D-", StringComparison.OrdinalIgnoreCase);
+
     public int CurrentBcUserId { get; private set; }
 
     public string TutorEmail { get; private set; } = "Not available";
@@ -347,6 +352,7 @@ public class SessionDetailsModel : PageModel
         }
 
         Booking? booking = await _context.Bookings
+            .Include(item => item.ProgrammeModule)
             .Include(item => item.TutorEvaluation)
             .SingleOrDefaultAsync(item =>
                 item.BookingId == bookingId &&
@@ -383,7 +389,8 @@ public class SessionDetailsModel : PageModel
         string studentIssues = EvaluationInput.StudentIssues.Trim();
         string tutorComments = EvaluationInput.TutorComments.Trim();
         string recordingLink = EvaluationInput.RecordingLink.Trim();
-        IFormFile? transcript = EvaluationInput.Transcript;
+        bool transcriptRequired = RequiresTranscript(booking.ProgrammeModule.ModuleCode);
+        IFormFile? transcript = transcriptRequired ? EvaluationInput.Transcript : null;
         bool recordingLinkIsValid = Uri.TryCreate(
             recordingLink,
             UriKind.Absolute,
@@ -407,13 +414,14 @@ public class SessionDetailsModel : PageModel
         string? transcriptStoragePath = null;
         string? transcriptContentType = null;
         long? transcriptSizeBytes = null;
-        if (transcript is null)
+        if (transcriptRequired && transcript is null)
         {
             SessionActionError = true;
             SessionActionMessage = "Upload the meeting transcript.";
             return RedirectToPage(new { bookingId });
         }
 
+        if (transcript is not null)
         {
             transcriptOriginalFileName = Path.GetFileName(transcript.FileName);
             string extension = Path.GetExtension(transcriptOriginalFileName)

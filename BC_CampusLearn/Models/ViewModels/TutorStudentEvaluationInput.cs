@@ -40,6 +40,5 @@ public class TutorStudentEvaluationInput
     [Url(ErrorMessage = "Enter a valid recording URL.")]
     public string RecordingLink { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Upload the meeting transcript.")]
     public IFormFile? Transcript { get; set; }
 }
