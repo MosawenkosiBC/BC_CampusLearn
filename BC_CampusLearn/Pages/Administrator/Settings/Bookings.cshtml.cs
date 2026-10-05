@@ -29,8 +29,6 @@ public class BookingsModel(
             .Select(settings => new BookingTermsInput
             {
                 Terms = settings.BookingTermsAndConditions,
-                PeriodStartDate = settings.TutorHeadReviewPeriodStartDate,
-                PeriodEndDate = settings.TutorHeadReviewPeriodEndDate,
                 ReviewDeadline = settings.TutorHeadReviewDeadline
             })
             .SingleAsync(cancellationToken);
@@ -46,18 +44,6 @@ public class BookingsModel(
                 "Input.Terms",
                 "Booking terms must contain between 20 and 8,000 characters.");
         }
-        if (Input.PeriodEndDate < Input.PeriodStartDate)
-        {
-            ModelState.AddModelError(
-                "Input.PeriodEndDate",
-                "The period end date must be on or after the start date.");
-        }
-        if (Input.ReviewDeadline < Input.PeriodEndDate)
-        {
-            ModelState.AddModelError(
-                "Input.ReviewDeadline",
-                "The review deadline must be on or after the period end date.");
-        }
         if (!ModelState.IsValid) return Page();
 
         CurrentUser currentUser = currentUserService.GetRequiredUser();
@@ -72,25 +58,11 @@ public class BookingsModel(
             currentUser);
         changed |= auditService.Record(
             "Bookings and sessions",
-            "Tutor Head review period start date",
-            FormatDate(settings.TutorHeadReviewPeriodStartDate),
-            FormatDate(Input.PeriodStartDate),
-            currentUser);
-        changed |= auditService.Record(
-            "Bookings and sessions",
-            "Tutor Head review period end date",
-            FormatDate(settings.TutorHeadReviewPeriodEndDate),
-            FormatDate(Input.PeriodEndDate),
-            currentUser);
-        changed |= auditService.Record(
-            "Bookings and sessions",
             "Tutor Head review deadline",
             FormatDate(settings.TutorHeadReviewDeadline),
             FormatDate(Input.ReviewDeadline),
             currentUser);
         settings.BookingTermsAndConditions = Input.Terms;
-        settings.TutorHeadReviewPeriodStartDate = Input.PeriodStartDate;
-        settings.TutorHeadReviewPeriodEndDate = Input.PeriodEndDate;
         settings.TutorHeadReviewDeadline = Input.ReviewDeadline;
         settings.UpdatedByBcUserId = currentUser.BcUserId;
         settings.UpdatedAt = timeProvider.GetUtcNow();
@@ -115,12 +87,6 @@ public class BookingsModel(
         [Required, StringLength(8000, MinimumLength = 20)]
         [Display(Name = "Booking terms and conditions")]
         public string Terms { get; set; } = string.Empty;
-
-        [Display(Name = "Period start date")]
-        public DateOnly PeriodStartDate { get; set; } = new(2026, 9, 1);
-
-        [Display(Name = "Period end/cut-off date")]
-        public DateOnly PeriodEndDate { get; set; } = new(2026, 9, 30);
 
         [Display(Name = "Tutor Head review deadline")]
         public DateOnly ReviewDeadline { get; set; } = new(2026, 10, 5);
