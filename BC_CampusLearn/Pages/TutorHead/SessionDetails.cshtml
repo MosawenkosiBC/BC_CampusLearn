@@ -162,7 +162,7 @@
                               asp-route-id="@session.BookingId"
                               class="admin-session-review-form tutor-head-review-form"
                               data-tutor-head-review-form novalidate>
-                            <div asp-validation-summary="All" class="text-danger"></div>
+                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                             <div id="tutor-head-review-form-steps">
                                 @foreach (var question in new[] {
                                     new { Number = 1, Name = "ModuleAndTopicCoverage", Text = "Was the correct module and topic covered?", Options = new[] { "Yes", "Partially", "No" }, Answer = Model.TutorHeadReviewInput.ModuleAndTopicCoverage },
