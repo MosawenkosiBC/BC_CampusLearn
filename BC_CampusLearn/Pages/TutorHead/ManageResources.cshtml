@@ -120,26 +120,34 @@
                                         <h3><a asp-page="/Tutors/Details" asp-route-id="@tutor.TutorId">@tutor.TutorName</a></h3>
                                         <p>@tutor.PersonnelNumber</p>
                                     </div>
-                                    <span class="nominated-module-count">@tutor.Modules.Count @(tutor.Modules.Count == 1 ? "module" : "modules")</span>
+                                    <div class="nominated-module-controls">
+                                        <span class="nominated-module-count">@tutor.Modules.Count @(tutor.Modules.Count == 1 ? "module" : "modules")</span>
+                                        <button type="button" class="nominated-modules-toggle" data-nominated-modules-toggle
+                                                aria-expanded="false" aria-controls="nominated-modules-@tutor.TutorId"
+                                                aria-label="Show modules for @tutor.TutorName" data-tutor-name="@tutor.TutorName">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="m6 9 6 6 6-6" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </header>
-                                <div class="nominated-module-list">
-                                    @foreach (var module in tutor.Modules)
-                                    {
-                                        <div class="nominated-module-row">
-                                            <div>
-                                                <strong>@module.ModuleCode</strong>
-                                                <span>@module.ModuleName</span>
-                                                <small>@module.CourseName</small>
+                                    <div class="nominated-module-list" id="nominated-modules-@tutor.TutorId" role="region" aria-label="Modules for @tutor.TutorName" tabindex="0" hidden>
+                                        @foreach (var module in tutor.Modules)
+                                        {
+                                            <div class="nominated-module-row">
+                                                <div>
+                                                    <strong>@module.ModuleCode</strong>
+                                                    <span>@module.ModuleName</span>
+                                                </div>
+                                                <form method="post" asp-page-handler="Denominate">
+                                                    <input type="hidden" name="tutorId" value="@tutor.TutorId" />
+                                                    <input type="hidden" name="programmeModuleId" value="@module.ProgrammeModuleId" />
+                                                    <button type="submit" class="nomination-remove-button"
+                                                            aria-label="De-nominate @tutor.TutorName from @module.ModuleCode">De-nominate</button>
+                                                </form>
                                             </div>
-                                            <form method="post" asp-page-handler="Denominate">
-                                                <input type="hidden" name="tutorId" value="@tutor.TutorId" />
-                                                <input type="hidden" name="programmeModuleId" value="@module.ProgrammeModuleId" />
-                                                <button type="submit" class="nomination-remove-button"
-                                                        aria-label="De-nominate @tutor.TutorName from @module.ModuleCode">De-nominate</button>
-                                            </form>
-                                        </div>
-                                    }
-                                </div>
+                                        }
+                                    </div>
                             </article>
                         }
                     </div>
