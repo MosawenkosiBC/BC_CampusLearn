@@ -11,7 +11,7 @@
           href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.bubble.css" />
     <link rel="stylesheet" href="~/css/learning-resources.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/components/navigation-drawer.css" asp-append-version="true" />
-    @if (Model.IsAdministrator)
+    @if (Model.CanManageResource)
     {
         <link rel="stylesheet" href="~/css/admin-learning-resources.css" asp-append-version="true" />
     }
@@ -56,7 +56,7 @@
                         </div>
                     </div>
                     <div class="student-resource-reader-bookmark-row">
-                        @if (Model.IsAdministrator)
+                        @if (Model.CanManageResource)
                         {
                             <button type="button"
                                     class="admin-resource-delete admin-resource-reader-delete"
@@ -487,7 +487,7 @@
     </div>
 </div>
 
-    @if (Model.IsAdministrator)
+    @if (Model.CanManageResource)
     {
         <div class="modal fade admin-resource-delete-modal"
              id="delete-learning-resource-modal"
@@ -497,7 +497,7 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <form method="post"
-                          asp-page="/Administrator/LearningResources/Index"
+                          asp-page="@(Model.IsAdministrator ? "/Administrator/LearningResources/Index" : "/TutorHead/ManageResources")"
                           asp-page-handler="Delete"
                           asp-route-resourceId="@Model.Resource.LearningResourceId">
                         <div class="modal-header">

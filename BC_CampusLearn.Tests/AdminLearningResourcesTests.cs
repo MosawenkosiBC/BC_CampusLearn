@@ -3,6 +3,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using AdminResourcesPage = BC_CampusLearn.Pages.Administrator.LearningResources.IndexModel;
 using ResourceDetailsPage = BC_CampusLearn.Pages.LearningResources.DetailsModel;
+using TutorHeadResourcesPage = BC_CampusLearn.Pages.TutorHead.ManageResourcesModel;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -171,6 +172,178 @@ public class AdminLearningResourcesTests
             comment.CommentText == "Administrator guidance"));
     }
 
+    [Fact]
+    public async Task TutorHeadResourcePageShowsPublishedResourcesAndAppliesFilters()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        SeedResources(context);
+        await context.SaveChangesAsync();
+        var page = new TutorHeadResourcesPage(
+            context,
+            CreateEnvironment(),
+            CreateTutorHeadUserService())
+        {
+            SearchModule = "PROG"
+        };
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(1, page.TotalResources);
+        Assert.Equal(
+            LearningResourceStatus.Published,
+            Assert.Single(page.Resources).Status);
+
+        page.SearchModule = "OTHER";
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(0, page.TotalResources);
+        Assert.Empty(page.Resources);
+    }
+
+    [Fact]
+    public async Task TutorHeadCanOpenResourceWithoutSubscription()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        LearningResource resource = SeedResources(context)
+            .Single(item => item.Status == LearningResourceStatus.Published);
+        BcUser tutorHead = new()
+        {
+            BcUserId = 50,
+            PersonnelNumber = "HEAD-1",
+            DisplayName = "Tutor Head",
+            Role = BcUserRole.HeadOfTutors
+        };
+        context.BcUsers.Add(tutorHead);
+        await context.SaveChangesAsync();
+        var currentUser = new CurrentUser(
+            tutorHead.BcUserId,
+            tutorHead.PersonnelNumber,
+            tutorHead.DisplayName,
+            null,
+            tutorHead.Role);
+        var details = new ResourceDetailsPage(
+            context,
+            new TestCurrentUserService(currentUser));
+
+        IActionResult result = await details.OnGetAsync(
+            resource.LearningResourceId,
+            CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.True(details.CanManageResource);
+        Assert.False(details.IsAdministrator);
+    }
+
+    [Fact]
+    public async Task TutorHeadCanDeleteResourceAndNotifiesItsTutor()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        LearningResource resource = SeedResources(context).First();
+        await context.SaveChangesAsync();
+        var page = new TutorHeadResourcesPage(
+            context,
+            CreateEnvironment(),
+            CreateTutorHeadUserService());
+
+        IActionResult result = await page.OnPostDeleteAsync(
+            resource.LearningResourceId,
+            CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.False(await context.LearningResources.AnyAsync(item =>
+            item.LearningResourceId == resource.LearningResourceId));
+        UserNotification notification = await context.UserNotifications
+            .SingleAsync();
+        Assert.Contains("Tutor Head", notification.Message);
+        Assert.Equal(resource.Tutor.BcUserId, notification.RecipientBcUserId);
+    }
+
+    [Fact]
+    public async Task TutorHeadCanNominateAndDenominateTutorForModule()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        List<LearningResource> resources = SeedResources(context);
+        Tutor tutor = resources[0].Tutor;
+        ProgrammeModule module = resources[0].ProgrammeModule;
+        tutor.ApplicationStage = TutorApplicationStage.Placement;
+        var assignment = new TutorCourseModule
+        {
+            TutorId = tutor.TutorId,
+            Tutor = tutor,
+            ProgrammeModuleId = module.ProgrammeModuleId,
+            ProgrammeModule = module,
+            IsActive = true
+        };
+        var tutorHead = new BcUser
+        {
+            BcUserId = 50,
+            PersonnelNumber = "HEAD-1",
+            DisplayName = "Tutor Head",
+            Role = BcUserRole.HeadOfTutors
+        };
+        context.TutorCourseModules.Add(assignment);
+        context.BcUsers.Add(tutorHead);
+        await context.SaveChangesAsync();
+        var currentUser = new CurrentUser(
+            tutorHead.BcUserId,
+            tutorHead.PersonnelNumber,
+            tutorHead.DisplayName,
+            null,
+            tutorHead.Role);
+        var page = new TutorHeadResourcesPage(
+            context,
+            CreateEnvironment(),
+            new TestCurrentUserService(currentUser));
+
+        IActionResult nominateResult = await page.OnPostNominateAsync(
+            tutor.TutorId,
+            module.ProgrammeModuleId,
+            CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(nominateResult);
+        ResourceTutorNomination nomination = await context
+            .ResourceTutorNominations.SingleAsync();
+        Assert.True(nomination.IsActive);
+        Assert.Equal(tutorHead.BcUserId, nomination.NominatedByBcUserId);
+
+        var listPage = new TutorHeadResourcesPage(
+            context,
+            CreateEnvironment(),
+            new TestCurrentUserService(currentUser))
+        {
+            Tab = "nominated",
+            NominationModuleSearch = module.ModuleCode
+        };
+        await listPage.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(1, listPage.TotalNominatedTutors);
+        var nominatedTutor = Assert.Single(listPage.NominatedTutors);
+        Assert.Equal(tutor.TutorId, nominatedTutor.TutorId);
+        Assert.Equal(
+            module.ProgrammeModuleId,
+            Assert.Single(nominatedTutor.Modules).ProgrammeModuleId);
+
+        IActionResult denominateResult = await page.OnPostDenominateAsync(
+            tutor.TutorId,
+            module.ProgrammeModuleId,
+            CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(denominateResult);
+        Assert.False(nomination.IsActive);
+        Assert.Equal(tutorHead.BcUserId, nomination.DenominatedByBcUserId);
+        Assert.Equal(2, await context.LearningResources.CountAsync());
+
+        await page.OnPostNominateAsync(
+            tutor.TutorId,
+            module.ProgrammeModuleId,
+            CancellationToken.None);
+
+        Assert.True(nomination.IsActive);
+        Assert.Equal(1, await context.ResourceTutorNominations.CountAsync());
+        Assert.Null(nomination.DenominatedAt);
+        Assert.Equal(3, await context.UserNotifications.CountAsync());
+    }
+
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -259,6 +432,14 @@ public class AdminLearningResourcesTests
         Directory.CreateDirectory(root);
         return new TestWebHostEnvironment(root);
     }
+
+    private static ICurrentUserService CreateTutorHeadUserService() =>
+        new TestCurrentUserService(new CurrentUser(
+            50,
+            "HEAD-1",
+            "Tutor Head",
+            null,
+            BcUserRole.HeadOfTutors));
 
     private sealed class TestCurrentUserService(CurrentUser user)
         : ICurrentUserService

@@ -1,0 +1,278 @@
+.tutor-head-resource-management .admin-dashboard-header {
+    margin-bottom: 1.5rem;
+}
+
+.resource-management-tabs {
+    border-bottom: 1px solid #d9dddf;
+    display: flex;
+    gap: 0.35rem;
+    margin-bottom: 1.5rem;
+}
+
+.resource-management-tab {
+    border-bottom: 3px solid transparent;
+    color: #5f6870;
+    font-weight: 650;
+    padding: 0.75rem 1.1rem;
+    text-decoration: none;
+}
+
+.resource-management-tab:hover,
+.resource-management-tab:focus-visible {
+    color: #8e0143;
+}
+
+.resource-management-tab.is-active {
+    border-bottom-color: #ad0151;
+    color: #ad0151;
+}
+
+.resource-management-tab:focus-visible,
+.nomination-add-button:focus-visible,
+.nomination-remove-button:focus-visible,
+.nomination-modal :is(select, button):focus-visible {
+    outline: 3px solid rgba(74, 193, 193, 0.55);
+    outline-offset: 3px;
+}
+
+.nomination-toolbar {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+
+.nomination-toolbar h2 {
+    color: #252a2b;
+    font-size: 1.25rem;
+    margin: 0 0 0.25rem;
+}
+
+.nomination-toolbar p {
+    color: #687078;
+    margin: 0;
+}
+
+.nomination-add-button {
+    align-items: center;
+    background: #ad0151;
+    border: 0;
+    border-radius: 0.5rem;
+    color: #fff;
+    display: inline-flex;
+    font-weight: 650;
+    gap: 0.45rem;
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+    white-space: nowrap;
+}
+
+.nomination-add-button:hover {
+    background: #8e0143;
+}
+
+.nomination-add-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.nominated-tutor-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.nominated-tutor-card {
+    background: #fff;
+    border: 1px solid #e3e6e8;
+    border-radius: 0.65rem;
+    box-shadow: 0 0.3rem 1rem rgba(25, 30, 38, 0.08);
+    overflow: hidden;
+}
+
+.nominated-tutor-header {
+    align-items: center;
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding: 1rem 1.15rem;
+}
+
+.nominated-tutor-header img,
+.nominated-tutor-avatar {
+    border-radius: 50%;
+    height: 44px;
+    object-fit: cover;
+    width: 44px;
+}
+
+.nominated-tutor-avatar {
+    align-items: center;
+    background: #f5dce8;
+    color: #8e0143;
+    display: inline-flex;
+    font-size: 0.85rem;
+    font-weight: 750;
+    justify-content: center;
+}
+
+.nominated-tutor-header h3 {
+    font-size: 1rem;
+    margin: 0 0 0.15rem;
+}
+
+.nominated-tutor-header h3 a {
+    color: #252a2b;
+    text-decoration: none;
+}
+
+.nominated-tutor-header h3 a:hover {
+    color: #ad0151;
+    text-decoration: underline;
+}
+
+.nominated-tutor-header p {
+    color: #687078;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.nominated-module-count {
+    background: #f1f3f3;
+    border-radius: 999px;
+    color: #4e575d;
+    font-size: 0.78rem;
+    font-weight: 650;
+    padding: 0.35rem 0.7rem;
+}
+
+.nominated-module-list {
+    border-top: 1px solid #edf0f1;
+}
+
+.nominated-module-row {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 0.9rem 1.15rem;
+}
+
+.nominated-module-row + .nominated-module-row {
+    border-top: 1px solid #edf0f1;
+}
+
+.nominated-module-row > div {
+    display: grid;
+    gap: 0.1rem;
+}
+
+.nominated-module-row strong {
+    color: #252a2b;
+    font-size: 0.9rem;
+}
+
+.nominated-module-row span,
+.nominated-module-row small {
+    color: #687078;
+}
+
+.nomination-remove-button {
+    background: #fff;
+    border: 1px solid #b42318;
+    border-radius: 0.4rem;
+    color: #b42318;
+    font-size: 0.85rem;
+    font-weight: 650;
+    padding: 0.48rem 0.75rem;
+    white-space: nowrap;
+}
+
+.nomination-remove-button:hover {
+    background: #b42318;
+    color: #fff;
+}
+
+.nomination-modal .modal-header p {
+    color: #687078;
+    margin: 0.25rem 0 0;
+}
+
+.nomination-modal .modal-title {
+    font-size: 1.2rem;
+}
+
+.nomination-field + .nomination-field {
+    margin-top: 1rem;
+}
+
+.nomination-field label {
+    display: block;
+    font-weight: 650;
+    margin-bottom: 0.45rem;
+}
+
+.nomination-field select {
+    background: #f1f3f3;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    min-height: 46px;
+    padding: 0.65rem 0.75rem;
+    width: 100%;
+}
+
+.nomination-modal-cancel,
+.nomination-modal-submit {
+    border: 0;
+    border-radius: 0.45rem;
+    font-weight: 650;
+    padding: 0.6rem 1rem;
+}
+
+.nomination-modal-cancel {
+    background: #e9ecec;
+    color: #363c3d;
+}
+
+.nomination-modal-submit {
+    background: #ad0151;
+    color: #fff;
+}
+
+@media (max-width: 575.98px) {
+    .resource-management-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .resource-management-tab {
+        text-align: center;
+    }
+
+    .nomination-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .nomination-add-button {
+        justify-content: center;
+    }
+
+    .nominated-tutor-header {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .nominated-module-count {
+        grid-column: 1 / -1;
+        justify-self: start;
+    }
+
+    .nominated-module-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .nomination-remove-button {
+        width: 100%;
+    }
+}

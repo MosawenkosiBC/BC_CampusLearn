@@ -62,4 +62,7 @@ public class Tutor
     public ICollection<LearningResource> LearningResources { get; set; }
         = new List<LearningResource>();
 
+    public ICollection<ResourceTutorNomination> ResourceTutorNominations
+    { get; set; } = new List<ResourceTutorNomination>();
+
 }

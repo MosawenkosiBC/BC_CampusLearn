@@ -900,6 +900,36 @@
     color: #626972;
 }
 
+.tutor-learning-resources-actions .tutor-resource-locked {
+    background-color: #626972;
+    border: 1px solid #626972;
+    border-radius: 0.35rem;
+    color: #fff;
+    cursor: not-allowed;
+    gap: 0.45rem;
+    opacity: 0.78;
+    user-select: none;
+}
+
+.tutor-learning-resources-actions .tutor-resource-locked:hover {
+    background-color: #626972;
+    color: #fff;
+}
+
+.tutor-resource-locked svg {
+    flex: 0 0 auto;
+    font-size: 1.05rem;
+}
+
+.tutor-resource-approval-message {
+    color: #626972;
+    font-size: 0.82rem;
+    grid-column: 1 / -1;
+    line-height: 1.4;
+    margin: 0;
+    text-align: left;
+}
+
 .tutor-weekly-header {
     align-items: center;
     background-color: #fff;

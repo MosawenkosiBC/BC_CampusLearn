@@ -95,6 +95,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<ResourceComment> ResourceComments =>
         Set<ResourceComment>();
 
+    public DbSet<ResourceTutorNomination> ResourceTutorNominations =>
+        Set<ResourceTutorNomination>();
+
     public DbSet<CampusEvent> CampusEvents => Set<CampusEvent>();
 
     public DbSet<CampusEventDetail> CampusEventDetails =>

@@ -26,6 +26,7 @@ public class DetailsModel : PageModel
     public string TutorName { get; private set; } = string.Empty;
     public int CurrentBcUserId { get; private set; }
     public bool IsAdministrator { get; private set; }
+    public bool CanManageResource { get; private set; }
     public bool IsPublished =>
         Resource.Status == LearningResourceStatus.Published;
     public bool CanParticipateInDiscussion =>
@@ -49,6 +50,7 @@ public class DetailsModel : PageModel
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
         CurrentBcUserId = currentUser.BcUserId;
         IsAdministrator = IsAdministratorRole(currentUser.Role);
+        CanManageResource = IsResourceManagerRole(currentUser.Role);
         LearningResource? resource = await _context.LearningResources
             .AsNoTracking()
             .Include(item => item.ProgrammeModule)
@@ -64,14 +66,14 @@ public class DetailsModel : PageModel
         }
 
         bool isOwningTutor = resource.Tutor.BcUserId == currentUser.BcUserId;
-        if (!IsAdministrator &&
+        if (!CanManageResource &&
             !isOwningTutor &&
             resource.Status != LearningResourceStatus.Published)
         {
             return NotFound();
         }
 
-        if (!IsAdministrator && !isOwningTutor)
+        if (!CanManageResource && !isOwningTutor)
         {
             ResourceSubscription? subscription = await _context.ResourceSubscriptions
                 .SingleOrDefaultAsync(item =>
@@ -400,4 +402,7 @@ public class DetailsModel : PageModel
 
     private static bool IsAdministratorRole(BcUserRole role) =>
         role is BcUserRole.Admin or BcUserRole.SuperAdmin or BcUserRole.Dev;
+
+    private static bool IsResourceManagerRole(BcUserRole role) =>
+        IsAdministratorRole(role) || role == BcUserRole.HeadOfTutors;
 }

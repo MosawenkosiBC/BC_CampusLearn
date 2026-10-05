@@ -33,6 +33,8 @@ public class TutorDashboardModel : PageModel
 
     public int CompletedSessionCount { get; private set; }
 
+    public bool CanManageResources { get; private set; }
+
     public TutorNextSessionViewModel? NextSession
     { get; private set; }
 
@@ -63,6 +65,15 @@ public class TutorDashboardModel : PageModel
         {
             return Forbid();
         }
+
+        CurrentUser currentUser = _currentUserService.GetRequiredUser();
+        CanManageResources = currentUser.Role == BcUserRole.HeadOfTutors ||
+            await _context.ResourceTutorNominations
+                .AsNoTracking()
+                .AnyAsync(nomination =>
+                    nomination.TutorId == tutorId.Value &&
+                    nomination.IsActive,
+                    cancellationToken);
 
         DateTimeOffset now = DateTimeOffset.UtcNow;
         DateTimeOffset localNow = DateTimeOffset.Now;

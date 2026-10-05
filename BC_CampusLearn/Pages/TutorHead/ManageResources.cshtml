@@ -1,0 +1,322 @@
+@page
+@model BC_CampusLearn.Pages.TutorHead.ManageResourcesModel
+@{
+    ViewData["Title"] = "Manage Resources";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/Dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/learning-resources.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-tutors.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-learning-resources.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/tutor-head-manage-resources.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/navigation-drawer.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/pagination.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<main class="container py-4">
+    <section class="admin-dashboard admin-learning-resources-page tutor-head-resource-management"
+             aria-labelledby="manage-resources-title">
+        <header class="admin-dashboard-header text-center">
+            <h1 id="manage-resources-title">Manage Resources</h1>
+        </header>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ResourceMessage))
+        {
+            @await Html.PartialAsync(
+                "_CampusAlert",
+                new CampusAlertViewModel(
+                    Model.ResourceMessage,
+                    Model.ResourceMessageIsError
+                        ? CampusAlertVariant.Danger
+                        : CampusAlertVariant.Success))
+        }
+
+        <nav class="resource-management-tabs" aria-label="Resource management views">
+            <a asp-page="/TutorHead/ManageResources"
+               asp-route-Tab="resources"
+               class="resource-management-tab @(!Model.IsNominationsTab ? "is-active" : null)"
+               aria-current="@(!Model.IsNominationsTab ? "page" : null)">All Resources</a>
+            <a asp-page="/TutorHead/ManageResources"
+               asp-route-Tab="nominated"
+               class="resource-management-tab @(Model.IsNominationsTab ? "is-active" : null)"
+               aria-current="@(Model.IsNominationsTab ? "page" : null)">Nominated Tutors</a>
+        </nav>
+
+        @if (Model.IsNominationsTab)
+        {
+            <div class="nomination-toolbar">
+                <div>
+                    <h2>Nominated tutors</h2>
+                    <p>Choose who can create learning resources for each module.</p>
+                </div>
+                <button type="button"
+                        class="nomination-add-button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#add-nomination-modal"
+                        disabled="@(Model.AvailableTutorOptions.Count == 0)">
+                    <i class="bi bi-person-plus" aria-hidden="true"></i>
+                    Add nominated tutor
+                </button>
+            </div>
+
+            <div class="admin-tutors-workspace">
+                <aside class="admin-tutor-filters" aria-labelledby="nomination-filter-title">
+                    <div class="admin-filter-heading">
+                        <h2 id="nomination-filter-title">Filters</h2>
+                        <a asp-page="/TutorHead/ManageResources" asp-route-Tab="nominated">Clear All</a>
+                    </div>
+                    <form method="get" asp-page="/TutorHead/ManageResources">
+                        <input type="hidden" name="Tab" value="nominated" />
+                        <div class="admin-filter-group">
+                            <label asp-for="NomineeSearch">Search by Tutor</label>
+                            <div class="admin-filter-search">
+                                <input asp-for="NomineeSearch" type="search" placeholder="Name or personnel number" />
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                            </div>
+                        </div>
+                        <div class="admin-filter-group">
+                            <label asp-for="NominationModuleSearch">Search by Module</label>
+                            <div class="admin-filter-search">
+                                <input asp-for="NominationModuleSearch" type="search" placeholder="Module name or code" />
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                            </div>
+                        </div>
+                        <div class="admin-filter-group">
+                            <label asp-for="NominationCourseSearch">Search by Course</label>
+                            <div class="admin-filter-search">
+                                <input asp-for="NominationCourseSearch" type="search" placeholder="Programme name" />
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                            </div>
+                        </div>
+                        <button type="submit" class="admin-apply-filters">Apply Filters</button>
+                    </form>
+                </aside>
+
+                <div class="admin-tutor-results">
+                    <p class="admin-tutor-result-count" role="status">
+                        Showing <strong>@Model.TotalNominatedTutors</strong>
+                        nominated @(Model.TotalNominatedTutors == 1 ? "tutor" : "tutors")
+                    </p>
+
+                    <div class="nominated-tutor-list" id="nominated-tutors-results">
+                        @foreach (var tutor in Model.NominatedTutors)
+                        {
+                            <article class="nominated-tutor-card">
+                                <header class="nominated-tutor-header">
+                                    @if (!string.IsNullOrWhiteSpace(tutor.ProfileImagePath))
+                                    {
+                                        <img src="@tutor.ProfileImagePath" alt="@tutor.TutorName profile picture" loading="lazy" />
+                                    }
+                                    else
+                                    {
+                                        <span class="nominated-tutor-avatar" aria-hidden="true">@tutor.TutorInitials</span>
+                                    }
+                                    <div>
+                                        <h3><a asp-page="/Tutors/Details" asp-route-id="@tutor.TutorId">@tutor.TutorName</a></h3>
+                                        <p>@tutor.PersonnelNumber</p>
+                                    </div>
+                                    <span class="nominated-module-count">@tutor.Modules.Count @(tutor.Modules.Count == 1 ? "module" : "modules")</span>
+                                </header>
+                                <div class="nominated-module-list">
+                                    @foreach (var module in tutor.Modules)
+                                    {
+                                        <div class="nominated-module-row">
+                                            <div>
+                                                <strong>@module.ModuleCode</strong>
+                                                <span>@module.ModuleName</span>
+                                                <small>@module.CourseName</small>
+                                            </div>
+                                            <form method="post" asp-page-handler="Denominate">
+                                                <input type="hidden" name="tutorId" value="@tutor.TutorId" />
+                                                <input type="hidden" name="programmeModuleId" value="@module.ProgrammeModuleId" />
+                                                <button type="submit" class="nomination-remove-button"
+                                                        aria-label="De-nominate @tutor.TutorName from @module.ModuleCode">De-nominate</button>
+                                            </form>
+                                        </div>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </div>
+
+                    @if (Model.NominatedTutors.Count == 0)
+                    {
+                        <div class="admin-resources-empty">
+                            <i class="bi bi-people" aria-hidden="true"></i>
+                            <h2>No nominated tutors found</h2>
+                            <p>Add a tutor or change the filters.</p>
+                            <a asp-page="/TutorHead/ManageResources" asp-route-Tab="nominated" class="admin-resources-clear">Clear all</a>
+                        </div>
+                    }
+
+                    @if (Model.TotalNomineePages > 1)
+                    {
+                        @await Component.InvokeAsync("Pagination", new
+                        {
+                            currentPage = Model.NomineePage,
+                            totalPages = Model.TotalNomineePages,
+                            pageRouteValueName = "NomineePage",
+                            fragment = "nominated-tutors-results",
+                            ariaLabel = "Nominated tutor pages"
+                        })
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="admin-tutors-workspace">
+                <aside class="admin-tutor-filters" aria-labelledby="resource-filter-title">
+                    <div class="admin-filter-heading">
+                        <h2 id="resource-filter-title">Filters</h2>
+                        <a asp-page="/TutorHead/ManageResources">Clear All</a>
+                    </div>
+                    <form method="get" asp-page="/TutorHead/ManageResources">
+                        <input type="hidden" name="Tab" value="resources" />
+                        <div class="admin-filter-group">
+                            <label asp-for="SearchName">Search Resources or Tutors</label>
+                            <div class="admin-filter-search">
+                                <input asp-for="SearchName" type="search" placeholder="Topic, tutor or personnel number" />
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                            </div>
+                        </div>
+                        <div class="admin-filter-group">
+                            <label asp-for="SearchModule">Search by Module</label>
+                            <div class="admin-filter-search">
+                                <input asp-for="SearchModule" type="search" placeholder="Module name or code" />
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                            </div>
+                        </div>
+                        <div class="admin-filter-group">
+                            <label asp-for="SearchCourse">Search by Course</label>
+                            <div class="admin-filter-search">
+                                <input asp-for="SearchCourse" type="search" placeholder="Programme name" />
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                            </div>
+                        </div>
+                        <button type="submit" class="admin-apply-filters">Apply Filters</button>
+                    </form>
+                </aside>
+
+                <div class="admin-tutor-results">
+                    <p class="admin-tutor-result-count" role="status">
+                        Showing <strong>@Model.TotalResources</strong>
+                        @(Model.TotalResources == 1 ? "resource" : "resources")
+                    </p>
+                    <div class="student-resource-grid" id="resource-catalogue">
+                        @foreach (var resource in Model.Resources)
+                        {
+                            <article class="student-resource-card admin-resource-card">
+                                <div class="admin-resource-card-heading">
+                                    <span class="admin-resource-status admin-resource-status--@resource.Status.ToString().ToLowerInvariant()">@resource.Status</span>
+                                    <span class="admin-resource-comments">@resource.CommentCount @(resource.CommentCount == 1 ? "comment" : "comments")</span>
+                                </div>
+                                <h2>@resource.ModuleName</h2>
+                                <p class="student-resource-topic" title="@resource.Topic">@resource.TopicDisplay</p>
+                                <div class="student-resource-meta">
+                                    @if (!string.IsNullOrWhiteSpace(resource.TutorProfileImagePath))
+                                    {
+                                        <img src="@resource.TutorProfileImagePath" alt="@resource.TutorName profile picture" class="student-resource-author-image" loading="lazy" />
+                                    }
+                                    else
+                                    {
+                                        <span class="student-resource-author-icon" aria-label="@resource.TutorName initials">@resource.TutorInitials</span>
+                                    }
+                                    <a asp-page="/Tutors/Details" asp-route-id="@resource.TutorId" class="student-resource-tutor-link">@resource.TutorName</a>
+                                    <span aria-hidden="true">|</span>
+                                    <small>@resource.DateLabel: @resource.DateDisplay</small>
+                                </div>
+                                <div class="student-resource-card-actions admin-resource-card-actions">
+                                    <a asp-page="/LearningResources/Details" asp-route-resourceId="@resource.LearningResourceId" class="student-resource-learn-more">Read</a>
+                                </div>
+                            </article>
+                        }
+                    </div>
+                    @if (Model.Resources.Count == 0)
+                    {
+                        <div class="admin-resources-empty">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                            <h2>No resources found</h2>
+                            <p>Try changing or clearing the filters.</p>
+                            <a asp-page="/TutorHead/ManageResources" class="admin-resources-clear">Clear all</a>
+                        </div>
+                    }
+                    @if (Model.TotalPages > 1)
+                    {
+                        @await Component.InvokeAsync("Pagination", new
+                        {
+                            currentPage = Model.ResourcePage,
+                            totalPages = Model.TotalPages,
+                            pageRouteValueName = "ResourcePage",
+                            fragment = "resource-catalogue",
+                            ariaLabel = "Learning resource pages"
+                        })
+                    }
+                </div>
+            </div>
+        }
+    </section>
+</main>
+
+@section Modals {
+    @if (Model.IsNominationsTab)
+    {
+        <div class="modal fade nomination-modal" id="add-nomination-modal" tabindex="-1"
+             aria-labelledby="add-nomination-title" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form method="post" asp-page-handler="Nominate" data-nomination-form>
+                        <div class="modal-header">
+                            <div>
+                                <h2 class="modal-title" id="add-nomination-title">Add nominated tutor</h2>
+                                <p>Select a tutor and one of their assigned modules.</p>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="nomination-field">
+                                <label for="nomination-tutor">Tutor</label>
+                                <select id="nomination-tutor" name="tutorId" required data-nomination-tutor>
+                                    <option value="">Select a tutor</option>
+                                    @foreach (var tutor in Model.AvailableTutorOptions)
+                                    {
+                                        <option value="@tutor.TutorId">@tutor.TutorName (@tutor.PersonnelNumber)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="nomination-field">
+                                <label for="nomination-module">Module</label>
+                                <select id="nomination-module" name="programmeModuleId" required disabled data-nomination-module>
+                                    <option value="">Select a tutor first</option>
+                                    @foreach (var tutor in Model.AvailableTutorOptions)
+                                    {
+                                        @foreach (var module in tutor.Modules)
+                                        {
+                                            <option value="@module.ProgrammeModuleId" data-tutor-id="@tutor.TutorId" disabled>
+                                                @module.ModuleCode — @module.ModuleName
+                                            </option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="nomination-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="nomination-modal-submit">Nominate tutor</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@section Scripts {
+    <script src="~/js/components/navigation-drawer.js" asp-append-version="true"></script>
+    <script src="~/js/tutor-head-manage-resources.js" asp-append-version="true"></script>
+}

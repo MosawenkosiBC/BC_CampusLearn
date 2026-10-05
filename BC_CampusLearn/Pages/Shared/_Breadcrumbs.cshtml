@@ -145,6 +145,9 @@
             breadcrumbs.Add(("Session Reviews", "/TutorHead/SessionReviews"));
             breadcrumbs.Add(("Session Details", null));
             break;
+        case "/TutorHead/ManageResources":
+            breadcrumbs.Add(("Manage Resources", null));
+            break;
         case "/LearningResources/Index":
             breadcrumbs.Add(("Learning Resources", null));
             break;
@@ -153,6 +156,8 @@
                 "Learning Resources",
                 isAdministrator
                     ? "/Administrator/LearningResources/Index"
+                    : User.IsInRole(nameof(BcUserRole.HeadOfTutors))
+                        ? "/TutorHead/ManageResources"
                     : "/LearningResources/Index"));
             breadcrumbs.Add(("Resource Details", null));
             break;
