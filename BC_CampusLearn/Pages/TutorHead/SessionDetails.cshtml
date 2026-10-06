@@ -188,11 +188,14 @@
                                 <div class="tutor-head-review-comments" data-pagination-row data-review-answer>
                                     <label asp-for="TutorHeadReviewInput.AdditionalComments">
                                         5. Additional comments
+                                        <span data-comments-required hidden="@(Model.TutorHeadReviewInput.ConcernLevel != "Concerns")">(required)</span>
                                     </label>
                                     <textarea asp-for="TutorHeadReviewInput.AdditionalComments"
                                               rows="3" maxlength="500"
-                                              placeholder="Add a short comment if needed"></textarea>
+                                              required="@(Model.TutorHeadReviewInput.ConcernLevel == "Concerns")"
+                                              placeholder="Describe any concerns or add a comment"></textarea>
                                     <span asp-validation-for="TutorHeadReviewInput.AdditionalComments"
+                                          data-comments-error role="alert"
                                           class="text-danger"></span>
                                 </div>
                                 <div class="tutor-head-review-submit">

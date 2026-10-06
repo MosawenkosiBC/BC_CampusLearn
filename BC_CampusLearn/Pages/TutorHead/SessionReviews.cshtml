@@ -39,6 +39,13 @@
 <main class="container py-4 bookings-page tutor-head-session-reviews-page">
     <header class="bookings-heading tutor-head-reviews-heading">
         <h1>Session Reviews</h1>
+        <div class="tutor-head-heading-actions">
+        <button type="button" class="tutor-head-performance-button"
+                data-bs-toggle="modal" data-bs-target="#tutor-performance-modal"
+                aria-controls="tutor-performance-modal" aria-label="View tutor performance">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h4v10m2 0V4h4v16m2 0v-7h4v7M2 20h20" /></svg>
+            <span>Tutor Performance</span>
+        </button>
         <button type="button"
                 class="tutor-head-ai-helper"
                 data-bs-toggle="modal"
@@ -52,6 +59,7 @@
             </svg>
             <span class="visually-hidden">Open Gemini settings</span>
         </button>
+        </div>
     </header>
 
     @if (!string.IsNullOrWhiteSpace(Model.GeminiKeyMessage))
@@ -269,7 +277,7 @@
                                             </span>
                                         </td>
                                         <td data-label="Status">
-                                            <span class="tutor-head-review-status @(session.HasTutorHeadReview ? "tutor-head-review-status--reviewed" : "tutor-head-review-status--awaiting")">
+                                            <span class="tutor-head-review-status @session.ReviewStatusClass">
                                                 @session.ReviewStatus
                                             </span>
                                         </td>
@@ -312,6 +320,112 @@
 </main>
 
 @section Modals {
+    <div class="modal fade tutor-performance-modal" id="tutor-performance-modal" tabindex="-1"
+         aria-labelledby="tutor-performance-title" aria-hidden="true"
+         data-open="@Model.ShowPerformance.ToString().ToLowerInvariant()">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title" id="tutor-performance-title">Tutor Performance</h2>
+                        <div class="tutor-performance-duration" aria-label="Selected duration">
+                            <strong>@Model.PerformanceFrom?.ToString("dd MMM yyyy") – @Model.PerformanceTo?.ToString("dd MMM yyyy")</strong>
+                            <button type="button" class="tutor-performance-customize"
+                                    aria-controls="tutor-performance-date-filter"
+                                    aria-expanded="@((Model.PerformanceRangeError is not null).ToString().ToLowerInvariant())"
+                                    data-performance-customize>Customize</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close tutor performance"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="get" class="tutor-performance-date-filter" id="tutor-performance-date-filter"
+                          hidden="@(Model.PerformanceRangeError is null)">
+                        <input type="hidden" name="ShowPerformance" value="true" />
+                        <input type="hidden" name="TutorFilter" value="@Model.TutorFilter" />
+                        <input type="hidden" name="StudentFilter" value="@Model.StudentFilter" />
+                        <input type="hidden" name="DateFrom" value="@Model.DateFrom?.ToString("yyyy-MM-dd")" />
+                        <input type="hidden" name="DateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")" />
+                        <input type="hidden" name="ReviewStatusFilter" value="@Model.ReviewStatusFilter" />
+                        <div><label for="performance-from">From</label><input asp-for="PerformanceFrom" id="performance-from" type="date" required /></div>
+                        <div><label for="performance-to">To</label><input asp-for="PerformanceTo" id="performance-to" type="date" required /></div>
+                        <button type="submit" class="btn btn-dark">Apply dates</button>
+                        <a asp-page="/TutorHead/SessionReviews" asp-route-ShowPerformance="true"
+                           asp-route-TutorFilter="@Model.TutorFilter" asp-route-StudentFilter="@Model.StudentFilter"
+                           asp-route-DateFrom="@Model.DateFrom?.ToString("yyyy-MM-dd")" asp-route-DateTo="@Model.DateTo?.ToString("yyyy-MM-dd")"
+                           asp-route-ReviewStatusFilter="@Model.ReviewStatusFilter" class="tutor-performance-reset">Review period</a>
+                    </form>
+                    @if (Model.PerformanceRangeError is { } rangeError)
+                    {
+                        <p class="text-danger" role="alert">@rangeError</p>
+                    }
+                    <div class="tutor-performance-summary" aria-label="Totals across all tutors">
+                        <div><span>Completed sessions</span><strong>@Model.TutorPerformance.Sum(tutor => tutor.Completed)</strong></div>
+                        <div class="is-approved"><span>Approved</span><strong>@Model.TutorPerformance.Sum(tutor => tutor.Approved)</strong></div>
+                        <div class="is-rejected"><span>Rejected</span><strong>@Model.TutorPerformance.Sum(tutor => tutor.Rejected)</strong></div>
+                        <div class="is-escalated"><span>Escalated</span><strong>@Model.TutorPerformance.Sum(tutor => tutor.Escalated)</strong></div>
+                    </div>
+                    <div class="tutor-performance-toolbar">
+                        <div class="tutor-performance-search">
+                            <label for="tutor-performance-search">Find a tutor</label>
+                            <input type="search" id="tutor-performance-search" placeholder="Search by name or personnel number" autocomplete="off" />
+                        </div>
+                        <p data-performance-count aria-live="polite">@Model.TutorPerformance.Count tutor@(Model.TutorPerformance.Count == 1 ? "" : "s")</p>
+                    </div>
+                    <div class="tutor-performance-table-wrap" role="region" aria-label="Tutor performance results" tabindex="0">
+                        <table class="tutor-performance-table">
+                            <caption class="visually-hidden">Completed sessions and review decisions by tutor for the selected dates.</caption>
+                            <thead>
+                                <tr>
+                                    @foreach (var column in new[] { (Key: "name", Label: "Tutor"), (Key: "completed", Label: "Completed"), (Key: "approved", Label: "Approved"), (Key: "rejected", Label: "Rejected"), (Key: "escalated", Label: "Escalated") })
+                                    {
+                                        <th scope="col" aria-sort="@(column.Key == "completed" ? "descending" : "none")">
+                                            <button type="button" class="tutor-performance-sort" data-performance-sort="@column.Key">
+                                                @column.Label
+                                                <svg viewBox="0 0 16 20" aria-hidden="true">
+                                                    <path class="sort-up" d="m4 7 4-4 4 4" />
+                                                    <path class="sort-down" d="m4 13 4 4 4-4" />
+                                                </svg>
+                                            </button>
+                                        </th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var tutor in Model.TutorPerformance)
+                                {
+                                    <tr data-performance-row data-search="@tutor.DisplayName @tutor.PersonnelNumber"
+                                        data-name="@tutor.DisplayName" data-completed="@tutor.Completed"
+                                        data-approved="@tutor.Approved" data-rejected="@tutor.Rejected" data-escalated="@tutor.Escalated">
+                                        <th scope="row">
+                                            <div class="tutor-performance-identity">
+                                                <span class="tutor-performance-avatar" aria-hidden="true">
+                                                    @if (!string.IsNullOrWhiteSpace(tutor.ProfileImagePath))
+                                                    {
+                                                        <img src="@tutor.ProfileImagePath" alt="" loading="lazy" data-performance-photo />
+                                                    }
+                                                    <span data-performance-initials hidden="@(!string.IsNullOrWhiteSpace(tutor.ProfileImagePath))">@tutor.Initials</span>
+                                                </span>
+                                                <div><strong>@tutor.DisplayName</strong>@if (!string.IsNullOrWhiteSpace(tutor.PersonnelNumber)) { <small>@tutor.PersonnelNumber</small> }</div>
+                                            </div>
+                                        </th>
+                                        <td><strong>@tutor.Completed</strong></td>
+                                        <td><span class="tutor-performance-outcome is-approved">@tutor.Approved</span></td>
+                                        <td><span class="tutor-performance-outcome is-rejected">@tutor.Rejected</span></td>
+                                        <td><span class="tutor-performance-outcome is-escalated">@tutor.Escalated</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        <p class="tutor-performance-empty" data-performance-empty hidden="@(Model.TutorPerformance.Count > 0)">
+                            @(Model.TutorPerformance.Count == 0 ? "No tutors to show yet." : "No tutors match your search.")
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-dark" data-bs-dismiss="modal">Done</button></div>
+            </div>
+        </div>
+    </div>
     <div class="modal fade tutor-head-gemini-modal" id="gemini-key-modal"
          tabindex="-1" aria-labelledby="gemini-key-modal-title"
          aria-hidden="true" data-open="@Model.OpenGeminiModal.ToString().ToLowerInvariant()">

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BC_CampusLearn.Models.ViewModels;
 
-public class TutorHeadSessionReviewInput
+public class TutorHeadSessionReviewInput : IValidatableObject
 {
     [Required(ErrorMessage = "Select whether the tutor engaged the student appropriately.")]
     [RegularExpression("^(Yes|Partially|No)$", ErrorMessage = "Select a valid student engagement response.")]
@@ -22,4 +22,14 @@ public class TutorHeadSessionReviewInput
 
     [StringLength(500, ErrorMessage = "Additional comments cannot exceed 500 characters.")]
     public string? AdditionalComments { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (ConcernLevel == "Concerns" && string.IsNullOrWhiteSpace(AdditionalComments))
+        {
+            yield return new ValidationResult(
+                "Describe the concerns before saving the review.",
+                [nameof(AdditionalComments)]);
+        }
+    }
 }

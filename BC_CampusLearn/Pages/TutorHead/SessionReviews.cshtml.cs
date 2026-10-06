@@ -54,6 +54,19 @@ public class SessionReviewsModel(
     public IReadOnlyList<SessionReviewListItem> Sessions { get; private set; }
         = [];
 
+    public IReadOnlyList<TutorPerformanceListItem> TutorPerformance { get; private set; } = [];
+
+    [BindProperty(SupportsGet = true)]
+    public DateOnly? PerformanceFrom { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public DateOnly? PerformanceTo { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public bool ShowPerformance { get; set; }
+
+    public string? PerformanceRangeError { get; private set; }
+
     public ReviewPeriodSummary PeriodSummary { get; private set; } =
         ReviewPeriodSummary.Empty;
 
@@ -121,6 +134,21 @@ public class SessionReviewsModel(
         DateTimeOffset periodStart = StartOfDay(period.StartDate);
         DateTimeOffset periodEndExclusive =
             StartOfDay(period.EndDate.AddDays(1));
+
+        if (ModelState.TryGetValue(nameof(PerformanceFrom), out var fromState) && fromState.Errors.Count > 0 ||
+            ModelState.TryGetValue(nameof(PerformanceTo), out var toState) && toState.Errors.Count > 0 ||
+            PerformanceFrom.HasValue != PerformanceTo.HasValue)
+            PerformanceRangeError = "Choose a valid start and end date.";
+
+        PerformanceFrom ??= period.StartDate;
+        PerformanceTo ??= period.EndDate;
+        if (PerformanceFrom > PerformanceTo)
+            PerformanceRangeError = "The end date must be on or after the start date.";
+
+        if (PerformanceRangeError is null)
+            await LoadTutorPerformanceAsync(PerformanceFrom.Value, PerformanceTo.Value, cancellationToken);
+        else
+            ShowPerformance = true;
 
         IQueryable<Booking> eligibleSessions = context.Bookings
             .AsNoTracking()
@@ -227,8 +255,71 @@ public class SessionReviewsModel(
                 booking.SessionReviews.Any(review =>
                     review.Reviewer.Role == BcUserRole.HeadOfTutors),
                 booking.ScheduledStartTime,
-                booking.Duration))
+                booking.Duration,
+                booking.SessionReviews
+                    .Where(review => review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                    .OrderByDescending(review => review.CreatedAt)
+                    .ThenByDescending(review => review.SessionReviewId)
+                    .Select(review => review.Decision)
+                    .FirstOrDefault()))
             .ToListAsync(cancellationToken);
+    }
+
+    private async Task LoadTutorPerformanceAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken)
+    {
+        DateTimeOffset start = StartOfDay(from);
+        // Use the following midnight so the entire selected end date is included.
+        DateTimeOffset end = to == DateOnly.MaxValue ? DateTimeOffset.MaxValue : StartOfDay(to.AddDays(1));
+        var completedSessions = context.Bookings.AsNoTracking()
+            .Where(booking => booking.Status == BookingStatus.Completed &&
+                (booking.CompletedAt ?? booking.ScheduledStartTime) >= start &&
+                (booking.CompletedAt ?? booking.ScheduledStartTime) < end)
+            .Select(booking => new
+            {
+                booking.TutorId,
+                Decision = booking.SessionReviews
+                    .Where(review => review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                    .OrderByDescending(review => review.CreatedAt)
+                    .ThenByDescending(review => review.SessionReviewId)
+                    .Select(review => review.Decision).FirstOrDefault()
+            });
+
+        TutorPerformance = await context.Tutors.AsNoTracking()
+            .Where(tutor => tutor.Status == TutorStatus.Approved ||
+                completedSessions.Any(session => session.TutorId == tutor.TutorId))
+            .OrderByDescending(tutor => completedSessions.Count(session => session.TutorId == tutor.TutorId))
+            .ThenBy(tutor => tutor.BcUser.DisplayName)
+            .ThenBy(tutor => tutor.TutorId)
+            .Select(tutor => new TutorPerformanceListItem(
+                tutor.TutorId,
+                tutor.BcUser.DisplayName,
+                tutor.BcUser.PersonnelNumber,
+                completedSessions.Count(session => session.TutorId == tutor.TutorId),
+                completedSessions.Count(session => session.TutorId == tutor.TutorId &&
+                    (session.Decision == "Approve" || session.Decision == "Approve with feedback")),
+                completedSessions.Count(session => session.TutorId == tutor.TutorId && session.Decision == "Reject"),
+                completedSessions.Count(session => session.TutorId == tutor.TutorId && session.Decision == "Escalate"),
+                tutor.ProfileImagePath))
+            .ToListAsync(cancellationToken);
+    }
+
+    public sealed record TutorPerformanceListItem(
+        int TutorId, string TutorName, string? PersonnelNumber,
+        int Completed, int Approved, int Rejected, int Escalated,
+        string? ProfileImagePath = null)
+    {
+        public string DisplayName => !string.IsNullOrWhiteSpace(TutorName) ? TutorName :
+            !string.IsNullOrWhiteSpace(PersonnelNumber) ? PersonnelNumber : $"Tutor {TutorId}";
+
+        public string Initials
+        {
+            get
+            {
+                string[] parts = DisplayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                return parts.Length > 1 ? $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant() :
+                    parts[0][..1].ToUpperInvariant();
+            }
+        }
     }
 
     public async Task<IActionResult> OnPostSaveGeminiKeyAsync(
@@ -273,7 +364,8 @@ public class SessionReviewsModel(
         string ModuleCode,
         bool HasTutorHeadReview,
         DateTimeOffset ScheduledStartTime,
-        SessionDuration Duration)
+        SessionDuration Duration,
+        string? Decision = null)
     {
         public string TutorDisplayName => string.IsNullOrWhiteSpace(TutorName)
             ? TutorPersonnelNumber
@@ -282,9 +374,22 @@ public class SessionReviewsModel(
         public DateTimeOffset SessionEnd =>
             ScheduledStartTime.AddHours((int)Duration);
 
-        public string ReviewStatus => HasTutorHeadReview
-            ? "Reviewed"
-            : "Awaiting review";
+        public string ReviewStatus => !HasTutorHeadReview ? "Awaiting review" : Decision switch
+        {
+            "Approve" or "Approve with feedback" => "Approved",
+            "Reject" => "Rejected",
+            "Escalate" => "Escalated",
+            "Request clarification" => "Clarification requested",
+            _ => "Decision not recorded"
+        };
+
+        public string ReviewStatusClass => ReviewStatus switch
+        {
+            "Approved" => "tutor-head-review-status--approved",
+            "Rejected" => "tutor-head-review-status--rejected",
+            "Escalated" => "tutor-head-review-status--escalated",
+            _ => "tutor-head-review-status--awaiting"
+        };
     }
 
 

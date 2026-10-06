@@ -53,6 +53,26 @@
     }
 
     const questions = [...form.querySelectorAll("[data-option-question]")];
+    const commentsSection = form.querySelector(".tutor-head-review-comments");
+    const comments = commentsSection.querySelector("textarea");
+    const commentsError = commentsSection.querySelector("[data-comments-error]");
+    const concernsSelected = () => form.querySelector(
+        'input[name="TutorHeadReviewInput.ConcernLevel"]:checked')?.value === "Concerns";
+
+    const syncCommentsRequirement = () => {
+        const required = concernsSelected();
+        comments.required = required;
+        comments.setAttribute("aria-required", String(required));
+        commentsSection.querySelector("[data-comments-required]").hidden = !required;
+        if (!required || comments.value.trim()) {
+            commentsError.textContent = "";
+            comments.removeAttribute("aria-invalid");
+            commentsSection.classList.remove("is-invalid");
+        }
+    };
+    form.addEventListener("change", syncCommentsRequirement);
+    comments.addEventListener("input", syncCommentsRequirement);
+    syncCommentsRequirement();
 
     const clearQuestionError = (question) => {
         question.classList.remove("is-invalid");
@@ -82,16 +102,22 @@
     form.addEventListener("submit", (event) => {
         const unanswered = questions.filter((question) =>
             !question.querySelector('input[type="radio"]:checked'));
+        const missingComments = concernsSelected() && !comments.value.trim();
 
         questions.forEach(clearQuestionError);
-        if (unanswered.length === 0) {
+        if (unanswered.length === 0 && !missingComments) {
             return;
         }
 
         event.preventDefault();
         unanswered.forEach(showQuestionError);
+        if (missingComments) {
+            commentsError.textContent = "Describe the concerns before saving the review.";
+            comments.setAttribute("aria-invalid", "true");
+            commentsSection.classList.add("is-invalid");
+        }
 
-        const firstQuestion = unanswered[0];
+        const firstQuestion = unanswered[0] ?? commentsSection;
         const rowIndex = [...form.querySelectorAll("[data-pagination-row]")]
             .indexOf(firstQuestion);
         const pageNumber = Math.floor(rowIndex / 5) + 1;
@@ -119,6 +145,8 @@
         if (firstLegend) {
             firstLegend.tabIndex = -1;
             firstLegend.focus({ preventScroll: true });
+        } else {
+            comments.focus({ preventScroll: true });
         }
     });
 })();

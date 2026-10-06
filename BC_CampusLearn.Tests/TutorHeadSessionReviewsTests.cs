@@ -15,6 +15,128 @@ namespace BC_CampusLearn.Tests;
 
 public class TutorHeadSessionReviewsTests
 {
+    [Fact]
+    public async Task PerformanceCountsCompletedSessionsAndLatestHeadDecisionsWithinPeriod()
+    {
+        await using var context = CreateContext();
+        TutorCourseModule assignment = CreateAssignment();
+        var head = new BcUser { BcUserId = 2, PersonnelNumber = "TH001", DisplayName = "Tutor Head", Role = BcUserRole.HeadOfTutors };
+        context.BcUsers.Add(head);
+        context.TutorCourseModules.Add(assignment);
+        string?[] decisions = ["Approve", "Reject", "Escalate", "Approve with feedback", null];
+        for (int index = 0; index < decisions.Length; index++)
+        {
+            // Even completed sessions with missing student/tutor evaluations count here.
+            Booking booking = CreateBooking(index + 1, assignment, "Student", BookingStatus.Completed, null, null);
+            if (decisions[index] is { } decision)
+                booking.SessionReviews.Add(new SessionReview
+                {
+                    Reviewer = head, ReviewerBcUserId = head.BcUserId, Rating = 4,
+                    Decision = decision, CreatedAt = DateTimeOffset.UtcNow
+                });
+            if (index == 0)
+                booking.SessionReviews.Add(new SessionReview
+                {
+                    Reviewer = head, ReviewerBcUserId = head.BcUserId, Rating = 4,
+                    Decision = "Reject", CreatedAt = DateTimeOffset.UtcNow.AddDays(-1)
+                });
+            context.Bookings.Add(booking);
+        }
+        context.Bookings.Add(CreateBooking(6, assignment, "Cancelled", BookingStatus.Cancelled, null, null));
+        await context.SaveChangesAsync();
+        var page = CreatePage(context);
+        // Table filters must not affect the separately selected performance duration.
+        page.TutorFilter = "No matching tutor";
+        page.DateFrom = new DateOnly(2027, 1, 1);
+        await page.OnGetAsync(default);
+
+        Assert.Empty(page.Sessions);
+        var performance = Assert.Single(page.TutorPerformance);
+        Assert.Equal(assignment.Tutor.TutorId, performance.TutorId);
+        Assert.Equal(5, performance.Completed);
+        Assert.Equal(2, performance.Approved);
+        Assert.Equal(1, performance.Rejected);
+        Assert.Equal(1, performance.Escalated);
+        Assert.Equal(page.PeriodSummary.StartDate, page.PerformanceFrom);
+        Assert.Equal(page.PeriodSummary.EndDate, page.PerformanceTo);
+    }
+
+    [Fact]
+    public async Task PerformanceCustomDatesIncludeWholeLocalEndDayAndExcludeOtherDates()
+    {
+        await using var context = CreateContext();
+        TutorCourseModule assignment = CreateAssignment();
+        context.TutorCourseModules.Add(assignment);
+        TimeSpan offset = TimeSpan.FromHours(2);
+        DateTimeOffset[] completedAt = [
+            new(2026, 9, 21, 23, 59, 59, offset),
+            new(2026, 9, 22, 0, 0, 0, offset),
+            new(2026, 9, 23, 23, 59, 59, offset),
+            new(2026, 9, 24, 0, 0, 0, offset)
+        ];
+        for (int index = 0; index < completedAt.Length; index++)
+        {
+            Booking booking = CreateBooking(index + 1, assignment, "Student", BookingStatus.Completed, null, null);
+            booking.CompletedAt = completedAt[index];
+            context.Bookings.Add(booking);
+        }
+        Booking withoutTimestamp = CreateBooking(5, assignment, "Student", BookingStatus.Completed, null, null);
+        withoutTimestamp.CompletedAt = null;
+        withoutTimestamp.ScheduledStartTime = new(2026, 9, 22, 12, 0, 0, offset);
+        context.Bookings.Add(withoutTimestamp);
+        await context.SaveChangesAsync();
+        var page = CreatePage(context);
+        page.PerformanceFrom = new(2026, 9, 22);
+        page.PerformanceTo = new(2026, 9, 23);
+
+        await page.OnGetAsync(default);
+
+        Assert.Null(page.PerformanceRangeError);
+        Assert.Equal(3, Assert.Single(page.TutorPerformance).Completed);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task InvalidPerformanceRangeShowsErrorAndNoMisleadingTotals(bool reversed)
+    {
+        await using var context = CreateContext();
+        var page = CreatePage(context);
+        page.PerformanceFrom = new(2026, 9, 24);
+        page.PerformanceTo = reversed ? new DateOnly(2026, 9, 22) : null;
+
+        await page.OnGetAsync(default);
+
+        Assert.NotNull(page.PerformanceRangeError);
+        Assert.True(page.ShowPerformance);
+        Assert.Empty(page.TutorPerformance);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("/uploads/tutor-profiles/1/profile.png")]
+    public async Task PerformanceIncludesApprovedTutorsWithNoSessions(string? photo)
+    {
+        await using var context = CreateContext();
+        TutorCourseModule assignment = CreateAssignment();
+        assignment.Tutor.Status = TutorStatus.Approved;
+        assignment.Tutor.ApplicationStage = TutorApplicationStage.Placement;
+        assignment.Tutor.IsActive = true;
+        assignment.Tutor.ProfileImagePath = photo;
+        context.TutorCourseModules.Add(assignment);
+        await context.SaveChangesAsync();
+        var page = CreatePage(context);
+
+        await page.OnGetAsync(default);
+
+        var performance = Assert.Single(page.TutorPerformance);
+        Assert.Equal(assignment.Tutor.BcUser.DisplayName, performance.DisplayName);
+        Assert.Equal(photo, performance.ProfileImagePath);
+        Assert.Equal("TT", performance.Initials);
+        Assert.Equal(0, performance.Completed);
+        Assert.Equal(0, performance.Approved + performance.Rejected + performance.Escalated);
+    }
+
     [Theory]
     [InlineData("No Concerns", "Approve", true)]
     [InlineData("Concerns", "Reject", true)]
@@ -31,7 +153,8 @@ public class TutorHeadSessionReviewsTests
             StudentEngagement = "Yes",
             ConcernLevel = concerns,
             OverallAssessment = "Good",
-            Decision = decision
+            Decision = decision,
+            AdditionalComments = "Follow up on engagement."
         };
         var results = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
 
@@ -42,6 +165,30 @@ public class TutorHeadSessionReviewsTests
             validateAllProperties: true);
 
         Assert.Equal(expectedValid, valid);
+    }
+
+    [Theory]
+    [InlineData("Concerns", null, false)]
+    [InlineData("Concerns", "", false)]
+    [InlineData("Concerns", "   ", false)]
+    [InlineData("Concerns", "The tutor did not engage the student.", true)]
+    [InlineData("No Concerns", null, true)]
+    [InlineData("No Concerns", "   ", true)]
+    public void ConcernsRequireMeaningfulComments(string concerns, string? comments, bool expectedValid)
+    {
+        var input = new TutorHeadSessionReviewInput
+        {
+            StudentEngagement = "Yes", ConcernLevel = concerns,
+            OverallAssessment = "Good", Decision = "Approve",
+            AdditionalComments = comments
+        };
+        var results = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+        bool valid = System.ComponentModel.DataAnnotations.Validator.TryValidateObject(
+            input, new System.ComponentModel.DataAnnotations.ValidationContext(input), results, true);
+
+        Assert.Equal(expectedValid, valid);
+        if (!expectedValid)
+            Assert.Contains(results, result => result.MemberNames.Contains(nameof(input.AdditionalComments)));
     }
 
     [Fact]
@@ -176,8 +323,14 @@ public class TutorHeadSessionReviewsTests
             Assert.False(session.HasTutorHeadReview));
     }
 
-    [Fact]
-    public async Task PageMarksSessionReviewedWhenTutorHeadReviewExists()
+    [Theory]
+    [InlineData("Approve", "Approved", "approved")]
+    [InlineData("Reject", "Rejected", "rejected")]
+    [InlineData("Escalate", "Escalated", "escalated")]
+    [InlineData(null, "Decision not recorded", "awaiting")]
+    [InlineData("Approve with feedback", "Approved", "approved")]
+    [InlineData("Request clarification", "Clarification requested", "awaiting")]
+    public async Task PageShowsSavedTutorHeadDecision(string? decision, string status, string statusClass)
     {
         await using ApplicationDbContext context = CreateContext();
         TutorCourseModule assignment = CreateAssignment();
@@ -202,6 +355,7 @@ public class TutorHeadSessionReviewsTests
             ReviewerBcUserId = tutorHead.BcUserId,
             Rating = 5,
             Comment = "Review complete",
+            Decision = decision,
             CreatedAt = DateTimeOffset.UtcNow
         });
         context.TutorCourseModules.Add(assignment);
@@ -214,7 +368,8 @@ public class TutorHeadSessionReviewsTests
         SessionReviewsModel.SessionReviewListItem session =
             Assert.Single(page.Sessions);
         Assert.True(session.HasTutorHeadReview);
-        Assert.Equal("Reviewed", session.ReviewStatus);
+        Assert.Equal(status, session.ReviewStatus);
+        Assert.Equal($"tutor-head-review-status--{statusClass}", session.ReviewStatusClass);
         Assert.Equal(1, page.PeriodSummary.TotalSessions);
         Assert.Equal(0, page.PeriodSummary.AwaitingReview);
         Assert.Equal(1, page.PeriodSummary.Reviewed);
