@@ -1,6 +1,8 @@
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Students;
+using System.Text.Json;
 using BC_CampusLearn.Pages.Administrator.Tutors;
 using BC_CampusLearn.Models.ViewModels;
 using Microsoft.AspNetCore.Hosting;
@@ -19,6 +21,116 @@ namespace BC_CampusLearn.Tests;
 
 public class AdminTutorsTests
 {
+    [Fact]
+    public async Task StudentLookupUsesSelectedStudentNumberAndReturnsVerifiedDetails()
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        context.BcUsers.Add(new BcUser
+        {
+            BcUserId = 100, PersonnelNumber = "S100", DisplayName = "Outdated Name", Role = BcUserRole.Student
+        });
+        await context.SaveChangesAsync();
+        var service = new TestStudentDetailsService();
+        var page = new IndexModel(context, service);
+        var response = Assert.IsType<JsonResult>(await page.OnGetStudentDetailsAsync(100, CancellationToken.None));
+        var payload = JsonSerializer.SerializeToElement(response.Value);
+        Assert.Equal("New Tutor", payload.GetProperty("displayName").GetString());
+        Assert.Equal(1, payload.GetProperty("programmeId").GetInt32());
+        Assert.Equal(2, payload.GetProperty("YearOfStudy").GetInt32());
+        Assert.Equal(["S100"], service.RequestedNumbers);
+
+        var rejected = Assert.IsType<JsonResult>(await page.OnGetStudentDetailsAsync(1, CancellationToken.None));
+        Assert.Equal(400, rejected.StatusCode);
+        Assert.Single(service.RequestedNumbers);
+        Assert.Equal("Outdated Name", (await context.BcUsers.FindAsync(100))!.DisplayName);
+    }
+
+    [Theory]
+    [InlineData("unavailable")]
+    [InlineData("not-found")]
+    [InlineData("invalid")]
+    [InlineData("wrong-student")]
+    [InlineData("unsupported-programme")]
+    [InlineData("missing-campus")]
+    [InlineData("invalid-year")]
+    [InlineData("missing-student-number")]
+    public async Task UnverifiedStudentsCannotBeAdded(string scenario)
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var student = new BcUser
+        {
+            BcUserId = 100, PersonnelNumber = scenario == "missing-student-number" ? null : "S100",
+            DisplayName = "Original Name", Role = BcUserRole.Student
+        };
+        context.BcUsers.Add(student);
+        await context.SaveChangesAsync();
+        var details = new StudentDetails("S100", "New", null, "Tutor", "verified@example.test", "Computing", 2, "Pretoria Campus");
+        var result = scenario switch
+        {
+            "unavailable" => new StudentDetailsResult(StudentDetailsStatus.Unavailable),
+            "not-found" => new StudentDetailsResult(StudentDetailsStatus.NotFound),
+            "invalid" => new StudentDetailsResult(StudentDetailsStatus.InvalidResponse),
+            "wrong-student" => StudentDetailsResult.Success(details with { StudentNumber = "S101" }),
+            "unsupported-programme" => StudentDetailsResult.Success(details with { Programme = "Unknown" }),
+            "invalid-year" => StudentDetailsResult.Success(details with { YearOfStudy = 0 }),
+            _ => StudentDetailsResult.Success(details with { Campus = " " })
+        };
+        var page = new IndexModel(context, new TestStudentDetailsService(result))
+        {
+            ManualTutor = new IndexModel.ManualTutorInput
+            {
+                BcUserId = 100, ProgrammeId = 1, YearOfStudy = 2, OverallAverage = 80,
+                CampusOfStudy = "Pretoria Campus", ProgrammeModuleIds = [1]
+            }
+        };
+        SetPageContext(page);
+        var lookup = Assert.IsType<JsonResult>(await page.OnGetStudentDetailsAsync(100, CancellationToken.None));
+        Assert.Equal(400, lookup.StatusCode);
+        await page.OnPostAddTutorAsync(CancellationToken.None);
+        Assert.NotNull(page.PageError);
+        Assert.Equal(18, await context.Tutors.CountAsync());
+        Assert.Null(student.Tutor);
+        Assert.Equal("Original Name", student.DisplayName);
+        Assert.Equal(BcUserRole.Student, student.Role);
+    }
+
+    [Theory]
+    [InlineData("Pretoria")]
+    [InlineData("pretoria campus")]
+    [InlineData("Kempton Park")]
+    [InlineData("Belgium Campus Pretoria")]
+    public async Task VerifiedCampusLabelsAreDisplayedAndSavedAsReturnedByApi(string campus)
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        context.BcUsers.Add(new BcUser
+        {
+            BcUserId = 100, PersonnelNumber = "S100", DisplayName = "New Tutor", Role = BcUserRole.Student
+        });
+        await context.SaveChangesAsync();
+        var details = new StudentDetails("S100", "New", null, "Tutor", "verified@example.test", "Computing", 2, campus);
+        var page = new IndexModel(context, new TestStudentDetailsService(StudentDetailsResult.Success(details)))
+        {
+            ManualTutor = new IndexModel.ManualTutorInput
+            {
+                BcUserId = 100, OverallAverage = 80, ProgrammeModuleIds = [1],
+                CampusOfStudy = "Untrusted submitted campus"
+            }
+        };
+        SetPageContext(page);
+        var response = Assert.IsType<JsonResult>(await page.OnGetStudentDetailsAsync(100, CancellationToken.None));
+        Assert.Null(response.StatusCode);
+        Assert.Equal(campus, JsonSerializer.SerializeToElement(response.Value).GetProperty("campus").GetString());
+
+        await page.OnPostAddTutorAsync(CancellationToken.None);
+        Assert.Null(page.PageError);
+        var tutor = await context.Tutors.SingleAsync(tutor => tutor.BcUserId == 100);
+        Assert.Equal(campus, tutor.CampusOfStudy);
+        Assert.Equal(2, tutor.YearOfStudy);
+    }
+
     [Theory]
     [InlineData(1, true)]
     [InlineData(999, false)]
@@ -33,12 +145,12 @@ public class AdminTutorsTests
         };
         context.BcUsers.Add(student);
         await context.SaveChangesAsync();
-        var page = new IndexModel(context)
+        var page = new IndexModel(context, new TestStudentDetailsService())
         {
             ManualTutor = new IndexModel.ManualTutorInput
             {
-                BcUserId = 100, ProgrammeId = 1, YearOfStudy = 2,
-                OverallAverage = 80, CampusOfStudy = "Pretoria Campus",
+                BcUserId = 100, ProgrammeId = 999, YearOfStudy = 4,
+                OverallAverage = 80, CampusOfStudy = "Online",
                 ProgrammeModuleIds = [moduleId]
             }
         };
@@ -60,6 +172,10 @@ public class AdminTutorsTests
             Assert.Equal(TutorStatus.Approved, student.Tutor.Status);
             Assert.Equal(TutorApplicationStage.Placement, student.Tutor.ApplicationStage);
             Assert.True(student.Tutor.IsActive);
+            Assert.Equal(1, student.Tutor.ProgrammeId);
+            Assert.Equal(2, student.Tutor.YearOfStudy);
+            Assert.Equal("Pretoria Campus", student.Tutor.CampusOfStudy);
+            Assert.Equal("verified@example.test", student.Email);
             Assert.Equal(1, Assert.Single(student.Tutor.TutorCourseModules).ProgrammeModuleId);
             Assert.Empty(page.StudentOptions);
             Assert.Equal("New Tutor was added as a tutor.", page.PageMessage);
@@ -455,7 +571,7 @@ public class AdminTutorsTests
         tutors[4].Status = TutorStatus.Suspended;
         await context.SaveChangesAsync();
 
-        var page = new IndexModel(context);
+        var page = new IndexModel(context, new TestStudentDetailsService());
         await page.OnGetAsync(CancellationToken.None);
         Assert.Equal(13, page.TotalTutors);
         Assert.Equal(2, page.TotalPages);
@@ -476,7 +592,7 @@ public class AdminTutorsTests
     {
         await using var context = CreateContext();
         await SeedTutors(context);
-        var page = new IndexModel(context);
+        var page = new IndexModel(context, new TestStudentDetailsService());
         await page.OnGetAsync(CancellationToken.None);
         Assert.Equal(8, page.Tutors.Count);
         Assert.Equal(18, page.TotalTutors);
@@ -521,7 +637,7 @@ public class AdminTutorsTests
         context.Tutors.Add(rejectedApplicant);
         await context.SaveChangesAsync();
 
-        var page = new IndexModel(context) { SearchName = "Rejected Applicant" };
+        var page = new IndexModel(context, new TestStudentDetailsService()) { SearchName = "Rejected Applicant" };
         await page.OnGetAsync(CancellationToken.None);
 
         Assert.Empty(page.Tutors);
@@ -535,7 +651,7 @@ public class AdminTutorsTests
     {
         await using var context = CreateContext();
         await SeedTutors(context);
-        var page = new IndexModel(context)
+        var page = new IndexModel(context, new TestStudentDetailsService())
         {
             SearchName = " Tutor ", SearchModule = module,
             SearchCourse = " Computing ", Years = [2, 3], TutorPage = 2
@@ -579,6 +695,17 @@ public class AdminTutorsTests
             });
         }
         await context.SaveChangesAsync();
+    }
+
+    private sealed class TestStudentDetailsService(StudentDetailsResult? result = null) : IStudentDetailsService
+    {
+        public List<string> RequestedNumbers { get; } = [];
+        public Task<StudentDetailsResult> GetAsync(string personnelNumber, CancellationToken cancellationToken = default)
+        {
+            RequestedNumbers.Add(personnelNumber);
+            return Task.FromResult(result ?? StudentDetailsResult.Success(new StudentDetails(
+                personnelNumber, "New", null, "Tutor", "verified@example.test", "Computing", 2, "Pretoria Campus")));
+        }
     }
 
     private sealed class TestWebHostEnvironment : IWebHostEnvironment

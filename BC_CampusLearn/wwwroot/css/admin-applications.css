@@ -720,8 +720,10 @@
 }
 
 .admin-manual-module-search input {
-    background: #f2f4f4;
-    border: 0;
+    background: #fff;
+    border: 1px solid #687576;
+    outline: 1px solid #687576;
+    outline-offset: 0;
     border-radius: 0.45rem;
     color: #252a2b;
     font: inherit;

@@ -1,5 +1,6 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Students;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -9,11 +10,87 @@ using Microsoft.EntityFrameworkCore;
 namespace BC_CampusLearn.Pages.Administrator;
 
 // Shared manual tutor workflow for the placement and tutor directory pages.
-public abstract class ManualTutorPageModel(ApplicationDbContext context) : PageModel
+public abstract class ManualTutorPageModel(ApplicationDbContext context, IStudentDetailsService? studentDetailsService) : PageModel
 {
     private readonly ApplicationDbContext _context = context;
+    protected ApplicationDbContext Context => _context;
 
     protected virtual IActionResult RedirectAfterAddTutor() => RedirectToPage();
+
+    public bool RequiresStudentVerification => true;
+    private StudentDetails? _verifiedStudent;
+
+    public async Task<IActionResult> OnGetStudentDetailsAsync(int studentId, CancellationToken cancellationToken)
+    {
+        var student = await Context.BcUsers.AsNoTracking().SingleOrDefaultAsync(
+            user => user.BcUserId == studentId && user.Role == BcUserRole.Student && user.Tutor == null,
+            cancellationToken);
+        if (student is null)
+            return new JsonResult(new { error = "Select an eligible student." }) { StatusCode = 400 };
+
+        var (details, programmeId, error) = await LookupStudentAsync(student, cancellationToken);
+        if (error is not null)
+            return new JsonResult(new { error }) { StatusCode = 400 };
+
+        return new JsonResult(new
+        {
+            studentId, displayName = DisplayName(details!), details!.StudentNumber,
+            details.Email, programmeId, details.YearOfStudy, campus = details.Campus
+        });
+    }
+
+    protected async Task<string?> VerifyManualTutorAsync(BcUser student, CancellationToken cancellationToken)
+    {
+        _verifiedStudent = null;
+        var (details, programmeId, error) = await LookupStudentAsync(student, cancellationToken);
+        if (error is not null) return error;
+        _verifiedStudent = details;
+        ManualTutor.ProgrammeId = programmeId;
+        ManualTutor.YearOfStudy = details!.YearOfStudy;
+        ManualTutor.CampusOfStudy = details.Campus;
+        return null;
+    }
+
+    protected void ApplyVerifiedStudentIdentity(BcUser student)
+    {
+        student.DisplayName = DisplayName(_verifiedStudent!);
+        student.Email = _verifiedStudent!.Email;
+    }
+
+    private static string DisplayName(StudentDetails details) =>
+        $"{(string.IsNullOrWhiteSpace(details.PreferredName) ? details.FirstName : details.PreferredName)} {details.Surname}";
+
+    private async Task<(StudentDetails? Details, int ProgrammeId, string? Error)> LookupStudentAsync(
+        BcUser student, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(student.PersonnelNumber))
+            return (null, 0, "The student's student number is missing. Please contact Student Support.");
+        var result = studentDetailsService is null
+            ? new StudentDetailsResult(StudentDetailsStatus.Unavailable)
+            : await studentDetailsService.GetAsync(student.PersonnelNumber, cancellationToken);
+        if (result is not { Status: StudentDetailsStatus.Success, Details: not null })
+            return (null, 0, result.Status switch
+            {
+                StudentDetailsStatus.NotFound => "Student information could not be found. Select another student or contact Student Support.",
+                StudentDetailsStatus.InvalidResponse => "Student information could not be verified. Please contact Student Support.",
+                _ => "Student information is temporarily unavailable. Please try again."
+            });
+
+        var details = result.Details;
+        if (!string.Equals(details.StudentNumber.Trim(), student.PersonnelNumber.Trim(), StringComparison.OrdinalIgnoreCase))
+            return (null, 0, "Student information could not be verified. Please contact Student Support.");
+        var programmes = await Context.ProgrammesOfStudy.AsNoTracking().ToListAsync(cancellationToken);
+        var programme = programmes.SingleOrDefault(item =>
+            string.Equals(item.Name.Trim(), details.Programme.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (programme is null)
+            return (null, 0, "The student's registered programme is not supported. Please contact Student Support.");
+        if (details.YearOfStudy is < 1 or > 4)
+            return (null, 0, "The student's year of study must be between 1 and 4. Please contact Student Support.");
+        if (string.IsNullOrWhiteSpace(details.Campus) || details.Campus.Trim().Length > 100)
+            return (null, 0, "The student's campus information could not be verified. Please contact Student Support.");
+        details = details with { Campus = details.Campus.Trim() };
+        return (details, programme.Id, null);
+    }
 
     public static readonly IReadOnlyList<string> ManualTutorCampuses =
     [
@@ -44,29 +121,11 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context) : PageM
         // This page contains several independent forms. Validate only the
         // manual tutor input so application/interview fields cannot block it.
         ModelState.Clear();
-        var validationResults = new List<ValidationResult>();
-        bool manualInputIsValid = Validator.TryValidateObject(
-            ManualTutor,
-            new ValidationContext(ManualTutor),
-            validationResults,
-            validateAllProperties: true);
-
         BcUser? student = await _context.BcUsers
             .Include(user => user.Tutor)
             .SingleOrDefaultAsync(
                 user => user.BcUserId == ManualTutor.BcUserId,
                 cancellationToken);
-
-        bool programmeExists = await _context.ProgrammesOfStudy
-            .AnyAsync(
-                programme => programme.Id == ManualTutor.ProgrammeId,
-                cancellationToken);
-
-        if (!manualInputIsValid)
-        {
-            PageError = "Enter valid details for the tutor you want to add.";
-            return RedirectAfterAddTutor();
-        }
 
         if (student is null)
         {
@@ -86,6 +145,25 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context) : PageM
             return RedirectAfterAddTutor();
         }
 
+        string? verificationError = await VerifyManualTutorAsync(student, cancellationToken);
+        if (verificationError is not null)
+        {
+            PageError = verificationError;
+            return RedirectAfterAddTutor();
+        }
+
+        var validationResults = new List<ValidationResult>();
+        var validationContext = new ValidationContext(ManualTutor);
+        validationContext.Items[nameof(RequiresStudentVerification)] = RequiresStudentVerification;
+        if (!Validator.TryValidateObject(ManualTutor, validationContext,
+                validationResults, validateAllProperties: true))
+        {
+            PageError = "Enter valid details for the tutor you want to add.";
+            return RedirectAfterAddTutor();
+        }
+
+        bool programmeExists = await _context.ProgrammesOfStudy.AnyAsync(
+            programme => programme.Id == ManualTutor.ProgrammeId, cancellationToken);
         if (!programmeExists)
         {
             PageError = "Select a valid programme.";
@@ -115,6 +193,7 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context) : PageM
         }
 
         DateTime addedAt = DateTime.UtcNow;
+        ApplyVerifiedStudentIdentity(student);
         student.Role = BcUserRole.Tutor;
         var tutor = new Tutor
         {
@@ -222,7 +301,11 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context) : PageM
         public IEnumerable<ValidationResult> Validate(
             ValidationContext validationContext)
         {
-            if (!ManualTutorCampuses.Contains(
+            // API-verified campus labels follow the student details API contract,
+            // while the manual placement form still uses its fixed campus list.
+            bool verifiedCampus = validationContext.Items.TryGetValue(
+                nameof(RequiresStudentVerification), out var verified) && verified is true;
+            if (!verifiedCampus && !ManualTutorCampuses.Contains(
                 CampusOfStudy,
                 StringComparer.Ordinal))
             {

@@ -13,7 +13,8 @@
             <form method="post"
                   asp-page-handler="AddTutor"
                   novalidate
-                  data-manual-tutor-form>
+                  data-manual-tutor-form
+                  data-student-details-url="@(Model.RequiresStudentVerification ? Url.Page(null, "StudentDetails") : null)">
                 <div class="admin-add-tutor-grid">
                     <div class="admin-add-tutor-field admin-add-tutor-field--full">
                         <label for="manual-student-search">Student</label>
@@ -51,6 +52,10 @@
                                 </span>
                             </span>
                         </span>
+                        @if (Model.RequiresStudentVerification)
+                        {
+                            <p role="status" aria-live="polite" data-student-verification-status>Select a student to verify their details.</p>
+                        }
                     </div>
                     <label class="admin-add-tutor-field admin-add-tutor-field--full">
                         <span>Programme</span>
@@ -73,13 +78,20 @@
                     </label>
                     <label class="admin-add-tutor-field">
                         <span>Campus</span>
-                        <select asp-for="ManualTutor.CampusOfStudy">
-                            <option value="">Select a campus</option>
-                            @foreach (string campus in BC_CampusLearn.Pages.Administrator.ManualTutorPageModel.ManualTutorCampuses)
-                            {
-                                <option value="@campus">@campus</option>
-                            }
-                        </select>
+                        @if (Model.RequiresStudentVerification)
+                        {
+                            <input asp-for="ManualTutor.CampusOfStudy" type="text" readonly />
+                        }
+                        else
+                        {
+                            <select asp-for="ManualTutor.CampusOfStudy">
+                                <option value="">Select a campus</option>
+                                @foreach (string campus in BC_CampusLearn.Pages.Administrator.ManualTutorPageModel.ManualTutorCampuses)
+                                {
+                                    <option value="@campus">@campus</option>
+                                }
+                            </select>
+                        }
                     </label>
                     <label class="admin-add-tutor-field">
                         <span>Phone number <small>(optional)</small></span>

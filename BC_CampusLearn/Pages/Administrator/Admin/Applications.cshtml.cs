@@ -3,6 +3,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Tutors;
+using BC_CampusLearn.Services.Students;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -24,7 +25,8 @@ public class ApplicationsModel : ManualTutorPageModel
     public ApplicationsModel(
         ApplicationDbContext context,
         ICurrentUserService? currentUserService = null,
-        ITutorApplicationEmailSender? emailSender = null) : base(context)
+        ITutorApplicationEmailSender? emailSender = null,
+        IStudentDetailsService? studentDetailsService = null) : base(context, studentDetailsService)
     {
         _context = context;
         _currentUserService = currentUserService;
