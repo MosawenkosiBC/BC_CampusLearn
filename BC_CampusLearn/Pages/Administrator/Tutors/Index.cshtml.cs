@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Pages.Administrator.Tutors;
 
-public class IndexModel(ApplicationDbContext context) : PageModel
+public class IndexModel(ApplicationDbContext context) : ManualTutorPageModel(context)
 {
     public const int PageSize = 8;
     [BindProperty(SupportsGet = true)]
@@ -25,6 +25,8 @@ public class IndexModel(ApplicationDbContext context) : PageModel
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
+        await LoadManualTutorOptionsAsync(cancellationToken);
+
         var query = context.Tutors.AsNoTracking().Where(tutor =>
             tutor.ApplicationStage == TutorApplicationStage.Placement &&
             tutor.IsActive &&

@@ -19,6 +19,64 @@ namespace BC_CampusLearn.Tests;
 
 public class AdminTutorsTests
 {
+    [Theory]
+    [InlineData(1, true)]
+    [InlineData(999, false)]
+    public async Task DirectoryAddsEligibleStudentAndRejectsInvalidModules(int moduleId, bool valid)
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var student = new BcUser
+        {
+            BcUserId = 100, PersonnelNumber = "S100", DisplayName = "New Tutor",
+            Role = BcUserRole.Student
+        };
+        context.BcUsers.Add(student);
+        await context.SaveChangesAsync();
+        var page = new IndexModel(context)
+        {
+            ManualTutor = new IndexModel.ManualTutorInput
+            {
+                BcUserId = 100, ProgrammeId = 1, YearOfStudy = 2,
+                OverallAverage = 80, CampusOfStudy = "Pretoria Campus",
+                ProgrammeModuleIds = [moduleId]
+            }
+        };
+        SetPageContext(page);
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Single(page.StudentOptions);
+        Assert.Equal("100", page.StudentOptions[0].Value);
+
+        var redirect = Assert.IsType<RedirectToPageResult>(
+            await page.OnPostAddTutorAsync(CancellationToken.None));
+        Assert.Null(redirect.PageName);
+        Assert.True(redirect.RouteValues is null || !redirect.RouteValues.ContainsKey("Stage"));
+        await page.OnGetAsync(CancellationToken.None);
+        if (valid)
+        {
+            Assert.Equal(19, page.TotalTutors);
+            Assert.Equal(BcUserRole.Tutor, student.Role);
+            Assert.NotNull(student.Tutor);
+            Assert.Equal(TutorStatus.Approved, student.Tutor.Status);
+            Assert.Equal(TutorApplicationStage.Placement, student.Tutor.ApplicationStage);
+            Assert.True(student.Tutor.IsActive);
+            Assert.Equal(1, Assert.Single(student.Tutor.TutorCourseModules).ProgrammeModuleId);
+            Assert.Empty(page.StudentOptions);
+            Assert.Equal("New Tutor was added as a tutor.", page.PageMessage);
+
+            await page.OnPostAddTutorAsync(CancellationToken.None);
+            Assert.Equal(19, await context.Tutors.CountAsync());
+            Assert.Equal("This student already has a tutor profile.", page.PageError);
+        }
+        else
+        {
+            Assert.Equal(18, page.TotalTutors);
+            Assert.Equal(BcUserRole.Student, student.Role);
+            Assert.Null(student.Tutor);
+            Assert.NotNull(page.PageError);
+        }
+    }
+
     [Fact]
     public async Task AdminReviewSavesFiveAnswersAndRecordingTime()
     {
@@ -541,7 +599,7 @@ public class AdminTutorsTests
             new(1, "A1", "Administrator", null, BcUserRole.Admin);
     }
 
-    private static void SetPageContext(SessionDetailsModel page)
+    private static void SetPageContext(PageModel page)
     {
         var httpContext = new DefaultHttpContext();
         page.PageContext = new PageContext

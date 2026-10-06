@@ -1,3 +1,9 @@
+.admin-tutors-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin: -0.75rem 0 1.25rem;
+}
+
 .admin-tutors-workspace {
     display: grid;
     grid-template-columns: 250px minmax(0, 1fr);

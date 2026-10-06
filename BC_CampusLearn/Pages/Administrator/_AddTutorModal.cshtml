@@ -1,0 +1,131 @@
+@model BC_CampusLearn.Pages.Administrator.ManualTutorPageModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+        <dialog class="admin-application-modal admin-add-tutor-modal"
+                data-add-tutor-modal
+                aria-labelledby="add-tutor-title">
+            <button type="button"
+                    class="admin-modal-close"
+                    data-admin-modal-close
+                    aria-label="Close">&times;</button>
+            <h2 id="add-tutor-title">Add tutor</h2>
+            <p>Select a student and enter the details needed to create their tutor profile.</p>
+            <form method="post"
+                  asp-page-handler="AddTutor"
+                  novalidate
+                  data-manual-tutor-form>
+                <div class="admin-add-tutor-grid">
+                    <div class="admin-add-tutor-field admin-add-tutor-field--full">
+                        <label for="manual-student-search">Student</label>
+                        <span class="admin-student-picker" data-student-picker>
+                            <input id="manual-student-search"
+                                   type="search"
+                                   placeholder="Search by name or student number"
+                                   autocomplete="off"
+                                   aria-label="Search eligible students"
+                                   aria-controls="eligible-student-results"
+                                   aria-expanded="false"
+                                   data-student-search />
+                            <span id="eligible-student-results"
+                                  class="admin-student-results"
+                                  role="listbox"
+                                  data-student-results
+                                  hidden>
+                                @foreach (SelectListItem student in Model.StudentOptions)
+                                {
+                                    <label role="option"
+                                           data-student-option
+                                           data-student-id="@student.Value"
+                                           data-search-text="@student.Text.ToLowerInvariant()">
+                                        <input type="radio"
+                                               name="ManualTutor.BcUserId"
+                                               value="@student.Value"
+                                               data-student-choice />
+                                        <span>@student.Text</span>
+                                    </label>
+                                }
+                                <span class="admin-student-empty"
+                                      data-student-empty
+                                      hidden>
+                                    No matching students found.
+                                </span>
+                            </span>
+                        </span>
+                    </div>
+                    <label class="admin-add-tutor-field admin-add-tutor-field--full">
+                        <span>Programme</span>
+                        <select asp-for="ManualTutor.ProgrammeId"
+                                asp-items="Model.ProgrammeOptions"
+                                data-manual-programme>
+                            <option value="">Select a programme</option>
+                        </select>
+                    </label>
+                    <label class="admin-add-tutor-field">
+                        <span>Year of study</span>
+                        <input asp-for="ManualTutor.YearOfStudy"
+                               type="number"
+                               data-manual-year />
+                    </label>
+                    <label class="admin-add-tutor-field">
+                        <span>Overall average</span>
+                        <input asp-for="ManualTutor.OverallAverage"
+                               type="number" step="0.01" />
+                    </label>
+                    <label class="admin-add-tutor-field">
+                        <span>Campus</span>
+                        <select asp-for="ManualTutor.CampusOfStudy">
+                            <option value="">Select a campus</option>
+                            @foreach (string campus in BC_CampusLearn.Pages.Administrator.ManualTutorPageModel.ManualTutorCampuses)
+                            {
+                                <option value="@campus">@campus</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="admin-add-tutor-field">
+                        <span>Phone number <small>(optional)</small></span>
+                        <input asp-for="ManualTutor.PhoneNumber" type="tel" />
+                    </label>
+                    <label class="admin-add-tutor-field admin-add-tutor-field--full">
+                        <span>Preferred tutoring mode</span>
+                        <select asp-for="ManualTutor.PreferredTutoringMode"
+                                asp-items="Html.GetEnumSelectList<PreferredTutoringMode>()"></select>
+                    </label>
+                    <fieldset class="admin-manual-modules admin-add-tutor-field--full">
+                        <legend>Modules to teach</legend>
+                        <p>Select the programme and year of study to see eligible modules.</p>
+                        <label class="admin-manual-module-search">
+                            <span class="visually-hidden">Search modules</span>
+                            <input type="search"
+                                   placeholder="Search modules by code or name"
+                                   autocomplete="off"
+                                   data-manual-module-search />
+                        </label>
+                        <div class="admin-manual-module-list" data-manual-module-list>
+                            @foreach (var module in Model.ManualTutorModuleOptions)
+                            {
+                                <label data-manual-module
+                                       data-programme-id="@module.ProgrammeId"
+                                       data-module-year="@module.YearOfStudy"
+                                       data-module-search="@($"{module.Code} {module.Name}".ToLowerInvariant())"
+                                       hidden>
+                                    <input type="checkbox"
+                                           name="ManualTutor.ProgrammeModuleIds"
+                                           value="@module.ProgrammeModuleId" />
+                                    <span>
+                                        <strong>@module.Code</strong>
+                                        @module.Name
+                                        <small>Year @module.YearOfStudy</small>
+                                    </span>
+                                </label>
+                            }
+                        </div>
+                        <p class="admin-manual-module-empty" data-manual-module-empty>
+                            Choose a programme and year first.
+                        </p>
+                    </fieldset>
+                </div>
+                <div class="admin-modal-actions">
+                    <button type="submit">Add tutor</button>
+                </div>
+            </form>
+        </dialog>
