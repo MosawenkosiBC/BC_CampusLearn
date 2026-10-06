@@ -41,6 +41,28 @@
                         </div>
                     </div>
                 </div>
+                <div class="settings-subsection">
+                    <div class="settings-subsection-copy"><h3>Administrator Review Period</h3><p>Set the internal deadline for administrators to complete session approvals.</p></div>
+                    <div class="settings-field-grid">
+                        <div class="settings-field"><label asp-for="Input.AdminReviewDeadline"></label><input asp-for="Input.AdminReviewDeadline" type="date" /><small>The next administrator review period starts the following day.</small><span asp-validation-for="Input.AdminReviewDeadline"></span></div>
+                        <div class="settings-field settings-field--wide">
+                            <label class="settings-switch">
+                                <input asp-for="Input.IsAdminReviewDeadlineRecurring" />
+                                <span aria-hidden="true"></span>
+                                <strong>Repeat the administrator deadline monthly</strong>
+                            </label>
+                            <small>The deadline remains internal and automatically advances each month.</small>
+                        </div>
+                        <div class="settings-field settings-field--wide">
+                            <label class="settings-switch">
+                                <input asp-for="Input.UseLastDayOfMonthForAdminReview" />
+                                <span aria-hidden="true"></span>
+                                <strong>Use the last day of each month</strong>
+                            </label>
+                            <small>When recurrence is enabled, the deadline uses the actual final day of every month.</small>
+                        </div>
+                    </div>
+                </div>
                 <footer class="settings-form-footer"><button type="submit" class="settings-primary-button">Save booking and session settings</button></footer>
             </form>
         </section>

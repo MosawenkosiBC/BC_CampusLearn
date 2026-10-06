@@ -138,6 +138,39 @@ public class AdminSettingsTests
     }
 
     [Fact]
+    public async Task AdministratorCanConfigureRecurringAdminReviewDeadline()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.Admin);
+        await context.SaveChangesAsync();
+        BookingsModel page = CreateBookingsPage(context, BcUserRole.Admin);
+        page.Input = new BookingsModel.BookingTermsInput
+        {
+            Terms = PlatformSettings.DefaultBookingTerms,
+            ReviewDeadline = new DateOnly(2026, 10, 5),
+            IsReviewDeadlineRecurring = true,
+            AdminReviewDeadline = new DateOnly(2026, 11, 5),
+            IsAdminReviewDeadlineRecurring = true,
+            UseLastDayOfMonthForAdminReview = true
+        };
+
+        IActionResult result = await page.OnPostAsync(CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        PlatformSettings settings = await context.PlatformSettings.SingleAsync();
+        Assert.Equal(
+            new DateOnly(2026, 11, 30),
+            settings.AdminSessionReviewDeadline);
+        Assert.True(settings.IsAdminSessionReviewDeadlineRecurring);
+        Assert.True(settings
+            .UseLastDayOfMonthForAdminSessionReviewDeadline);
+        Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
+            log => log.SettingName ==
+                "Administrator review deadline monthly rule" &&
+                log.NewValue == "Last day of the month");
+    }
+
+    [Fact]
     public async Task AdministratorCanAddStudyArea()
     {
         await using ApplicationDbContext context = CreateContext();

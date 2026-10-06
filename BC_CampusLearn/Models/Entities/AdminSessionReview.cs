@@ -8,11 +8,9 @@ public class AdminSessionReview
 
     public int ReviewerBcUserId { get; set; }
 
-    public bool AllReviewsSubmitted { get; set; }
-
-    public bool HeadConfirmedSession { get; set; }
-
     public bool HeadConfirmedQuality { get; set; }
+
+    public bool ReviewEvidenceIsConsistent { get; set; }
 
     public bool ConcernsResolvedOrDocumented { get; set; }
 

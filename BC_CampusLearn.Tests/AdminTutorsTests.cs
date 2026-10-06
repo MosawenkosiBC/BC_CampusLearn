@@ -20,7 +20,7 @@ namespace BC_CampusLearn.Tests;
 public class AdminTutorsTests
 {
     [Fact]
-    public async Task AdminReviewSavesFiveAnswersAndRecordingTime()
+    public async Task AdminReviewSavesFourResponsesAndRecordingTime()
     {
         await using var context = CreateContext();
         await SeedTutors(context);
@@ -57,9 +57,8 @@ public class AdminTutorsTests
         {
             AdminReviewInput = new AdminSessionReviewInput
             {
-                AllReviewsSubmitted = true,
-                HeadConfirmedSession = false,
                 HeadConfirmedQuality = false,
+                ReviewEvidenceIsConsistent = false,
                 ConcernsResolvedOrDocumented = true,
                 EvidenceSupportsApproval = false
             }
@@ -72,8 +71,7 @@ public class AdminTutorsTests
         AdminSessionReview saved = await context.AdminSessionReviews.SingleAsync();
         Assert.Equal(booking.BookingId, saved.BookingId);
         Assert.Equal(1, saved.ReviewerBcUserId);
-        Assert.True(saved.AllReviewsSubmitted);
-        Assert.False(saved.HeadConfirmedSession);
+        Assert.False(saved.ReviewEvidenceIsConsistent);
         Assert.False(saved.HeadConfirmedQuality);
         Assert.True(saved.ConcernsResolvedOrDocumented);
         Assert.False(saved.EvidenceSupportsApproval);

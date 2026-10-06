@@ -99,31 +99,26 @@
 }
 
 .bookings-sessions-heading {
-    margin-bottom: 1.6rem;
+    margin-bottom: 2rem;
 }
 
 .bookings-sessions-heading h1 {
     color: #141718;
-    font-size: clamp(1.65rem, 2.4vw, 2.1rem);
+    font-size: clamp(1.55rem, 2.4vw, 2rem);
     font-weight: 700;
     letter-spacing: -0.025em;
     margin: 0;
 }
 
-.session-count-card {
-    align-items: center;
+.session-result-count {
     background: #fff;
-    border: 1px solid #f0f1f2;
-    border-radius: 0.45rem;
-    box-shadow: 0 0.4rem 1rem rgba(25, 30, 32, 0.08);
-    color: #272b2c;
-    display: flex;
-    font-size: 0.86rem;
-    font-weight: 650;
-    justify-content: space-between;
-    min-height: 4.2rem;
-    margin: 0 0 1rem;
-    padding: 0.8rem 1rem;
+    border-radius: 0.65rem;
+    box-shadow: 0 0.3rem 1rem rgba(25, 30, 38, 0.1);
+    color: #111;
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0 0 1.25rem;
+    padding: 1rem 1.25rem;
 }
 
 .session-filters :is(input, select, button, a):focus-visible,
@@ -133,18 +128,7 @@
     outline-offset: 2px;
 }
 
-.session-count-card strong {
-    align-items: center;
-    background: #eef0f0;
-    border-radius: 0.45rem;
-    color: #414647;
-    display: flex;
-    font-size: 0.76rem;
-    height: 1.8rem;
-    justify-content: center;
-    min-width: 1.8rem;
-    padding: 0 0.35rem;
-}
+.session-result-count strong { font-weight: 700; }
 
 .sessions-workspace {
     align-items: start;
@@ -156,9 +140,14 @@
 .session-filters,
 .completed-session-table-wrap {
     background: #fff;
-    border: 1px solid #f0f1f2;
     border-radius: 0.55rem;
     box-shadow: 0 0.4rem 1.2rem rgba(25, 30, 32, 0.08);
+}
+
+.completed-session-table-wrap {
+    border: 1px solid #e6e8ec;
+    border-radius: 0.6rem;
+    box-shadow: 0 0.4rem 1.4rem rgba(25, 30, 38, 0.06);
 }
 
 .sessions-main-column {
@@ -166,37 +155,103 @@
 }
 
 .session-filters {
-    margin-top: 5.2rem;
     padding: 1.25rem;
 }
 
 .session-filter-heading {
-    align-items: start;
-    border-bottom: 1px solid #dfe3e4;
+    align-items: center;
+    border-bottom: 1px solid #c9c9c9;
     display: flex;
     gap: 1rem;
     justify-content: space-between;
-    margin-bottom: 1.2rem;
+    margin-bottom: 1.25rem;
     padding-bottom: 1rem;
 }
 
 .session-filter-heading h2 {
-    font-size: 1.05rem;
-    font-weight: 650;
+    font-size: 1.25rem;
+    font-weight: 600;
     margin: 0;
 }
 
-.session-filter-heading span {
-    color: #697071;
+.admin-session-stats {
+    gap: 1rem;
+    margin-bottom: 3rem;
+}
+
+.admin-session-stats .admin-stat-card {
+    gap: 0.75rem;
+    min-height: 4.65rem;
+    padding: 0.6rem 0.9rem;
+}
+
+.admin-session-stats .admin-stat-icon {
+    color: #000;
+    flex-basis: 2.3rem;
+    height: 2.3rem;
+    width: 2.3rem;
+}
+
+.admin-session-stats .admin-stat-icon svg {
+    height: 1.95rem;
+    width: 1.95rem;
+}
+
+.admin-session-stats .admin-stat-icon svg > path:first-child {
+    stroke: none;
+}
+
+.awaiting-review-progress {
     display: block;
-    font-size: 0.7rem;
-    margin-top: 0.25rem;
+    height: 1.95rem;
+    overflow: visible;
+    width: 1.95rem;
+}
+
+.admin-session-stats .awaiting-review-progress-fill {
+    fill: none;
+    stroke: #000;
+    stroke-linecap: butt;
+    stroke-width: 8.5;
+}
+
+.admin-session-stats .awaiting-review-progress-ring {
+    fill: none;
+    stroke: #000;
+    stroke-width: 1.5;
+}
+
+.admin-session-stats .admin-stat-content h2 {
+    color: #25272c;
+    font-size: 0.86rem;
+    font-weight: 500;
+    line-height: 1.25;
+    margin: 0 0 0.45rem;
+}
+
+.admin-session-stats .admin-stat-content p {
+    color: #0d0f13;
+    font-size: 1.65rem;
+    font-weight: 700;
+    line-height: 1;
+    margin: 0;
 }
 
 .session-filter-heading a {
-    color: #5e6667;
-    font-size: 0.75rem;
+    color: #444;
+    font-size: 1rem;
+    text-decoration: none;
     white-space: nowrap;
+}
+
+.session-filter-heading a:hover { text-decoration: underline; }
+
+.session-filter-period {
+    color: #626b78;
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.4;
+    margin: -0.5rem 0 1.25rem;
 }
 
 .session-filter-field {
@@ -205,24 +260,44 @@
 }
 
 .session-filter-field > span {
-    color: #34393a;
+    color: #111;
     display: block;
-    font-size: 0.78rem;
-    font-weight: 650;
-    margin-bottom: 0.4rem;
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.session-filter-search {
+    margin-bottom: 0 !important;
+    position: relative;
+}
+
+.session-filter-search svg {
+    fill: none;
+    height: 1.1rem;
+    pointer-events: none;
+    position: absolute;
+    right: 0.7rem;
+    stroke: #444;
+    stroke-width: 2;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.1rem;
 }
 
 .session-filter-field input,
 .session-filter-field select {
-    background: #f1f3f3;
+    background: #ededed;
     border: 0;
-    border-radius: 0.45rem;
-    color: #252a2b;
-    font-size: 0.78rem;
-    min-height: 2.75rem;
-    padding: 0.55rem 0.7rem;
+    border-radius: 0.65rem;
+    color: #222;
+    font-size: 1rem;
+    min-height: 44px;
+    padding: 0.6rem 0.75rem;
     width: 100%;
 }
+
+.session-filter-search input { padding-right: 2.5rem; }
 
 .session-custom-period {
     display: block;
@@ -234,17 +309,17 @@
 
 .session-filter-submit {
     border: 0;
-    border-radius: 0.45rem;
-    font-size: 0.8rem;
-    font-weight: 650;
-    background: #363c3d;
+    border-radius: 0.65rem;
+    font-size: 1rem;
+    font-weight: 600;
+    background: #444;
     color: #fff;
-    min-height: 2.8rem;
+    min-height: 50px;
     width: 100%;
 }
 
 .session-filter-submit:hover {
-    background: #252a2b;
+    background: #292929;
 }
 
 .completed-sessions {
@@ -255,6 +330,11 @@
     overflow-x: auto;
 }
 
+.completed-session-table-wrap:focus-visible {
+    outline: 3px solid #4f87a5;
+    outline-offset: 3px;
+}
+
 .completed-session-table {
     border-collapse: collapse;
     width: 100%;
@@ -262,23 +342,23 @@
 
 .completed-session-table th,
 .completed-session-table td {
-    border-bottom: 1px solid #edf0f1;
-    font-size: 0.82rem;
-    padding: 1rem 1.1rem;
+    border-bottom: 1px solid #edf0f3;
+    font-size: 0.9rem;
+    padding: 1rem 1.25rem;
     text-align: left;
     vertical-align: middle;
 }
 
 .completed-session-table thead th {
-    background: #f6f7f7;
-    color: #5d6566;
-    font-size: 0.75rem;
-    font-weight: 650;
+    background: #f7f8fa;
+    color: #525b68;
+    font-size: 0.8rem;
+    font-weight: 600;
     white-space: nowrap;
 }
 
 .completed-session-table tbody th {
-    font-weight: 650;
+    font-weight: 600;
 }
 
 .completed-session-table tbody tr:last-child > * {
@@ -286,31 +366,27 @@
 }
 
 .completed-session-table tbody tr:hover {
-    background: #fbfcfc;
+    background: #fbfcfd;
 }
 
 .session-approval {
     border-radius: 999px;
-    display: inline-block;
-    font-size: 0.72rem;
-    font-weight: 650;
-    padding: 0.35rem 0.65rem;
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 0.38rem 0.65rem;
     white-space: nowrap;
 }
 
-.session-approval.is-approved {
-    background: #e5f5ea;
-    color: #267141;
+.session-approval.is-reviewed {
+    background-color: #e2f4e7;
+    color: #246b35;
 }
 
-.session-approval.is-pending {
-    background: #fff2cf;
-    color: #8a6417;
-}
-
-.session-approval.is-waiting {
-    background: #edf0f1;
-    color: #5e6667;
+.session-approval.is-awaiting {
+    background-color: #e5e7ea;
+    color: #4b5057;
 }
 
 .session-view-link {
@@ -318,9 +394,9 @@
     border-radius: 0.4rem;
     color: #fff;
     display: inline-flex;
-    font-size: 0.76rem;
-    font-weight: 650;
-    padding: 0.5rem 0.85rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.55rem 0.85rem;
     text-decoration: none;
 }
 
@@ -330,12 +406,16 @@
 }
 
 .completed-session-empty {
-    color: #687071;
+    color: #626b78;
     padding: 3rem 1rem !important;
     text-align: center !important;
 }
 
 @media (max-width: 991.98px) {
+    .admin-session-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .sessions-workspace {
         grid-template-columns: 1fr;
     }
@@ -361,6 +441,10 @@
 
     .approval-status-help-card p {
         white-space: normal;
+    }
+
+    .admin-session-stats {
+        grid-template-columns: 1fr;
     }
 
     .completed-session-table th,

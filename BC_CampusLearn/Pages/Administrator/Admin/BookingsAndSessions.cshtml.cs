@@ -1,5 +1,6 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Settings;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,8 @@ public class BookingsAndSessionsModel(
         ["month", "week", "day", "custom"];
     private static readonly TimeSpan CampusOffset = TimeSpan.FromHours(2);
     private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
+    private DateTimeOffset _currentReviewPeriodStart;
+    private DateTimeOffset _currentReviewPeriodEnd;
 
     [BindProperty(SupportsGet = true)]
     public string? Search { get; set; }
@@ -40,6 +43,9 @@ public class BookingsAndSessionsModel(
     public int TotalPages { get; private set; }
     public int DisplayedSessionCount => Sessions.Count;
     public string PeriodLabel { get; private set; } = string.Empty;
+    public string CurrentReviewPeriodLabel { get; private set; } = string.Empty;
+    public AdminReviewStats ReviewStats { get; private set; } =
+        AdminReviewStats.Empty;
     public IReadOnlyList<CompletedSessionItem> Sessions { get; private set; } = [];
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
@@ -52,18 +58,61 @@ public class BookingsAndSessionsModel(
             : "month";
         Search = string.IsNullOrWhiteSpace(Search) ? null : Search.Trim();
 
-        (DateTimeOffset periodStart, DateTimeOffset periodEnd) = ResolvePeriod();
+        AdminReviewDeadlineSettings? deadlineSettings =
+            await context.PlatformSettings
+                .AsNoTracking()
+                .Where(settings => settings.PlatformSettingsId ==
+                    PlatformSettings.SingletonId)
+                .Select(settings => new AdminReviewDeadlineSettings(
+                    settings.AdminSessionReviewDeadline,
+                    settings.IsAdminSessionReviewDeadlineRecurring,
+                    settings.UseLastDayOfMonthForAdminSessionReviewDeadline))
+                .SingleOrDefaultAsync(cancellationToken);
+        (DateTimeOffset periodStart, DateTimeOffset periodEnd) =
+            ResolvePeriod(deadlineSettings);
 
         IQueryable<Booking> reviewedSessions = context.Bookings
             .AsNoTracking()
             .Where(booking =>
                 booking.Status == BookingStatus.Completed &&
-                booking.ScheduledStartTime >= periodStart &&
-                booking.ScheduledStartTime < periodEnd &&
                 booking.StudentEvaluation != null &&
                 booking.TutorEvaluation != null &&
                 booking.SessionReviews.Any(review =>
                     review.Reviewer.Role == BcUserRole.HeadOfTutors));
+
+        int carriedOver = await reviewedSessions.CountAsync(booking =>
+            (booking.CompletedAt ?? booking.ScheduledStartTime) <
+                _currentReviewPeriodStart &&
+            booking.AdminSessionReview == null,
+            cancellationToken);
+        int awaitingAdminReview = await reviewedSessions.CountAsync(booking =>
+            (booking.CompletedAt ?? booking.ScheduledStartTime) <
+                _currentReviewPeriodEnd &&
+            booking.AdminSessionReview == null,
+            cancellationToken);
+        ReviewStats = new AdminReviewStats(
+            carriedOver,
+            FlaggedConcerns: 0,
+            RejectedByTutorHead: 0,
+            AwaitingAdminReview: awaitingAdminReview);
+
+        if (Period == "month" && deadlineSettings is not null)
+        {
+            reviewedSessions = reviewedSessions.Where(booking =>
+                (booking.CompletedAt ?? booking.ScheduledStartTime) <
+                    periodEnd &&
+                ((booking.CompletedAt ?? booking.ScheduledStartTime) >=
+                    periodStart ||
+                 booking.AdminSessionReview == null));
+        }
+        else
+        {
+            reviewedSessions = reviewedSessions.Where(booking =>
+                (booking.CompletedAt ?? booking.ScheduledStartTime) >=
+                    periodStart &&
+                (booking.CompletedAt ?? booking.ScheduledStartTime) <
+                    periodEnd);
+        }
 
         IQueryable<Booking> filtered = reviewedSessions;
 
@@ -80,19 +129,9 @@ public class BookingsAndSessionsModel(
         filtered = Approval switch
         {
             "pending" => filtered.Where(booking =>
-                (booking.AdminSessionReview == null ||
-                 !booking.AdminSessionReview.AllReviewsSubmitted ||
-                 !booking.AdminSessionReview.HeadConfirmedSession ||
-                 !booking.AdminSessionReview.HeadConfirmedQuality ||
-                 !booking.AdminSessionReview.ConcernsResolvedOrDocumented ||
-                 !booking.AdminSessionReview.EvidenceSupportsApproval)),
+                booking.AdminSessionReview == null),
             "approved" => filtered.Where(booking =>
-                booking.AdminSessionReview != null &&
-                booking.AdminSessionReview.AllReviewsSubmitted &&
-                booking.AdminSessionReview.HeadConfirmedSession &&
-                booking.AdminSessionReview.HeadConfirmedQuality &&
-                booking.AdminSessionReview.ConcernsResolvedOrDocumented &&
-                booking.AdminSessionReview.EvidenceSupportsApproval),
+                booking.AdminSessionReview != null),
             _ => filtered
         };
 
@@ -102,7 +141,9 @@ public class BookingsAndSessionsModel(
         SessionPage = Math.Clamp(SessionPage, 1, TotalPages);
 
         Sessions = await filtered
-            .OrderByDescending(booking => booking.CompletedAt ?? booking.ScheduledStartTime)
+            .OrderBy(booking => booking.AdminSessionReview != null)
+            .ThenByDescending(booking =>
+                booking.CompletedAt ?? booking.ScheduledStartTime)
             .ThenByDescending(booking => booking.BookingId)
             .Skip((SessionPage - 1) * PageSize)
             .Take(PageSize)
@@ -119,18 +160,33 @@ public class BookingsAndSessionsModel(
                     review.Reviewer.Role == BcUserRole.HeadOfTutors),
                 booking.AdminSessionReview == null
                     ? null
-                    : booking.AdminSessionReview.AllReviewsSubmitted &&
-                      booking.AdminSessionReview.HeadConfirmedSession &&
-                      booking.AdminSessionReview.HeadConfirmedQuality &&
-                      booking.AdminSessionReview.ConcernsResolvedOrDocumented &&
-                      booking.AdminSessionReview.EvidenceSupportsApproval))
+                    : true))
             .ToListAsync(cancellationToken);
     }
 
-    private (DateTimeOffset Start, DateTimeOffset End) ResolvePeriod()
+    private (DateTimeOffset Start, DateTimeOffset End) ResolvePeriod(
+        AdminReviewDeadlineSettings? deadlineSettings)
     {
         DateOnly today = DateOnly.FromDateTime(
             _timeProvider.GetUtcNow().ToOffset(CampusOffset).Date);
+        ReviewPeriodWindow? currentReviewPeriod = deadlineSettings is null
+            ? null
+            : MonthlyReviewPeriod.Resolve(
+                deadlineSettings.Deadline,
+                deadlineSettings.UseLastDayOfMonth,
+                today);
+        DateOnly currentReviewPeriodStart = currentReviewPeriod?.StartDate ??
+            new DateOnly(today.Year, today.Month, 1);
+        DateOnly currentReviewPeriodEnd = currentReviewPeriod?.EndDate ??
+            currentReviewPeriodStart.AddMonths(1).AddDays(-1);
+        CurrentReviewPeriodLabel =
+            $"{currentReviewPeriodStart:dd MMM yyyy} – {currentReviewPeriodEnd:dd MMM yyyy}";
+        _currentReviewPeriodStart = new DateTimeOffset(
+            currentReviewPeriodStart.ToDateTime(TimeOnly.MinValue),
+            CampusOffset);
+        _currentReviewPeriodEnd = new DateTimeOffset(
+            currentReviewPeriodEnd.AddDays(1).ToDateTime(TimeOnly.MinValue),
+            CampusOffset);
         DateOnly start;
         DateOnly end;
 
@@ -162,9 +218,18 @@ public class BookingsAndSessionsModel(
                 break;
             default:
                 Period = "month";
-                start = new DateOnly(today.Year, today.Month, 1);
-                end = start.AddMonths(1).AddDays(-1);
-                PeriodLabel = start.ToString("MMMM yyyy");
+                if (currentReviewPeriod is not null)
+                {
+                    start = currentReviewPeriod.StartDate;
+                    end = currentReviewPeriod.EndDate;
+                    PeriodLabel = CurrentReviewPeriodLabel;
+                }
+                else
+                {
+                    start = new DateOnly(today.Year, today.Month, 1);
+                    end = start.AddMonths(1).AddDays(-1);
+                    PeriodLabel = start.ToString("MMMM yyyy");
+                }
                 break;
         }
 
@@ -190,15 +255,31 @@ public class BookingsAndSessionsModel(
             : TutorName;
 
         public string AdminApprovalLabel => IsAdminApproved == true
-            ? "Approved"
-            : !HasTutorReview || !HasStudentReview
-                ? "Awaiting reviews"
-                : "Pending approval";
+            ? "Reviewed"
+            : "Awaiting review";
 
         public string AdminApprovalCssClass => IsAdminApproved == true
-            ? "is-approved"
-            : !HasTutorReview || !HasStudentReview
-                ? "is-waiting"
-                : "is-pending";
+            ? "is-reviewed"
+            : "is-awaiting";
+    }
+
+    private sealed record AdminReviewDeadlineSettings(
+        DateOnly Deadline,
+        bool IsRecurring,
+        bool UseLastDayOfMonth);
+
+    public sealed record AdminReviewStats(
+        int CarriedOver,
+        int FlaggedConcerns,
+        int RejectedByTutorHead,
+        int AwaitingAdminReview)
+    {
+        public static AdminReviewStats Empty { get; } =
+            new(0, 0, 0, 0);
+
+        public int AwaitingAdminReviewPercentage =>
+            Math.Min(100, (int)Math.Round(
+                AwaitingAdminReview * 100d / PageSize,
+                MidpointRounding.AwayFromZero));
     }
 }

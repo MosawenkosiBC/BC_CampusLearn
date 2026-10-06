@@ -61,6 +61,9 @@ public class PlatformSettingsConfiguration :
             TutorHeadReviewDeadline = new DateOnly(2026, 10, 5),
             IsTutorHeadReviewDeadlineRecurring = true,
             UseLastDayOfMonthForTutorHeadReviewDeadline = false,
+            AdminSessionReviewDeadline = new DateOnly(2026, 10, 10),
+            IsAdminSessionReviewDeadlineRecurring = true,
+            UseLastDayOfMonthForAdminSessionReviewDeadline = false,
             UpdatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
         });
     }

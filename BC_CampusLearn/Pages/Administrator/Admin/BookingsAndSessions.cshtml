@@ -7,6 +7,9 @@
 
 @section Styles {
     <link rel="stylesheet"
+          href="~/css/admin-dashboard.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
           href="~/css/admin-bookings-sessions.css"
           asp-append-version="true" />
     <link rel="stylesheet"
@@ -23,12 +26,12 @@
         <div class="approval-status-help-card" id="approval-status-help-card" role="tooltip">
             <h2>Approval status guide</h2>
             <div>
-                <span class="session-approval is-pending">Pending approval</span>
+                <span class="session-approval is-awaiting">Awaiting review</span>
                 <span aria-hidden="true">–</span>
                 <p>The administrator approval is still pending.</p>
             </div>
             <div>
-                <span class="session-approval is-approved">Approved</span>
+                <span class="session-approval is-reviewed">Reviewed</span>
                 <span aria-hidden="true">–</span>
                 <p>The session reviews have been accepted.</p>
             </div>
@@ -39,40 +42,97 @@
         <h1 id="bookings-sessions-title">Bookings and Sessions</h1>
     </header>
 
+    <section class="admin-stat-grid admin-session-stats" aria-label="Administrator session review statistics">
+        <article class="admin-stat-card">
+            <div class="admin-stat-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                        <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2c4.478 0 8.226 2.943 9.5 7H19" />
+                        <path d="M12 8v4l2 2m7.955-1q.045-.495.045-1m-7 10a10 10 0 0 0 1-.392M20.79 17q.291-.558.515-1.154m-3.113 4.383q.518-.428.977-.922" />
+                    </g>
+                </svg>
+            </div>
+            <div class="admin-stat-content"><h2>Carried over</h2><p>@Model.ReviewStats.CarriedOver</p></div>
+        </article>
+        <article class="admin-stat-card">
+            <div class="admin-stat-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 8v4m.125 3.75H12m.25 0a.25.25 0 1 1-.5 0a.25.25 0 0 1 .5 0" />
+                    </g>
+                </svg>
+            </div>
+            <div class="admin-stat-content"><h2>Flagged concerns</h2><p>@Model.ReviewStats.FlaggedConcerns</p></div>
+        </article>
+        <article class="admin-stat-card">
+            <div class="admin-stat-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 2v4M8 2v4m13 7v-1c0-3.771 0-5.657-1.172-6.828S16.771 4 13 4h-2C7.229 4 5.343 4 4.172 5.172S3 8.229 3 12v2c0 3.771 0 5.657 1.172 6.828S7.229 22 11 22h1M3 10h18m0 6l-3 3m0 0l-3 3m3-3l3 3m-3-3l-3-3" />
+                </svg>
+            </div>
+            <div class="admin-stat-content"><h2>Rejected by Tutor Head</h2><p>@Model.ReviewStats.RejectedByTutorHead</p></div>
+        </article>
+        <article class="admin-stat-card">
+            <div class="admin-stat-icon" aria-hidden="true">
+                <svg class="awaiting-review-progress"
+                     viewBox="0 0 24 24"
+                     shape-rendering="geometricPrecision">
+                    <circle class="awaiting-review-progress-fill"
+                            cx="12"
+                            cy="12"
+                            r="4.25"
+                            pathLength="100"
+                            stroke-dasharray="@($"{Model.ReviewStats.AwaitingAdminReviewPercentage} 100")"
+                            transform="rotate(-90 12 12)" />
+                    <circle class="awaiting-review-progress-ring"
+                            cx="12"
+                            cy="12"
+                            r="10.5" />
+                </svg>
+            </div>
+            <div class="admin-stat-content"><h2>Awaiting admin review</h2><p>@Model.ReviewStats.AwaitingAdminReview</p></div>
+        </article>
+    </section>
+
     <div class="sessions-workspace">
         <aside class="session-filters" aria-labelledby="session-filters-title">
             <div class="session-filter-heading">
-                <div>
-                    <h2 id="session-filters-title">Filter</h2>
-                    <span>@Model.PeriodLabel</span>
-                </div>
-                @if (Model.Search is not null || Model.Approval != "all" || Model.Period != "month")
-                {
-                    <a asp-page="/Administrator/Admin/BookingsAndSessions">Clear all</a>
-                }
+                <h2 id="session-filters-title">Filters</h2>
+                <a asp-page="/Administrator/Admin/BookingsAndSessions">Clear All</a>
             </div>
+            <p class="session-filter-period">
+                @Model.PeriodLabel
+            </p>
 
-            <form method="get">
+            <form method="get" asp-page="/Administrator/Admin/BookingsAndSessions">
                 <label class="session-filter-field">
                     <span>Search sessions</span>
-                    <input asp-for="Search"
-                           placeholder="Tutor, student or location"
-                           autocomplete="off" />
+                    <span class="session-filter-search">
+                        <input asp-for="Search"
+                               type="search"
+                               placeholder="Tutor, student or location"
+                               autocomplete="off" />
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                    </span>
                 </label>
 
                 <label class="session-filter-field">
                     <span>Admin approval</span>
                     <select asp-for="Approval">
                         <option value="all">All approval statuses</option>
-                        <option value="pending">Pending approval</option>
-                        <option value="approved">Approved</option>
+                        <option value="pending">Awaiting review</option>
+                        <option value="approved">Reviewed</option>
                     </select>
                 </label>
 
                 <label class="session-filter-field">
                     <span>Date</span>
                     <select asp-for="Period" data-session-period>
-                        <option value="month">Current month</option>
+                        <option value="month">Current period</option>
                         <option value="week">Current week</option>
                         <option value="day">Today</option>
                         <option value="custom">Custom dates</option>
@@ -90,15 +150,14 @@
                     </label>
                 </div>
 
-                <button type="submit" class="session-filter-submit">Apply filters</button>
+                <button type="submit" class="session-filter-submit">Apply Filters</button>
             </form>
         </aside>
 
         <div class="sessions-main-column">
-            <section class="session-count-card" aria-label="Session count">
-                <span>Sessions</span>
-                <strong>@Model.FilteredSessionCount</strong>
-            </section>
+            <p class="session-result-count" role="status">
+                Showing <strong>@Model.FilteredSessionCount</strong> sessions
+            </p>
 
             <section class="completed-sessions" aria-label="Completed sessions">
             <div class="completed-session-table-wrap" tabindex="0">
