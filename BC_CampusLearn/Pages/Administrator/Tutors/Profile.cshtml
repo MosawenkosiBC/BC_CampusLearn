@@ -62,7 +62,16 @@
             </form>
         </div>
     </div>
+    @if (Model.DeregistrationMessage is not null)
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.DeregistrationMessage))
+    }
+    @if (Model.DeregistrationError is not null)
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.DeregistrationError, CampusAlertVariant.Danger))
+    }
     <div class="admin-profile-layout">
+        <div class="admin-profile-sidebar">
         <aside class="admin-profile-personal admin-profile-panel" aria-label="Tutor personal details">
             <div class="admin-profile-identity">
                 @if (!string.IsNullOrWhiteSpace(tutor.ProfileImagePath))
@@ -98,6 +107,27 @@
             <p class="admin-profile-copy-status" role="status" aria-live="polite"></p>
             <span class="admin-tutor-status">@tutor.Status · @(tutor.IsActive ? "Active" : "Inactive")</span>
         </aside>
+        <section class="admin-deregistration-panel @(tutor.Status == TutorStatus.Deregistered ? "admin-profile-panel" : "admin-deregistration-action")" aria-label="Tutoring programme">
+            @if (tutor.Status == TutorStatus.Deregistered)
+            {
+                <h2 id="deregistration-heading">Deregistered</h2>
+                <p class="admin-profile-muted">Session history and conversations are preserved.</p>
+                <dl>
+                    <dt>Date</dt><dd>@tutor.DeregisteredAt?.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")</dd>
+                    <dt>Administrator</dt><dd>@tutor.DeregisteredByName</dd>
+                    <dt>Reason</dt><dd class="admin-deregistration-reason">@tutor.DeregistrationReason</dd>
+                </dl>
+            }
+            else
+            {
+                <button type="button" class="admin-deregister-button" data-bs-toggle="modal" data-bs-target="#deregister-tutor-modal"
+                        title="@(Model.OpenSessions > 0 ? "Resolve pending, confirmed or in-progress sessions before deregistration." : null)"
+                        disabled="@(Model.OpenSessions > 0 || tutor.Status is not (TutorStatus.Approved or TutorStatus.Suspended))">
+                    Deregister tutor
+                </button>
+            }
+        </section>
+        </div>
         <div class="admin-profile-content">
             <div class="admin-profile-stats">
                 <article class="admin-profile-stat admin-profile-panel"><i class="bi bi-chat-dots" aria-hidden="true"></i><h2>Pending Student reviews</h2><strong>@Model.PendingStudentReviews</strong></article>
@@ -228,6 +258,36 @@
         </div>
     </div>
 </section>
+@if (tutor.Status is TutorStatus.Approved or TutorStatus.Suspended)
+{
+    <div class="modal fade" id="deregister-tutor-modal" tabindex="-1" aria-labelledby="deregister-tutor-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form method="post" asp-page-handler="Deregister" asp-route-id="@tutor.TutorId" class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title fs-5" id="deregister-tutor-title">Deregister @displayName?</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="admin-deregistration-summary">
+                        <p>Completed sessions, reviews, documents and conversations stay on the platform.</p>
+                        <p>Teaching assignments become inactive and available time slots are removed.</p>
+                        <p>The tutor will receive a thank-you notification and retain access to their past sessions and conversations.</p>
+                    </div>
+                    <label asp-for="DeregistrationReason" class="form-label">Reason for deregistration <span aria-hidden="true">*</span></label>
+                    <p class="admin-deregistration-note mb-2">This reason is kept in the admin audit record.</p>
+                    <textarea asp-for="DeregistrationReason" class="form-control" rows="3" maxlength="1000" required
+                              placeholder="Record the reason for the administrative audit"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep tutor</button>
+                    <button type="submit" class="admin-deregister-button admin-deregister-confirm">Confirm deregistration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
 @section Scripts {
     <script src="~/js/admin-tutor-profile.js" asp-append-version="true"></script>
 }

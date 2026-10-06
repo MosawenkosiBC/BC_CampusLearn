@@ -30,6 +30,8 @@
 .resource-management-tab:focus-visible,
 .nomination-add-button:focus-visible,
 .nomination-remove-button:focus-visible,
+.nominated-modules-toggle:focus-visible,
+.nominated-module-list:focus-visible,
 .nomination-modal :is(select, button):focus-visible {
     outline: 3px solid rgba(74, 193, 193, 0.55);
     outline-offset: 3px;
@@ -144,10 +146,60 @@
     font-size: 0.78rem;
     font-weight: 650;
     padding: 0.35rem 0.7rem;
+    white-space: nowrap;
+}
+
+.nominated-module-controls {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.nominated-modules-toggle {
+    align-items: center;
+    background: #fff;
+    border: 0;
+    border-radius: 50%;
+    box-shadow: 0 0.35rem 0.9rem rgba(25, 30, 32, 0.18);
+    color: #363c3d;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 0.85rem;
+    font-weight: 650;
+    justify-content: center;
+    flex-shrink: 0;
+    height: 2rem;
+    width: 2rem;
+    padding: 0;
+    transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.nominated-modules-toggle:hover,
+.nominated-modules-toggle:focus-visible {
+    background: #fff;
+    box-shadow: 0 0.55rem 1.1rem rgba(25, 30, 32, 0.25);
+    transform: translateY(-0.1rem);
+}
+
+.nominated-modules-toggle svg {
+    fill: none;
+    height: 1rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+    width: 1rem;
+}
+
+.nominated-modules-toggle[aria-expanded="true"] svg {
+    transform: rotate(180deg);
 }
 
 .nominated-module-list {
     border-top: 1px solid #edf0f1;
+    max-height: 20rem;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
 }
 
 .nominated-module-row {
@@ -165,6 +217,8 @@
 .nominated-module-row > div {
     display: grid;
     gap: 0.1rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .nominated-module-row strong {
@@ -172,8 +226,7 @@
     font-size: 0.9rem;
 }
 
-.nominated-module-row span,
-.nominated-module-row small {
+.nominated-module-row span {
     color: #687078;
 }
 
@@ -239,7 +292,18 @@
     color: #fff;
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .nominated-modules-toggle { transition: none; }
+    .nominated-modules-toggle:hover,
+    .nominated-modules-toggle:focus-visible { transform: none; }
+}
+
 @media (max-width: 575.98px) {
+    .nominated-modules-toggle {
+        height: 2rem;
+        width: 2rem;
+    }
+
     .resource-management-tabs {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -262,7 +326,7 @@
         grid-template-columns: auto minmax(0, 1fr);
     }
 
-    .nominated-module-count {
+    .nominated-module-controls {
         grid-column: 1 / -1;
         justify-self: start;
     }

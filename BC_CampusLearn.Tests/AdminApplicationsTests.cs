@@ -3,6 +3,8 @@ using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Pages.Administrator.Admin;
 using BC_CampusLearn.Services.Tutors;
+using BC_CampusLearn.Services.Students;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -978,8 +980,10 @@ public class AdminApplicationsTests
         Assert.False(settings.IsAcceptingApplications(today));
     }
 
-    [Fact]
-    public async Task AdministratorCanManuallyPlaceStudentAsTutor()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AdministratorCanOnlyPlaceStudentAfterApiVerification(bool apiAvailable)
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -1002,15 +1006,15 @@ public class AdminApplicationsTests
         context.BcUsers.Add(CreateUser(1, "Manual Tutor", "ST6001"));
         await context.SaveChangesAsync();
 
-        var page = new ApplicationsModel(context)
+        var page = new ApplicationsModel(context, studentDetailsService: new TestStudentDetailsService(apiAvailable))
         {
             ManualTutor = new ApplicationsModel.ManualTutorInput
             {
                 BcUserId = 1,
-                ProgrammeId = 1,
-                YearOfStudy = 3,
+                ProgrammeId = 999,
+                YearOfStudy = 4,
                 OverallAverage = 78,
-                CampusOfStudy = "Pretoria Campus",
+                CampusOfStudy = "Untrusted Campus",
                 PhoneNumber = "0123456789",
                 PreferredTutoringMode = PreferredTutoringMode.Both,
                 ProgrammeModuleIds = [101]
@@ -1020,11 +1024,22 @@ public class AdminApplicationsTests
             "InterviewPreparation.Notes",
             "An unrelated form is invalid.");
 
-        await page.OnPostAddTutorAsync(CancellationToken.None);
+        var lookup = Assert.IsType<JsonResult>(await page.OnGetStudentDetailsAsync(1, CancellationToken.None));
+        Assert.Equal(apiAvailable ? (int?)null : 400, lookup.StatusCode);
+        var redirect = Assert.IsType<RedirectToPageResult>(await page.OnPostAddTutorAsync(CancellationToken.None));
+        Assert.Equal("placement", redirect.RouteValues!["Stage"]);
 
         BcUser user = await context.BcUsers
             .Include(item => item.Tutor)
             .SingleAsync();
+        if (!apiAvailable)
+        {
+            Assert.NotNull(page.PageError);
+            Assert.Equal(BcUserRole.Student, user.Role);
+            Assert.Null(user.Tutor);
+            Assert.Empty(await context.Tutors.ToListAsync());
+            return;
+        }
         Assert.Equal(BcUserRole.Tutor, user.Role);
         Assert.NotNull(user.Tutor);
         Assert.Equal(TutorStatus.Approved, user.Tutor.Status);
@@ -1032,6 +1047,10 @@ public class AdminApplicationsTests
             TutorApplicationStage.Placement,
             user.Tutor.ApplicationStage);
         Assert.True(user.Tutor.IsActive);
+        Assert.Equal(1, user.Tutor.ProgrammeId);
+        Assert.Equal(3, user.Tutor.YearOfStudy);
+        Assert.Equal("Pretoria", user.Tutor.CampusOfStudy);
+        Assert.Equal("verified@example.test", user.Email);
         Assert.Single(user.Tutor.TutorCourseModules);
         Assert.Equal(
             101,
@@ -1184,6 +1203,15 @@ public class AdminApplicationsTests
             RecipientName = recipientName;
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class TestStudentDetailsService(bool apiAvailable = true) : IStudentDetailsService
+    {
+        public Task<StudentDetailsResult> GetAsync(string personnelNumber, CancellationToken cancellationToken = default) =>
+            Task.FromResult(apiAvailable
+                ? StudentDetailsResult.Success(new StudentDetails(
+                    personnelNumber, "Manual", null, "Tutor", "verified@example.test", "Bachelor of Computing", 3, "Pretoria"))
+                : new StudentDetailsResult(StudentDetailsStatus.Unavailable));
     }
 
     private static BcUser CreateUser(

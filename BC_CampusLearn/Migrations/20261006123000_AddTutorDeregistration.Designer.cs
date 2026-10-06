@@ -10,10 +10,9 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace BC_CampusLearn.Migrations
 {
-    [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    partial class AddTutorDeregistration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -54,6 +53,9 @@ namespace BC_CampusLearn.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AdminSessionReviewId"));
 
+                    b.Property<bool>("AllReviewsSubmitted")
+                        .HasColumnType("bit");
+
                     b.Property<int>("BookingId")
                         .HasColumnType("int");
 
@@ -66,11 +68,11 @@ namespace BC_CampusLearn.Migrations
                     b.Property<bool>("HeadConfirmedQuality")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("HeadConfirmedSession")
+                        .HasColumnType("bit");
+
                     b.Property<DateTimeOffset>("RecordedAt")
                         .HasColumnType("datetimeoffset");
-
-                    b.Property<bool>("ReviewEvidenceIsConsistent")
-                        .HasColumnType("bit");
 
                     b.Property<int>("ReviewerBcUserId")
                         .HasColumnType("int");
@@ -612,9 +614,6 @@ namespace BC_CampusLearn.Migrations
                     b.Property<int>("AcademicYear")
                         .HasColumnType("int");
 
-                    b.Property<DateOnly>("AdminSessionReviewDeadline")
-                        .HasColumnType("date");
-
                     b.Property<string>("Announcement")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -640,16 +639,10 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
 
-                    b.Property<bool>("IsAdminSessionReviewDeadlineRecurring")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsAnnouncementEnabled")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsMaintenanceModeEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsTutorHeadReviewDeadlineRecurring")
                         .HasColumnType("bit");
 
                     b.Property<byte[]>("RowVersion")
@@ -680,12 +673,6 @@ namespace BC_CampusLearn.Migrations
                     b.Property<int?>("UpdatedByBcUserId")
                         .HasColumnType("int");
 
-                    b.Property<bool>("UseLastDayOfMonthForAdminSessionReviewDeadline")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("UseLastDayOfMonthForTutorHeadReviewDeadline")
-                        .HasColumnType("bit");
-
                     b.HasKey("PlatformSettingsId");
 
                     b.HasIndex("UpdatedByBcUserId");
@@ -705,23 +692,18 @@ namespace BC_CampusLearn.Migrations
                             PlatformSettingsId = 1,
                             AcademicSemester = "Semester 1",
                             AcademicYear = 2026,
-                            AdminSessionReviewDeadline = new DateOnly(2026, 10, 10),
                             BookingTermsAndConditions = "All appointments with tutors must be scheduled a day ahead.\nAll sessions are limited to 1 hour.\nYou must come prepared for the sessions.\nYou will be given exercises to complete during your sessions.\nAll online sessions via MS Teams are recorded.\nAll face-to-face sessions are held in the study room.\nRespect the time and effort of your tutor.\nYou will be required to complete a tutor evaluation form.",
                             CampusTimeZoneId = "Africa/Johannesburg",
                             CurrencyCode = "ZAR",
                             DateTimeFormat = "dd MMMM yyyy, HH:mm",
-                            IsAdminSessionReviewDeadlineRecurring = true,
                             IsAnnouncementEnabled = false,
                             IsMaintenanceModeEnabled = false,
-                            IsTutorHeadReviewDeadlineRecurring = true,
                             RowVersion = new byte[0],
                             SupportEmail = "tutors@belgiumcampus.ac.za",
                             TutorHeadReviewDeadline = new DateOnly(2026, 10, 5),
                             TutorHeadReviewPeriodEndDate = new DateOnly(2026, 9, 30),
                             TutorHeadReviewPeriodStartDate = new DateOnly(2026, 9, 1),
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            UseLastDayOfMonthForAdminSessionReviewDeadline = false,
-                            UseLastDayOfMonthForTutorHeadReviewDeadline = false
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
                         });
                 });
 
@@ -1060,6 +1042,18 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
 
+                    b.Property<string>("EvidenceConsistency")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("ExplanationClarity")
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<string>("ModuleAndTopicCoverage")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
                     b.Property<string>("OverallAssessment")
                         .HasMaxLength(24)
                         .HasColumnType("nvarchar(24)");
@@ -1072,6 +1066,10 @@ namespace BC_CampusLearn.Migrations
 
                     b.Property<int>("ReviewerBcUserId")
                         .HasColumnType("int");
+
+                    b.Property<string>("SessionStructure")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
 
                     b.Property<string>("StudentEngagement")
                         .HasMaxLength(16)
@@ -1345,6 +1343,20 @@ namespace BC_CampusLearn.Migrations
                     b.Property<int>("BcUserId")
                         .HasColumnType("int");
 
+                    b.Property<DateTimeOffset?>("DeregisteredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int?>("DeregisteredByBcUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DeregisteredByName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("DeregistrationReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<string>("Biography")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -1363,20 +1375,6 @@ namespace BC_CampusLearn.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTimeOffset?>("DeregisteredAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<int?>("DeregisteredByBcUserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("DeregisteredByName")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("DeregistrationReason")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("GitHubUrl")
                         .HasMaxLength(500)

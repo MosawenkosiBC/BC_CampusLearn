@@ -1,13 +1,34 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Authentication;
+using BC_CampusLearn.Services.Tutors;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Pages.Administrator.Tutors;
 
-public class ProfileModel(ApplicationDbContext context) : PageModel
+public class ProfileModel(ApplicationDbContext context, ICurrentUserService? currentUserService = null,
+    TimeProvider? timeProvider = null) : PageModel
 {
+    [BindProperty, Required, StringLength(1000)]
+    public string? DeregistrationReason { get; set; }
+    [TempData]
+    public string? DeregistrationMessage { get; set; }
+    [TempData]
+    public string? DeregistrationError { get; set; }
+    public int OpenSessions { get; private set; }
+
+    public async Task<IActionResult> OnPostDeregisterAsync(int id, CancellationToken cancellationToken)
+    {
+        if (currentUserService is null) return Forbid();
+        var error = await new TutorDeregistrationService(context, timeProvider ?? TimeProvider.System)
+            .DeregisterAsync(id, currentUserService.GetRequiredUser(), DeregistrationReason, cancellationToken);
+        if (error is not null) DeregistrationError = error;
+        else DeregistrationMessage = "Tutor deregistered. Their session history and conversations have been preserved, and a thank-you notification has been sent.";
+        return RedirectToPage(new { id });
+    }
     public Tutor Tutor { get; private set; } = null!;
     public int CompletedSessions { get; private set; }
     public int ModuleChangeRequests { get; private set; }
@@ -47,6 +68,10 @@ public class ProfileModel(ApplicationDbContext context) : PageModel
         }
 
         Tutor = tutor;
+        DeregistrationReason = "The tutor has completed their tutoring term.";
+        OpenSessions = await context.Bookings.CountAsync(b => b.TutorId == id &&
+            (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.InProgress),
+            cancellationToken);
         var bookings = context.Bookings.AsNoTracking().Where(item => item.TutorId == id);
         var now = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(2));
         Period = Period?.ToLowerInvariant() is "day" or "week" or "month" or "custom" ? Period.ToLowerInvariant() : "month";

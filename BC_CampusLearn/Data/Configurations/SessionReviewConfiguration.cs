@@ -15,11 +15,7 @@ public class SessionReviewConfiguration
                 "[Rating] BETWEEN 1 AND 5"));
         builder.HasKey(item => item.SessionReviewId);
         builder.Property(item => item.Comment).HasMaxLength(2000);
-        builder.Property(item => item.ModuleAndTopicCoverage).HasMaxLength(16);
-        builder.Property(item => item.ExplanationClarity).HasMaxLength(24);
-        builder.Property(item => item.SessionStructure).HasMaxLength(16);
         builder.Property(item => item.StudentEngagement).HasMaxLength(16);
-        builder.Property(item => item.EvidenceConsistency).HasMaxLength(16);
         builder.Property(item => item.ConcernLevel).HasMaxLength(24);
         builder.Property(item => item.OverallAssessment).HasMaxLength(24);
         builder.Property(item => item.Decision).HasMaxLength(32);

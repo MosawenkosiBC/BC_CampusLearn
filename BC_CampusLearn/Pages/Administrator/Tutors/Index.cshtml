@@ -5,6 +5,7 @@
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/admin-applications.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin-tutors.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/components/pagination.css" asp-append-version="true" />
@@ -14,6 +15,22 @@
     <header class="admin-dashboard-header">
         <h1 id="admin-tutors-title">Tutors</h1>
     </header>
+
+    <div class="admin-tutors-actions">
+        <button type="button" class="add-tutor-button" data-add-tutor-open>
+            <span aria-hidden="true">+</span>
+            Add tutor
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.PageMessage))
+    {
+        <p class="alert alert-success" role="status">@Model.PageMessage</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.PageError))
+    {
+        <p class="alert alert-danger" role="alert">@Model.PageError</p>
+    }
 
     <div class="admin-tutors-workspace">
         <aside class="admin-tutor-filters" aria-labelledby="admin-filter-title">
@@ -113,4 +130,9 @@
             }
         </div>
     </div>
+    <partial name="/Pages/Administrator/_AddTutorModal.cshtml" model="Model" />
 </section>
+
+@section Scripts {
+    <script src="~/js/admin-applications.js" asp-append-version="true"></script>
+}

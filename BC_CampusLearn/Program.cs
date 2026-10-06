@@ -211,8 +211,6 @@ builder.Services.AddRazorPages(options =>
         "/Tutors/ManageResources",
         "/Tutors/Profile",
         "/Tutors/PublicProfile",
-        "/Tutors/Sessions",
-        "/Tutors/SessionDetails",
         "/Tutors/StatisticsOverview"
     };
 

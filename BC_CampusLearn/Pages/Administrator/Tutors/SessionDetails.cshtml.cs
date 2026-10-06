@@ -205,14 +205,10 @@ public class SessionDetailsModel(
         ? []
         :
         [
-            new("1. Was the correct module and topic covered?", Answer(review.ModuleAndTopicCoverage)),
-            new("2. How clear were the tutor's explanations?", Answer(review.ExplanationClarity)),
-            new("3. Was the session structured effectively?", Answer(review.SessionStructure)),
-            new("4. Did the tutor engage the student appropriately?", Answer(review.StudentEngagement)),
-            new("5. Do the recording and submitted reviews match?", Answer(review.EvidenceConsistency)),
-            new("6. Were any concerns identified?", Answer(review.ConcernLevel)),
-            new("7. Overall session assessment", Answer(review.OverallAssessment)),
-            new("8. Decision", Answer(review.Decision)),
+            new("1. Did the tutor engage the student appropriately?", Answer(review.StudentEngagement)),
+            new("2. Were any concerns identified?", Answer(review.ConcernLevel)),
+            new("3. Overall session assessment", Answer(review.OverallAssessment)),
+            new("4. Decision", Answer(review.Decision)),
             new("Additional comments", Answer(review.Comment))
         ];
 

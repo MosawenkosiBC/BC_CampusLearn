@@ -107,12 +107,7 @@ public class SessionDetailsModel(
                 RevieweeBcUserId = booking.TutorCourseModule.Tutor.BcUserId
             };
 
-        review.ModuleAndTopicCoverage =
-            TutorHeadReviewInput.ModuleAndTopicCoverage;
-        review.ExplanationClarity = TutorHeadReviewInput.ExplanationClarity;
-        review.SessionStructure = TutorHeadReviewInput.SessionStructure;
         review.StudentEngagement = TutorHeadReviewInput.StudentEngagement;
-        review.EvidenceConsistency = TutorHeadReviewInput.EvidenceConsistency;
         review.ConcernLevel = TutorHeadReviewInput.ConcernLevel;
         review.OverallAssessment = TutorHeadReviewInput.OverallAssessment;
         review.Decision = TutorHeadReviewInput.Decision;
@@ -253,11 +248,7 @@ public class SessionDetailsModel(
         {
             TutorHeadReviewInput = new TutorHeadSessionReviewInput
             {
-                ModuleAndTopicCoverage = savedReview.ModuleAndTopicCoverage,
-                ExplanationClarity = savedReview.ExplanationClarity,
-                SessionStructure = savedReview.SessionStructure,
                 StudentEngagement = savedReview.StudentEngagement,
-                EvidenceConsistency = savedReview.EvidenceConsistency,
                 ConcernLevel = savedReview.ConcernLevel,
                 OverallAssessment = savedReview.OverallAssessment,
                 Decision = savedReview.Decision,

@@ -57,7 +57,6 @@ public class TutorDashboardModel : PageModel
     public async Task<IActionResult> OnGetAsync(
         CancellationToken cancellationToken)
     {
-        await _lifecycleService.ProcessDueTransitionsAsync(cancellationToken);
         int? tutorId =
             await GetCurrentTutorIdAsync(cancellationToken);
 
@@ -66,6 +65,7 @@ public class TutorDashboardModel : PageModel
             return Forbid();
         }
 
+        await _lifecycleService.ProcessDueTransitionsAsync(cancellationToken);
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
         CanManageResources = currentUser.Role == BcUserRole.HeadOfTutors ||
             await _context.ResourceTutorNominations

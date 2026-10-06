@@ -15,6 +15,35 @@ namespace BC_CampusLearn.Tests;
 
 public class TutorHeadSessionReviewsTests
 {
+    [Theory]
+    [InlineData("No Concerns", "Approve", true)]
+    [InlineData("Concerns", "Reject", true)]
+    [InlineData("Concerns", "Escalate", true)]
+    [InlineData("Minor concerns", "Approve", false)]
+    [InlineData("Serious concerns", "Approve", false)]
+    [InlineData("No Concerns", "Approve with feedback", false)]
+    [InlineData("No Concerns", "Request clarification", false)]
+    public void ReviewValidatesRemainingQuestionsAndChoices(
+        string concerns, string decision, bool expectedValid)
+    {
+        var input = new TutorHeadSessionReviewInput
+        {
+            StudentEngagement = "Yes",
+            ConcernLevel = concerns,
+            OverallAssessment = "Good",
+            Decision = decision
+        };
+        var results = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+
+        bool valid = System.ComponentModel.DataAnnotations.Validator.TryValidateObject(
+            input,
+            new System.ComponentModel.DataAnnotations.ValidationContext(input),
+            results,
+            validateAllProperties: true);
+
+        Assert.Equal(expectedValid, valid);
+    }
+
     [Fact]
     public async Task TutorHeadCanSaveEncryptedGeminiApiKey()
     {
@@ -593,14 +622,10 @@ public class TutorHeadSessionReviewsTests
         SessionDetailsModel page = CreateDetailsPage(context);
         page.TutorHeadReviewInput = new TutorHeadSessionReviewInput
         {
-            ModuleAndTopicCoverage = "Yes",
-            ExplanationClarity = "Excellent",
-            SessionStructure = "Yes",
             StudentEngagement = "Partially",
-            EvidenceConsistency = "Yes",
-            ConcernLevel = "Minor concerns",
+            ConcernLevel = "Concerns",
             OverallAssessment = "Good",
-            Decision = "Approve with feedback",
+            Decision = "Reject",
             AdditionalComments = "Follow up on student engagement."
         };
 
@@ -613,8 +638,8 @@ public class TutorHeadSessionReviewsTests
         SessionReview review = Assert.Single(context.SessionReviews);
         Assert.Equal(2, review.ReviewerBcUserId);
         Assert.Equal(assignment.Tutor.BcUserId, review.RevieweeBcUserId);
-        Assert.Equal("Excellent", review.ExplanationClarity);
-        Assert.Equal("Approve with feedback", review.Decision);
+        Assert.Equal("Concerns", review.ConcernLevel);
+        Assert.Equal("Reject", review.Decision);
         Assert.Equal((byte)4, review.Rating);
         Assert.Equal("Follow up on student engagement.", review.Comment);
     }

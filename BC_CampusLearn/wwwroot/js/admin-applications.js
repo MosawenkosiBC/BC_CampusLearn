@@ -94,6 +94,7 @@
         studentChoices.forEach(choice => {
             choice.checked = false;
         });
+        resetStudentVerification();
         filterStudents();
     });
 
@@ -110,6 +111,7 @@
             if (studentResults) {
                 studentResults.hidden = true;
             }
+            verifyStudent(option.dataset.studentId);
         });
     });
 
@@ -168,6 +170,62 @@
     manualYear?.addEventListener("input", syncManualModules);
     manualModuleSearch?.addEventListener("input", syncManualModules);
     syncManualModules();
+
+    const studentDetailsUrl = manualTutorForm?.dataset.studentDetailsUrl;
+    const verificationStatus = manualTutorForm?.querySelector("[data-student-verification-status]");
+    const manualCampus = manualTutorForm?.querySelector("[name='ManualTutor.CampusOfStudy']");
+    const addTutorSubmit = manualTutorForm?.querySelector("button[type='submit']");
+    let verifiedStudentId = null;
+    let verificationRequest = null;
+
+    const resetStudentVerification = () => {
+        if (!studentDetailsUrl) return;
+        verificationRequest?.abort();
+        verifiedStudentId = null;
+        if (addTutorSubmit) addTutorSubmit.disabled = true;
+        if (manualProgramme) { manualProgramme.value = ""; manualProgramme.disabled = true; }
+        if (manualYear) { manualYear.value = ""; manualYear.readOnly = true; }
+        if (manualCampus) { manualCampus.value = ""; manualCampus.disabled = true; }
+        if (verificationStatus) verificationStatus.textContent = "Select a student to verify their details.";
+        syncManualModules();
+    };
+
+    const verifyStudent = async studentId => {
+        if (!studentDetailsUrl) return;
+        resetStudentVerification();
+        const request = new AbortController();
+        verificationRequest = request;
+        if (verificationStatus) verificationStatus.textContent = "Checking student details…";
+        try {
+            const url = new URL(studentDetailsUrl, window.location.origin);
+            url.searchParams.set("studentId", studentId);
+            const response = await fetch(url, { signal: request.signal, cache: "no-store", headers: { Accept: "application/json" } });
+            const details = await response.json();
+            if (request.signal.aborted) return;
+            if (!response.ok) throw new Error(details.error || "Student information could not be verified. Please try again.");
+            if (manualProgramme) manualProgramme.value = String(details.programmeId);
+            if (manualYear) manualYear.value = String(details.yearOfStudy);
+            if (manualCampus) manualCampus.value = details.campus;
+            if (studentSearch) studentSearch.value = `${details.displayName} (${details.studentNumber})`;
+            verifiedStudentId = String(details.studentId);
+            if (verificationStatus) verificationStatus.textContent = "";
+            if (addTutorSubmit) addTutorSubmit.disabled = false;
+            syncManualModules();
+        } catch (error) {
+            if (request.signal.aborted) return;
+            if (verificationStatus) verificationStatus.textContent = error instanceof SyntaxError || error instanceof TypeError
+                ? "Student information is temporarily unavailable. Please try again."
+                : error.message;
+        }
+    };
+
+    manualTutorForm?.addEventListener("submit", event => {
+        if (studentDetailsUrl && verifiedStudentId !== manualTutorForm.querySelector("[data-student-choice]:checked")?.value) {
+            event.preventDefault();
+            if (verificationStatus) verificationStatus.textContent = "Select a student and wait for their details to be verified.";
+        }
+    });
+    resetStudentVerification();
 
     toggle?.addEventListener("change", () => {
         if (toggle.checked) {

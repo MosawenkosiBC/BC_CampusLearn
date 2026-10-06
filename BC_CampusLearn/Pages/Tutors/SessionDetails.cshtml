@@ -14,7 +14,7 @@
         BC_CampusLearn.Models.Entities.BookingStatus.InProgress;
     bool isCompletedSession = Model.Session.Status ==
         BC_CampusLearn.Models.Entities.BookingStatus.Completed;
-    bool chatIsClosed = SessionCommunicationPolicy.IsClosed(
+    bool chatIsClosed = Model.IsDeregistered || SessionCommunicationPolicy.IsClosed(
         Model.Session.Status,
         Model.Session.TutorEvaluation is not null,
         Model.Session.StudentEvaluation is not null);
@@ -61,7 +61,7 @@
                             </svg>
                         </button>
                     }
-                    else
+                    else if (!Model.IsDeregistered)
                     {
                         <button type="button" data-bs-toggle="modal" data-bs-target="#review-session-modal"
                                 aria-label="Review session" title="Review session">
@@ -756,11 +756,14 @@
                         <label asp-for="EvaluationInput.RecordingLink">10. Recording link for the meeting <span aria-hidden="true">*</span></label>
                         <input asp-for="EvaluationInput.RecordingLink" type="text" inputmode="url" maxlength="2048" placeholder="https://..." />
                     </div>
-                    <div class="evaluation-question" data-evaluation-required data-evaluation-file>
-                        <label asp-for="EvaluationInput.Transcript">11. Meeting transcript <span aria-hidden="true">*</span></label>
-                        <input asp-for="EvaluationInput.Transcript" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required />
-                        <small>Upload a PDF or Word document up to 10 MB.</small>
-                    </div>
+                    @if (Model.IsTranscriptRequired)
+                    {
+                        <div class="evaluation-question" data-evaluation-required data-evaluation-file>
+                            <label asp-for="EvaluationInput.Transcript">11. Meeting transcript <span aria-hidden="true">*</span></label>
+                            <input asp-for="EvaluationInput.Transcript" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required />
+                            <small>Upload a PDF or Word document up to 10 MB.</small>
+                        </div>
+                    }
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="meeting-link-modal-cancel" data-bs-dismiss="modal">Cancel</button>

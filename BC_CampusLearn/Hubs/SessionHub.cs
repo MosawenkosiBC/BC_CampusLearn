@@ -99,7 +99,7 @@ public class SessionHub : Hub
                 "Messages must contain between 1 and 2000 characters.");
         }
 
-        if (SessionCommunicationPolicy.IsClosed(
+        if (participant.TutorDeregistered || SessionCommunicationPolicy.IsClosed(
             participant.Status,
             participant.TutorReviewSubmitted,
             participant.StudentReviewSubmitted))
@@ -219,7 +219,7 @@ public class SessionHub : Hub
             bookingId,
             user,
             Context.ConnectionAborted);
-        if (SessionCommunicationPolicy.IsClosed(
+        if (participant.TutorDeregistered || SessionCommunicationPolicy.IsClosed(
             participant.Status,
             participant.TutorReviewSubmitted,
             participant.StudentReviewSubmitted))
@@ -251,7 +251,8 @@ public class SessionHub : Hub
                 booking.TutorEvaluation != null,
                 booking.StudentEvaluation != null,
                 booking.TutorCourseModule.Tutor.BcUserId,
-                booking.StudentBcUserId))
+                booking.StudentBcUserId,
+                booking.TutorCourseModule.Tutor.Status == TutorStatus.Deregistered))
             .SingleOrDefaultAsync(cancellationToken);
 
         bool isParticipant = participant is not null &&
@@ -289,5 +290,6 @@ public class SessionHub : Hub
         bool TutorReviewSubmitted,
         bool StudentReviewSubmitted,
         int TutorBcUserId,
-        int? StudentBcUserId);
+        int? StudentBcUserId,
+        bool TutorDeregistered);
 }
