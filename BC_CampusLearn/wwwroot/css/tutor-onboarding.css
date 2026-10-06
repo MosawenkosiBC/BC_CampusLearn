@@ -1,0 +1,40 @@
+.tutor-onboarding .modal-content {
+    border: 0;
+    border-radius: 1rem;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, .2);
+    color: #363c3d;
+    font-size: 1rem;
+}
+.tutor-onboarding .modal-header { border: 0; padding: 1.5rem 1.5rem .5rem; }
+.tutor-onboarding .modal-body { padding: .5rem 1.5rem 1.5rem; }
+.tutor-onboarding .modal-title { font-size: 1.75rem; font-weight: 700; margin-top: .35rem; }
+.tutor-onboarding-eyebrow { color: #526e58; font-size: .875rem; font-weight: 600; }
+.tutor-onboarding-page { max-width: 640px; }
+.tutor-onboarding-form { display: grid; gap: 1.25rem; }
+.tutor-onboarding-field { display: grid; gap: .625rem; }
+.tutor-onboarding-field label { font-weight: 600; margin: 0; }
+.tutor-onboarding-field label span { color: #666; font-weight: 400; }
+.tutor-onboarding-field :is(input, textarea, select) {
+    background: #fff;
+    border: 1px solid #cfd4da;
+    border-radius: .5rem;
+    color: #363c3d;
+    font: inherit;
+    min-width: 0;
+    padding: .75rem;
+    width: 100%;
+}
+.tutor-onboarding-field textarea { resize: vertical; }
+.tutor-onboarding-field :is(input, textarea, select):focus-visible {
+    outline: 3px solid rgba(79, 135, 165, .35);
+    outline-offset: 2px;
+}
+.tutor-onboarding-field small, .tutor-onboarding-actions small { color: #626b70; line-height: 1.5; }
+.tutor-onboarding-actions { border-top: 1px solid #edf0f3; display: grid; gap: .75rem; padding-top: 1.25rem; }
+.tutor-onboarding-actions p { margin: 0; }
+.tutor-onboarding-actions button { min-height: 44px; }
+.tutor-onboarding-errors[hidden] { display: none; }
+@media (max-width: 575.98px) {
+    .tutor-onboarding .modal-header { padding: 1.25rem 1rem .5rem; }
+    .tutor-onboarding .modal-body { padding: .5rem 1rem 1.25rem; }
+}

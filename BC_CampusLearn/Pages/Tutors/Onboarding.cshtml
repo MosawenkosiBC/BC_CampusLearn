@@ -1,0 +1,10 @@
+@page
+@model BC_CampusLearn.Pages.Tutors.OnboardingModel
+@{ ViewData["Title"] = "Complete your tutor profile"; }
+
+<main class="container py-4 tutor-onboarding-page">
+    <span class="tutor-onboarding-eyebrow">Welcome to the tutor team</span>
+    <h1>You’re approved!</h1>
+    <p>Let’s complete your profile so students can get to know you.</p>
+    <partial name="_OnboardingForm" model="Model.Input" />
+</main>

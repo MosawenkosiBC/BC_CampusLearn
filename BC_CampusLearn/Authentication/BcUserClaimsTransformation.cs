@@ -164,6 +164,16 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
             user.LastLoginAt = DateTime.UtcNow;
         }
 
+        // A student test account keeps its approved tutor role when refreshing after approval.
+        if (developmentRole == BcUserRole.Student &&
+            await _context.Tutors.AnyAsync(tutor =>
+                tutor.BcUserId == user.BcUserId &&
+                tutor.Status == TutorStatus.Approved &&
+                tutor.ApplicationStage == TutorApplicationStage.Placement && tutor.IsActive))
+        {
+            user.Role = BcUserRole.Tutor;
+        }
+
         // An old sign-in persona must not restore tutor access after deregistration.
         if (user.Role is BcUserRole.Tutor or BcUserRole.HeadOfTutors &&
             await _context.Tutors.AnyAsync(tutor =>

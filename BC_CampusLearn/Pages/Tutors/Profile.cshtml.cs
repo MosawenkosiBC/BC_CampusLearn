@@ -536,7 +536,7 @@ public class ProfileModel : PageModel
         }
     }
 
-    private static async Task<bool> HasValidImageHeaderAsync(
+    internal static async Task<bool> HasValidImageHeaderAsync(
         IFormFile image,
         string extension,
         CancellationToken cancellationToken)

@@ -1,0 +1,38 @@
+@model BC_CampusLearn.Models.ViewModels.TutorOnboardingInput
+@using BC_CampusLearn.Models.Entities
+@{ ViewData.TemplateInfo.HtmlFieldPrefix = "Input"; }
+
+<form method="post" asp-page="/Tutors/Onboarding" enctype="multipart/form-data"
+      class="tutor-onboarding-form" data-tutor-onboarding-form>
+    <div class="tutor-onboarding-errors text-danger" role="alert" tabindex="-1" hidden></div>
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <div class="tutor-onboarding-field">
+        <label asp-for="Biography">Your bio <span>(required)</span></label>
+        <textarea asp-for="Biography" rows="4" maxlength="500" required
+                  aria-describedby="tutor-onboarding-bio-help"
+                  placeholder="I enjoy helping students understand programming. I break problems into small steps and use practical examples."></textarea>
+        <small id="tutor-onboarding-bio-help">Visible to students. Introduce yourself, the subjects you enjoy and how you help others learn. Up to 500 characters.</small>
+    </div>
+    <div class="tutor-onboarding-field">
+        <label asp-for="PhoneNumber">Contact number <span>(optional)</span></label>
+        <input asp-for="PhoneNumber" type="tel" inputmode="numeric" autocomplete="tel"
+               maxlength="10" pattern="[0-9]{10}" placeholder="0821234567" />
+    </div>
+    <div class="tutor-onboarding-field">
+        <label asp-for="PreferredTutoringMode">Tutoring preference</label>
+        <select asp-for="PreferredTutoringMode" required
+                asp-items="Html.GetEnumSelectList<PreferredTutoringMode>()"></select>
+        <small>We’ve used your application preference. This controls the locations students can choose when booking.</small>
+    </div>
+    <div class="tutor-onboarding-field">
+        <label for="tutor-onboarding-photo">Profile photo <span>(optional)</span></label>
+        <input id="tutor-onboarding-photo" name="ProfileImage" type="file"
+               accept="image/jpeg,image/png,image/webp" aria-describedby="tutor-onboarding-photo-help" />
+        <small id="tutor-onboarding-photo-help">JPG, PNG or WebP, up to 5 MB. You can add or change it later in your profile.</small>
+    </div>
+    <div class="tutor-onboarding-actions">
+        <p>Next, set your availability so students can book sessions with you.</p>
+        <button type="submit" class="btn btn-dark">Save and set availability</button>
+        <small>You can edit these details later in your profile.</small>
+    </div>
+</form>

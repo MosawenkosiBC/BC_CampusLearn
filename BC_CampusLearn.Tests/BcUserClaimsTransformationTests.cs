@@ -15,6 +15,35 @@ namespace BC_CampusLearn.Tests;
 public class BcUserClaimsTransformationTests
 {
     [Theory]
+    [InlineData("Development")]
+    [InlineData("Production")]
+    public async Task StudentRefreshRecognisesTutorApproval(string environment)
+    {
+        await using var context = CreateContext();
+        var transformation = new BcUserClaimsTransformation(context,
+            new TestWebHostEnvironment(environment), CreateIdentityProtector());
+        var principal = CreatePrincipal(new Claim(EntraClaimTypes.DevelopmentRole, nameof(BcUserRole.Student)));
+        await transformation.TransformAsync(principal);
+        var user = await context.BcUsers.SingleAsync();
+        user.Role = BcUserRole.Tutor;
+        context.Tutors.Add(new Tutor
+        {
+            BcUser = user, ProgrammeId = 1, CampusOfStudy = "Pretoria",
+            ReasonForTutoring = "", TeachingStyle = "", PreviousTutoringExperience = "",
+            DemonstrationVideoUrl = "", Status = TutorStatus.Approved,
+            ApplicationStage = TutorApplicationStage.Placement, IsActive = true
+        });
+        await context.SaveChangesAsync();
+
+        await transformation.TransformAsync(principal);
+        await transformation.TransformAsync(principal);
+
+        Assert.Equal(BcUserRole.Tutor, user.Role);
+        Assert.True(principal.IsInRole(nameof(BcUserRole.Tutor)));
+        Assert.False(principal.IsInRole(nameof(BcUserRole.Student)));
+    }
+
+    [Theory]
     [InlineData("Development", BcUserRole.Tutor)]
     [InlineData("Development", BcUserRole.HeadOfTutors)]
     [InlineData("Production", BcUserRole.Tutor)]
