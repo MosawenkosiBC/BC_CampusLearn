@@ -59,6 +59,8 @@ public class PlatformSettingsConfiguration :
             TutorHeadReviewPeriodStartDate = new DateOnly(2026, 9, 1),
             TutorHeadReviewPeriodEndDate = new DateOnly(2026, 9, 30),
             TutorHeadReviewDeadline = new DateOnly(2026, 10, 5),
+            IsTutorHeadReviewDeadlineRecurring = true,
+            UseLastDayOfMonthForTutorHeadReviewDeadline = false,
             UpdatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
         });
     }

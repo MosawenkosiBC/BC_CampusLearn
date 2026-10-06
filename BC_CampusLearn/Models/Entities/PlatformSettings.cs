@@ -21,6 +21,8 @@ public class PlatformSettings
         new(2026, 9, 30);
     public DateOnly TutorHeadReviewDeadline { get; set; } =
         new(2026, 10, 5);
+    public bool IsTutorHeadReviewDeadlineRecurring { get; set; } = true;
+    public bool UseLastDayOfMonthForTutorHeadReviewDeadline { get; set; }
     public int? UpdatedByBcUserId { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
     public byte[] RowVersion { get; set; } = [];

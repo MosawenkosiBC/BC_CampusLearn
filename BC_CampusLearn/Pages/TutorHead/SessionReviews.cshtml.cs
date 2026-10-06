@@ -96,17 +96,28 @@ public class SessionReviewsModel(
 
         DateTimeOffset now = currentUtc.ToOffset(SouthAfricaOffset);
         DateOnly today = DateOnly.FromDateTime(now.DateTime);
-        ReviewPeriodDates? configuredPeriod = await context.PlatformSettings
+        ReviewDeadlineSettings? configuredDeadline =
+            await context.PlatformSettings
             .AsNoTracking()
             .Where(settings => settings.PlatformSettingsId ==
                 PlatformSettings.SingletonId)
-            .Select(settings => new ReviewPeriodDates(
-                settings.TutorHeadReviewPeriodStartDate,
-                settings.TutorHeadReviewPeriodEndDate,
-                settings.TutorHeadReviewDeadline))
+            .Select(settings => new ReviewDeadlineSettings(
+                settings.TutorHeadReviewDeadline,
+                settings.IsTutorHeadReviewDeadlineRecurring,
+                settings.UseLastDayOfMonthForTutorHeadReviewDeadline))
             .SingleOrDefaultAsync(cancellationToken);
-        ReviewPeriodDates period = configuredPeriod ??
-            ReviewPeriodDates.ForMonth(today);
+        ReviewPeriodDates basePeriod = configuredDeadline is not null
+            ? ReviewPeriodDates.ForDeadline(
+                configuredDeadline.Deadline,
+                configuredDeadline.UseLastDayOfMonth)
+            : ReviewPeriodDates.ForMonth(today);
+        ReviewPeriodDates period = basePeriod.AdvancePastExpiredDeadlines(
+            today,
+            configuredDeadline?.UseLastDayOfMonth == true);
+        DateOnly displayedDeadline = configuredDeadline is
+            { IsRecurring: false }
+                ? configuredDeadline.Deadline
+                : period.Deadline;
         DateTimeOffset periodStart = StartOfDay(period.StartDate);
         DateTimeOffset periodEndExclusive =
             StartOfDay(period.EndDate.AddDays(1));
@@ -118,32 +129,34 @@ public class SessionReviewsModel(
                 booking.StudentEvaluation != null &&
                 booking.TutorEvaluation != null);
 
-        IQueryable<Booking> currentPeriodSessions = eligibleSessions.Where(
+        IQueryable<Booking> activeReviewSessions = eligibleSessions.Where(
             booking =>
-                (booking.CompletedAt ?? booking.ScheduledStartTime) >=
-                    periodStart &&
                 (booking.CompletedAt ?? booking.ScheduledStartTime) <
-                    periodEndExclusive);
+                    periodEndExclusive &&
+                ((booking.CompletedAt ?? booking.ScheduledStartTime) >=
+                    periodStart ||
+                 !booking.SessionReviews.Any(review =>
+                    review.Reviewer.Role == BcUserRole.HeadOfTutors)));
 
-        int totalSessions = await currentPeriodSessions.CountAsync(
+        int totalSessions = await activeReviewSessions.CountAsync(
             cancellationToken);
-        int reviewedSessions = await currentPeriodSessions.CountAsync(
+        int reviewedSessions = await activeReviewSessions.CountAsync(
             booking => booking.SessionReviews.Any(review =>
                 review.Reviewer.Role == BcUserRole.HeadOfTutors),
             cancellationToken);
         PeriodSummary = new ReviewPeriodSummary(
             period.StartDate,
             period.EndDate,
-            period.Deadline,
+            displayedDeadline,
             totalSessions,
             totalSessions - reviewedSessions,
             reviewedSessions,
-            period.Deadline.DayNumber - today.DayNumber);
+            displayedDeadline.DayNumber - today.DayNumber);
 
         bool hasCustomDateRange = DateFrom.HasValue || DateTo.HasValue;
         IQueryable<Booking> query = hasCustomDateRange
             ? eligibleSessions
-            : currentPeriodSessions;
+            : activeReviewSessions;
 
         if (TutorFilter is not null)
         {
@@ -288,7 +301,70 @@ public class SessionReviewsModel(
                 start.AddMonths(1).AddDays(-1),
                 start.AddMonths(1).AddDays(4));
         }
+
+        public static ReviewPeriodDates ForDeadline(
+            DateOnly deadline,
+            bool useLastDayOfMonth)
+        {
+            DateOnly previousDeadline = MonthlyOccurrence(
+                deadline,
+                -1,
+                useLastDayOfMonth);
+            return new ReviewPeriodDates(
+                previousDeadline.AddDays(1),
+                deadline,
+                deadline);
+        }
+
+        public ReviewPeriodDates AdvancePastExpiredDeadlines(
+            DateOnly today,
+            bool useLastDayOfMonth)
+        {
+            int elapsedPeriods = 0;
+            DateOnly activeDeadline = Deadline;
+            while (today > activeDeadline)
+            {
+                elapsedPeriods++;
+                activeDeadline = MonthlyOccurrence(
+                    Deadline,
+                    elapsedPeriods,
+                    useLastDayOfMonth);
+            }
+
+            if (elapsedPeriods == 0)
+            {
+                return this;
+            }
+
+            DateOnly previousDeadline = MonthlyOccurrence(
+                Deadline,
+                elapsedPeriods - 1,
+                useLastDayOfMonth);
+            return new ReviewPeriodDates(
+                previousDeadline.AddDays(1),
+                activeDeadline,
+                activeDeadline);
+        }
+
+        private static DateOnly MonthlyOccurrence(
+            DateOnly deadline,
+            int months,
+            bool useLastDayOfMonth)
+        {
+            DateOnly occurrence = deadline.AddMonths(months);
+            return useLastDayOfMonth
+                ? new DateOnly(
+                    occurrence.Year,
+                    occurrence.Month,
+                    1).AddMonths(1).AddDays(-1)
+                : occurrence;
+        }
     }
+
+    private sealed record ReviewDeadlineSettings(
+        DateOnly Deadline,
+        bool IsRecurring,
+        bool UseLastDayOfMonth);
 
     public sealed record ReviewPeriodSummary(
         DateOnly StartDate,
@@ -307,8 +383,7 @@ public class SessionReviewsModel(
             > 1 => $"{DaysRemaining} days remaining",
             1 => "1 day remaining",
             0 => "Due today",
-            -1 => "1 day overdue",
-            _ => $"{Math.Abs(DaysRemaining)} days overdue"
+            _ => string.Empty
         };
     }
 }
