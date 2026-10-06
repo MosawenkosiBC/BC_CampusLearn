@@ -14,15 +14,7 @@ public class SessionReview
 
     public string? Comment { get; set; }
 
-    public string? ModuleAndTopicCoverage { get; set; }
-
-    public string? ExplanationClarity { get; set; }
-
-    public string? SessionStructure { get; set; }
-
     public string? StudentEngagement { get; set; }
-
-    public string? EvidenceConsistency { get; set; }
 
     public string? ConcernLevel { get; set; }
 

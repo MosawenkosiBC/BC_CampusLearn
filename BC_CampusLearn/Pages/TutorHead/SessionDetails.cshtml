@@ -140,11 +140,7 @@
                     {
                         <dl class="admin-session-answers tutor-head-own-review-answers"
                             id="tutor-head-review-answers">
-                            <div data-review-answer><dt>Was the correct module and topic covered?</dt><dd>@(review.ModuleAndTopicCoverage ?? "Not provided")</dd></div>
-                            <div data-review-answer><dt>How clear were the tutor's explanations?</dt><dd>@(review.ExplanationClarity ?? "Not provided")</dd></div>
-                            <div data-review-answer><dt>Was the session structured effectively?</dt><dd>@(review.SessionStructure ?? "Not provided")</dd></div>
                             <div data-review-answer><dt>Did the tutor engage the student appropriately?</dt><dd>@(review.StudentEngagement ?? "Not provided")</dd></div>
-                            <div data-review-answer><dt>Do the recording and submitted reviews match?</dt><dd>@(review.EvidenceConsistency ?? "Not provided")</dd></div>
                             <div data-review-answer><dt>Were any concerns identified?</dt><dd>@(review.ConcernLevel ?? "Not provided")</dd></div>
                             <div data-review-answer><dt>Overall session assessment</dt><dd>@(review.OverallAssessment ?? $"{review.Rating}/5")</dd></div>
                             <div data-review-answer><dt>Decision</dt><dd>@(review.Decision ?? "Not provided")</dd></div>
@@ -165,14 +161,10 @@
                             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                             <div id="tutor-head-review-form-steps">
                                 @foreach (var question in new[] {
-                                    new { Number = 1, Name = "ModuleAndTopicCoverage", Text = "Was the correct module and topic covered?", Options = new[] { "Yes", "Partially", "No" }, Answer = Model.TutorHeadReviewInput.ModuleAndTopicCoverage },
-                                    new { Number = 2, Name = "ExplanationClarity", Text = "How clear were the tutor's explanations?", Options = new[] { "Excellent", "Good", "Satisfactory", "Needs improvement" }, Answer = Model.TutorHeadReviewInput.ExplanationClarity },
-                                    new { Number = 3, Name = "SessionStructure", Text = "Was the session structured effectively?", Options = new[] { "Yes", "Partially", "No" }, Answer = Model.TutorHeadReviewInput.SessionStructure },
-                                    new { Number = 4, Name = "StudentEngagement", Text = "Did the tutor engage the student appropriately?", Options = new[] { "Yes", "Partially", "No" }, Answer = Model.TutorHeadReviewInput.StudentEngagement },
-                                    new { Number = 5, Name = "EvidenceConsistency", Text = "Do the recording and submitted reviews match?", Options = new[] { "Yes", "Partially", "No" }, Answer = Model.TutorHeadReviewInput.EvidenceConsistency },
-                                    new { Number = 6, Name = "ConcernLevel", Text = "Were any concerns identified?", Options = new[] { "No concerns", "Minor concerns", "Serious concerns" }, Answer = Model.TutorHeadReviewInput.ConcernLevel },
-                                    new { Number = 7, Name = "OverallAssessment", Text = "Overall session assessment", Options = new[] { "Excellent", "Good", "Satisfactory", "Needs improvement" }, Answer = Model.TutorHeadReviewInput.OverallAssessment },
-                                    new { Number = 8, Name = "Decision", Text = "Decision", Options = new[] { "Approve", "Approve with feedback", "Request clarification", "Escalate" }, Answer = Model.TutorHeadReviewInput.Decision }
+                                    new { Number = 1, Name = "StudentEngagement", Text = "Did the tutor engage the student appropriately?", Options = new[] { "Yes", "Partially", "No" }, Answer = Model.TutorHeadReviewInput.StudentEngagement },
+                                    new { Number = 2, Name = "ConcernLevel", Text = "Were any concerns identified?", Options = new[] { "No Concerns", "Concerns" }, Answer = Model.TutorHeadReviewInput.ConcernLevel },
+                                    new { Number = 3, Name = "OverallAssessment", Text = "Overall session assessment", Options = new[] { "Excellent", "Good", "Satisfactory", "Needs improvement" }, Answer = Model.TutorHeadReviewInput.OverallAssessment },
+                                    new { Number = 4, Name = "Decision", Text = "Decision", Options = new[] { "Approve", "Reject", "Escalate" }, Answer = Model.TutorHeadReviewInput.Decision }
                                 })
                                 {
                                     <fieldset data-pagination-row data-review-answer data-option-question>
@@ -195,7 +187,7 @@
                                 }
                                 <div class="tutor-head-review-comments" data-pagination-row data-review-answer>
                                     <label asp-for="TutorHeadReviewInput.AdditionalComments">
-                                        9. Additional comments
+                                        5. Additional comments
                                     </label>
                                     <textarea asp-for="TutorHeadReviewInput.AdditionalComments"
                                               rows="3" maxlength="500"
@@ -203,7 +195,7 @@
                                     <span asp-validation-for="TutorHeadReviewInput.AdditionalComments"
                                           class="text-danger"></span>
                                 </div>
-                                <div class="tutor-head-review-submit" data-pagination-row data-review-answer>
+                                <div class="tutor-head-review-submit">
                                     <button type="submit">Save review</button>
                                 </div>
                             </div>

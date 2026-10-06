@@ -272,11 +272,7 @@ public class AdminTutorsTests
             Reviewer = tutorHead,
             ReviewerBcUserId = tutorHead.BcUserId,
             Rating = 4,
-            ModuleAndTopicCoverage = "Yes",
-            ExplanationClarity = "Good",
-            SessionStructure = "Yes",
             StudentEngagement = "Yes",
-            EvidenceConsistency = "Yes",
             ConcernLevel = "No concerns",
             OverallAssessment = "Good",
             Decision = "Approve",
@@ -306,7 +302,8 @@ public class AdminTutorsTests
         Assert.Equal(review.SessionReviewId, page.TutorHeadReview?.SessionReviewId);
         Assert.True(page.CanRecordAdminReview);
         Assert.Contains(page.TutorHeadReviewAnswers,
-            answer => answer.Question == "8. Decision" && answer.Value == "Approve");
+            answer => answer.Question == "4. Decision" && answer.Value == "Approve");
+        Assert.Equal(5, page.TutorHeadReviewAnswers.Count);
         Assert.Contains(page.TutorHeadReviewAnswers,
             answer => answer.Question == "Additional comments" &&
                 answer.Value == "Strong session.");
