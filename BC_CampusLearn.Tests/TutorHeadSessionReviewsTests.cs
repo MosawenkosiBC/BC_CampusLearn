@@ -329,6 +329,274 @@ public class TutorHeadSessionReviewsTests
     }
 
     [Fact]
+    public async Task PassedDeadlineStartsNewPeriodAndCarriesAwaitingReviews()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorCourseModule assignment = CreateAssignment();
+        Booking overdue = CreateBooking(
+            1,
+            assignment,
+            "Overdue Student",
+            BookingStatus.Completed,
+            new StudentEvaluation(),
+            new TutorStudentEvaluation());
+        Booking previouslyReviewed = CreateBooking(
+            2,
+            assignment,
+            "Previously Reviewed Student",
+            BookingStatus.Completed,
+            new StudentEvaluation(),
+            new TutorStudentEvaluation());
+        Booking newPeriod = CreateBooking(
+            3,
+            assignment,
+            "New Period Student",
+            BookingStatus.Completed,
+            new StudentEvaluation(),
+            new TutorStudentEvaluation());
+        newPeriod.ScheduledStartTime = new DateTimeOffset(
+            2026, 10, 6, 10, 0, 0, TimeSpan.Zero);
+        newPeriod.CompletedAt = new DateTimeOffset(
+            2026, 10, 6, 11, 0, 0, TimeSpan.Zero);
+
+        var tutorHead = new BcUser
+        {
+            BcUserId = 2,
+            PersonnelNumber = "TH001",
+            DisplayName = "Tutor Head",
+            Role = BcUserRole.HeadOfTutors
+        };
+        previouslyReviewed.SessionReviews.Add(new SessionReview
+        {
+            Booking = previouslyReviewed,
+            Reviewer = tutorHead,
+            ReviewerBcUserId = tutorHead.BcUserId,
+            Rating = 5,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        context.PlatformSettings.Add(new PlatformSettings
+        {
+            TutorHeadReviewPeriodStartDate = new DateOnly(2026, 9, 1),
+            TutorHeadReviewPeriodEndDate = new DateOnly(2026, 9, 30),
+            TutorHeadReviewDeadline = new DateOnly(2026, 10, 5)
+        });
+        context.TutorCourseModules.Add(assignment);
+        context.Bookings.AddRange(overdue, previouslyReviewed, newPeriod);
+        await context.SaveChangesAsync();
+
+        var page = new SessionReviewsModel(
+            context,
+            new FixedTimeProvider(new DateTimeOffset(
+                2026, 10, 6, 10, 0, 0, TimeSpan.Zero)));
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(new DateOnly(2026, 10, 6), page.PeriodSummary.StartDate);
+        Assert.Equal(new DateOnly(2026, 11, 5), page.PeriodSummary.EndDate);
+        Assert.Equal(new DateOnly(2026, 11, 5), page.PeriodSummary.Deadline);
+        Assert.Equal("30 days remaining", page.PeriodSummary.DeadlineStatus);
+        Assert.Equal(2, page.PeriodSummary.TotalSessions);
+        Assert.Equal(2, page.PeriodSummary.AwaitingReview);
+        Assert.Contains(page.Sessions, session =>
+            session.StudentName == "Overdue Student");
+        Assert.Contains(page.Sessions, session =>
+            session.StudentName == "New Period Student");
+        Assert.DoesNotContain(page.Sessions, session =>
+            session.StudentName == "Previously Reviewed Student");
+    }
+
+    [Fact]
+    public async Task CustomDatesCanShowReviewedSessionsFromPastPeriod()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorCourseModule assignment = CreateAssignment();
+        Booking previouslyReviewed = CreateBooking(
+            1,
+            assignment,
+            "Previously Reviewed Student",
+            BookingStatus.Completed,
+            new StudentEvaluation(),
+            new TutorStudentEvaluation());
+        var tutorHead = new BcUser
+        {
+            BcUserId = 2,
+            PersonnelNumber = "TH001",
+            DisplayName = "Tutor Head",
+            Role = BcUserRole.HeadOfTutors
+        };
+        previouslyReviewed.SessionReviews.Add(new SessionReview
+        {
+            Booking = previouslyReviewed,
+            Reviewer = tutorHead,
+            ReviewerBcUserId = tutorHead.BcUserId,
+            Rating = 5,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        context.PlatformSettings.Add(new PlatformSettings
+        {
+            TutorHeadReviewPeriodStartDate = new DateOnly(2026, 9, 1),
+            TutorHeadReviewPeriodEndDate = new DateOnly(2026, 9, 30),
+            TutorHeadReviewDeadline = new DateOnly(2026, 10, 5)
+        });
+        context.TutorCourseModules.Add(assignment);
+        context.Bookings.Add(previouslyReviewed);
+        await context.SaveChangesAsync();
+
+        var page = new SessionReviewsModel(
+            context,
+            new FixedTimeProvider(new DateTimeOffset(
+                2026, 10, 6, 10, 0, 0, TimeSpan.Zero)))
+        {
+            DateFrom = new DateOnly(2026, 9, 1),
+            DateTo = new DateOnly(2026, 9, 30)
+        };
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(
+            "Previously Reviewed Student",
+            Assert.Single(page.Sessions).StudentName);
+    }
+
+    [Fact]
+    public async Task AdminDeadlineDefinesTheSessionReviewPeriod()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        context.PlatformSettings.Add(new PlatformSettings
+        {
+            TutorHeadReviewPeriodStartDate = new DateOnly(2026, 9, 1),
+            TutorHeadReviewPeriodEndDate = new DateOnly(2026, 9, 30),
+            TutorHeadReviewDeadline = new DateOnly(2026, 11, 10)
+        });
+        await context.SaveChangesAsync();
+        var page = new SessionReviewsModel(
+            context,
+            new FixedTimeProvider(new DateTimeOffset(
+                2026, 11, 1, 10, 0, 0, TimeSpan.Zero)));
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(new DateOnly(2026, 10, 11), page.PeriodSummary.StartDate);
+        Assert.Equal(new DateOnly(2026, 11, 10), page.PeriodSummary.EndDate);
+        Assert.Equal(new DateOnly(2026, 11, 10), page.PeriodSummary.Deadline);
+    }
+
+    [Fact]
+    public async Task OneTimeDeadlineDoesNotChangeDateAfterRollover()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        context.PlatformSettings.Add(new PlatformSettings
+        {
+            TutorHeadReviewPeriodStartDate = new DateOnly(2026, 9, 1),
+            TutorHeadReviewPeriodEndDate = new DateOnly(2026, 9, 30),
+            TutorHeadReviewDeadline = new DateOnly(2026, 10, 5),
+            IsTutorHeadReviewDeadlineRecurring = false
+        });
+        await context.SaveChangesAsync();
+        var page = new SessionReviewsModel(
+            context,
+            new FixedTimeProvider(new DateTimeOffset(
+                2026, 10, 6, 10, 0, 0, TimeSpan.Zero)));
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(new DateOnly(2026, 10, 6), page.PeriodSummary.StartDate);
+        Assert.Equal(new DateOnly(2026, 11, 5), page.PeriodSummary.EndDate);
+        Assert.Equal(new DateOnly(2026, 10, 5), page.PeriodSummary.Deadline);
+        Assert.Empty(page.PeriodSummary.DeadlineStatus);
+    }
+
+    [Fact]
+    public async Task MonthEndRecurrenceUsesEachMonthsActualLastDay()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        context.PlatformSettings.Add(new PlatformSettings
+        {
+            TutorHeadReviewPeriodStartDate = new DateOnly(2026, 12, 1),
+            TutorHeadReviewPeriodEndDate = new DateOnly(2026, 12, 31),
+            TutorHeadReviewDeadline = new DateOnly(2027, 1, 31),
+            IsTutorHeadReviewDeadlineRecurring = true,
+            UseLastDayOfMonthForTutorHeadReviewDeadline = true
+        });
+        await context.SaveChangesAsync();
+        var februaryPage = new SessionReviewsModel(
+            context,
+            new FixedTimeProvider(new DateTimeOffset(
+                2027, 2, 1, 10, 0, 0, TimeSpan.Zero)));
+
+        await februaryPage.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(
+            new DateOnly(2027, 2, 28),
+            februaryPage.PeriodSummary.Deadline);
+        Assert.Equal(
+            new DateOnly(2027, 2, 1),
+            februaryPage.PeriodSummary.StartDate);
+        Assert.Equal(
+            new DateOnly(2027, 2, 28),
+            februaryPage.PeriodSummary.EndDate);
+
+        var marchPage = new SessionReviewsModel(
+            context,
+            new FixedTimeProvider(new DateTimeOffset(
+                2027, 3, 1, 10, 0, 0, TimeSpan.Zero)));
+
+        await marchPage.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(
+            new DateOnly(2027, 3, 31),
+            marchPage.PeriodSummary.Deadline);
+        Assert.Equal(
+            new DateOnly(2027, 3, 1),
+            marchPage.PeriodSummary.StartDate);
+        Assert.Equal(
+            new DateOnly(2027, 3, 31),
+            marchPage.PeriodSummary.EndDate);
+    }
+
+    [Fact]
+    public async Task PeriodStartsDayAfterPreviousDeadline()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        context.PlatformSettings.Add(new PlatformSettings
+        {
+            TutorHeadReviewDeadline = new DateOnly(2026, 10, 20),
+            IsTutorHeadReviewDeadlineRecurring = true
+        });
+        await context.SaveChangesAsync();
+        var dueDatePage = new SessionReviewsModel(
+            context,
+            new FixedTimeProvider(new DateTimeOffset(
+                2026, 10, 20, 10, 0, 0, TimeSpan.Zero)));
+
+        await dueDatePage.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(
+            new DateOnly(2026, 9, 21),
+            dueDatePage.PeriodSummary.StartDate);
+        Assert.Equal(
+            new DateOnly(2026, 10, 20),
+            dueDatePage.PeriodSummary.EndDate);
+
+        var nextPeriodPage = new SessionReviewsModel(
+            context,
+            new FixedTimeProvider(new DateTimeOffset(
+                2026, 10, 21, 10, 0, 0, TimeSpan.Zero)));
+
+        await nextPeriodPage.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(
+            new DateOnly(2026, 10, 21),
+            nextPeriodPage.PeriodSummary.StartDate);
+        Assert.Equal(
+            new DateOnly(2026, 11, 20),
+            nextPeriodPage.PeriodSummary.EndDate);
+        Assert.Equal(
+            new DateOnly(2026, 11, 20),
+            nextPeriodPage.PeriodSummary.Deadline);
+    }
+
+    [Fact]
     public async Task TutorHeadCanSaveStructuredSessionReview()
     {
         await using ApplicationDbContext context = CreateContext();

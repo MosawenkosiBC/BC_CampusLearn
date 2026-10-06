@@ -50,9 +50,8 @@ public class AdminSettingsTests
         page.Input = new BookingsModel.BookingTermsInput
         {
             Terms = "Arrive prepared.\r\n\r\nRespect your tutor.  ",
-            PeriodStartDate = new DateOnly(2026, 10, 1),
-            PeriodEndDate = new DateOnly(2026, 10, 31),
-            ReviewDeadline = new DateOnly(2026, 11, 5)
+            ReviewDeadline = new DateOnly(2026, 11, 5),
+            IsReviewDeadlineRecurring = true
         };
 
         IActionResult result = await page.OnPostAsync(
@@ -65,14 +64,77 @@ public class AdminSettingsTests
         Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
             log => log.SettingName == "Booking terms and conditions");
         PlatformSettings settings = await context.PlatformSettings.SingleAsync();
-        Assert.Equal(new DateOnly(2026, 10, 1),
+        Assert.Equal(new DateOnly(2026, 10, 6),
             settings.TutorHeadReviewPeriodStartDate);
-        Assert.Equal(new DateOnly(2026, 10, 31),
+        Assert.Equal(new DateOnly(2026, 11, 5),
             settings.TutorHeadReviewPeriodEndDate);
         Assert.Equal(new DateOnly(2026, 11, 5),
             settings.TutorHeadReviewDeadline);
+        Assert.True(settings.IsTutorHeadReviewDeadlineRecurring);
         Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
             log => log.SettingName == "Tutor Head review deadline");
+    }
+
+    [Fact]
+    public async Task AdministratorCanMakeReviewDeadlineOneTime()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.Admin);
+        await context.SaveChangesAsync();
+        BookingsModel page = CreateBookingsPage(context, BcUserRole.Admin);
+        page.Input = new BookingsModel.BookingTermsInput
+        {
+            Terms = PlatformSettings.DefaultBookingTerms,
+            ReviewDeadline = new DateOnly(2026, 10, 5),
+            IsReviewDeadlineRecurring = false
+        };
+
+        IActionResult result = await page.OnPostAsync(CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.False((await context.PlatformSettings.SingleAsync())
+            .IsTutorHeadReviewDeadlineRecurring);
+        Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
+            log => log.SettingName ==
+                "Tutor Head review deadline recurrence" &&
+                log.NewValue == "One time");
+    }
+
+    [Fact]
+    public async Task AdministratorCanRepeatDeadlineOnLastDayOfMonth()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.Admin);
+        await context.SaveChangesAsync();
+        BookingsModel page = CreateBookingsPage(context, BcUserRole.Admin);
+        page.Input = new BookingsModel.BookingTermsInput
+        {
+            Terms = PlatformSettings.DefaultBookingTerms,
+            ReviewDeadline = new DateOnly(2026, 11, 5),
+            IsReviewDeadlineRecurring = true,
+            UseLastDayOfMonth = true
+        };
+
+        IActionResult result = await page.OnPostAsync(CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        PlatformSettings settings = await context.PlatformSettings.SingleAsync();
+        Assert.Equal(
+            new DateOnly(2026, 11, 30),
+            settings.TutorHeadReviewDeadline);
+        Assert.Equal(
+            new DateOnly(2026, 11, 1),
+            settings.TutorHeadReviewPeriodStartDate);
+        Assert.Equal(
+            new DateOnly(2026, 11, 30),
+            settings.TutorHeadReviewPeriodEndDate);
+        Assert.True(settings.IsTutorHeadReviewDeadlineRecurring);
+        Assert.True(settings
+            .UseLastDayOfMonthForTutorHeadReviewDeadline);
+        Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
+            log => log.SettingName ==
+                "Tutor Head review deadline monthly rule" &&
+                log.NewValue == "Last day of the month");
     }
 
     [Fact]

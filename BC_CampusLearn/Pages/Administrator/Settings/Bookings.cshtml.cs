@@ -29,9 +29,11 @@ public class BookingsModel(
             .Select(settings => new BookingTermsInput
             {
                 Terms = settings.BookingTermsAndConditions,
-                PeriodStartDate = settings.TutorHeadReviewPeriodStartDate,
-                PeriodEndDate = settings.TutorHeadReviewPeriodEndDate,
-                ReviewDeadline = settings.TutorHeadReviewDeadline
+                ReviewDeadline = settings.TutorHeadReviewDeadline,
+                IsReviewDeadlineRecurring =
+                    settings.IsTutorHeadReviewDeadlineRecurring,
+                UseLastDayOfMonth = settings
+                    .UseLastDayOfMonthForTutorHeadReviewDeadline
             })
             .SingleAsync(cancellationToken);
     }
@@ -46,24 +48,17 @@ public class BookingsModel(
                 "Input.Terms",
                 "Booking terms must contain between 20 and 8,000 characters.");
         }
-        if (Input.PeriodEndDate < Input.PeriodStartDate)
-        {
-            ModelState.AddModelError(
-                "Input.PeriodEndDate",
-                "The period end date must be on or after the start date.");
-        }
-        if (Input.ReviewDeadline < Input.PeriodEndDate)
-        {
-            ModelState.AddModelError(
-                "Input.ReviewDeadline",
-                "The review deadline must be on or after the period end date.");
-        }
         if (!ModelState.IsValid) return Page();
 
         CurrentUser currentUser = currentUserService.GetRequiredUser();
         PlatformSettings settings = await context.PlatformSettings.SingleAsync(
             item => item.PlatformSettingsId == PlatformSettings.SingletonId,
             cancellationToken);
+        bool useLastDayOfMonth = Input.IsReviewDeadlineRecurring &&
+            Input.UseLastDayOfMonth;
+        DateOnly effectiveDeadline = useLastDayOfMonth
+            ? LastDayOfMonth(Input.ReviewDeadline)
+            : Input.ReviewDeadline;
         bool changed = auditService.Record(
             "Bookings and sessions",
             "Booking terms and conditions",
@@ -72,26 +67,43 @@ public class BookingsModel(
             currentUser);
         changed |= auditService.Record(
             "Bookings and sessions",
-            "Tutor Head review period start date",
-            FormatDate(settings.TutorHeadReviewPeriodStartDate),
-            FormatDate(Input.PeriodStartDate),
-            currentUser);
-        changed |= auditService.Record(
-            "Bookings and sessions",
-            "Tutor Head review period end date",
-            FormatDate(settings.TutorHeadReviewPeriodEndDate),
-            FormatDate(Input.PeriodEndDate),
-            currentUser);
-        changed |= auditService.Record(
-            "Bookings and sessions",
             "Tutor Head review deadline",
             FormatDate(settings.TutorHeadReviewDeadline),
-            FormatDate(Input.ReviewDeadline),
+            FormatDate(effectiveDeadline),
             currentUser);
+        changed |= auditService.Record(
+            "Bookings and sessions",
+            "Tutor Head review deadline recurrence",
+            settings.IsTutorHeadReviewDeadlineRecurring
+                ? "Monthly"
+                : "One time",
+            Input.IsReviewDeadlineRecurring
+                ? "Monthly"
+                : "One time",
+            currentUser);
+        changed |= auditService.Record(
+            "Bookings and sessions",
+            "Tutor Head review deadline monthly rule",
+            settings.UseLastDayOfMonthForTutorHeadReviewDeadline
+                ? "Last day of the month"
+                : "Same date each month",
+            useLastDayOfMonth
+                ? "Last day of the month"
+                : "Same date each month",
+            currentUser);
+        DateOnly previousDeadline = PreviousMonthlyOccurrence(
+            effectiveDeadline,
+            useLastDayOfMonth);
         settings.BookingTermsAndConditions = Input.Terms;
-        settings.TutorHeadReviewPeriodStartDate = Input.PeriodStartDate;
-        settings.TutorHeadReviewPeriodEndDate = Input.PeriodEndDate;
-        settings.TutorHeadReviewDeadline = Input.ReviewDeadline;
+        settings.TutorHeadReviewPeriodStartDate =
+            previousDeadline.AddDays(1);
+        settings.TutorHeadReviewPeriodEndDate =
+            effectiveDeadline;
+        settings.TutorHeadReviewDeadline = effectiveDeadline;
+        settings.IsTutorHeadReviewDeadlineRecurring =
+            Input.IsReviewDeadlineRecurring;
+        settings.UseLastDayOfMonthForTutorHeadReviewDeadline =
+            useLastDayOfMonth;
         settings.UpdatedByBcUserId = currentUser.BcUserId;
         settings.UpdatedAt = timeProvider.GetUtcNow();
         await context.SaveChangesAsync(cancellationToken);
@@ -110,19 +122,34 @@ public class BookingsModel(
     private static string FormatDate(DateOnly value) =>
         value.ToString("yyyy-MM-dd");
 
+    private static DateOnly LastDayOfMonth(DateOnly date) => new DateOnly(
+        date.Year,
+        date.Month,
+        1).AddMonths(1).AddDays(-1);
+
+    private static DateOnly PreviousMonthlyOccurrence(
+        DateOnly deadline,
+        bool useLastDayOfMonth)
+    {
+        DateOnly previous = deadline.AddMonths(-1);
+        return useLastDayOfMonth
+            ? LastDayOfMonth(previous)
+            : previous;
+    }
+
     public sealed class BookingTermsInput
     {
         [Required, StringLength(8000, MinimumLength = 20)]
         [Display(Name = "Booking terms and conditions")]
         public string Terms { get; set; } = string.Empty;
 
-        [Display(Name = "Period start date")]
-        public DateOnly PeriodStartDate { get; set; } = new(2026, 9, 1);
-
-        [Display(Name = "Period end/cut-off date")]
-        public DateOnly PeriodEndDate { get; set; } = new(2026, 9, 30);
-
         [Display(Name = "Tutor Head review deadline")]
         public DateOnly ReviewDeadline { get; set; } = new(2026, 10, 5);
+
+        [Display(Name = "Repeat this deadline monthly")]
+        public bool IsReviewDeadlineRecurring { get; set; } = true;
+
+        [Display(Name = "Use the last day of each month")]
+        public bool UseLastDayOfMonth { get; set; }
     }
 }

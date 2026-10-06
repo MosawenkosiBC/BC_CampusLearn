@@ -94,7 +94,11 @@
                         @Model.PeriodSummary.Deadline.ToString("dd MMM yyyy")
                     </time>
                 </p>
-                <small>@Model.PeriodSummary.DeadlineStatus</small>
+                @if (!string.IsNullOrWhiteSpace(
+                    Model.PeriodSummary.DeadlineStatus))
+                {
+                    <small>@Model.PeriodSummary.DeadlineStatus</small>
+                }
             </div>
         </div>
     </section>

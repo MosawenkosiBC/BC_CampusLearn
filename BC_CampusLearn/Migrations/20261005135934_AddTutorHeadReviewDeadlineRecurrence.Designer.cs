@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261005135934_AddTutorHeadReviewDeadlineRecurrence")]
+    partial class AddTutorHeadReviewDeadlineRecurrence
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -677,9 +680,6 @@ namespace BC_CampusLearn.Migrations
                     b.Property<int?>("UpdatedByBcUserId")
                         .HasColumnType("int");
 
-                    b.Property<bool>("UseLastDayOfMonthForTutorHeadReviewDeadline")
-                        .HasColumnType("bit");
-
                     b.HasKey("PlatformSettingsId");
 
                     b.HasIndex("UpdatedByBcUserId");
@@ -711,8 +711,7 @@ namespace BC_CampusLearn.Migrations
                             TutorHeadReviewDeadline = new DateOnly(2026, 10, 5),
                             TutorHeadReviewPeriodEndDate = new DateOnly(2026, 9, 30),
                             TutorHeadReviewPeriodStartDate = new DateOnly(2026, 9, 1),
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            UseLastDayOfMonthForTutorHeadReviewDeadline = false
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
                         });
                 });
 
@@ -1051,6 +1050,18 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
 
+                    b.Property<string>("EvidenceConsistency")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("ExplanationClarity")
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<string>("ModuleAndTopicCoverage")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
                     b.Property<string>("OverallAssessment")
                         .HasMaxLength(24)
                         .HasColumnType("nvarchar(24)");
@@ -1063,6 +1074,10 @@ namespace BC_CampusLearn.Migrations
 
                     b.Property<int>("ReviewerBcUserId")
                         .HasColumnType("int");
+
+                    b.Property<string>("SessionStructure")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
 
                     b.Property<string>("StudentEngagement")
                         .HasMaxLength(16)
@@ -1354,20 +1369,6 @@ namespace BC_CampusLearn.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTimeOffset?>("DeregisteredAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<int?>("DeregisteredByBcUserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("DeregisteredByName")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("DeregistrationReason")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("GitHubUrl")
                         .HasMaxLength(500)
