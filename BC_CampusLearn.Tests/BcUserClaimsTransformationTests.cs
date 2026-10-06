@@ -14,6 +14,45 @@ namespace BC_CampusLearn.Tests;
 
 public class BcUserClaimsTransformationTests
 {
+    [Theory]
+    [InlineData("Development", BcUserRole.Tutor)]
+    [InlineData("Development", BcUserRole.HeadOfTutors)]
+    [InlineData("Production", BcUserRole.Tutor)]
+    [InlineData("Production", BcUserRole.HeadOfTutors)]
+    public async Task DeregisteredTutorCannotRegainRoleFromExistingSignIn(string environment, BcUserRole role)
+    {
+        await using var context = CreateContext();
+        var transformation = new BcUserClaimsTransformation(context,
+            new TestWebHostEnvironment(environment), CreateIdentityProtector());
+        var principal = CreatePrincipal(new Claim(EntraClaimTypes.DevelopmentRole, role.ToString()));
+        await transformation.TransformAsync(principal);
+        var user = await context.BcUsers.SingleAsync();
+        user.Role = role;
+        var tutor = await context.Tutors.SingleOrDefaultAsync();
+        if (tutor is null)
+        {
+            tutor = new Tutor
+            {
+                BcUser = user, ProgrammeId = 1, CampusOfStudy = "Pretoria",
+                ReasonForTutoring = "", TeachingStyle = "", PreviousTutoringExperience = "", DemonstrationVideoUrl = ""
+            };
+            context.Tutors.Add(tutor);
+        }
+        tutor.Status = TutorStatus.Deregistered;
+        tutor.IsActive = false;
+        await context.SaveChangesAsync();
+
+        // Reuse the signed-in principal, including its previous application role claims.
+        await transformation.TransformAsync(principal);
+        await transformation.TransformAsync(principal);
+
+        Assert.Equal(BcUserRole.Student, (await context.BcUsers.SingleAsync()).Role);
+        Assert.True(principal.IsInRole(nameof(BcUserRole.Student)));
+        Assert.False(principal.IsInRole(nameof(BcUserRole.Tutor)));
+        Assert.False(principal.IsInRole(nameof(BcUserRole.HeadOfTutors)));
+        Assert.False((await context.Tutors.SingleAsync()).IsActive);
+    }
+
     [Fact]
     public async Task NewUsersDefaultToStudentRole()
     {

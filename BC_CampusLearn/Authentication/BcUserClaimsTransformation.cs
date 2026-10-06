@@ -164,6 +164,14 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
             user.LastLoginAt = DateTime.UtcNow;
         }
 
+        // An old sign-in persona must not restore tutor access after deregistration.
+        if (user.Role is BcUserRole.Tutor or BcUserRole.HeadOfTutors &&
+            await _context.Tutors.AnyAsync(tutor =>
+                tutor.BcUserId == user.BcUserId && tutor.Status == TutorStatus.Deregistered))
+        {
+            user.Role = BcUserRole.Student;
+        }
+
         if (RequiresAdminProfile(user.Role) &&
             user.Admin is null)
         {
@@ -175,7 +183,7 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
 
         await _context.SaveChangesAsync();
 
-        if (developmentRole == BcUserRole.HeadOfTutors)
+        if (developmentRole == BcUserRole.HeadOfTutors && user.Role == BcUserRole.HeadOfTutors)
         {
             await EnsureDevelopmentTutorHeadProfileAsync(user);
         }

@@ -33,6 +33,10 @@ public class Tutor
     public string? PhoneNumber { get; set; }
 
     public bool IsActive { get; set; }
+    public DateTimeOffset? DeregisteredAt { get; set; }
+    public int? DeregisteredByBcUserId { get; set; }
+    public string? DeregisteredByName { get; set; }
+    public string? DeregistrationReason { get; set; }
 
     //links for profile
     public string? LinkedInUrl { get; set; }   //can be null

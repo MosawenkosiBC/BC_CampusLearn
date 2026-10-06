@@ -40,6 +40,9 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
         builder.Property(tutor => tutor.InterviewLocation)
             .HasMaxLength(500);
         builder.Property(tutor => tutor.IsActive).HasDefaultValue(false);
+        builder.Property(tutor => tutor.DeregisteredAt).HasColumnType("datetimeoffset");
+        builder.Property(tutor => tutor.DeregisteredByName).HasMaxLength(200);
+        builder.Property(tutor => tutor.DeregistrationReason).HasMaxLength(1000);
         builder.Property(tutor => tutor.SubmittedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         builder.Property(tutor => tutor.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
 

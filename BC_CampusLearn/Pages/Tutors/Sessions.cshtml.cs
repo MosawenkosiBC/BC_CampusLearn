@@ -121,8 +121,8 @@ public class SessionsModel : PageModel
             .AsNoTracking()
             .Where(tutor =>
                 tutor.BcUserId == currentUser.BcUserId &&
-                tutor.Status == TutorStatus.Approved &&
-                tutor.IsActive)
+                ((tutor.Status == TutorStatus.Approved && tutor.IsActive) ||
+                 tutor.Status == TutorStatus.Deregistered))
             .Select(tutor => (int?)tutor.TutorId)
             .SingleOrDefaultAsync(cancellationToken);
 

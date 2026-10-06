@@ -89,13 +89,15 @@ public class SessionDetailsModel : PageModel
     [TempData]
     public bool SessionActionError { get; set; }
 
+    public bool IsDeregistered { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(
         int bookingId,
         bool openReview,
         CancellationToken cancellationToken)
     {
         await _lifecycleService.ProcessDueTransitionsAsync(cancellationToken);
-        int? tutorId = await GetCurrentTutorIdAsync(cancellationToken);
+        int? tutorId = await GetCurrentTutorIdAsync(cancellationToken, allowDeregistered: true);
         if (!tutorId.HasValue)
         {
             return Forbid();
@@ -131,6 +133,7 @@ public class SessionDetailsModel : PageModel
         TutorEmail = string.IsNullOrWhiteSpace(currentUser.Email)
             ? "Not available"
             : currentUser.Email;
+        IsDeregistered = await _context.Tutors.AnyAsync(t => t.TutorId == tutorId.Value && t.Status == TutorStatus.Deregistered, cancellationToken);
         MeetingLink = session.MeetingLink?.Url;
         DateTimeOffset now = _timeProvider.GetUtcNow();
         SessionStartRemainingText = FormatTimeUntilStart(
@@ -139,7 +142,7 @@ public class SessionDetailsModel : PageModel
             SessionLifecyclePolicy.CanStart(
                 session.ScheduledStartTime,
                 now);
-        OpenReviewPanel = openReview &&
+        OpenReviewPanel = !IsDeregistered && openReview &&
             session.Status == BookingStatus.Completed &&
             session.TutorEvaluation is null;
         if (session.Status is BookingStatus.Cancelled or
@@ -601,7 +604,7 @@ public class SessionDetailsModel : PageModel
         int documentId,
         CancellationToken cancellationToken)
     {
-        int? tutorId = await GetCurrentTutorIdAsync(cancellationToken);
+        int? tutorId = await GetCurrentTutorIdAsync(cancellationToken, allowDeregistered: true);
         if (!tutorId.HasValue)
         {
             return Forbid();
@@ -649,7 +652,7 @@ public class SessionDetailsModel : PageModel
         int bookingId,
         CancellationToken cancellationToken)
     {
-        int? tutorId = await GetCurrentTutorIdAsync(cancellationToken);
+        int? tutorId = await GetCurrentTutorIdAsync(cancellationToken, allowDeregistered: true);
         if (!tutorId.HasValue)
         {
             return Forbid();
@@ -729,7 +732,7 @@ public class SessionDetailsModel : PageModel
     }
 
     private async Task<int?> GetCurrentTutorIdAsync(
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool allowDeregistered = false)
     {
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
 
@@ -737,8 +740,8 @@ public class SessionDetailsModel : PageModel
             .AsNoTracking()
             .Where(tutor =>
                 tutor.BcUserId == currentUser.BcUserId &&
-                tutor.Status == TutorStatus.Approved &&
-                tutor.IsActive)
+                ((tutor.Status == TutorStatus.Approved && tutor.IsActive) ||
+                 (allowDeregistered && tutor.Status == TutorStatus.Deregistered)))
             .Select(tutor => (int?)tutor.TutorId)
             .SingleOrDefaultAsync(cancellationToken);
     }

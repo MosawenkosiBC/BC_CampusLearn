@@ -7,6 +7,7 @@ using BC_CampusLearn.Pages.Tutors;
 using BC_CampusLearn.Services.Sessions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Xunit;
@@ -15,6 +16,26 @@ namespace BC_CampusLearn.Tests;
 
 public class TutorSessionDetailsTranscriptTests
 {
+    [Fact]
+    public async Task DeregisteredTutorCanViewHistoryButCannotChangeSessions()
+    {
+        await using var context = CreateContext();
+        var booking = CreateCompletedBooking();
+        booking.TutorCourseModule.Tutor.Status = TutorStatus.Deregistered;
+        booking.TutorCourseModule.Tutor.IsActive = false;
+        booking.TutorCourseModule.IsActive = false;
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var page = CreatePage(context, Path.GetTempPath());
+        Assert.IsType<Microsoft.AspNetCore.Mvc.RazorPages.PageResult>(
+            await page.OnGetAsync(booking.BookingId, true, CancellationToken.None));
+        Assert.True(page.IsDeregistered);
+        Assert.False(page.OpenReviewPanel);
+        Assert.IsType<ForbidResult>(await page.OnPostReviewAsync(booking.BookingId, CancellationToken.None));
+        Assert.IsType<ForbidResult>(await page.OnPostStartAsync(booking.BookingId, CancellationToken.None));
+        Assert.Equal(BookingStatus.Completed, (await context.Bookings.SingleAsync()).Status);
+    }
+
     [Fact]
     public async Task ReviewStoresWordTranscriptOutsideWebRoot()
     {

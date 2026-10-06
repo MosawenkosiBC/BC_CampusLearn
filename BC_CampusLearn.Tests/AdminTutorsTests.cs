@@ -569,16 +569,18 @@ public class AdminTutorsTests
         tutors[2].Status = TutorStatus.Pending;
         tutors[3].Status = TutorStatus.Rejected;
         tutors[4].Status = TutorStatus.Suspended;
+        tutors[5].Status = TutorStatus.Deregistered;
+        tutors[5].IsActive = false;
         await context.SaveChangesAsync();
 
         var page = new IndexModel(context, new TestStudentDetailsService());
         await page.OnGetAsync(CancellationToken.None);
-        Assert.Equal(13, page.TotalTutors);
+        Assert.Equal(12, page.TotalTutors);
         Assert.Equal(2, page.TotalPages);
-        Assert.Equal(Enumerable.Range(6, 8), page.Tutors.Select(tutor => tutor.TutorId));
+        Assert.Equal(Enumerable.Range(7, 8), page.Tutors.Select(tutor => tutor.TutorId));
         page.TutorPage = 2;
         await page.OnGetAsync(CancellationToken.None);
-        Assert.Equal(Enumerable.Range(14, 5), page.Tutors.Select(tutor => tutor.TutorId));
+        Assert.Equal(Enumerable.Range(15, 4), page.Tutors.Select(tutor => tutor.TutorId));
 
         page.SearchName = "Tutor 01";
         await page.OnGetAsync(CancellationToken.None);

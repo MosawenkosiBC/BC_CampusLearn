@@ -3,6 +3,25 @@
 .admin-profile-refresh { display: inline-flex; align-items: center; gap: .6rem; background: #363c3d; color: #fff; border-radius: .5rem; padding: .5rem 1.25rem; font-size: .85rem; font-weight: 600; text-decoration: none; }
 .admin-profile-refresh:hover { color: #fff; background: #242a2b; }
 .admin-profile-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 2rem; align-items: start; }
+.admin-profile-sidebar { display: grid; gap: 1rem; min-width: 0; }
+.admin-deregistration-panel { padding: 1.25rem; }
+.admin-deregistration-action { padding: 0; }
+.admin-deregistration-panel h2 { font-size: 1rem; font-weight: 700; margin: 0 0 .65rem; }
+.admin-deregistration-panel p { font-size: .85rem; line-height: 1.55; }
+.admin-deregistration-panel dt { color: #687078; font-size: .8rem; }
+.admin-deregistration-panel dd { font-size: .85rem; overflow-wrap: anywhere; }
+.admin-deregistration-reason { white-space: pre-wrap; }
+.admin-deregister-button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border: 1px solid #c63241; border-radius: .5rem; background: #c63241; color: #fff; padding: .7rem .9rem; font-weight: 600; font-size: .85rem; }
+.admin-deregistration-panel .admin-deregister-button { width: 100%; }
+.admin-deregister-button:hover { background: #a52634; border-color: #a52634; }
+.admin-deregister-button:focus-visible { outline: 3px solid #ad3445; outline-offset: 3px; }
+.admin-deregister-button:disabled { opacity: .5; cursor: not-allowed; }
+.admin-deregister-button.admin-deregister-confirm { background: #c63241; border-color: #c63241; color: #fff; }
+.admin-deregister-button.admin-deregister-confirm:hover { background: #a52634; border-color: #a52634; }
+.admin-deregistration-note { margin: .35rem 0 0; font-size: .75rem; line-height: 1.4; color: #687078; }
+.admin-deregistration-warning { color: #8b4d12; background: #fff7e9; border-radius: .4rem; padding: .75rem; }
+.admin-deregistration-summary { background: #f3f7f6; border: 1px solid #dce7e3; border-radius: .5rem; padding: 1rem; margin: 1rem 0; font-size: .9rem; }
+.admin-deregistration-summary p:last-child { margin-bottom: 0; }
 .admin-profile-panel { background: #fff; border-radius: .6rem; box-shadow: 0 .25rem .8rem rgba(25,30,38,.1); }
 .admin-profile-personal { padding: 1.75rem 1rem; }
 .admin-profile-identity { text-align: center; margin-bottom: 1.75rem; }

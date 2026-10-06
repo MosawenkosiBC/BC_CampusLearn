@@ -9,7 +9,7 @@
     DateTimeOffset start = Model.Session.ScheduledStartTime.ToOffset(TimeSpan.FromHours(2));
     bool hasAttachedLinks = Model.Session.PreparationLinks.Count > 0;
     bool hasAttachedDocuments = Model.Session.Documents.Count > 0;
-    bool chatIsClosed = SessionCommunicationPolicy.IsClosed(
+    bool chatIsClosed = Model.Session.TutorCourseModule.Tutor.Status == TutorStatus.Deregistered || SessionCommunicationPolicy.IsClosed(
         Model.Session.Status,
         Model.Session.TutorEvaluation is not null,
         Model.Session.StudentEvaluation is not null);

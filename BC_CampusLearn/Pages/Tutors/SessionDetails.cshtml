@@ -14,7 +14,7 @@
         BC_CampusLearn.Models.Entities.BookingStatus.InProgress;
     bool isCompletedSession = Model.Session.Status ==
         BC_CampusLearn.Models.Entities.BookingStatus.Completed;
-    bool chatIsClosed = SessionCommunicationPolicy.IsClosed(
+    bool chatIsClosed = Model.IsDeregistered || SessionCommunicationPolicy.IsClosed(
         Model.Session.Status,
         Model.Session.TutorEvaluation is not null,
         Model.Session.StudentEvaluation is not null);
@@ -61,7 +61,7 @@
                             </svg>
                         </button>
                     }
-                    else
+                    else if (!Model.IsDeregistered)
                     {
                         <button type="button" data-bs-toggle="modal" data-bs-target="#review-session-modal"
                                 aria-label="Review session" title="Review session">
