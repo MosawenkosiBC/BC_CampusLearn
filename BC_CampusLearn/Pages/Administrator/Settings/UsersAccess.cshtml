@@ -24,21 +24,15 @@
         <partial name="_SettingsNavigation" />
         <div class="settings-content">
             <section class="settings-section" aria-labelledby="access-title">
-                <header class="settings-section-heading"><div><h2 id="access-title">Users and access</h2><p>View administrative users and control privileged roles.</p></div><span class="settings-status settings-status--restricted">Super Admin only</span></header>
-                @if (Model.CanManageAccess)
-                {
-                    <details class="settings-access-grant" @(!ViewData.ModelState.IsValid ? "open" : null)>
-                        <summary>Add administrative access</summary>
-                        <form method="post" asp-page-handler="GrantAccess" class="settings-form settings-form--compact">
-                            <div class="settings-field-grid">
-                                <div class="settings-field"><label asp-for="Input.UserIdentifier"></label><input asp-for="Input.UserIdentifier" placeholder="Existing user personnel number or email" /><span asp-validation-for="Input.UserIdentifier"></span></div>
-                                <div class="settings-field"><label asp-for="Input.Role"></label><select asp-for="Input.Role"><option value="@BcUserRole.HeadOfTutors">Head of Tutors</option><option value="@BcUserRole.Admin">Admin</option><option value="@BcUserRole.SuperAdmin">Super Admin</option></select><span asp-validation-for="Input.Role"></span></div>
-                                <div class="settings-field settings-field--wide"><label asp-for="Input.Reason"></label><input asp-for="Input.Reason" placeholder="Reason for granting this access" /><span asp-validation-for="Input.Reason"></span></div>
-                            </div>
-                            <button type="submit" class="settings-primary-button">Grant access</button>
-                        </form>
-                    </details>
-                }
+                <header class="settings-section-heading">
+                    <div><h2 id="access-title">Users and access</h2><p>View administrative users and control privileged roles.</p></div>
+                    @if (Model.CanManageAccess)
+                    {
+                        <button type="button" class="settings-primary-button settings-access-add"
+                                data-bs-toggle="modal" data-bs-target="#grant-access-modal"
+                                aria-controls="grant-access-modal">Add administrative access</button>
+                    }
+                </header>
 
                 <div class="admin-tutors-workspace settings-access-workspace">
                     <aside class="admin-tutor-filters" aria-labelledby="access-filter-title">
@@ -89,22 +83,14 @@
                                         <td>
                                             @if (Model.CanManageAccess && user.Role != BcUserRole.Dev && user.BcUserId != Model.CurrentUserId)
                                             {
-                                                <details class="settings-row-actions">
-                                                    <summary aria-label="Manage @user.DisplayName"><i class="bi bi-three-dots"></i></summary>
-                                                    <div>
-                                                        <form method="post" asp-page-handler="ChangeRole" data-confirm="Change this user's administrative role?">
-                                                            <input type="hidden" name="userId" value="@user.BcUserId" />
-                                                            <select name="role" aria-label="New role for @user.DisplayName"><option value="@BcUserRole.HeadOfTutors" selected="@(user.Role == BcUserRole.HeadOfTutors)">Head of Tutors</option><option value="@BcUserRole.Admin" selected="@(user.Role == BcUserRole.Admin)">Admin</option><option value="@BcUserRole.SuperAdmin" selected="@(user.Role == BcUserRole.SuperAdmin)">Super Admin</option></select>
-                                                            <input name="reason" required minlength="5" placeholder="Reason" /><button type="submit">Change role</button>
-                                                        </form>
-                                                        <form method="post" asp-page-handler="ToggleAccess" data-confirm="@(user.IsActive ? "Deactivate this user's administrative access?" : "Reactivate this user's administrative access?")">
-                                                            <input type="hidden" name="userId" value="@user.BcUserId" /><input type="hidden" name="active" value="@(!user.IsActive)" /><input name="reason" required minlength="5" placeholder="Reason" /><button type="submit">@(user.IsActive ? "Deactivate" : "Activate")</button>
-                                                        </form>
-                                                        <form method="post" asp-page-handler="RemoveAccess" data-confirm="Remove this user's administrative access?">
-                                                            <input type="hidden" name="userId" value="@user.BcUserId" /><input name="reason" required minlength="5" placeholder="Reason" /><button type="submit" class="is-danger">Remove access</button>
-                                                        </form>
-                                                    </div>
-                                                </details>
+                                                <button type="button" class="settings-access-menu-button"
+                                                        data-bs-toggle="modal" data-bs-target="#access-role-modal"
+                                                        data-user-id="@user.BcUserId" data-user-name="@user.DisplayName"
+                                                        data-user-role="@((int)user.Role)"
+                                                        data-demotion-role="@UsersAccessModel.RoleLabel(UsersAccessModel.DemotionRole(user.Role, user.IsTutor))"
+                                                        aria-label="Manage access for @user.DisplayName" aria-controls="access-role-modal">
+                                                    <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
+                                                </button>
                                             }
                                         </td>
                                     </tr>
@@ -123,4 +109,99 @@
         </div>
     </div>
 </main>
-@section Scripts { <partial name="_ValidationScriptsPartial" /><script src="~/js/admin-settings.js" asp-append-version="true"></script> }
+@section Modals {
+    @if (Model.CanManageAccess)
+    {
+        <div class="modal fade settings-grant-access-modal" id="access-role-modal" tabindex="-1"
+             aria-labelledby="access-role-title" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title" id="access-role-title">Change role</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body settings-form" data-access-role-choices>
+                        <p data-access-role-name></p>
+                        <div class="settings-access-actions">
+                            <button type="button" class="settings-access-action" data-access-choose="promote">Promote</button>
+                            <button type="button" class="settings-access-action settings-access-action--demote" data-access-choose="demote">Demote</button>
+                        </div>
+                    </div>
+                    <form method="post" data-access-role-form hidden
+                          data-promote-url="@Url.Page("/Administrator/Settings/UsersAccess", "Promote")"
+                          data-demote-url="@Url.Page("/Administrator/Settings/UsersAccess", "Demote")">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="userId" data-access-role-user />
+                        <div class="modal-body settings-form">
+                            <p data-access-role-description></p>
+                            <div class="settings-field" data-access-promotion-field>
+                                <label for="access-promotion-role">Promote to</label>
+                                <select id="access-promotion-role" name="role">
+                                    <option value="@BcUserRole.Admin" data-rank="@((int)BcUserRole.Admin)">Admin</option>
+                                    <option value="@BcUserRole.SuperAdmin" data-rank="@((int)BcUserRole.SuperAdmin)">Super Admin</option>
+                                </select>
+                            </div>
+                            <div class="settings-field settings-access-action-reason">
+                                <label for="access-role-reason">Reason (optional)</label>
+                                <input id="access-role-reason" name="reason" maxlength="1000" placeholder="Reason for this role change" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-access-role-back>Back</button>
+                            <button type="submit" class="settings-primary-button" data-access-role-submit>Confirm</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade settings-grant-access-modal" id="grant-access-modal" tabindex="-1"
+             aria-labelledby="grant-access-title" aria-hidden="true" data-settings-modal
+             data-open-on-load="@((!ViewData.ModelState.IsValid).ToString().ToLowerInvariant())">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title" id="grant-access-title">Add administrative access</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="post" asp-page-handler="GrantAccess" data-access-grant-form>
+                        <div class="modal-body settings-form">
+                            <div class="settings-field-grid">
+                                <div class="settings-field settings-field--wide">
+                                    <label asp-for="Input.UserIdentifier"></label>
+                                    <input asp-for="Input.UserIdentifier" placeholder="Type a student number or email address"
+                                           autocomplete="off" data-access-search
+                                           data-search-url="@Url.Page("/Administrator/Settings/UsersAccess", "SearchUsers")"
+                                           aria-describedby="access-search-status" aria-controls="access-search-results" />
+                                    <input asp-for="Input.UserId" type="hidden" data-access-user-id />
+                                    <span asp-validation-for="Input.UserIdentifier"></span>
+                                    <p id="access-search-status" class="settings-access-search-status" role="status" aria-live="polite">Type at least two characters to find a user.</p>
+                                    <div id="access-search-results" class="settings-access-search-results" aria-label="Matching users" hidden></div>
+                                </div>
+                                <p class="settings-access-current-role settings-field--wide" data-access-current-role
+                                   role="status" hidden="@(Model.SelectedAccessUser is null)">
+                                    @if (Model.SelectedAccessUser is { } selected)
+                                    {
+                                        <text>@selected.DisplayName — Current role: @selected.Role. @(selected.HasAdministrativeAccess ? "Already has administrative access" + (selected.IsActive ? "." : " (inactive).") : "No administrative access assigned.")</text>
+                                    }
+                                </p>
+                                <div class="settings-field settings-field--wide" data-access-grant-role hidden="@(Model.SelectedAccessUser?.Role == "Head of Tutors")"><label asp-for="Input.Role"></label><select asp-for="Input.Role"><option value="@BcUserRole.HeadOfTutors">Head of Tutors</option><option value="@BcUserRole.Admin">Admin</option><option value="@BcUserRole.SuperAdmin">Super Admin</option></select><span asp-validation-for="Input.Role"></span></div>
+                                <div class="settings-field settings-field--wide"><label asp-for="Input.Reason"></label><input asp-for="Input.Reason" placeholder="Reason for this access change (optional)" /><span asp-validation-for="Input.Reason"></span></div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" asp-page-handler="RemoveSelectedAccess" class="settings-danger-button"
+                                    data-access-remove hidden="@(Model.SelectedAccessUser?.HasAdministrativeAccess != true)">Remove access</button>
+                            <button type="submit" class="settings-primary-button" data-access-save hidden="@(Model.SelectedAccessUser?.Role == "Head of Tutors")">@(Model.SelectedAccessUser?.HasAdministrativeAccess == true ? "Update access" : "Grant access")</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin-settings.js" asp-append-version="true"></script>
+    <script src="~/js/admin-users-access.js" asp-append-version="true"></script>
+}

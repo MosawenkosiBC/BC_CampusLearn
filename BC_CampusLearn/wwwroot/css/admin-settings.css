@@ -246,8 +246,40 @@
 .settings-placeholder-grid h3 { font-size: .9rem; margin: .65rem 0 .3rem; }
 .settings-placeholder-grid p { color: #727a7b; font-size: .76rem; line-height: 1.5; margin: 0; }
 
-.settings-access-grant { border-bottom: 1px solid #edf0f0; }
-.settings-access-grant summary { cursor: pointer; font-size: .84rem; font-weight: 750; padding: 1rem 1.5rem; }
+.settings-access-add { flex-shrink: 0; margin: 0; }
+.settings-access-actions { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; }
+.settings-access-menu-button { align-items: center; background: transparent; border: 1px solid transparent; border-radius: .5rem; color: #363c3d; display: inline-flex; font-size: 1.25rem; height: 44px; justify-content: center; width: 44px; }
+.settings-access-menu-button:hover { background: #eef2f2; }
+.settings-access-menu-button:focus-visible { outline: 2px solid #363c3d; outline-offset: 2px; }
+.settings-access-action { background: #237a45; border: 1px solid transparent; border-radius: .5rem; color: #fff; font: inherit; font-size: .85rem; min-height: 44px; padding: .5rem .8rem; }
+.settings-access-action--demote { background: #b42318; }
+.settings-access-action:hover:not(:disabled) { background: #196137; }
+.settings-access-action--demote:hover:not(:disabled) { background: #8f1d14; }
+#access-role-modal .settings-access-confirm--promote { background: #237a45; color: #fff; }
+#access-role-modal .settings-access-confirm--promote:hover { background: #196137; }
+#access-role-modal .settings-access-confirm--demote { background: #b42318; color: #fff; }
+#access-role-modal .settings-access-confirm--demote:hover { background: #8f1d14; }
+.settings-access-action:focus-visible { outline: 2px solid #363c3d; outline-offset: 2px; }
+.settings-access-action:disabled { cursor: not-allowed; opacity: .45; }
+.settings-access-action-reason { margin-top: 1rem; }
+.settings-grant-access-modal .modal-content { border: 0; border-radius: .75rem; overflow: hidden; }
+.settings-grant-access-modal .modal-title { font-size: 1.2rem; font-weight: 600; }
+.settings-grant-access-modal .modal-content > form { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.settings-grant-access-modal .modal-body { overflow-y: auto; }
+.settings-grant-access-modal .settings-primary-button { margin: 0; font-weight: 500; }
+.settings-access-search-status { color: #697172; font-size: .85rem; margin: .6rem 0 0; }
+.settings-access-current-role { background: #edf2f2; border-radius: .55rem; font-size: .9rem; margin: 0; padding: .85rem; }
+.settings-grant-access-modal [hidden] { display: none !important; }
+.settings-access-search-results { border: 1px solid #cdd3d4; border-radius: .55rem; margin-top: .75rem; max-height: 16rem; overflow-y: auto; }
+.settings-access-search-result { background: #fff; border: 0; border-bottom: 1px solid #edf0f0; color: #252b2c; display: grid; gap: .3rem; padding: .8rem; text-align: left; width: 100%; }
+.settings-access-search-result:last-child { border-bottom: 0; }
+.settings-access-search-result span { color: #697172; font-size: .85rem; overflow-wrap: anywhere; }
+.settings-access-search-result:hover, .settings-access-search-result:focus-visible { background: #e9eeee; }
+.settings-access-search-result:focus-visible { outline: 2px solid #363c3d; outline-offset: -2px; }
+@media (max-width: 767.98px) {
+    .settings-users-access-page .settings-section-heading { flex-wrap: wrap; }
+    .settings-access-add { width: 100%; }
+}
 .settings-table-wrap { overflow-x: auto; padding: .3rem 1.5rem 1.4rem; }
 .settings-table { border-collapse: collapse; min-width: 48rem; width: 100%; }
 .settings-table th { color: #7a8182; font-size: .68rem; letter-spacing: .04em; padding: .85rem .65rem; text-align: left; text-transform: uppercase; }

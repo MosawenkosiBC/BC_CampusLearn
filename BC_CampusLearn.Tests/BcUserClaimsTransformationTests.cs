@@ -251,6 +251,47 @@ public class BcUserClaimsTransformationTests
         Assert.True(principal.IsInRole(nameof(BcUserRole.Admin)));
     }
 
+    [Theory]
+    [InlineData("Development", BcUserRole.Admin, BcUserRole.Student)]
+    [InlineData("Development", BcUserRole.Admin, BcUserRole.Tutor)]
+    [InlineData("Development", BcUserRole.HeadOfTutors, BcUserRole.Student)]
+    [InlineData("Development", BcUserRole.HeadOfTutors, BcUserRole.Tutor)]
+    [InlineData("Development", BcUserRole.SuperAdmin, BcUserRole.Admin)]
+    [InlineData("Production", BcUserRole.Admin, BcUserRole.Student)]
+    [InlineData("Production", BcUserRole.Admin, BcUserRole.Tutor)]
+    [InlineData("Production", BcUserRole.HeadOfTutors, BcUserRole.Student)]
+    [InlineData("Production", BcUserRole.HeadOfTutors, BcUserRole.Tutor)]
+    [InlineData("Production", BcUserRole.SuperAdmin, BcUserRole.Admin)]
+    public async Task RefreshAndSignInRespectSavedDemotion(string environment, BcUserRole previous, BcUserRole next)
+    {
+        await using var context = CreateContext();
+        var transformation = new BcUserClaimsTransformation(context,
+            new TestWebHostEnvironment(environment), CreateIdentityProtector());
+        var principal = CreatePrincipal(new Claim(EntraClaimTypes.DevelopmentRole, previous.ToString()));
+        await transformation.TransformAsync(principal);
+        var user = await context.BcUsers.SingleAsync();
+        user.Role = previous;
+        await context.SaveChangesAsync();
+        await transformation.TransformAsync(principal);
+        Assert.True(principal.IsInRole(previous.ToString()));
+
+        user.Role = next;
+        await context.SaveChangesAsync();
+        await transformation.TransformAsync(principal);
+        await transformation.TransformAsync(principal);
+
+        Assert.False(principal.IsInRole(previous.ToString()));
+        Assert.True(principal.IsInRole(next.ToString()));
+        Assert.Equal(next.ToString(), principal.FindFirstValue(EntraClaimTypes.BcRole));
+        Assert.Equal(next, (await context.BcUsers.SingleAsync()).Role);
+
+        var newSignIn = CreatePrincipal(new Claim(EntraClaimTypes.DevelopmentRole, previous.ToString()));
+        await transformation.TransformAsync(newSignIn);
+        Assert.False(newSignIn.IsInRole(previous.ToString()));
+        Assert.True(newSignIn.IsInRole(next.ToString()));
+        Assert.Equal(next, (await context.BcUsers.SingleAsync()).Role);
+    }
+
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

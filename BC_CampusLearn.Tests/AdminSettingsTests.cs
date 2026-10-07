@@ -489,6 +489,291 @@ public class AdminSettingsTests
             Assert.Single(page.AccessUsers).DisplayName);
     }
 
+    [Theory]
+    [InlineData("st20")]
+    [InlineData("USER@CAMPUS")]
+    [InlineData("  st20  ")]
+    public async Task AccessLookupFindsTutorsByNumberOrEmailAndIndicatesAssignedAccess(string term)
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        context.BcUsers.AddRange(
+            new BcUser { BcUserId = 2, PersonnelNumber = "ST200", Email = "user@campus.test", DisplayName = "Tutor", Role = BcUserRole.Tutor, Tutor = AccessTutor(2) },
+            new BcUser { BcUserId = 3, PersonnelNumber = "ST201", Email = "other-user@campus.test", DisplayName = "Administrator", Role = BcUserRole.Admin, Tutor = AccessTutor(3), IsAdministrativeAccessActive = false },
+            new BcUser { BcUserId = 4, PersonnelNumber = "ST202", Email = "dev-user@campus.test", DisplayName = "Developer", Role = BcUserRole.Dev });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+
+        var result = Assert.IsType<JsonResult>(await page.OnGetSearchUsersAsync(term, CancellationToken.None));
+        var matches = Assert.IsAssignableFrom<IEnumerable<UsersAccessModel.AccessUserMatch>>(result.Value).ToList();
+
+        Assert.Equal(new[] { 3, 2 }, matches.Select(user => user.UserId));
+        Assert.Equal("Admin", matches[0].Role);
+        Assert.Equal("Tutor", matches[1].Role);
+        Assert.True(matches[0].HasAdministrativeAccess);
+        Assert.False(matches[0].IsActive);
+        Assert.False(matches[1].HasAdministrativeAccess);
+    }
+
+    [Fact]
+    public async Task AccessLookupRejectsNonSuperAdminsAndDoesNotReturnCurrentUser()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        await context.SaveChangesAsync();
+        var admin = CreateAccessPage(context, BcUserRole.Admin);
+        Assert.IsType<ForbidResult>(await admin.OnGetSearchUsersAsync("admin", CancellationToken.None));
+        var superAdmin = CreateAccessPage(context, BcUserRole.SuperAdmin);
+        foreach (string term in new[] { "admin", "a", "" })
+        {
+            var result = Assert.IsType<JsonResult>(await superAdmin.OnGetSearchUsersAsync(term, CancellationToken.None));
+            Assert.Empty(Assert.IsAssignableFrom<IEnumerable<UsersAccessModel.AccessUserMatch>>(result.Value));
+        }
+    }
+
+    [Fact]
+    public async Task GrantAccessUsesSelectedAccountAndRejectsDeveloperAccount()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        context.BcUsers.AddRange(
+            new BcUser { BcUserId = 2, PersonnelNumber = "ST200", DisplayName = "Selected Student", Role = BcUserRole.Student },
+            new BcUser { BcUserId = 3, PersonnelNumber = "DEV1", DisplayName = "Developer", Role = BcUserRole.Dev });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+        page.Input = new() { UserId = 2, UserIdentifier = "ST200", Role = BcUserRole.Admin, Reason = "Support the tutoring programme" };
+        Assert.IsType<RedirectToPageResult>(await page.OnPostGrantAccessAsync(CancellationToken.None));
+        Assert.Equal(BcUserRole.Admin, (await context.BcUsers.FindAsync(2))!.Role);
+
+        page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+        page.Input = new() { UserId = 3, UserIdentifier = "DEV1", Role = BcUserRole.Admin, Reason = "Support the tutoring programme" };
+        Assert.IsType<Microsoft.AspNetCore.Mvc.RazorPages.PageResult>(await page.OnPostGrantAccessAsync(CancellationToken.None));
+        Assert.False(page.ModelState.IsValid);
+        Assert.Equal(BcUserRole.Dev, (await context.BcUsers.FindAsync(3))!.Role);
+    }
+
+    [Theory]
+    [InlineData(BcUserRole.Admin)]
+    [InlineData(BcUserRole.Dev)]
+    [InlineData(BcUserRole.HeadOfTutors)]
+    [InlineData(BcUserRole.Student)]
+    public async Task UsersAccessPageRejectsUsersWhoAreNotSuperAdmins(BcUserRole role)
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, role);
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, role);
+
+        Assert.IsType<ForbidResult>(await page.OnGetAsync(CancellationToken.None));
+        Assert.Empty(page.AccessUsers);
+    }
+
+    [Fact]
+    public async Task UsersAccessPageAllowsSuperAdmins()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+
+        Assert.IsType<Microsoft.AspNetCore.Mvc.RazorPages.PageResult>(await page.OnGetAsync(CancellationToken.None));
+        Assert.True(page.CanManageAccess);
+        Assert.Single(page.AccessUsers);
+    }
+
+    [Fact]
+    public async Task AccessLookupIncludesUnnumberedAccountsAndExcludesOtherStudentsAndUnlistedTutors()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        var inactive = AccessTutor(5);
+        inactive.IsActive = false;
+        var pending = AccessTutor(6);
+        pending.Status = TutorStatus.Pending;
+        var applicant = AccessTutor(7);
+        applicant.ApplicationStage = TutorApplicationStage.Submitted;
+        context.BcUsers.AddRange(
+            new BcUser { BcUserId = 2, Email = "match-admin@campus.test", DisplayName = "A", Role = BcUserRole.Admin },
+            new BcUser { BcUserId = 3, PersonnelNumber = "  ", Email = "match-user@campus.test", DisplayName = "B", Role = BcUserRole.Student },
+            new BcUser { BcUserId = 4, PersonnelNumber = "ST204", Email = "match-student@campus.test", DisplayName = "C", Role = BcUserRole.Student },
+            new BcUser { BcUserId = 5, PersonnelNumber = "ST205", Email = "match-inactive@campus.test", DisplayName = "D", Role = BcUserRole.Tutor, Tutor = inactive },
+            new BcUser { BcUserId = 6, PersonnelNumber = "ST206", Email = "match-pending@campus.test", DisplayName = "E", Role = BcUserRole.Tutor, Tutor = pending },
+            new BcUser { BcUserId = 7, PersonnelNumber = "ST207", Email = "match-applicant@campus.test", DisplayName = "F", Role = BcUserRole.Tutor, Tutor = applicant });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+        var result = Assert.IsType<JsonResult>(await page.OnGetSearchUsersAsync("match", CancellationToken.None));
+        var matches = Assert.IsAssignableFrom<IEnumerable<UsersAccessModel.AccessUserMatch>>(result.Value);
+        Assert.Equal(new[] { 2, 3 }, matches.Select(user => user.UserId));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("Help")]
+    public async Task GrantAccessAcceptsOptionalReason(string? reason)
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        context.BcUsers.Add(new BcUser { BcUserId = 2, Email = "new@campus.test", DisplayName = "New Admin", Role = BcUserRole.Student });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+        page.Input = new() { UserId = 2, UserIdentifier = "new@campus.test", Role = BcUserRole.Admin, Reason = reason };
+        var validation = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+        Assert.True(System.ComponentModel.DataAnnotations.Validator.TryValidateObject(page.Input,
+            new System.ComponentModel.DataAnnotations.ValidationContext(page.Input), validation, true));
+        Assert.IsType<RedirectToPageResult>(await page.OnPostGrantAccessAsync(CancellationToken.None));
+        Assert.Equal(BcUserRole.Admin, (await context.BcUsers.FindAsync(2))!.Role);
+        Assert.Equal(string.IsNullOrWhiteSpace(reason) ? null : reason.Trim(), (await context.SettingAuditLogs.SingleAsync()).Reason);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ModalRemovesSelectedAdministrativeAccessWithoutReason(bool tutor)
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        context.BcUsers.Add(new BcUser { BcUserId = 2, Email = "existing@campus.test", DisplayName = "Existing Admin", Role = BcUserRole.Admin, Tutor = tutor ? AccessTutor(2) : null });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+        page.Input = new() { UserId = 2, UserIdentifier = "existing@campus.test" };
+        Assert.IsType<RedirectToPageResult>(await page.OnPostRemoveSelectedAccessAsync(CancellationToken.None));
+        Assert.Equal(tutor ? BcUserRole.Tutor : BcUserRole.Student, (await context.BcUsers.FindAsync(2))!.Role);
+        Assert.Null((await context.SettingAuditLogs.SingleAsync()).Reason);
+    }
+
+    [Fact]
+    public async Task ModalRemovalPreservesSuperAdminProtection()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        (await context.BcUsers.FindAsync(1))!.IsAdministrativeAccessActive = false;
+        context.BcUsers.Add(new BcUser { BcUserId = 2, Email = "last@campus.test", DisplayName = "Last Super Admin", Role = BcUserRole.SuperAdmin });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+        page.Input = new() { UserId = 2, UserIdentifier = "last@campus.test" };
+        await page.OnPostRemoveSelectedAccessAsync(CancellationToken.None);
+        Assert.Equal(BcUserRole.SuperAdmin, (await context.BcUsers.FindAsync(2))!.Role);
+        Assert.Empty(await context.SettingAuditLogs.ToListAsync());
+        var admin = CreateAccessPage(context, BcUserRole.Admin);
+        Assert.IsType<ForbidResult>(await admin.OnPostRemoveSelectedAccessAsync(CancellationToken.None));
+    }
+
+    [Theory]
+    [InlineData(BcUserRole.HeadOfTutors, true, BcUserRole.Tutor)]
+    [InlineData(BcUserRole.HeadOfTutors, false, BcUserRole.Student)]
+    [InlineData(BcUserRole.Admin, true, BcUserRole.Tutor)]
+    [InlineData(BcUserRole.Admin, false, BcUserRole.Student)]
+    [InlineData(BcUserRole.SuperAdmin, false, BcUserRole.Admin)]
+    public async Task DemotionRestoresTheExpectedRole(BcUserRole role, bool isTutor, BcUserRole expected)
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        context.BcUsers.Add(new BcUser { BcUserId = 2, Email = "target@campus.test", DisplayName = "Target", Role = role, Tutor = isTutor ? AccessTutor(2) : null });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+        Assert.IsType<RedirectToPageResult>(await page.OnPostDemoteAsync(2, null, CancellationToken.None));
+        var target = (await context.BcUsers.FindAsync(2))!;
+        Assert.Equal(expected, target.Role);
+        Assert.True(target.IsAdministrativeAccessActive);
+        var audit = await context.SettingAuditLogs.SingleAsync();
+        Assert.Equal(role.ToString(), audit.PreviousValue);
+        Assert.Equal(expected.ToString(), audit.NewValue);
+        await page.OnGetAsync(CancellationToken.None);
+        if (expected != BcUserRole.Admin) Assert.DoesNotContain(page.AccessUsers, user => user.BcUserId == 2);
+    }
+
+    [Theory]
+    [InlineData(TutorStatus.Suspended)]
+    [InlineData(TutorStatus.Deregistered)]
+    public async Task DemotingFormerTutorHeadsDoesNotRestoreTutorAccess(TutorStatus status)
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        var tutor = AccessTutor(2);
+        tutor.Status = status;
+        tutor.IsActive = false;
+        context.BcUsers.Add(new BcUser { BcUserId = 2, DisplayName = "Former tutor", Role = BcUserRole.HeadOfTutors, Tutor = tutor });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+        await page.OnPostDemoteAsync(2, null, CancellationToken.None);
+        Assert.Equal(BcUserRole.Student, (await context.BcUsers.FindAsync(2))!.Role);
+    }
+
+    [Fact]
+    public async Task PromotionOnlyAllowsHigherRolesAndCreatesAdminProfile()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        context.BcUsers.Add(new BcUser { BcUserId = 2, DisplayName = "Tutor", Role = BcUserRole.Tutor, Tutor = AccessTutor(2) });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+        await page.OnPostPromoteAsync(2, BcUserRole.Tutor, null, CancellationToken.None);
+        Assert.Equal(BcUserRole.Tutor, (await context.BcUsers.FindAsync(2))!.Role);
+        Assert.Empty(await context.SettingAuditLogs.ToListAsync());
+        await page.OnPostPromoteAsync(2, BcUserRole.Admin, null, CancellationToken.None);
+        var target = await context.BcUsers.Include(user => user.Admin).SingleAsync(user => user.BcUserId == 2);
+        Assert.Equal(BcUserRole.Admin, target.Role);
+        Assert.NotNull(target.Admin);
+        await page.OnPostPromoteAsync(2, BcUserRole.SuperAdmin, null, CancellationToken.None);
+        Assert.Equal(BcUserRole.SuperAdmin, target.Role);
+        await page.OnPostPromoteAsync(2, BcUserRole.Admin, null, CancellationToken.None);
+        Assert.Equal(BcUserRole.SuperAdmin, target.Role);
+        Assert.Equal(2, await context.SettingAuditLogs.CountAsync());
+    }
+
+    [Fact]
+    public async Task PromotionAndDemotionProtectOwnDeveloperAndLastSuperAdminAccounts()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        context.BcUsers.Add(new BcUser { BcUserId = 2, DisplayName = "Developer", Role = BcUserRole.Dev });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+        await page.OnPostDemoteAsync(1, null, CancellationToken.None);
+        Assert.Equal(BcUserRole.SuperAdmin, (await context.BcUsers.FindAsync(1))!.Role);
+        Assert.IsType<ForbidResult>(await page.OnPostDemoteAsync(2, null, CancellationToken.None));
+        Assert.IsType<ForbidResult>(await page.OnPostPromoteAsync(2, BcUserRole.SuperAdmin, null, CancellationToken.None));
+        var admin = CreateAccessPage(context, BcUserRole.Admin);
+        Assert.IsType<ForbidResult>(await admin.OnPostDemoteAsync(2, null, CancellationToken.None));
+        Assert.IsType<ForbidResult>(await admin.OnPostPromoteAsync(2, BcUserRole.SuperAdmin, null, CancellationToken.None));
+        (await context.BcUsers.FindAsync(1))!.IsAdministrativeAccessActive = false;
+        context.BcUsers.Add(new BcUser { BcUserId = 3, DisplayName = "Last Super Admin", Role = BcUserRole.SuperAdmin });
+        await context.SaveChangesAsync();
+        await page.OnPostDemoteAsync(3, null, CancellationToken.None);
+        Assert.Equal(BcUserRole.SuperAdmin, (await context.BcUsers.FindAsync(3))!.Role);
+        Assert.Empty(await context.SettingAuditLogs.ToListAsync());
+    }
+
+    [Theory]
+    [InlineData(BcUserRole.Admin)]
+    [InlineData(BcUserRole.SuperAdmin)]
+    public async Task TutorHeadsCannotBePromotedThroughAnyAccessHandler(BcUserRole role)
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        context.BcUsers.Add(new BcUser { BcUserId = 2, Email = "head@campus.test", DisplayName = "Tutor Head", Role = BcUserRole.HeadOfTutors, Tutor = AccessTutor(2) });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+        await page.OnPostPromoteAsync(2, role, null, CancellationToken.None);
+        Assert.Equal(BcUserRole.HeadOfTutors, (await context.BcUsers.FindAsync(2))!.Role);
+        await page.OnPostChangeRoleAsync(2, role, "Role update", CancellationToken.None);
+        Assert.Equal(BcUserRole.HeadOfTutors, (await context.BcUsers.FindAsync(2))!.Role);
+        page.Input = new() { UserId = 2, UserIdentifier = "head@campus.test", Role = role };
+        Assert.IsType<Microsoft.AspNetCore.Mvc.RazorPages.PageResult>(await page.OnPostGrantAccessAsync(CancellationToken.None));
+        Assert.Equal(BcUserRole.HeadOfTutors, (await context.BcUsers.FindAsync(2))!.Role);
+        Assert.Empty(await context.SettingAuditLogs.ToListAsync());
+    }
+
+    private static Tutor AccessTutor(int id) => new()
+    {
+        TutorId = id, BcUserId = id, ProgrammeId = 1,
+        ApplicationStage = TutorApplicationStage.Placement, IsActive = true, Status = TutorStatus.Approved,
+        ReasonForTutoring = "Help students", TeachingStyle = "Practical",
+        PreviousTutoringExperience = "None", CampusOfStudy = "Main", DemonstrationVideoUrl = "video"
+    };
+
     private static ApplicationDbContext CreateContext() => new(
         new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
