@@ -46,6 +46,8 @@
             <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8.352 20.242A4.63 4.63 0 0 0 12 22a4.63 4.63 0 0 0 3.648-1.758a27.2 27.2 0 0 1-7.296 0M18.75 9v.704c0 .845.24 1.671.692 2.374l1.108 1.723c1.011 1.574.239 3.713-1.52 4.21a25.8 25.8 0 0 1-14.06 0c-1.759-.497-2.531-2.636-1.52-4.21l1.108-1.723a4.4 4.4 0 0 0 .693-2.374V9c0-3.866 3.022-7 6.749-7s6.75 3.134 6.75 7" />
         </svg><span>Notifications</span>
     </a>
+    @if (User.IsInRole(nameof(BcUserRole.SuperAdmin)))
+    {
     <a asp-page="/Administrator/Settings/UsersAccess"
        class="@(currentPage.EndsWith("/UsersAccess", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
@@ -53,6 +55,7 @@
             <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.5 7a4 4 0 1 1-8 0a4 4 0 0 1 8 0M8 11a3 3 0 0 1 0-6m6.5 9C9.813 14 7 16.5 7 19c0 1.105.84 2 1.875 2h11.25C21.16 21 22 20.105 22 19c0-2.5-2.812-5-7.5-5M4 20h-.5c-.828 0-1.5-.768-1.5-1.715c0-1.612 1.273-3.224 3.5-3.924" />
         </svg><span>Users &amp; access</span>
     </a>
+    }
     <a asp-page="/Administrator/Settings/AuditHistory"
        class="@(currentPage.EndsWith("/AuditHistory", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">

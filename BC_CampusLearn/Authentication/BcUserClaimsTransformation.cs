@@ -156,16 +156,13 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
                 user.Email = email.Trim();
             }
 
-            if (developmentRole.HasValue)
-            {
-                user.Role = developmentRole.Value;
-            }
-
+            // The sign-in persona only seeds new accounts. Existing accounts use
+            // their saved role so promotions and demotions survive refresh/sign-in.
             user.LastLoginAt = DateTime.UtcNow;
         }
 
         // A student test account keeps its approved tutor role when refreshing after approval.
-        if (developmentRole == BcUserRole.Student &&
+        if (developmentRole == BcUserRole.Student && user.Role == BcUserRole.Student &&
             await _context.Tutors.AnyAsync(tutor =>
                 tutor.BcUserId == user.BcUserId &&
                 tutor.Status == TutorStatus.Approved &&
