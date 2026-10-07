@@ -200,12 +200,12 @@
                             <th scope="col">Student name</th>
                             <th scope="col">Location</th>
                             <th scope="col">Session date</th>
-                            <th scope="col">Admin approval</th>
+                            <th scope="col" class="session-decision-column">Tutor Head decision</th>
+                            <th scope="col">Admin decision</th>
                             @if (Model.IsSuperAdmin)
                             {
-                                <th scope="col">Superadmin decision</th>
+                                <th scope="col">Superadmin approval</th>
                             }
-                            <th scope="col" class="session-decision-column">Tutor Head decision</th>
                             <th scope="col" class="session-action-heading">Action</th>
                         </tr>
                     </thead>
@@ -231,19 +231,6 @@
                                             @session.SessionDate.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
                                         </time>
                                     </td>
-                                    <td>
-                                        <span class="session-approval @session.AdminApprovalCssClass">
-                                            @session.AdminApprovalLabel
-                                        </span>
-                                    </td>
-                                    @if (Model.IsSuperAdmin)
-                                    {
-                                        <td>
-                                            <span class="session-approval @session.SuperAdminDecisionCssClass">
-                                                @session.SuperAdminDecisionLabel
-                                            </span>
-                                        </td>
-                                    }
                                     <td>
                                         <span class="session-tutor-head-decision @session.TutorHeadDecisionCssClass"
                                               aria-label="Tutor Head decision: @session.TutorHeadDecisionLabel"
@@ -279,6 +266,19 @@
                                             <span>@session.TutorHeadDecisionLabel</span>
                                         </span>
                                     </td>
+                                    <td>
+                                        <span class="session-approval @session.AdminApprovalCssClass">
+                                            @session.AdminApprovalLabel
+                                        </span>
+                                    </td>
+                                    @if (Model.IsSuperAdmin)
+                                    {
+                                        <td>
+                                            <span class="session-approval @session.SuperAdminDecisionCssClass">
+                                                @session.SuperAdminDecisionLabel
+                                            </span>
+                                        </td>
+                                    }
                                     <td class="session-action-cell">
                                         <div class="session-row-actions">
                                             <span class="session-concern-slot">
