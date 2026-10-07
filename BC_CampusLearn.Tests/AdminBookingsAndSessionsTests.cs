@@ -1,3 +1,4 @@
+using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Pages.Administrator.Admin;
@@ -9,6 +10,46 @@ namespace BC_CampusLearn.Tests;
 
 public class AdminBookingsAndSessionsTests
 {
+    [Fact]
+    public async Task SuperAdminQueueShowsOnlySessionsWithAdministratorReview()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorCourseModule assignment = CreateAssignment();
+        context.TutorCourseModules.Add(assignment);
+        BcUser tutorHead = CreateTutorHead();
+        context.BcUsers.AddRange(
+            tutorHead,
+            new BcUser
+            {
+                BcUserId = 900,
+                PersonnelNumber = "A900",
+                DisplayName = "Admin User",
+                Role = BcUserRole.Admin
+            });
+        context.Bookings.AddRange(
+            CreateBooking(1, assignment, "Awaiting Admin", "Online",
+                studentReview: new StudentEvaluation(),
+                tutorReview: new TutorStudentEvaluation(),
+                tutorHeadReviewer: tutorHead),
+            CreateBooking(2, assignment, "Ready For Superadmin", "Online",
+                studentReview: new StudentEvaluation(),
+                tutorReview: new TutorStudentEvaluation(),
+                adminReview: ApprovedReview(),
+                tutorHeadReviewer: tutorHead));
+        await context.SaveChangesAsync();
+
+        var page = new BookingsAndSessionsModel(
+            context,
+            new FixedTimeProvider(),
+            new RoleCurrentUserService(BcUserRole.SuperAdmin));
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.True(page.IsSuperAdmin);
+        Assert.Equal("Ready For Superadmin", Assert.Single(page.Sessions).StudentName);
+        Assert.Equal("Awaiting review", page.Sessions.Single().SuperAdminDecisionLabel);
+    }
+
     [Fact]
     public void ConfiguredAdminPeriodAdvancesOnFirstDayOfEachMonth()
     {
@@ -747,5 +788,14 @@ public class AdminBookingsAndSessionsTests
     {
         public override DateTimeOffset GetUtcNow() =>
             now ?? new(2026, 9, 29, 10, 0, 0, TimeSpan.Zero);
+    }
+
+    private sealed class RoleCurrentUserService(BcUserRole role)
+        : ICurrentUserService
+    {
+        public bool IsAuthenticated => true;
+
+        public CurrentUser GetRequiredUser() =>
+            new(999, "SA999", "Superadmin", null, role);
     }
 }

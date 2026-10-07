@@ -66,6 +66,8 @@ public class Booking
 
     public AdminSessionReview? AdminSessionReview { get; set; }
 
+    public SuperAdminSessionReview? SuperAdminSessionReview { get; set; }
+
     public SessionAiAssessment? AiAssessment { get; set; }
 
     public ICollection<BookingPreparationLink> PreparationLinks

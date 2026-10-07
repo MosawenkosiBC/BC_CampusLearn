@@ -6,6 +6,14 @@
 .admin-session-summary-button span { font-size: .9rem; font-weight: 700; }
 .admin-session-summary-button:hover { background: #fff; box-shadow: 0 .5rem 1.1rem rgba(25,30,32,.16); }
 .admin-session-summary-button:focus-visible { background: #fff; box-shadow: 0 .5rem 1.1rem rgba(25,30,32,.18); outline: 0; }
+.admin-session-top-actions { align-items: center; display: flex; gap: 1rem; justify-content: space-between; }
+.admin-session-final-actions { display: flex; gap: .75rem; margin-left: auto; }
+.admin-session-final-action { border: 0; border-radius: .5rem; color: #fff; font-weight: 700; min-height: 2.65rem; min-width: 6.5rem; padding: .6rem 1.2rem; }
+.admin-session-final-action.is-accept { background: #237a45; }
+.admin-session-final-action.is-accept:hover { background: #196137; }
+.admin-session-final-action.is-reject { background: #b42318; }
+.admin-session-final-action.is-reject:hover { background: #8f1d14; }
+.admin-session-final-action:focus-visible { box-shadow: 0 0 0 3px rgba(79,135,165,.35); outline: none; }
 .admin-session-summary-modal { color: #111; font-family: var(--campus-font-family); }
 .admin-session-summary-modal .modal-content { border: 0; border-radius: .65rem; overflow: hidden; }
 .admin-session-summary-modal .modal-header { align-items: flex-start; border-bottom: 1px solid #edf0f3; padding: 1.2rem 1.35rem; }
@@ -79,7 +87,14 @@
 .admin-session-review-form > button:focus-visible { box-shadow: 0 0 0 3px rgba(79,135,165,.35); outline: none; }
 .admin-session-status { display: inline-block; border-radius: 1rem; background: #eef2f7; padding: .2rem .6rem; }
 .admin-session-status.is-cancelled { color: #b42318; background: #fde8e8; }
+.admin-session-final-status { border-radius: .5rem; font-weight: 700; margin: 1rem 0 0; padding: .85rem 1rem; text-align: left; }
+.admin-session-final-status span { display: block; font-size: .75rem; font-weight: 500; margin-top: .2rem; }
+.admin-session-final-status.is-accepted { background: #e6f4eb; color: #25643d; }
+.admin-session-final-status.is-rejected { background: #f8e8e8; color: #9d2b25; }
 @media (max-width:767.98px) {
+    .admin-session-top-actions { align-items: stretch; flex-direction: column; }
+    .admin-session-final-actions { margin-left: 0; }
+    .admin-session-final-action { flex: 1; }
     .admin-session-summary-grid { grid-template-columns: 1fr; }
     .admin-session-review-tabs { gap: .75rem; grid-template-columns: 1fr; }
     .admin-session-review-tab { min-height: 3.65rem; }
