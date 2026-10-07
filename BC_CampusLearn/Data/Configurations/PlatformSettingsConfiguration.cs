@@ -23,6 +23,10 @@ public class PlatformSettingsConfiguration :
                 "[TutorHeadReviewPeriodStartDate] AND " +
                 "[TutorHeadReviewDeadline] >= " +
                 "[TutorHeadReviewPeriodEndDate]");
+            table.HasCheckConstraint(
+                "CK_PlatformSettings_AdminSessionReviewPeriod",
+                "[AdminSessionReviewDeadline] >= " +
+                "[AdminSessionReviewPeriodStartDate]");
         });
         builder.HasKey(settings => settings.PlatformSettingsId);
         builder.Property(settings => settings.SupportEmail)
@@ -61,6 +65,10 @@ public class PlatformSettingsConfiguration :
             TutorHeadReviewDeadline = new DateOnly(2026, 10, 5),
             IsTutorHeadReviewDeadlineRecurring = true,
             UseLastDayOfMonthForTutorHeadReviewDeadline = false,
+            AdminSessionReviewDeadline = new DateOnly(2026, 10, 31),
+            AdminSessionReviewPeriodStartDate = new DateOnly(2026, 9, 6),
+            IsAdminSessionReviewDeadlineRecurring = true,
+            UseLastDayOfMonthForAdminSessionReviewDeadline = true,
             UpdatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
         });
     }
