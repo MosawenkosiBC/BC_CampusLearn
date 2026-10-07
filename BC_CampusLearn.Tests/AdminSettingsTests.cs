@@ -20,7 +20,6 @@ public class AdminSettingsTests
         GeneralModel page = CreateGeneralPage(context, BcUserRole.Admin);
         page.Input = new GeneralModel.GeneralSettingsInput
         {
-            SupportEmail = "help@campus.test",
             AcademicYear = 2027,
             DateTimeFormat = "dd/MM/yyyy HH:mm",
             Announcement = "Registration closes Friday.",
@@ -31,13 +30,9 @@ public class AdminSettingsTests
 
         Assert.IsType<RedirectToPageResult>(result);
         PlatformSettings settings = await context.PlatformSettings.SingleAsync();
-        Assert.Equal("help@campus.test", settings.SupportEmail);
+        Assert.Equal("tutors@belgiumcampus.ac.za", settings.SupportEmail);
         Assert.Equal(2027, settings.AcademicYear);
         Assert.True(settings.IsAnnouncementEnabled);
-        Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
-            log => log.SettingName == "Support email address" &&
-                log.PreviousValue == "tutors@belgiumcampus.ac.za" &&
-                log.NewValue == "help@campus.test");
     }
 
     [Fact]
@@ -49,6 +44,7 @@ public class AdminSettingsTests
         BookingsModel page = CreateBookingsPage(context, BcUserRole.Admin);
         page.Input = new BookingsModel.BookingTermsInput
         {
+            SupportEmail = "help@campus.test",
             Terms = "Arrive prepared.\r\n\r\nRespect your tutor.  ",
             ReviewDeadline = new DateOnly(2026, 11, 5),
             IsReviewDeadlineRecurring = true

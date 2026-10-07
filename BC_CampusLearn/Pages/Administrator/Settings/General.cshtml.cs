@@ -43,7 +43,6 @@ public class GeneralModel(
         CancellationToken cancellationToken)
     {
         CurrentUser currentUser = currentUserService.GetRequiredUser();
-        Input.SupportEmail = Input.SupportEmail?.Trim() ?? string.Empty;
         Input.Announcement = Input.Announcement?.Trim();
 
         if (!DateTimeFormats.Contains(Input.DateTimeFormat))
@@ -68,8 +67,6 @@ public class GeneralModel(
         }
 
         bool changed = false;
-        changed |= auditService.Record("General", "Support email address",
-            settings.SupportEmail, Input.SupportEmail, currentUser);
         changed |= auditService.Record("General", "Academic year",
             settings.AcademicYear.ToString(), Input.AcademicYear.ToString(), currentUser);
         changed |= auditService.Record("General", "Date and time format",
@@ -80,7 +77,6 @@ public class GeneralModel(
             Enabled(settings.IsAnnouncementEnabled),
             Enabled(Input.IsAnnouncementEnabled), currentUser);
 
-        settings.SupportEmail = Input.SupportEmail;
         settings.AcademicYear = Input.AcademicYear;
         settings.DateTimeFormat = Input.DateTimeFormat;
         settings.Announcement = Input.Announcement;
@@ -143,7 +139,6 @@ public class GeneralModel(
     private void PopulateInput(PlatformSettings settings) =>
         Input = new GeneralSettingsInput
         {
-            SupportEmail = settings.SupportEmail,
             AcademicYear = settings.AcademicYear,
             DateTimeFormat = settings.DateTimeFormat,
             Announcement = settings.Announcement,
@@ -166,10 +161,6 @@ public class GeneralModel(
 
     public sealed class GeneralSettingsInput
     {
-        [Required, EmailAddress, StringLength(320)]
-        [Display(Name = "Support email address")]
-        public string SupportEmail { get; set; } = string.Empty;
-
         [Range(2000, 2200)]
         [Display(Name = "Academic year")]
         public int AcademicYear { get; set; }

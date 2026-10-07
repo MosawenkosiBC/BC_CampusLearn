@@ -21,7 +21,6 @@
             <form method="post" class="settings-form">
                 <div asp-validation-summary="ModelOnly" class="settings-validation"></div>
                 <div class="settings-field-grid">
-                    <div class="settings-field"><label asp-for="Input.SupportEmail"></label><input asp-for="Input.SupportEmail" type="email" /><small>Displayed wherever users need help or booking support.</small><span asp-validation-for="Input.SupportEmail"></span></div>
                     <div class="settings-field"><label asp-for="Input.DateTimeFormat"></label><select asp-for="Input.DateTimeFormat">@foreach (string format in GeneralModel.DateTimeFormats) { <option value="@format">@DateTime.Now.ToString(format)</option> }</select><span asp-validation-for="Input.DateTimeFormat"></span></div>
                     <div class="settings-field"><label asp-for="Input.AcademicYear"></label><input asp-for="Input.AcademicYear" type="number" min="2000" max="2200" /><span asp-validation-for="Input.AcademicYear"></span></div>
                 </div>

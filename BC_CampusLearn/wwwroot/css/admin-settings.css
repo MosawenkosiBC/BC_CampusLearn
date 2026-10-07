@@ -83,6 +83,74 @@
 .settings-form { padding: 1.5rem; }
 .settings-form--compact { background: #fafbfb; border-top: 1px solid #ecefef; }
 
+.settings-terms-summary {
+    align-items: center;
+    display: flex;
+    gap: .9rem;
+    margin-top: .75rem;
+}
+
+.settings-terms-heading { margin-top: 0; }
+.settings-terms-heading p { margin-bottom: .75rem; }
+.settings-terms-summary-copy { flex: 1 1 auto; min-width: 0; }
+.settings-terms-summary strong { color: #252b2c; font-size: .84rem; font-weight: 650; }
+.settings-terms-summary p { color: #697172; font-size: .75rem; line-height: 1.45; margin: .2rem 0 0; }
+.settings-terms-summary button { flex: 0 0 auto; }
+.settings-booking-terms-modal textarea { min-height: 20rem; }
+.settings-booking-support { margin-top: 1rem; }
+
+.settings-review-table-wrap {
+    border: 1px solid #e2e6e6;
+    border-radius: .65rem;
+    margin-top: .85rem;
+    overflow-x: auto;
+}
+
+.settings-review-table {
+    border-collapse: collapse;
+    min-width: 42rem;
+    width: 100%;
+}
+
+.settings-review-table thead { background: #f7f9f9; }
+.settings-review-table th,
+.settings-review-table td {
+    border-bottom: 1px solid #e8ecec;
+    font-size: .78rem;
+    padding: .8rem 1rem;
+    text-align: left;
+    vertical-align: middle;
+}
+.settings-review-table tbody tr:last-child th,
+.settings-review-table tbody tr:last-child td { border-bottom: 0; }
+.settings-review-table thead th { color: #697172; font-size: .7rem; letter-spacing: .03em; text-transform: uppercase; }
+.settings-review-table tbody th { color: #303637; width: 38%; }
+.settings-review-table tbody th small {
+    color: #737b7c;
+    display: block;
+    font-size: .72rem;
+    font-weight: 400;
+    line-height: 1.4;
+    margin-top: .2rem;
+}
+.settings-review-table td:nth-child(2) { width: 16rem; }
+.settings-review-table .settings-field input { min-height: 2.35rem; padding: .45rem .6rem; }
+.settings-review-toggle-heading,
+.settings-review-toggle-cell { text-align: right !important; width: 14rem; }
+.settings-table-switch { justify-content: flex-end; margin-top: 0; }
+.settings-table-switch strong { min-width: 6.2rem; text-align: left; }
+.settings-review-empty-value { color: #9aa1a2; }
+
+.admin-booking-settings .admin-dashboard-header h1,
+.admin-booking-settings .settings-section-heading h2,
+.admin-booking-settings .settings-subsection-copy h3,
+.admin-booking-settings .settings-terms-summary strong,
+.admin-booking-settings .settings-field label,
+.admin-booking-settings .settings-review-table th,
+.admin-booking-settings .settings-switch strong,
+.admin-booking-settings .settings-primary-button,
+.admin-booking-settings .settings-secondary-button { font-weight: 500; }
+
 .settings-field-grid {
     display: grid;
     gap: 1.2rem;
@@ -291,6 +359,9 @@
 
 @media (max-width: 700px) {
     .admin-settings { padding-top: 1rem; }
+    .settings-terms-summary { align-items: flex-start; flex-wrap: wrap; }
+    .settings-terms-summary-copy { flex-basis: 100%; }
+    .settings-terms-summary button { width: 100%; }
     .settings-field-grid,
     .settings-placeholder-grid,
     .settings-danger-zone { grid-template-columns: 1fr; }

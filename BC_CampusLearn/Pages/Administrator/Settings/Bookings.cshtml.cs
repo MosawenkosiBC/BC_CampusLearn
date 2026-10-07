@@ -28,6 +28,7 @@ public class BookingsModel(
             .Where(settings => settings.PlatformSettingsId == PlatformSettings.SingletonId)
             .Select(settings => new BookingTermsInput
             {
+                SupportEmail = settings.SupportEmail,
                 Terms = settings.BookingTermsAndConditions,
                 ReviewDeadline = settings.TutorHeadReviewDeadline,
                 IsReviewDeadlineRecurring =
@@ -48,6 +49,7 @@ public class BookingsModel(
     public async Task<IActionResult> OnPostAsync(
         CancellationToken cancellationToken)
     {
+        Input.SupportEmail = Input.SupportEmail?.Trim() ?? string.Empty;
         Input.Terms = NormalizeLines(Input.Terms ?? string.Empty);
         if (Input.Terms.Length is < 20 or > 8000)
         {
@@ -80,6 +82,12 @@ public class BookingsModel(
             Input.ReviewDeadline,
             useLastDayOfMonth);
         bool changed = auditService.Record(
+            "Bookings and sessions",
+            "Support email address",
+            settings.SupportEmail,
+            Input.SupportEmail,
+            currentUser);
+        changed |= auditService.Record(
             "Bookings and sessions",
             "Booking terms and conditions",
             settings.BookingTermsAndConditions,
@@ -183,6 +191,11 @@ public class BookingsModel(
 
     public sealed class BookingTermsInput
     {
+        [Required, EmailAddress, StringLength(320)]
+        [Display(Name = "Support email address")]
+        public string SupportEmail { get; set; } =
+            "tutors@belgiumcampus.ac.za";
+
         [Required, StringLength(8000, MinimumLength = 20)]
         [Display(Name = "Booking terms and conditions")]
         public string Terms { get; set; } = string.Empty;
