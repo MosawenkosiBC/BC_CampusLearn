@@ -1,12 +1,15 @@
 (() => {
     const performanceModal = document.getElementById("tutor-performance-modal");
     const customize = performanceModal?.querySelector("[data-performance-customize]");
-    const dateFilter = performanceModal?.querySelector("#tutor-performance-date-filter");
-    customize?.addEventListener("click", () => {
-        if (!dateFilter) return;
-        dateFilter.hidden = !dateFilter.hidden;
-        customize.setAttribute("aria-expanded", String(!dateFilter.hidden));
-        if (!dateFilter.hidden) dateFilter.querySelector("#performance-from")?.focus();
+    const datesModal = document.getElementById("tutor-performance-dates-modal");
+    let returningFromDates = false;
+    datesModal?.addEventListener("shown.bs.modal", () => {
+        datesModal.querySelector("#performance-from")?.focus();
+    });
+    datesModal?.addEventListener("hidden.bs.modal", () => {
+        if (!performanceModal || !window.bootstrap?.Modal) return;
+        returningFromDates = true;
+        window.bootstrap.Modal.getOrCreateInstance(performanceModal).show();
     });
     performanceModal?.querySelectorAll("[data-performance-photo]").forEach(photo => {
         const showInitials = () => {
@@ -52,8 +55,13 @@
             `${visible} tutor${visible === 1 ? "" : "s"}${term ? ` of ${rows.length}` : ""}`;
         performanceModal.querySelector("[data-performance-empty]").hidden = visible > 0;
     });
-    performanceModal?.addEventListener("shown.bs.modal", () => search?.focus());
-    if (performanceModal?.dataset.open === "true" && window.bootstrap?.Modal) {
+    performanceModal?.addEventListener("shown.bs.modal", () => {
+        (returningFromDates ? customize : search)?.focus();
+        returningFromDates = false;
+    });
+    if (datesModal?.dataset.open === "true" && window.bootstrap?.Modal) {
+        window.bootstrap.Modal.getOrCreateInstance(datesModal).show();
+    } else if (performanceModal?.dataset.open === "true" && window.bootstrap?.Modal) {
         window.bootstrap.Modal.getOrCreateInstance(performanceModal).show();
     }
 

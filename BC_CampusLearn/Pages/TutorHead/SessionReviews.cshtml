@@ -331,34 +331,14 @@
                         <div class="tutor-performance-duration" aria-label="Selected duration">
                             <strong>@Model.PerformanceFrom?.ToString("dd MMM yyyy") – @Model.PerformanceTo?.ToString("dd MMM yyyy")</strong>
                             <button type="button" class="tutor-performance-customize"
-                                    aria-controls="tutor-performance-date-filter"
-                                    aria-expanded="@((Model.PerformanceRangeError is not null).ToString().ToLowerInvariant())"
+                                    aria-controls="tutor-performance-dates-modal"
+                                    data-bs-toggle="modal" data-bs-target="#tutor-performance-dates-modal"
                                     data-performance-customize>Customize</button>
                         </div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close tutor performance"></button>
                 </div>
                 <div class="modal-body">
-                    <form method="get" class="tutor-performance-date-filter" id="tutor-performance-date-filter"
-                          hidden="@(Model.PerformanceRangeError is null)">
-                        <input type="hidden" name="ShowPerformance" value="true" />
-                        <input type="hidden" name="TutorFilter" value="@Model.TutorFilter" />
-                        <input type="hidden" name="StudentFilter" value="@Model.StudentFilter" />
-                        <input type="hidden" name="DateFrom" value="@Model.DateFrom?.ToString("yyyy-MM-dd")" />
-                        <input type="hidden" name="DateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")" />
-                        <input type="hidden" name="ReviewStatusFilter" value="@Model.ReviewStatusFilter" />
-                        <div><label for="performance-from">From</label><input asp-for="PerformanceFrom" id="performance-from" type="date" required /></div>
-                        <div><label for="performance-to">To</label><input asp-for="PerformanceTo" id="performance-to" type="date" required /></div>
-                        <button type="submit" class="btn btn-dark">Apply dates</button>
-                        <a asp-page="/TutorHead/SessionReviews" asp-route-ShowPerformance="true"
-                           asp-route-TutorFilter="@Model.TutorFilter" asp-route-StudentFilter="@Model.StudentFilter"
-                           asp-route-DateFrom="@Model.DateFrom?.ToString("yyyy-MM-dd")" asp-route-DateTo="@Model.DateTo?.ToString("yyyy-MM-dd")"
-                           asp-route-ReviewStatusFilter="@Model.ReviewStatusFilter" class="tutor-performance-reset">Review period</a>
-                    </form>
-                    @if (Model.PerformanceRangeError is { } rangeError)
-                    {
-                        <p class="text-danger" role="alert">@rangeError</p>
-                    }
                     <div class="tutor-performance-summary" aria-label="Totals across all tutors">
                         <div><span>Completed sessions</span><strong>@Model.TutorPerformance.Sum(tutor => tutor.Completed)</strong></div>
                         <div class="is-approved"><span>Approved</span><strong>@Model.TutorPerformance.Sum(tutor => tutor.Approved)</strong></div>
@@ -423,6 +403,40 @@
                     </div>
                 </div>
                 <div class="modal-footer"><button type="button" class="btn btn-dark" data-bs-dismiss="modal">Done</button></div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade tutor-performance-modal tutor-performance-dates-modal" id="tutor-performance-dates-modal"
+         tabindex="-1" aria-labelledby="tutor-performance-dates-title" aria-hidden="true"
+         data-open="@((Model.PerformanceRangeError is not null).ToString().ToLowerInvariant())">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="tutor-performance-dates-title">Customize dates</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close date customization"></button>
+                </div>
+                <form method="get" id="tutor-performance-date-filter">
+                    <div class="modal-body">
+                        <input type="hidden" name="ShowPerformance" value="true" />
+                        <input type="hidden" name="TutorFilter" value="@Model.TutorFilter" />
+                        <input type="hidden" name="StudentFilter" value="@Model.StudentFilter" />
+                        <input type="hidden" name="DateFrom" value="@Model.DateFrom?.ToString("yyyy-MM-dd")" />
+                        <input type="hidden" name="DateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")" />
+                        <input type="hidden" name="ReviewStatusFilter" value="@Model.ReviewStatusFilter" />
+                        <div class="tutor-performance-date-filter">
+                            <div><label for="performance-from">From</label><input asp-for="PerformanceFrom" id="performance-from" type="date" required /></div>
+                            <div><label for="performance-to">To</label><input asp-for="PerformanceTo" id="performance-to" type="date" required /></div>
+                        </div>
+                        @if (Model.PerformanceRangeError is { } rangeError)
+                        {
+                            <p class="text-danger" role="alert">@rangeError</p>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Apply dates</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

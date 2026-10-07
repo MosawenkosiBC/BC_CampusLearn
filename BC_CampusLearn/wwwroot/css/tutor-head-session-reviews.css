@@ -37,13 +37,11 @@
 .tutor-performance-customize:hover { background: #f4f6f6; }
 .tutor-performance-customize:focus-visible { outline: 3px solid rgba(79,135,165,.35); outline-offset: 2px; }
 .tutor-performance-date-filter { align-items: flex-end; display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
-.tutor-performance-date-filter[hidden] { display: none; }
 .tutor-performance-date-filter > div { display: grid; flex: 1 1 10rem; gap: .5rem; }
 .tutor-performance-date-filter label { font-weight: 600; }
 .tutor-performance-date-filter input { border: 1px solid #cfd4da; border-radius: .5rem; font: inherit; min-height: 44px; padding: .55rem .75rem; width: 100%; }
 .tutor-performance-date-filter input:focus-visible { outline: 3px solid rgba(79,135,165,.35); outline-offset: 2px; }
 .tutor-performance-date-filter .btn { min-height: 44px; }
-.tutor-performance-reset { align-items: center; color: #4b5057; display: inline-flex; min-height: 44px; padding: .5rem; text-decoration: underline; }
 .tutor-performance-modal .modal-title { font-size: 1.6rem; font-weight: 700; margin: .35rem 0 .5rem; }
 .tutor-performance-modal .modal-header p { color: #657078; line-height: 1.5; margin: 0; }
 .tutor-performance-modal .modal-body { padding: 1.5rem 1.75rem; }
