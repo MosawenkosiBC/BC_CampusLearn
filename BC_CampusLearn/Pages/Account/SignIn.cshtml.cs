@@ -21,6 +21,7 @@ public class SignInModel : PageModel
     private readonly DevelopmentStudentOptions _developmentStudent;
     private readonly DevelopmentAdminOptions _developmentAdmin;
     private readonly DevelopmentTutorHeadOptions _developmentTutorHead;
+    private readonly DevelopmentSuperAdminOptions _developmentSuperAdmin;
 
     public SignInModel(
         IWebHostEnvironment environment,
@@ -28,7 +29,8 @@ public class SignInModel : PageModel
         IOptions<DevelopmentUserOptions> developmentUserOptions,
         IOptions<DevelopmentStudentOptions> developmentStudentOptions,
         IOptions<DevelopmentAdminOptions> developmentAdminOptions,
-        IOptions<DevelopmentTutorHeadOptions> developmentTutorHeadOptions)
+        IOptions<DevelopmentTutorHeadOptions> developmentTutorHeadOptions,
+        IOptions<DevelopmentSuperAdminOptions> developmentSuperAdminOptions)
     {
         _environment = environment;
         _configuration = configuration;
@@ -36,6 +38,7 @@ public class SignInModel : PageModel
         _developmentStudent = developmentStudentOptions.Value;
         _developmentAdmin = developmentAdminOptions.Value;
         _developmentTutorHead = developmentTutorHeadOptions.Value;
+        _developmentSuperAdmin = developmentSuperAdminOptions.Value;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -55,6 +58,9 @@ public class SignInModel : PageModel
 
     public string DevelopmentTutorHeadDisplayName =>
         _developmentTutorHead.DisplayName;
+
+    public string DevelopmentSuperAdminDisplayName =>
+        _developmentSuperAdmin.DisplayName;
 
     public bool IsDevelopmentAuthentication =>
         _environment.IsDevelopment() &&
@@ -90,6 +96,7 @@ public class SignInModel : PageModel
             {
                 "admin" => BcUserRole.Admin,
                 "tutor-head" => BcUserRole.HeadOfTutors,
+                "superadmin" => BcUserRole.SuperAdmin,
                 _ => null
             };
 
@@ -98,6 +105,7 @@ public class SignInModel : PageModel
             "student" => _developmentStudent,
             "admin" => _developmentAdmin,
             "tutor-head" => _developmentTutorHead,
+            "superadmin" => _developmentSuperAdmin,
             _ => _developmentUser
         };
 

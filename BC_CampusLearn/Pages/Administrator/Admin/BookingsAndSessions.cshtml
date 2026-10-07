@@ -18,6 +18,8 @@
 }
 
 <section class="admin-bookings-sessions" aria-labelledby="bookings-sessions-title">
+    @if (!Model.IsSuperAdmin)
+    {
     <div class="approval-status-help">
         <button type="button"
                 class="approval-status-help-button"
@@ -42,11 +44,14 @@
             </div>
         </div>
     </div>
+    }
 
     <header class="bookings-sessions-heading">
         <h1 id="bookings-sessions-title">Bookings and Sessions</h1>
     </header>
 
+    @if (!Model.IsSuperAdmin)
+    {
     <section class="admin-stat-grid admin-session-stats" aria-label="Administrator session review statistics">
         <a asp-page="/Administrator/Admin/BookingsAndSessions"
            asp-route-Stat="carried-over"
@@ -118,6 +123,7 @@
             <div class="admin-stat-content"><h2>Awaiting admin review</h2><p>@Model.ReviewStats.AwaitingAdminReview</p></div>
         </a>
     </section>
+    }
 
     <div class="sessions-workspace">
         <aside class="session-filters" aria-labelledby="session-filters-title">
@@ -146,7 +152,7 @@
                 </label>
 
                 <label class="session-filter-field">
-                    <span>Admin approval</span>
+                    <span>@(Model.IsSuperAdmin ? "Superadmin decision" : "Administrator decision")</span>
                     <select asp-for="Approval">
                         <option value="all">All approval statuses</option>
                         <option value="pending">Awaiting review</option>
@@ -195,6 +201,10 @@
                             <th scope="col">Location</th>
                             <th scope="col">Session date</th>
                             <th scope="col">Admin approval</th>
+                            @if (Model.IsSuperAdmin)
+                            {
+                                <th scope="col">Superadmin decision</th>
+                            }
                             <th scope="col" class="session-decision-column">Tutor Head decision</th>
                             <th scope="col" class="session-action-heading">Action</th>
                         </tr>
@@ -203,7 +213,7 @@
                         @if (Model.Sessions.Count == 0)
                         {
                             <tr>
-                                <td colspan="7" class="completed-session-empty">
+                                <td colspan="@(Model.IsSuperAdmin ? 8 : 7)" class="completed-session-empty">
                                     No completed sessions match the selected filters.
                                 </td>
                             </tr>
@@ -226,6 +236,14 @@
                                             @session.AdminApprovalLabel
                                         </span>
                                     </td>
+                                    @if (Model.IsSuperAdmin)
+                                    {
+                                        <td>
+                                            <span class="session-approval @session.SuperAdminDecisionCssClass">
+                                                @session.SuperAdminDecisionLabel
+                                            </span>
+                                        </td>
+                                    }
                                     <td>
                                         <span class="session-tutor-head-decision @session.TutorHeadDecisionCssClass"
                                               aria-label="Tutor Head decision: @session.TutorHeadDecisionLabel"
