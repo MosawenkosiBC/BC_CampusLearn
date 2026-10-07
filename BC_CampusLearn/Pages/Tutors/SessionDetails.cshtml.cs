@@ -44,6 +44,9 @@ public class SessionDetailsModel : PageModel
 
     public Booking Session { get; private set; } = null!;
 
+    public bool? SuperAdminDecision =>
+        Session.SuperAdminSessionReview?.IsAccepted;
+
     public bool IsTranscriptRequired => RequiresTranscript(Session.ProgrammeModule.ModuleCode);
 
     private static bool RequiresTranscript(string moduleCode) =>
@@ -117,6 +120,7 @@ public class SessionDetailsModel : PageModel
                 .ThenInclude(message => message.Sender)
             .Include(booking => booking.TutorEvaluation)
             .Include(booking => booking.StudentEvaluation)
+            .Include(booking => booking.SuperAdminSessionReview)
             .SingleOrDefaultAsync(booking =>
                 booking.BookingId == bookingId &&
                 booking.TutorId == tutorId.Value,

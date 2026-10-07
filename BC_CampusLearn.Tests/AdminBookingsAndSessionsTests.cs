@@ -35,6 +35,12 @@ public class AdminBookingsAndSessionsTests
                 studentReview: new StudentEvaluation(),
                 tutorReview: new TutorStudentEvaluation(),
                 adminReview: ApprovedReview(),
+                tutorHeadReviewer: tutorHead,
+                tutorHeadDecision: "Reject"),
+            CreateBooking(3, assignment, "Rejected By Admin", "Online",
+                studentReview: new StudentEvaluation(),
+                tutorReview: new TutorStudentEvaluation(),
+                adminReview: RejectedReview(),
                 tutorHeadReviewer: tutorHead));
         await context.SaveChangesAsync();
 
@@ -47,6 +53,9 @@ public class AdminBookingsAndSessionsTests
 
         Assert.True(page.IsSuperAdmin);
         Assert.Equal("Ready For Superadmin", Assert.Single(page.Sessions).StudentName);
+        Assert.DoesNotContain(page.Sessions,
+            session => session.StudentName == "Rejected By Admin");
+        Assert.Equal("Rejected", page.Sessions.Single().TutorHeadDecisionLabel);
         Assert.Equal("Awaiting review", page.Sessions.Single().SuperAdminDecisionLabel);
     }
 

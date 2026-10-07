@@ -102,7 +102,8 @@ public class BookingsAndSessionsModel(
         if (IsSuperAdmin)
         {
             reviewedSessions = reviewedSessions.Where(booking =>
-                booking.AdminSessionReview != null);
+                booking.AdminSessionReview != null &&
+                booking.AdminSessionReview.EvidenceSupportsApproval);
         }
 
         int carriedOver = await reviewedSessions.CountAsync(booking =>

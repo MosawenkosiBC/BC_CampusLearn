@@ -8,7 +8,7 @@
 .admin-session-summary-button:focus-visible { background: #fff; box-shadow: 0 .5rem 1.1rem rgba(25,30,32,.18); outline: 0; }
 .admin-session-top-actions { align-items: center; display: flex; gap: 1rem; justify-content: space-between; }
 .admin-session-final-actions { display: flex; gap: .75rem; margin-left: auto; }
-.admin-session-final-action { border: 0; border-radius: .5rem; color: #fff; font-weight: 700; min-height: 2.65rem; min-width: 6.5rem; padding: .6rem 1.2rem; }
+.admin-session-final-action { border: 0; border-radius: .45rem; color: #fff; font-size: .85rem; font-weight: 700; min-height: 2.25rem; min-width: 5.75rem; padding: .4rem .95rem; }
 .admin-session-final-action.is-accept { background: #237a45; }
 .admin-session-final-action.is-accept:hover { background: #196137; }
 .admin-session-final-action.is-reject { background: #b42318; }
@@ -44,10 +44,6 @@
 .admin-session-review-tab strong.is-submitted { background: #e6f4eb; color: #25643d; }
 .admin-session-review-tab strong.is-missing { background: #f8e8e8; color: #9d2b25; }
 .admin-session-review-tab.is-active strong { background: rgba(255,255,255,.16); color: #fff; }
-.admin-session-review-tab--admin { background: #fff; color: #8f174e; }
-.admin-session-review-tab--admin:hover,
-.admin-session-review-tab--admin:focus-visible { background: #f7f3f5; }
-.admin-session-review-tab--admin.is-active { background: #ad0151; color: #fff; }
 .admin-session-review-tab-concern { color: #c43b36; display: inline-flex; position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); }
 .admin-session-review-tab-concern svg { height: 1.55rem; width: 1.55rem; }
 .admin-session-review-panel-card { background: #fff; border: 1px solid #f0f1f2; border-radius: .5rem; box-shadow: 0 .25rem .8rem rgba(25,30,38,.1); min-height: 18rem; overflow: hidden; text-align: center; }

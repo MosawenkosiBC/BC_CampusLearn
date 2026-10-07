@@ -239,8 +239,11 @@ public class AdminTutorsTests
         };
         SetPageContext(page);
 
-        Assert.IsType<RedirectToPageResult>(
+        RedirectToPageResult result = Assert.IsType<RedirectToPageResult>(
             await page.OnPostAdminReviewAsync(booking.BookingId, CancellationToken.None));
+        Assert.Equal("/Administrator/Tutors/SessionDetails", result.PageName);
+        Assert.Equal(booking.BookingId, result.RouteValues?["id"]);
+        Assert.Equal("Session declined successfully.", page.AdminReviewMessage);
 
         AdminSessionReview saved = await context.AdminSessionReviews.SingleAsync();
         Assert.Equal(booking.BookingId, saved.BookingId);
@@ -308,10 +311,12 @@ public class AdminTutorsTests
             new TestTimeProvider(recordedAt));
         SetPageContext(page);
 
-        Assert.IsType<RedirectToPageResult>(await page.OnPostSuperAdminReviewAsync(
+        RedirectToPageResult result = Assert.IsType<RedirectToPageResult>(
+            await page.OnPostSuperAdminReviewAsync(
             booking.BookingId,
             accepted: false,
             CancellationToken.None));
+        Assert.Equal("/Administrator/Admin/BookingsAndSessions", result.PageName);
 
         SuperAdminSessionReview saved =
             await context.SuperAdminSessionReviews.SingleAsync();

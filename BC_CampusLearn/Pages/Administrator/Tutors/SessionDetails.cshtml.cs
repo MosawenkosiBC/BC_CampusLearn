@@ -160,8 +160,12 @@ public class SessionDetailsModel(
             context.AdminSessionReviews.Add(review);
         }
         await context.SaveChangesAsync(cancellationToken);
-        AdminReviewMessage = "Administrator review recorded.";
-        return RedirectToPage(new { id });
+        AdminReviewMessage = review.EvidenceSupportsApproval
+            ? "Session accepted successfully."
+            : "Session declined successfully.";
+        return RedirectToPage(
+            "/Administrator/Tutors/SessionDetails",
+            new { id });
     }
 
     public async Task<IActionResult> OnPostSuperAdminReviewAsync(
@@ -214,7 +218,7 @@ public class SessionDetailsModel(
         AdminReviewMessage = accepted
             ? "Session accepted by the Superadmin."
             : "Session rejected by the Superadmin.";
-        return RedirectToPage(new { id });
+        return RedirectToPage("/Administrator/Admin/BookingsAndSessions");
     }
 
     private static IReadOnlyList<ReviewAnswer> BuildStudentReviewAnswers(Booking session)
