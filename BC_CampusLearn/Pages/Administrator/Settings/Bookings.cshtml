@@ -1,12 +1,18 @@
 @page
 @model BC_CampusLearn.Pages.Administrator.Settings.BookingsModel
-@{ ViewData["Title"] = "Booking settings"; }
+@{
+    ViewData["Title"] = "Booking settings";
+    bool termsHaveErrors = ViewData.ModelState.TryGetValue(
+        "Input.Terms",
+        out var termsModelState) &&
+        termsModelState.Errors.Count > 0;
+}
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin-settings.css" asp-append-version="true" />
 }
 
-<main class="admin-settings" aria-labelledby="settings-title" data-settings-page>
+<main class="admin-settings admin-booking-settings" aria-labelledby="settings-title" data-settings-page>
     <header class="admin-dashboard-header"><h1 id="settings-title">Settings</h1></header>
     @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
     {
@@ -15,53 +21,104 @@
     <div class="settings-layout">
         <partial name="_SettingsNavigation" />
         <section class="settings-section" aria-labelledby="bookings-title">
-            <header class="settings-section-heading"><div><h2 id="bookings-title">Bookings and sessions</h2><p>Manage booking terms and the Tutor Head session-review deadline.</p></div><span class="settings-status settings-status--live">Live</span></header>
+            <header class="settings-section-heading"><div><h2 id="bookings-title">Bookings and sessions</h2></div><span class="settings-status settings-status--live">Live</span></header>
             <form method="post" class="settings-form">
                 <div asp-validation-summary="ModelOnly" class="settings-validation"></div>
-                <div class="settings-field settings-field--wide"><label asp-for="Input.Terms"></label><textarea asp-for="Input.Terms" rows="15"></textarea><small>Enter one condition per line. Blank lines are removed when saved.</small><span asp-validation-for="Input.Terms"></span></div>
-                <div class="settings-subsection">
-                    <div class="settings-subsection-copy"><h3>Session Review Period</h3><p>Set the deadline for the Tutor Head to complete session reviews.</p></div>
-                    <div class="settings-field-grid">
-                        <div class="settings-field"><label asp-for="Input.ReviewDeadline"></label><input asp-for="Input.ReviewDeadline" type="date" /><small>Date by which the Tutor Head should complete this period's reviews.</small><span asp-validation-for="Input.ReviewDeadline"></span></div>
-                        <div class="settings-field settings-field--wide">
-                            <label class="settings-switch">
-                                <input asp-for="Input.IsReviewDeadlineRecurring" />
-                                <span aria-hidden="true"></span>
-                                <strong>Repeat this deadline monthly</strong>
-                            </label>
-                            <small>The next review period starts the day after this deadline and ends on the corresponding date the following month.</small>
-                        </div>
-                        <div class="settings-field settings-field--wide">
-                            <label class="settings-switch">
-                                <input asp-for="Input.UseLastDayOfMonth" />
-                                <span aria-hidden="true"></span>
-                                <strong>Use the last day of each month</strong>
-                            </label>
-                            <small>When monthly recurrence is enabled, deadlines use the 28th, 29th, 30th, or 31st as appropriate.</small>
+                <div class="settings-subsection-copy settings-terms-heading">
+                    <h3>Booking terms and conditions</h3>
+                </div>
+                <div class="settings-terms-summary">
+                    <div class="settings-terms-summary-copy">
+                        <strong>Terms and conditions</strong>
+                        <p>Open the editor to review or update the current terms.</p>
+                    </div>
+                    <button type="button"
+                            class="settings-primary-button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#booking-terms-modal">
+                        Edit booking terms
+                    </button>
+                </div>
+                <div class="settings-field settings-field--wide settings-booking-support">
+                    <label asp-for="Input.SupportEmail"></label>
+                    <input asp-for="Input.SupportEmail" type="email" />
+                    <small>Used for booking and session support enquiries.</small>
+                    <span asp-validation-for="Input.SupportEmail"></span>
+                </div>
+
+                <div class="modal fade settings-study-area-modal settings-booking-terms-modal"
+                     id="booking-terms-modal"
+                     tabindex="-1"
+                     aria-labelledby="booking-terms-modal-title"
+                     aria-hidden="true"
+                     data-settings-modal
+                     data-open-on-load="@termsHaveErrors.ToString().ToLowerInvariant()">
+                    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <div>
+                                    <h2 class="modal-title" id="booking-terms-modal-title">Booking terms and conditions</h2>
+                                    <p>Enter one condition per line. Blank lines are removed when saved.</p>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body settings-form">
+                                <div class="settings-field settings-field--wide">
+                                    <label asp-for="Input.Terms"></label>
+                                    <textarea asp-for="Input.Terms" rows="15"></textarea>
+                                    <span asp-validation-for="Input.Terms"></span>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="settings-secondary-button" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="settings-primary-button">Save changes</button>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="settings-subsection">
-                    <div class="settings-subsection-copy"><h3>Administrator Review Period</h3><p>Set the internal deadline for administrators to complete session approvals.</p></div>
-                    <div class="settings-field-grid">
-                        <div class="settings-field"><label asp-for="Input.AdminReviewPeriodStartDate"></label><input asp-for="Input.AdminReviewPeriodStartDate" type="date" /><small>Sessions completed from this date can enter the administrator review period.</small><span asp-validation-for="Input.AdminReviewPeriodStartDate"></span></div>
-                        <div class="settings-field"><label asp-for="Input.AdminReviewDeadline"></label><input asp-for="Input.AdminReviewDeadline" type="date" /><small>Date by which administrators should complete this period's reviews.</small><span asp-validation-for="Input.AdminReviewDeadline"></span></div>
-                        <div class="settings-field settings-field--wide">
-                            <label class="settings-switch">
-                                <input asp-for="Input.IsAdminReviewDeadlineRecurring" />
-                                <span aria-hidden="true"></span>
-                                <strong>Repeat the administrator review period monthly</strong>
-                            </label>
-                            <small>Both the start date and deadline advance on the first day of each month while keeping the configured date range.</small>
-                        </div>
-                        <div class="settings-field settings-field--wide">
-                            <label class="settings-switch">
-                                <input asp-for="Input.UseLastDayOfMonthForAdminReview" />
-                                <span aria-hidden="true"></span>
-                                <strong>Use the last day of each month</strong>
-                            </label>
-                            <small>Enabled by default. Turn this off to use the selected deadline day each month instead.</small>
-                        </div>
+                    <div class="settings-subsection-copy"><h3>Session Review Period</h3></div>
+                    <div class="settings-review-table-wrap">
+                        <table class="settings-review-table">
+                            <thead><tr><th scope="col">Setting</th><th scope="col">Date</th><th scope="col" class="settings-review-toggle-heading">Option</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <th scope="row">Tutor Head review deadline<small>Final date for the Tutor Head to complete reviews.</small></th>
+                                    <td><div class="settings-field"><label asp-for="Input.ReviewDeadline" class="visually-hidden"></label><input asp-for="Input.ReviewDeadline" type="date" /><span asp-validation-for="Input.ReviewDeadline"></span></div></td>
+                                    <td class="settings-review-toggle-cell"><label class="settings-switch settings-table-switch"><input asp-for="Input.IsReviewDeadlineRecurring" /><span aria-hidden="true"></span><strong>Repeat monthly</strong></label></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Use the last day of each month<small>Automatically adjusts the deadline to each month's final day.</small></th>
+                                    <td class="settings-review-empty-value">—</td>
+                                    <td class="settings-review-toggle-cell"><label class="settings-switch settings-table-switch"><input asp-for="Input.UseLastDayOfMonth" /><span aria-hidden="true"></span><strong>Enabled</strong></label></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="settings-subsection">
+                    <div class="settings-subsection-copy"><h3>Administrator Review Period</h3></div>
+                    <div class="settings-review-table-wrap">
+                        <table class="settings-review-table">
+                            <thead><tr><th scope="col">Setting</th><th scope="col">Date</th><th scope="col" class="settings-review-toggle-heading">Option</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <th scope="row">Review period start date<small>First session date included in the administrator review period.</small></th>
+                                    <td><div class="settings-field"><label asp-for="Input.AdminReviewPeriodStartDate" class="visually-hidden"></label><input asp-for="Input.AdminReviewPeriodStartDate" type="date" /><span asp-validation-for="Input.AdminReviewPeriodStartDate"></span></div></td>
+                                    <td class="settings-review-toggle-cell"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Administrator review deadline<small>Final date for administrators to complete their reviews.</small></th>
+                                    <td><div class="settings-field"><label asp-for="Input.AdminReviewDeadline" class="visually-hidden"></label><input asp-for="Input.AdminReviewDeadline" type="date" /><span asp-validation-for="Input.AdminReviewDeadline"></span></div></td>
+                                    <td class="settings-review-toggle-cell"><label class="settings-switch settings-table-switch"><input asp-for="Input.IsAdminReviewDeadlineRecurring" /><span aria-hidden="true"></span><strong>Repeat monthly</strong></label></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Use the last day of each month<small>Automatically adjusts the deadline to each month's final day.</small></th>
+                                    <td class="settings-review-empty-value">—</td>
+                                    <td class="settings-review-toggle-cell"><label class="settings-switch settings-table-switch"><input asp-for="Input.UseLastDayOfMonthForAdminReview" /><span aria-hidden="true"></span><strong>Enabled</strong></label></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 <footer class="settings-form-footer"><button type="submit" class="settings-primary-button">Save booking and session settings</button></footer>
