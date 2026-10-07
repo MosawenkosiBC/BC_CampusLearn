@@ -14,6 +14,7 @@ public class SuperAdminSessionReviewConfiguration
         builder.Property(item => item.SuperAdminSessionReviewId)
             .ValueGeneratedOnAdd();
         builder.Property(item => item.RecordedAt).HasColumnType("datetimeoffset");
+        builder.Property(item => item.CompensationAmount).HasPrecision(18, 2);
         builder.HasOne(item => item.Booking)
             .WithOne(booking => booking.SuperAdminSessionReview)
             .HasForeignKey<SuperAdminSessionReview>(item => item.BookingId)

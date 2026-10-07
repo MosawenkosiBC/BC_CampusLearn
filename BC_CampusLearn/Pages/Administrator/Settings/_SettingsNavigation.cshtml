@@ -29,6 +29,8 @@
             </g>
         </svg><span>Study areas</span>
     </a>
+    @if (User.IsInRole(nameof(BcUserRole.SuperAdmin)))
+    {
     <a asp-page="/Administrator/Settings/TutorPayments"
        class="@(currentPage.EndsWith("/TutorPayments", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
@@ -39,6 +41,7 @@
             </g>
         </svg><span>Tutor payments</span>
     </a>
+    }
     <a asp-page="/Administrator/Settings/Notifications"
        class="@(currentPage.EndsWith("/Notifications", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">

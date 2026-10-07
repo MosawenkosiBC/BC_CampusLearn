@@ -11,6 +11,114 @@ namespace BC_CampusLearn.Tests;
 
 public class AdminSettingsTests
 {
+    [Theory]
+    [InlineData("en-ZA")]
+    [InlineData("af-ZA")]
+    [InlineData("de-DE")]
+    [InlineData("en-US")]
+    public void PaymentValidationHandlesRegionalDecimalSeparators(string cultureName)
+    {
+        var previousCulture = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture =
+                System.Globalization.CultureInfo.GetCultureInfo(cultureName);
+            var input = new TutorPaymentsModel.PaymentSettingsInput
+            {
+                TutorPaymentAmount = 125.50m,
+                TutorHeadPaymentAmount = 999999999.99m
+            };
+            var results = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+            bool Validate() => System.ComponentModel.DataAnnotations.Validator.TryValidateObject(
+                input, new System.ComponentModel.DataAnnotations.ValidationContext(input),
+                results, validateAllProperties: true);
+
+            Assert.True(Validate());
+            input.TutorPaymentAmount = -1m;
+            input.TutorHeadPaymentAmount = 1000000000m;
+            Assert.False(Validate());
+            Assert.Contains(results, result => result.MemberNames.Contains("TutorPaymentAmount"));
+            Assert.Contains(results, result => result.MemberNames.Contains("TutorHeadPaymentAmount"));
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = previousCulture;
+        }
+    }
+
+    [Fact]
+    public async Task SuperAdminCanSaveAndReloadSeparatePaymentAmounts()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        await context.SaveChangesAsync();
+        var page = CreatePaymentPage(context, BcUserRole.SuperAdmin);
+        page.Input = new() { TutorPaymentAmount = 125.50m, TutorHeadPaymentAmount = 350m };
+
+        Assert.IsType<RedirectToPageResult>(await page.OnPostAsync(CancellationToken.None));
+        context.ChangeTracker.Clear();
+        var reloaded = CreatePaymentPage(context, BcUserRole.SuperAdmin);
+        Assert.IsType<Microsoft.AspNetCore.Mvc.RazorPages.PageResult>(
+            await reloaded.OnGetAsync(CancellationToken.None));
+        Assert.Equal(125.50m, reloaded.Input.TutorPaymentAmount);
+        Assert.Equal(350m, reloaded.Input.TutorHeadPaymentAmount);
+        Assert.Equal("ZAR", reloaded.CurrencyCode);
+        Assert.Equal(2, await context.SettingAuditLogs.CountAsync());
+        Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
+            log => log.SettingName == "Tutor head payment amount" && log.NewValue == "350.00");
+
+        await reloaded.OnPostAsync(CancellationToken.None);
+        Assert.Equal(2, await context.SettingAuditLogs.CountAsync());
+    }
+
+    [Theory]
+    [InlineData(BcUserRole.Admin)]
+    [InlineData(BcUserRole.Dev)]
+    [InlineData(BcUserRole.HeadOfTutors)]
+    public async Task PaymentSettingsRejectOtherRolesForReadsAndWrites(BcUserRole role)
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, role);
+        await context.SaveChangesAsync();
+        var page = CreatePaymentPage(context, role);
+        page.Input = new() { TutorPaymentAmount = 100m, TutorHeadPaymentAmount = 200m };
+
+        Assert.IsType<ForbidResult>(await page.OnGetAsync(CancellationToken.None));
+        Assert.IsType<ForbidResult>(await page.OnPostAsync(CancellationToken.None));
+        Assert.Null((await context.PlatformSettings.SingleAsync()).TutorPaymentAmount);
+        Assert.Empty(await context.SettingAuditLogs.ToListAsync());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("-1")]
+    [InlineData("1000000000")]
+    [InlineData("1.001")]
+    public async Task InvalidPaymentAmountDoesNotSaveEitherRole(string? value)
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        await context.SaveChangesAsync();
+        var page = CreatePaymentPage(context, BcUserRole.SuperAdmin);
+        page.Input = new()
+        {
+            TutorPaymentAmount = 100m,
+            TutorHeadPaymentAmount = value is null ? null : decimal.Parse(value,
+                System.Globalization.CultureInfo.InvariantCulture)
+        };
+
+        Assert.IsType<Microsoft.AspNetCore.Mvc.RazorPages.PageResult>(
+            await page.OnPostAsync(CancellationToken.None));
+        Assert.False(page.ModelState.IsValid);
+        Assert.Null((await context.PlatformSettings.SingleAsync()).TutorPaymentAmount);
+        Assert.Empty(await context.SettingAuditLogs.ToListAsync());
+    }
+
+    private static TutorPaymentsModel CreatePaymentPage(
+        ApplicationDbContext context, BcUserRole role) => new(
+            context, CurrentUserService(role), TimeProvider.System,
+            new SettingsAuditService(context, TimeProvider.System));
+
     [Fact]
     public async Task SavingGeneralSettingsPersistsChangesAndAuditEntries()
     {

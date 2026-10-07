@@ -7,16 +7,33 @@
 }
 <main class="admin-settings" aria-labelledby="settings-title" data-settings-page>
     <header class="admin-dashboard-header"><h1 id="settings-title">Settings</h1></header>
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.SuccessMessage))
+    }
     <div class="settings-layout">
         <partial name="_SettingsNavigation" />
-        <section class="settings-section settings-section--placeholder" aria-labelledby="payments-title">
-            <header class="settings-section-heading"><div><h2 id="payments-title">Tutor payments</h2><p>Payment rates, monthly cycles and approval rules will live here.</p></div><span class="settings-status">Skeleton</span></header>
-            <div class="settings-placeholder-grid">
-                <article><i class="bi bi-cash-stack"></i><h3>Session rate</h3><p>Set the amount and effective date for approved sessions.</p></article>
-                <article><i class="bi bi-calendar-range"></i><h3>Payment cycle</h3><p>Choose when each monthly period starts and closes.</p></article>
-                <article><i class="bi bi-person-check"></i><h3>Approval rules</h3><p>Configure Head of Tutors and administrator approval.</p></article>
-            </div>
+        <section class="settings-section" aria-labelledby="payments-title">
+            <header class="settings-section-heading"><div><h2 id="payments-title">Tutor payments</h2><p>Set separate payment amounts for tutors and tutor heads in @Model.CurrencyCode.</p></div></header>
+            <form method="post" class="settings-form">
+                <div asp-validation-summary="ModelOnly" class="settings-validation"></div>
+                <div class="settings-field-grid">
+                    <div class="settings-field">
+                        <label asp-for="Input.TutorPaymentAmount"></label>
+                        <input asp-for="Input.TutorPaymentAmount" type="number" min="0" max="999999999.99" step="0.01" required aria-describedby="tutor-payment-currency" />
+                        <small id="tutor-payment-currency">@Model.CurrencyCode per approved one-hour session. Applies to new approvals and approved sessions without a saved amount; existing earnings stay unchanged.</small>
+                        <span asp-validation-for="Input.TutorPaymentAmount"></span>
+                    </div>
+                    <div class="settings-field">
+                        <label asp-for="Input.TutorHeadPaymentAmount"></label>
+                        <input asp-for="Input.TutorHeadPaymentAmount" type="number" min="0" max="999999999.99" step="0.01" required aria-describedby="tutor-head-payment-currency" />
+                        <small id="tutor-head-payment-currency">Amount in @Model.CurrencyCode for tutor heads.</small>
+                        <span asp-validation-for="Input.TutorHeadPaymentAmount"></span>
+                    </div>
+                </div>
+                <footer class="settings-form-footer"><button type="submit" class="settings-primary-button">Save payment amounts</button></footer>
+            </form>
         </section>
     </div>
 </main>
-@section Scripts { <script src="~/js/admin-settings.js" asp-append-version="true"></script> }
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script src="~/js/admin-settings.js" asp-append-version="true"></script> }

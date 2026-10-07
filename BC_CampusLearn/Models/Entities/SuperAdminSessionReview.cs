@@ -10,6 +10,8 @@ public class SuperAdminSessionReview
 
     public bool IsAccepted { get; set; }
 
+    public decimal? CompensationAmount { get; set; }
+
     public DateTimeOffset RecordedAt { get; set; }
 
     public Booking Booking { get; set; } = null!;

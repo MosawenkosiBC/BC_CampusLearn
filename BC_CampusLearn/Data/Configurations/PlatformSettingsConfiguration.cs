@@ -46,6 +46,8 @@ public class PlatformSettingsConfiguration :
         builder.Property(settings => settings.UpdatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
         builder.Property(settings => settings.RowVersion).IsRowVersion();
+        builder.Property(settings => settings.TutorPaymentAmount).HasPrecision(18, 2);
+        builder.Property(settings => settings.TutorHeadPaymentAmount).HasPrecision(18, 2);
         builder.HasOne(settings => settings.UpdatedBy)
             .WithMany()
             .HasForeignKey(settings => settings.UpdatedByBcUserId)

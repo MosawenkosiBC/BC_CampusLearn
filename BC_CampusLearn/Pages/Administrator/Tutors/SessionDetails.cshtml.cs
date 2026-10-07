@@ -208,6 +208,13 @@ public class SessionDetailsModel(
             new SuperAdminSessionReview { BookingId = booking.BookingId };
         review.ReviewerBcUserId = currentUser.BcUserId;
         review.IsAccepted = accepted;
+        if (accepted && review.CompensationAmount is null)
+        {
+            review.CompensationAmount = await context.PlatformSettings
+                .Where(settings => settings.PlatformSettingsId == PlatformSettings.SingletonId)
+                .Select(settings => settings.TutorPaymentAmount)
+                .SingleOrDefaultAsync(cancellationToken);
+        }
         review.RecordedAt = timeProvider.GetUtcNow();
         if (booking.SuperAdminSessionReview is null)
         {

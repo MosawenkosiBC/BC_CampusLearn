@@ -1,0 +1,26 @@
+.admin-compensation { display: grid; gap: 1.4rem; }
+.compensation-heading, .compensation-panel > header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+.compensation-heading h1 { font-size: 1.7rem; margin: 0; }
+.compensation-heading p, .compensation-panel p, .compensation-note { color: #69727b; font-size: .85rem; margin: .4rem 0 0; }
+.compensation-button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; background: #a43b70; border: 0; border-radius: .5rem; color: white; padding: .7rem 1rem; font-size: .85rem; font-weight: 600; text-decoration: none; }
+.compensation-button:hover { background: #872e5a; color: white; }
+.compensation-button:focus-visible { outline: 3px solid #4ac1c1; outline-offset: 2px; }
+.compensation-controls { display: flex; align-items: center; gap: .65rem; }
+.compensation-tools { display: flex; flex-direction: column; align-items: flex-start; gap: .5rem; }
+.compensation-period { color: #69727b; font-size: .8rem; }
+.admin-compensation .compensation-stats { grid-template-columns: repeat(3,minmax(0,1fr)); margin: 0; }
+.compensation-stats strong { overflow-wrap: anywhere; }
+.compensation-panel { border: 1px solid #e7ebee; background: white; border-radius: .75rem; overflow: hidden; }
+.compensation-panel > header { padding: 1.3rem; }
+.compensation-panel h2 { font-size: 1.1rem; margin: 0; }
+.compensation-panel > header > span { font-size: .8rem; color: #69727b; }
+.compensation-table-scroll { overflow-x: auto; }
+.compensation-table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+.compensation-table th, .compensation-table td { padding: 1rem 1.3rem; border-bottom: 1px solid #e7ebee; text-align: left; }
+.compensation-table thead, .compensation-table tfoot { background: #f4f6f7; color: #4d5962; }
+.compensation-table th { font-weight: 650; }
+.compensation-table .numeric { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.compensation-table td a { color: #872e5a; font-weight: 600; }
+.compensation-table td small { display: block; color: #69727b; margin-top: .3rem; }
+.compensation-table .compensation-empty { text-align: center; padding: 3rem 1rem; color: #69727b; }
+@media (max-width: 950px) { .admin-compensation .compensation-stats { grid-template-columns: 1fr; } }
