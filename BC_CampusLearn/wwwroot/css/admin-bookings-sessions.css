@@ -369,6 +369,118 @@
     background: #fbfcfd;
 }
 
+.admin-session-stats .admin-stat-card-link {
+    color: inherit;
+    outline: none;
+    text-decoration: none;
+}
+
+.admin-session-stats .admin-stat-card-link:hover,
+.admin-session-stats .admin-stat-card-link:focus-visible,
+.admin-session-stats .admin-stat-card-link.is-active {
+    box-shadow:
+        0 0.6rem 1.5rem rgba(25, 30, 38, 0.08),
+        0 0.1rem 0.3rem rgba(25, 30, 38, 0.06);
+    transform: none;
+}
+
+.admin-session-stats .admin-stat-card-link:focus-visible,
+.admin-session-stats .admin-stat-card-link.is-active {
+    background: #f7f8fa;
+}
+
+.session-tutor-head-decision {
+    align-items: center;
+    display: inline-flex;
+    font-size: 0.8rem;
+    font-weight: 600;
+    gap: 0.45rem;
+    justify-content: center;
+    min-height: 1.6rem;
+    white-space: nowrap;
+}
+
+.session-tutor-head-decision svg {
+    height: 1.55rem;
+    width: 1.55rem;
+}
+
+.session-tutor-head-decision.is-approved {
+    color: #238442;
+}
+
+.session-tutor-head-decision.is-rejected {
+    color: #c43b36;
+}
+
+.session-tutor-head-decision.is-escalated,
+.session-tutor-head-decision.is-unavailable {
+    color: #6b7280;
+}
+
+.session-row-actions {
+    align-items: center;
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.session-action-heading,
+.session-action-cell {
+    padding-left: 0.35rem !important;
+    text-align: center !important;
+}
+
+.session-decision-column {
+    padding-right: 0.35rem !important;
+}
+
+.session-concern-slot {
+    align-items: center;
+    display: inline-flex;
+    flex: 0 0 1.55rem;
+    height: 1.55rem;
+    justify-content: center;
+    width: 1.55rem;
+}
+
+.session-flagged-concern {
+    color: #c43b36;
+    display: inline-flex;
+    position: relative;
+}
+
+.session-flagged-concern > svg {
+    height: 1.55rem;
+    width: 1.55rem;
+}
+
+.session-concern-tooltip {
+    background: #25272c;
+    border-radius: 0.3rem;
+    bottom: calc(100% + 0.45rem);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 500;
+    left: 50%;
+    opacity: 0;
+    padding: 0.35rem 0.5rem;
+    pointer-events: none;
+    position: absolute;
+    transform: translateX(-50%);
+    transition: opacity 120ms ease;
+    visibility: hidden;
+    white-space: nowrap;
+    z-index: 2;
+}
+
+.session-flagged-concern:hover .session-concern-tooltip,
+.session-flagged-concern:focus-visible .session-concern-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
 .session-approval {
     border-radius: 999px;
     display: inline-flex;
@@ -387,6 +499,11 @@
 .session-approval.is-awaiting {
     background-color: #e5e7ea;
     color: #4b5057;
+}
+
+.session-approval.is-rejected {
+    background-color: #fbe7e6;
+    color: #b42318;
 }
 
 .session-view-link {

@@ -13,19 +13,25 @@ public class BookingsAndSessionsModel(
 {
     public const int PageSize = 8;
     private static readonly string[] ValidApprovalFilters =
-        ["all", "pending", "approved"];
+        ["all", "pending", "approved", "rejected"];
+    private static readonly string[] ValidStatFilters =
+        ["all", "carried-over", "flagged", "tutor-head-rejected", "awaiting"];
     private static readonly string[] ValidPeriods =
         ["month", "week", "day", "custom"];
     private static readonly TimeSpan CampusOffset = TimeSpan.FromHours(2);
     private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
     private DateTimeOffset _currentReviewPeriodStart;
     private DateTimeOffset _currentReviewPeriodEnd;
+    private bool _currentReviewDeadlinePassed;
 
     [BindProperty(SupportsGet = true)]
     public string? Search { get; set; }
 
     [BindProperty(SupportsGet = true)]
     public string Approval { get; set; } = "all";
+
+    [BindProperty(SupportsGet = true)]
+    public string Stat { get; set; } = "all";
 
     [BindProperty(SupportsGet = true)]
     public string Period { get; set; } = "month";
@@ -53,6 +59,9 @@ public class BookingsAndSessionsModel(
         Approval = ValidApprovalFilters.Contains(Approval, StringComparer.OrdinalIgnoreCase)
             ? Approval.ToLowerInvariant()
             : "all";
+        Stat = ValidStatFilters.Contains(Stat, StringComparer.OrdinalIgnoreCase)
+            ? Stat.ToLowerInvariant()
+            : "all";
         Period = ValidPeriods.Contains(Period, StringComparer.OrdinalIgnoreCase)
             ? Period.ToLowerInvariant()
             : "month";
@@ -64,6 +73,7 @@ public class BookingsAndSessionsModel(
                 .Where(settings => settings.PlatformSettingsId ==
                     PlatformSettings.SingletonId)
                 .Select(settings => new AdminReviewDeadlineSettings(
+                    settings.AdminSessionReviewPeriodStartDate,
                     settings.AdminSessionReviewDeadline,
                     settings.IsAdminSessionReviewDeadlineRecurring,
                     settings.UseLastDayOfMonthForAdminSessionReviewDeadline))
@@ -83,17 +93,72 @@ public class BookingsAndSessionsModel(
         int carriedOver = await reviewedSessions.CountAsync(booking =>
             (booking.CompletedAt ?? booking.ScheduledStartTime) <
                 _currentReviewPeriodStart &&
-            booking.AdminSessionReview == null,
+            booking.AdminSessionReview == null &&
+            booking.SessionReviews
+                .Where(review =>
+                    review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                .OrderByDescending(review => review.CreatedAt)
+                .Select(review => review.Decision)
+                .FirstOrDefault() != "Reject",
             cancellationToken);
         int awaitingAdminReview = await reviewedSessions.CountAsync(booking =>
             (booking.CompletedAt ?? booking.ScheduledStartTime) <
                 _currentReviewPeriodEnd &&
-            booking.AdminSessionReview == null,
+            booking.AdminSessionReview == null &&
+            (booking.SessionReviews
+                 .Where(review =>
+                     review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                 .OrderByDescending(review => review.CreatedAt)
+                 .Select(review => review.Decision)
+                 .FirstOrDefault() != "Reject" ||
+             ((booking.CompletedAt ?? booking.ScheduledStartTime) >=
+                  _currentReviewPeriodStart &&
+              !_currentReviewDeadlinePassed)),
+            cancellationToken);
+        int flaggedConcerns = await reviewedSessions.CountAsync(booking =>
+            (booking.CompletedAt ?? booking.ScheduledStartTime) <
+                _currentReviewPeriodEnd &&
+            ((booking.CompletedAt ?? booking.ScheduledStartTime) >=
+                _currentReviewPeriodStart ||
+             (booking.AdminSessionReview == null &&
+              booking.SessionReviews
+                  .Where(review =>
+                      review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                  .OrderByDescending(review => review.CreatedAt)
+                  .Select(review => review.Decision)
+                  .FirstOrDefault() != "Reject")) &&
+            (booking.AdminSessionReview == null ||
+             !booking.AdminSessionReview.EvidenceSupportsApproval) &&
+            booking.SessionReviews
+                .Where(review =>
+                    review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                .OrderByDescending(review => review.CreatedAt)
+                .Select(review => review.ConcernLevel)
+                .FirstOrDefault() == "Concerns",
+            cancellationToken);
+        int rejectedByTutorHead = await reviewedSessions.CountAsync(booking =>
+            (booking.CompletedAt ?? booking.ScheduledStartTime) <
+                _currentReviewPeriodEnd &&
+            ((booking.CompletedAt ?? booking.ScheduledStartTime) >=
+                _currentReviewPeriodStart ||
+             (booking.AdminSessionReview == null &&
+              booking.SessionReviews
+                  .Where(review =>
+                      review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                  .OrderByDescending(review => review.CreatedAt)
+                  .Select(review => review.Decision)
+                  .FirstOrDefault() != "Reject")) &&
+            booking.SessionReviews
+                .Where(review =>
+                    review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                .OrderByDescending(review => review.CreatedAt)
+                .Select(review => review.Decision)
+                .FirstOrDefault() == "Reject",
             cancellationToken);
         ReviewStats = new AdminReviewStats(
             carriedOver,
-            FlaggedConcerns: 0,
-            RejectedByTutorHead: 0,
+            FlaggedConcerns: flaggedConcerns,
+            RejectedByTutorHead: rejectedByTutorHead,
             AwaitingAdminReview: awaitingAdminReview);
 
         if (Period == "month" && deadlineSettings is not null)
@@ -103,7 +168,13 @@ public class BookingsAndSessionsModel(
                     periodEnd &&
                 ((booking.CompletedAt ?? booking.ScheduledStartTime) >=
                     periodStart ||
-                 booking.AdminSessionReview == null));
+                 (booking.AdminSessionReview == null &&
+                  booking.SessionReviews
+                      .Where(review =>
+                          review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                      .OrderByDescending(review => review.CreatedAt)
+                      .Select(review => review.Decision)
+                      .FirstOrDefault() != "Reject")));
         }
         else
         {
@@ -115,6 +186,48 @@ public class BookingsAndSessionsModel(
         }
 
         IQueryable<Booking> filtered = reviewedSessions;
+
+        filtered = Stat switch
+        {
+            "carried-over" => filtered.Where(booking =>
+                (booking.CompletedAt ?? booking.ScheduledStartTime) <
+                    _currentReviewPeriodStart &&
+                booking.AdminSessionReview == null &&
+                booking.SessionReviews
+                    .Where(review =>
+                        review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                    .OrderByDescending(review => review.CreatedAt)
+                    .Select(review => review.Decision)
+                    .FirstOrDefault() != "Reject"),
+            "flagged" => filtered.Where(booking =>
+                (booking.AdminSessionReview == null ||
+                 !booking.AdminSessionReview.EvidenceSupportsApproval) &&
+                booking.SessionReviews
+                    .Where(review =>
+                        review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                    .OrderByDescending(review => review.CreatedAt)
+                    .Select(review => review.ConcernLevel)
+                    .FirstOrDefault() == "Concerns"),
+            "tutor-head-rejected" => filtered.Where(booking =>
+                booking.SessionReviews
+                    .Where(review =>
+                        review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                    .OrderByDescending(review => review.CreatedAt)
+                    .Select(review => review.Decision)
+                    .FirstOrDefault() == "Reject"),
+            "awaiting" => filtered.Where(booking =>
+                booking.AdminSessionReview == null &&
+                (booking.SessionReviews
+                     .Where(review =>
+                         review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                     .OrderByDescending(review => review.CreatedAt)
+                     .Select(review => review.Decision)
+                     .FirstOrDefault() != "Reject" ||
+                 ((booking.CompletedAt ?? booking.ScheduledStartTime) >=
+                      _currentReviewPeriodStart &&
+                  !_currentReviewDeadlinePassed))),
+            _ => filtered
+        };
 
         if (Search is not null)
         {
@@ -129,9 +242,34 @@ public class BookingsAndSessionsModel(
         filtered = Approval switch
         {
             "pending" => filtered.Where(booking =>
-                booking.AdminSessionReview == null),
+                booking.AdminSessionReview == null &&
+                (booking.SessionReviews
+                     .Where(review =>
+                         review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                     .OrderByDescending(review => review.CreatedAt)
+                     .Select(review => review.Decision)
+                     .FirstOrDefault() != "Reject" ||
+                 ((booking.CompletedAt ?? booking.ScheduledStartTime) >=
+                      _currentReviewPeriodStart &&
+                  !_currentReviewDeadlinePassed))),
             "approved" => filtered.Where(booking =>
-                booking.AdminSessionReview != null),
+                booking.AdminSessionReview != null &&
+                booking.AdminSessionReview.EvidenceSupportsApproval),
+            "rejected" => filtered.Where(booking =>
+                (booking.AdminSessionReview != null &&
+                 !booking.AdminSessionReview.EvidenceSupportsApproval) ||
+                (booking.AdminSessionReview == null &&
+                 booking.SessionReviews
+                     .Where(review =>
+                         review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                     .OrderByDescending(review => review.CreatedAt)
+                     .Select(review => review.Decision)
+                     .FirstOrDefault() == "Reject" &&
+                 ((booking.CompletedAt ?? booking.ScheduledStartTime) <
+                      _currentReviewPeriodStart ||
+                  (_currentReviewDeadlinePassed &&
+                   (booking.CompletedAt ?? booking.ScheduledStartTime) <
+                       _currentReviewPeriodEnd)))),
             _ => filtered
         };
 
@@ -142,6 +280,38 @@ public class BookingsAndSessionsModel(
 
         Sessions = await filtered
             .OrderBy(booking => booking.AdminSessionReview != null)
+            .ThenBy(booking =>
+                booking.SessionReviews
+                    .Where(review =>
+                        review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                    .OrderByDescending(review => review.CreatedAt)
+                    .Select(review => review.Decision)
+                    .FirstOrDefault() == "Approve"
+                    ? 0
+                    : booking.SessionReviews
+                        .Where(review =>
+                            review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                        .OrderByDescending(review => review.CreatedAt)
+                        .Select(review => review.Decision)
+                        .FirstOrDefault() == "Escalate"
+                        ? 2
+                        : booking.SessionReviews
+                            .Where(review =>
+                                review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                            .OrderByDescending(review => review.CreatedAt)
+                            .Select(review => review.Decision)
+                            .FirstOrDefault() == "Reject"
+                            ? 4
+                            : 5)
+            .ThenBy(booking =>
+                booking.SessionReviews
+                    .Where(review =>
+                        review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                    .OrderByDescending(review => review.CreatedAt)
+                    .Select(review => review.ConcernLevel)
+                    .FirstOrDefault() == "Concerns"
+                    ? 1
+                    : 0)
             .ThenByDescending(booking =>
                 booking.CompletedAt ?? booking.ScheduledStartTime)
             .ThenByDescending(booking => booking.BookingId)
@@ -158,9 +328,35 @@ public class BookingsAndSessionsModel(
                 booking.StudentEvaluation != null,
                 booking.SessionReviews.Any(review =>
                     review.Reviewer.Role == BcUserRole.HeadOfTutors),
+                booking.SessionReviews
+                    .Where(review =>
+                        review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                    .OrderByDescending(review => review.CreatedAt)
+                    .Select(review => review.Decision)
+                    .FirstOrDefault(),
+                (booking.AdminSessionReview == null ||
+                 !booking.AdminSessionReview.EvidenceSupportsApproval) &&
+                booking.SessionReviews
+                    .Where(review =>
+                        review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                    .OrderByDescending(review => review.CreatedAt)
+                    .Select(review => review.ConcernLevel)
+                    .FirstOrDefault() == "Concerns",
                 booking.AdminSessionReview == null
                     ? null
-                    : true))
+                    : booking.AdminSessionReview.EvidenceSupportsApproval,
+                booking.AdminSessionReview == null &&
+                booking.SessionReviews
+                    .Where(review =>
+                        review.Reviewer.Role == BcUserRole.HeadOfTutors)
+                    .OrderByDescending(review => review.CreatedAt)
+                    .Select(review => review.Decision)
+                    .FirstOrDefault() == "Reject" &&
+                ((booking.CompletedAt ?? booking.ScheduledStartTime) <
+                     _currentReviewPeriodStart ||
+                 (_currentReviewDeadlinePassed &&
+                  (booking.CompletedAt ?? booking.ScheduledStartTime) <
+                      _currentReviewPeriodEnd))))
             .ToListAsync(cancellationToken);
     }
 
@@ -169,12 +365,19 @@ public class BookingsAndSessionsModel(
     {
         DateOnly today = DateOnly.FromDateTime(
             _timeProvider.GetUtcNow().ToOffset(CampusOffset).Date);
-        ReviewPeriodWindow? currentReviewPeriod = deadlineSettings is null
-            ? null
-            : MonthlyReviewPeriod.Resolve(
+        ReviewPeriodWindow? currentReviewPeriod = deadlineSettings switch
+        {
+            null => null,
+            { IsRecurring: true } => MonthlyReviewPeriod.ResolveByCalendarMonth(
+                deadlineSettings.StartDate,
                 deadlineSettings.Deadline,
                 deadlineSettings.UseLastDayOfMonth,
-                today);
+                today),
+            _ => new ReviewPeriodWindow(
+                deadlineSettings.StartDate,
+                deadlineSettings.Deadline,
+                deadlineSettings.Deadline)
+        };
         DateOnly currentReviewPeriodStart = currentReviewPeriod?.StartDate ??
             new DateOnly(today.Year, today.Month, 1);
         DateOnly currentReviewPeriodEnd = currentReviewPeriod?.EndDate ??
@@ -187,6 +390,7 @@ public class BookingsAndSessionsModel(
         _currentReviewPeriodEnd = new DateTimeOffset(
             currentReviewPeriodEnd.AddDays(1).ToDateTime(TimeOnly.MinValue),
             CampusOffset);
+        _currentReviewDeadlinePassed = today > currentReviewPeriodEnd;
         DateOnly start;
         DateOnly end;
 
@@ -248,22 +452,56 @@ public class BookingsAndSessionsModel(
         bool HasTutorReview,
         bool HasStudentReview,
         bool HasTutorHeadReview,
-        bool? IsAdminApproved)
+        string? TutorHeadDecision,
+        bool HasTutorHeadConcern,
+        bool? IsAdminApproved,
+        bool IsTutorHeadRejectionFinal)
     {
         public string TutorDisplayName => string.IsNullOrWhiteSpace(TutorName)
             ? TutorPersonnelNumber
             : TutorName;
 
-        public string AdminApprovalLabel => IsAdminApproved == true
-            ? "Reviewed"
-            : "Awaiting review";
+        public string AdminApprovalLabel => IsAdminApproved switch
+        {
+            true => "Accepted",
+            false => "Rejected",
+            _ when IsTutorHeadRejectionFinal => "Rejected",
+            _ => "Awaiting review"
+        };
 
-        public string AdminApprovalCssClass => IsAdminApproved == true
-            ? "is-reviewed"
-            : "is-awaiting";
+        public string AdminApprovalCssClass => IsAdminApproved switch
+        {
+            true => "is-reviewed",
+            false => "is-rejected",
+            _ when IsTutorHeadRejectionFinal => "is-rejected",
+            _ => "is-awaiting"
+        };
+
+        public string TutorHeadDecisionLabel => TutorHeadDecision switch
+        {
+            string decision when decision.Equals("Approve",
+                StringComparison.OrdinalIgnoreCase) => "Approved",
+            string decision when decision.Equals("Reject",
+                StringComparison.OrdinalIgnoreCase) => "Rejected",
+            string decision when decision.Equals("Escalate",
+                StringComparison.OrdinalIgnoreCase) => "Escalated",
+            _ => "Decision unavailable"
+        };
+
+        public string TutorHeadDecisionCssClass => TutorHeadDecision switch
+        {
+            string decision when decision.Equals("Approve",
+                StringComparison.OrdinalIgnoreCase) => "is-approved",
+            string decision when decision.Equals("Reject",
+                StringComparison.OrdinalIgnoreCase) => "is-rejected",
+            string decision when decision.Equals("Escalate",
+                StringComparison.OrdinalIgnoreCase) => "is-escalated",
+            _ => "is-unavailable"
+        };
     }
 
     private sealed record AdminReviewDeadlineSettings(
+        DateOnly StartDate,
         DateOnly Deadline,
         bool IsRecurring,
         bool UseLastDayOfMonth);

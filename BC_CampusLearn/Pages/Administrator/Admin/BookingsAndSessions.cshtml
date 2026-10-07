@@ -31,9 +31,14 @@
                 <p>The administrator approval is still pending.</p>
             </div>
             <div>
-                <span class="session-approval is-reviewed">Reviewed</span>
+                <span class="session-approval is-reviewed">Accepted</span>
                 <span aria-hidden="true">–</span>
                 <p>The session reviews have been accepted.</p>
+            </div>
+            <div>
+                <span class="session-approval is-rejected">Rejected</span>
+                <span aria-hidden="true">–</span>
+                <p>The Tutor Head rejected the session and no administrator approval was submitted.</p>
             </div>
         </div>
     </div>
@@ -43,7 +48,11 @@
     </header>
 
     <section class="admin-stat-grid admin-session-stats" aria-label="Administrator session review statistics">
-        <article class="admin-stat-card">
+        <a asp-page="/Administrator/Admin/BookingsAndSessions"
+           asp-route-Stat="carried-over"
+           class="admin-stat-card admin-stat-card-link @(Model.Stat == "carried-over" ? "is-active" : null)"
+           aria-current="@(Model.Stat == "carried-over" ? "true" : null)"
+           aria-label="Show @Model.ReviewStats.CarriedOver sessions carried over from previous periods">
             <div class="admin-stat-icon" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
                     <path d="M0 0h24v24H0z" fill="none" />
@@ -54,8 +63,12 @@
                 </svg>
             </div>
             <div class="admin-stat-content"><h2>Carried over</h2><p>@Model.ReviewStats.CarriedOver</p></div>
-        </article>
-        <article class="admin-stat-card">
+        </a>
+        <a asp-page="/Administrator/Admin/BookingsAndSessions"
+           asp-route-Stat="flagged"
+           class="admin-stat-card admin-stat-card-link @(Model.Stat == "flagged" ? "is-active" : null)"
+           aria-current="@(Model.Stat == "flagged" ? "true" : null)"
+           aria-label="Show @Model.ReviewStats.FlaggedConcerns sessions with flagged concerns">
             <div class="admin-stat-icon" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
                     <path d="M0 0h24v24H0z" fill="none" />
@@ -66,8 +79,12 @@
                 </svg>
             </div>
             <div class="admin-stat-content"><h2>Flagged concerns</h2><p>@Model.ReviewStats.FlaggedConcerns</p></div>
-        </article>
-        <article class="admin-stat-card">
+        </a>
+        <a asp-page="/Administrator/Admin/BookingsAndSessions"
+           asp-route-Stat="tutor-head-rejected"
+           class="admin-stat-card admin-stat-card-link @(Model.Stat == "tutor-head-rejected" ? "is-active" : null)"
+           aria-current="@(Model.Stat == "tutor-head-rejected" ? "true" : null)"
+           aria-label="Show @Model.ReviewStats.RejectedByTutorHead sessions rejected by the Tutor Head">
             <div class="admin-stat-icon" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
                     <path d="M0 0h24v24H0z" fill="none" />
@@ -75,8 +92,12 @@
                 </svg>
             </div>
             <div class="admin-stat-content"><h2>Rejected by Tutor Head</h2><p>@Model.ReviewStats.RejectedByTutorHead</p></div>
-        </article>
-        <article class="admin-stat-card">
+        </a>
+        <a asp-page="/Administrator/Admin/BookingsAndSessions"
+           asp-route-Stat="awaiting"
+           class="admin-stat-card admin-stat-card-link @(Model.Stat == "awaiting" ? "is-active" : null)"
+           aria-current="@(Model.Stat == "awaiting" ? "true" : null)"
+           aria-label="Show @Model.ReviewStats.AwaitingAdminReview sessions awaiting administrator review">
             <div class="admin-stat-icon" aria-hidden="true">
                 <svg class="awaiting-review-progress"
                      viewBox="0 0 24 24"
@@ -95,7 +116,7 @@
                 </svg>
             </div>
             <div class="admin-stat-content"><h2>Awaiting admin review</h2><p>@Model.ReviewStats.AwaitingAdminReview</p></div>
-        </article>
+        </a>
     </section>
 
     <div class="sessions-workspace">
@@ -109,6 +130,10 @@
             </p>
 
             <form method="get" asp-page="/Administrator/Admin/BookingsAndSessions">
+                @if (Model.Stat != "all")
+                {
+                    <input asp-for="Stat" type="hidden" />
+                }
                 <label class="session-filter-field">
                     <span>Search sessions</span>
                     <span class="session-filter-search">
@@ -125,7 +150,8 @@
                     <select asp-for="Approval">
                         <option value="all">All approval statuses</option>
                         <option value="pending">Awaiting review</option>
-                        <option value="approved">Reviewed</option>
+                        <option value="approved">Accepted</option>
+                        <option value="rejected">Rejected</option>
                     </select>
                 </label>
 
@@ -169,14 +195,15 @@
                             <th scope="col">Location</th>
                             <th scope="col">Session date</th>
                             <th scope="col">Admin approval</th>
-                            <th scope="col">Action</th>
+                            <th scope="col" class="session-decision-column">Tutor Head decision</th>
+                            <th scope="col" class="session-action-heading">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @if (Model.Sessions.Count == 0)
                         {
                             <tr>
-                                <td colspan="6" class="completed-session-empty">
+                                <td colspan="7" class="completed-session-empty">
                                     No completed sessions match the selected filters.
                                 </td>
                             </tr>
@@ -189,7 +216,7 @@
                                     <th scope="row">@session.TutorDisplayName</th>
                                     <td>@session.StudentName</td>
                                     <td>@session.Location</td>
-                                    <td>
+                                    <td class="session-decision-column">
                                         <time datetime="@session.SessionDate.ToString("O")">
                                             @session.SessionDate.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
                                         </time>
@@ -200,12 +227,66 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <a asp-page="/Administrator/Tutors/SessionDetails"
-                                           asp-route-id="@session.BookingId"
-                                           class="session-view-link"
-                                           aria-label="View session for @session.StudentName with @session.TutorDisplayName">
-                                            View
-                                        </a>
+                                        <span class="session-tutor-head-decision @session.TutorHeadDecisionCssClass"
+                                              aria-label="Tutor Head decision: @session.TutorHeadDecisionLabel"
+                                              title="@session.TutorHeadDecisionLabel">
+                                            @if (session.TutorHeadDecisionCssClass == "is-approved")
+                                            {
+                                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M0 0h24v24H0z" fill="none" />
+                                                    <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2 12.5a2 2 0 0 1 2-2a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3a2 2 0 0 1-2-2zm13.479-4.694l-.267.86c-.218.705-.327 1.057-.243 1.336a1 1 0 0 0 .42.547c.251.158.63.158 1.39.158h.404c2.57 0 3.855 0 4.462.76q.104.131.185.277c.467.848-.064 1.991-1.126 4.277c-.974 2.098-1.462 3.147-2.366 3.764q-.132.09-.27.17c-.952.545-2.132.545-4.492.545h-.511c-2.86 0-4.289 0-5.177-.86C7 18.779 7 17.394 7 14.624v-.974c0-1.455 0-2.183.258-2.85c.259-.666.753-1.213 1.743-2.309l4.091-4.53c.103-.114.154-.17.2-.21a1.033 1.033 0 0 1 1.442.091c.04.045.083.108.17.234c.135.196.202.294.261.392c.528.871.687 1.906.446 2.89c-.027.109-.062.222-.132.448" />
+                                                </svg>
+                                            }
+                                            else if (session.TutorHeadDecisionCssClass == "is-rejected")
+                                            {
+                                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M0 0h24v24H0z" fill="none" />
+                                                    <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2 11.5a2 2 0 0 0 2 2a3 3 0 0 0 3-3v-4a3 3 0 0 0-3-3a2 2 0 0 0-2 2zm13.479 4.694l-.267-.86c-.218-.705-.327-1.057-.243-1.336a.98.98 0 0 1 .42-.547c.251-.158.63-.158 1.39-.158h.404c2.57 0 3.855 0 4.462-.76q.104-.131.185-.277c.467-.848-.064-1.991-1.126-4.277c-.974-2.098-1.462-3.147-2.366-3.764a4 4 0 0 0-.27-.17c-.952-.545-2.132-.545-4.492-.545h-.511c-2.86 0-4.289 0-5.177.86C7 5.222 7 6.607 7 9.377v.974c0 1.455 0 2.183.258 2.85c.259.666.753 1.213 1.743 2.309l4.091 4.53c.103.114.154.17.2.21a1.033 1.033 0 0 0 1.442-.091c.04-.045.083-.108.17-.234a9 9 0 0 0 .261-.392a3.8 3.8 0 0 0 .446-2.89a8 8 0 0 0-.132-.448" />
+                                                </svg>
+                                            }
+                                            else if (session.TutorHeadDecisionCssClass == "is-escalated")
+                                            {
+                                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M0 0h24v24H0z" fill="none" />
+                                                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                                        <path d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2s10 4.477 10 10" />
+                                                        <path d="M12 9v7m3.5-4.5S12.922 8 12 8s-3.5 3.5-3.5 3.5" />
+                                                    </g>
+                                                </svg>
+                                            }
+                                            else
+                                            {
+                                                <span aria-hidden="true">—</span>
+                                            }
+                                            <span>@session.TutorHeadDecisionLabel</span>
+                                        </span>
+                                    </td>
+                                    <td class="session-action-cell">
+                                        <div class="session-row-actions">
+                                            <span class="session-concern-slot">
+                                                @if (session.HasTutorHeadConcern)
+                                                {
+                                                    <span class="session-flagged-concern"
+                                                          tabindex="0"
+                                                          aria-label="Flagged concern">
+                                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                            <path d="M0 0h24v24H0z" fill="none" />
+                                                            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                                                <circle cx="12" cy="12" r="10" />
+                                                                <path d="M12 8v4m.125 3.75H12m.25 0a.25.25 0 1 1-.5 0a.25.25 0 0 1 .5 0" />
+                                                            </g>
+                                                        </svg>
+                                                        <span class="session-concern-tooltip" role="tooltip">Flagged concern</span>
+                                                    </span>
+                                                }
+                                            </span>
+                                            <a asp-page="/Administrator/Tutors/SessionDetails"
+                                               asp-route-id="@session.BookingId"
+                                               class="session-view-link"
+                                               aria-label="View session for @session.StudentName with @session.TutorDisplayName">
+                                                View
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             }

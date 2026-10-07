@@ -271,7 +271,7 @@ public class AdminTutorsTests
             ReviewerBcUserId = tutorHead.BcUserId,
             Rating = 4,
             StudentEngagement = "Yes",
-            ConcernLevel = "No concerns",
+            ConcernLevel = "Concerns",
             OverallAssessment = "Good",
             Decision = "Approve",
             Comment = "Strong session.",
@@ -299,12 +299,29 @@ public class AdminTutorsTests
             await page.OnGetAsync(booking.BookingId, CancellationToken.None));
         Assert.Equal(review.SessionReviewId, page.TutorHeadReview?.SessionReviewId);
         Assert.True(page.CanRecordAdminReview);
+        Assert.True(page.HasVisibleTutorHeadConcern);
         Assert.Contains(page.TutorHeadReviewAnswers,
             answer => answer.Question == "4. Decision" && answer.Value == "Approve");
         Assert.Equal(5, page.TutorHeadReviewAnswers.Count);
         Assert.Contains(page.TutorHeadReviewAnswers,
             answer => answer.Question == "Additional comments" &&
                 answer.Value == "Strong session.");
+
+        booking.AdminSessionReview = new AdminSessionReview
+        {
+            ReviewerBcUserId = 1,
+            EvidenceSupportsApproval = true,
+            RecordedAt = DateTimeOffset.UtcNow
+        };
+        await context.SaveChangesAsync();
+        var approvedPage = new SessionDetailsModel(
+            context, new TestWebHostEnvironment(), new TestCurrentUserService(),
+            TimeProvider.System);
+        SetPageContext(approvedPage);
+        Assert.IsType<PageResult>(await approvedPage.OnGetAsync(
+            booking.BookingId,
+            CancellationToken.None));
+        Assert.False(approvedPage.HasVisibleTutorHeadConcern);
     }
 
     [Fact]

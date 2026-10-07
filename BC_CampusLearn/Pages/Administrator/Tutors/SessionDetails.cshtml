@@ -120,6 +120,21 @@
                     <strong class="@(Model.TutorHeadReview is not null ? "is-submitted" : "is-missing")">
                         @(Model.TutorHeadReview is not null ? "Submitted" : "Not submitted")
                     </strong>
+                    @if (Model.HasVisibleTutorHeadConcern)
+                    {
+                        <span class="admin-session-review-tab-concern"
+                              role="img"
+                              aria-label="Flagged concern"
+                              title="Flagged concern">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M0 0h24v24H0z" fill="none" />
+                                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M12 8v4m.125 3.75H12m.25 0a.25.25 0 1 1-.5 0a.25.25 0 0 1 .5 0" />
+                                </g>
+                            </svg>
+                        </span>
+                    }
                 </button>
                 <button type="button" class="admin-session-review-tab" role="tab"
                         id="tutor-review-tab" aria-controls="tutor-review-panel"

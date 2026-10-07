@@ -7,6 +7,22 @@ public static class MonthlyReviewPeriod
         bool useLastDayOfMonth,
         DateOnly today)
     {
+        DateOnly configuredStart = PreviousOccurrence(
+            configuredDeadline,
+            useLastDayOfMonth).AddDays(1);
+        return Resolve(
+            configuredStart,
+            configuredDeadline,
+            useLastDayOfMonth,
+            today);
+    }
+
+    public static ReviewPeriodWindow Resolve(
+        DateOnly configuredStart,
+        DateOnly configuredDeadline,
+        bool useLastDayOfMonth,
+        DateOnly today)
+    {
         DateOnly activeDeadline = configuredDeadline;
         int elapsedPeriods = 0;
         while (today > activeDeadline)
@@ -18,12 +34,33 @@ public static class MonthlyReviewPeriod
                 useLastDayOfMonth);
         }
 
-        DateOnly previousDeadline = Occurrence(
+        DateOnly activeStart = elapsedPeriods == 0
+            ? configuredStart
+            : Occurrence(
+                configuredDeadline,
+                elapsedPeriods - 1,
+                useLastDayOfMonth).AddDays(1);
+        return new ReviewPeriodWindow(
+            activeStart,
+            activeDeadline,
+            activeDeadline);
+    }
+
+    public static ReviewPeriodWindow ResolveByCalendarMonth(
+        DateOnly configuredStart,
+        DateOnly configuredDeadline,
+        bool useLastDayOfMonth,
+        DateOnly today)
+    {
+        int elapsedMonths = ((today.Year - configuredDeadline.Year) * 12) +
+            today.Month - configuredDeadline.Month;
+        DateOnly activeStart = configuredStart.AddMonths(elapsedMonths);
+        DateOnly activeDeadline = Occurrence(
             configuredDeadline,
-            elapsedPeriods - 1,
+            elapsedMonths,
             useLastDayOfMonth);
         return new ReviewPeriodWindow(
-            previousDeadline.AddDays(1),
+            activeStart,
             activeDeadline,
             activeDeadline);
     }

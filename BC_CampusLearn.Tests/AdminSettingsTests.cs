@@ -143,12 +143,20 @@ public class AdminSettingsTests
         await using ApplicationDbContext context = CreateContext();
         AddBaseData(context, BcUserRole.Admin);
         await context.SaveChangesAsync();
+        PlatformSettings previousSettings =
+            await context.PlatformSettings.SingleAsync();
+        previousSettings.AdminSessionReviewDeadline =
+            new DateOnly(2026, 10, 10);
+        previousSettings.UseLastDayOfMonthForAdminSessionReviewDeadline =
+            false;
+        await context.SaveChangesAsync();
         BookingsModel page = CreateBookingsPage(context, BcUserRole.Admin);
         page.Input = new BookingsModel.BookingTermsInput
         {
             Terms = PlatformSettings.DefaultBookingTerms,
             ReviewDeadline = new DateOnly(2026, 10, 5),
             IsReviewDeadlineRecurring = true,
+            AdminReviewPeriodStartDate = new DateOnly(2026, 10, 21),
             AdminReviewDeadline = new DateOnly(2026, 11, 5),
             IsAdminReviewDeadlineRecurring = true,
             UseLastDayOfMonthForAdminReview = true
@@ -161,6 +169,9 @@ public class AdminSettingsTests
         Assert.Equal(
             new DateOnly(2026, 11, 30),
             settings.AdminSessionReviewDeadline);
+        Assert.Equal(
+            new DateOnly(2026, 10, 21),
+            settings.AdminSessionReviewPeriodStartDate);
         Assert.True(settings.IsAdminSessionReviewDeadlineRecurring);
         Assert.True(settings
             .UseLastDayOfMonthForAdminSessionReviewDeadline);
@@ -168,6 +179,10 @@ public class AdminSettingsTests
             log => log.SettingName ==
                 "Administrator review deadline monthly rule" &&
                 log.NewValue == "Last day of the month");
+        Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
+            log => log.SettingName ==
+                "Administrator review period start date" &&
+                log.NewValue == "2026-10-21");
     }
 
     [Fact]

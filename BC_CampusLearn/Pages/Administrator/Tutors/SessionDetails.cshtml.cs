@@ -24,6 +24,13 @@ public class SessionDetailsModel(
 
     public IReadOnlyList<ReviewAnswer> TutorHeadReviewAnswers { get; private set; } = [];
 
+    public bool HasVisibleTutorHeadConcern =>
+        string.Equals(
+            TutorHeadReview?.ConcernLevel,
+            "Concerns",
+            StringComparison.OrdinalIgnoreCase) &&
+        Session.AdminSessionReview?.EvidenceSupportsApproval != true;
+
     public sealed record ReviewAnswer(string Question, string Value);
 
     [BindProperty]

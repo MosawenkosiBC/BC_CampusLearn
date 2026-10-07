@@ -34,6 +34,8 @@ public class BookingsModel(
                     settings.IsTutorHeadReviewDeadlineRecurring,
                 UseLastDayOfMonth = settings
                     .UseLastDayOfMonthForTutorHeadReviewDeadline,
+                AdminReviewPeriodStartDate =
+                    settings.AdminSessionReviewPeriodStartDate,
                 AdminReviewDeadline = settings.AdminSessionReviewDeadline,
                 IsAdminReviewDeadlineRecurring =
                     settings.IsAdminSessionReviewDeadlineRecurring,
@@ -53,6 +55,19 @@ public class BookingsModel(
                 "Input.Terms",
                 "Booking terms must contain between 20 and 8,000 characters.");
         }
+        bool useLastDayOfMonthForAdmin =
+            Input.IsAdminReviewDeadlineRecurring &&
+            Input.UseLastDayOfMonthForAdminReview;
+        DateOnly effectiveAdminDeadline =
+            MonthlyReviewPeriod.NormalizeDeadline(
+                Input.AdminReviewDeadline,
+                useLastDayOfMonthForAdmin);
+        if (Input.AdminReviewPeriodStartDate > effectiveAdminDeadline)
+        {
+            ModelState.AddModelError(
+                "Input.AdminReviewPeriodStartDate",
+                "The administrator review period must start on or before its deadline.");
+        }
         if (!ModelState.IsValid) return Page();
 
         CurrentUser currentUser = currentUserService.GetRequiredUser();
@@ -64,13 +79,6 @@ public class BookingsModel(
         DateOnly effectiveDeadline = MonthlyReviewPeriod.NormalizeDeadline(
             Input.ReviewDeadline,
             useLastDayOfMonth);
-        bool useLastDayOfMonthForAdmin =
-            Input.IsAdminReviewDeadlineRecurring &&
-            Input.UseLastDayOfMonthForAdminReview;
-        DateOnly effectiveAdminDeadline =
-            MonthlyReviewPeriod.NormalizeDeadline(
-                Input.AdminReviewDeadline,
-                useLastDayOfMonthForAdmin);
         bool changed = auditService.Record(
             "Bookings and sessions",
             "Booking terms and conditions",
@@ -102,6 +110,12 @@ public class BookingsModel(
             useLastDayOfMonth
                 ? "Last day of the month"
                 : "Same date each month",
+            currentUser);
+        changed |= auditService.Record(
+            "Bookings and sessions",
+            "Administrator review period start date",
+            FormatDate(settings.AdminSessionReviewPeriodStartDate),
+            FormatDate(Input.AdminReviewPeriodStartDate),
             currentUser);
         changed |= auditService.Record(
             "Bookings and sessions",
@@ -143,6 +157,8 @@ public class BookingsModel(
         settings.UseLastDayOfMonthForTutorHeadReviewDeadline =
             useLastDayOfMonth;
         settings.AdminSessionReviewDeadline = effectiveAdminDeadline;
+        settings.AdminSessionReviewPeriodStartDate =
+            Input.AdminReviewPeriodStartDate;
         settings.IsAdminSessionReviewDeadlineRecurring =
             Input.IsAdminReviewDeadlineRecurring;
         settings.UseLastDayOfMonthForAdminSessionReviewDeadline =
@@ -182,12 +198,16 @@ public class BookingsModel(
 
         [Display(Name = "Administrator review deadline")]
         public DateOnly AdminReviewDeadline { get; set; } =
-            new(2026, 10, 10);
+            new(2026, 10, 31);
 
-        [Display(Name = "Repeat the administrator deadline monthly")]
+        [Display(Name = "Administrator review period start date")]
+        public DateOnly AdminReviewPeriodStartDate { get; set; } =
+            new(2026, 9, 6);
+
+        [Display(Name = "Repeat the administrator review period monthly")]
         public bool IsAdminReviewDeadlineRecurring { get; set; } = true;
 
         [Display(Name = "Use the last day of each month")]
-        public bool UseLastDayOfMonthForAdminReview { get; set; }
+        public bool UseLastDayOfMonthForAdminReview { get; set; } = true;
     }
 }

@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261006125154_AddAdminReviewPeriodStartDate")]
+    partial class AddAdminReviewPeriodStartDate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -710,8 +713,8 @@ namespace BC_CampusLearn.Migrations
                             PlatformSettingsId = 1,
                             AcademicSemester = "Semester 1",
                             AcademicYear = 2026,
-                            AdminSessionReviewDeadline = new DateOnly(2026, 10, 31),
-                            AdminSessionReviewPeriodStartDate = new DateOnly(2026, 9, 6),
+                            AdminSessionReviewDeadline = new DateOnly(2026, 10, 10),
+                            AdminSessionReviewPeriodStartDate = new DateOnly(2026, 9, 11),
                             BookingTermsAndConditions = "All appointments with tutors must be scheduled a day ahead.\nAll sessions are limited to 1 hour.\nYou must come prepared for the sessions.\nYou will be given exercises to complete during your sessions.\nAll online sessions via MS Teams are recorded.\nAll face-to-face sessions are held in the study room.\nRespect the time and effort of your tutor.\nYou will be required to complete a tutor evaluation form.",
                             CampusTimeZoneId = "Africa/Johannesburg",
                             CurrencyCode = "ZAR",
@@ -726,7 +729,7 @@ namespace BC_CampusLearn.Migrations
                             TutorHeadReviewPeriodEndDate = new DateOnly(2026, 9, 30),
                             TutorHeadReviewPeriodStartDate = new DateOnly(2026, 9, 1),
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            UseLastDayOfMonthForAdminSessionReviewDeadline = true,
+                            UseLastDayOfMonthForAdminSessionReviewDeadline = false,
                             UseLastDayOfMonthForTutorHeadReviewDeadline = false
                         });
                 });

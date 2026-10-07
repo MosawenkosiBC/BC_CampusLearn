@@ -24,9 +24,11 @@ public class PlatformSettings
     public bool IsTutorHeadReviewDeadlineRecurring { get; set; } = true;
     public bool UseLastDayOfMonthForTutorHeadReviewDeadline { get; set; }
     public DateOnly AdminSessionReviewDeadline { get; set; } =
-        new(2026, 10, 10);
+        new(2026, 10, 31);
+    public DateOnly AdminSessionReviewPeriodStartDate { get; set; } =
+        new(2026, 9, 6);
     public bool IsAdminSessionReviewDeadlineRecurring { get; set; } = true;
-    public bool UseLastDayOfMonthForAdminSessionReviewDeadline { get; set; }
+    public bool UseLastDayOfMonthForAdminSessionReviewDeadline { get; set; } = true;
     public int? UpdatedByBcUserId { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
     public byte[] RowVersion { get; set; } = [];
