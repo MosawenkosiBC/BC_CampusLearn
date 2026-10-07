@@ -120,6 +120,21 @@
                     <strong class="@(Model.TutorHeadReview is not null ? "is-submitted" : "is-missing")">
                         @(Model.TutorHeadReview is not null ? "Submitted" : "Not submitted")
                     </strong>
+                    @if (Model.HasVisibleTutorHeadConcern)
+                    {
+                        <span class="admin-session-review-tab-concern"
+                              role="img"
+                              aria-label="Flagged concern"
+                              title="Flagged concern">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M0 0h24v24H0z" fill="none" />
+                                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M12 8v4m.125 3.75H12m.25 0a.25.25 0 1 1-.5 0a.25.25 0 0 1 .5 0" />
+                                </g>
+                            </svg>
+                        </span>
+                    }
                 </button>
                 <button type="button" class="admin-session-review-tab" role="tab"
                         id="tutor-review-tab" aria-controls="tutor-review-panel"
@@ -247,11 +262,9 @@
                               class="admin-session-review-form">
                             <div asp-validation-summary="All" class="text-danger"></div>
                             @foreach (var question in new[] {
-                                new { Number = 1, Name = "AllReviewsSubmitted", Text = "Have the student, tutor, and Tutor Head reviews all been submitted?", Answer = Model.AdminReviewInput.AllReviewsSubmitted },
-                                new { Number = 2, Name = "HeadConfirmedSession", Text = "Has the Tutor Head confirmed that the session took place as recorded?", Answer = Model.AdminReviewInput.HeadConfirmedSession },
-                                new { Number = 3, Name = "HeadConfirmedQuality", Text = "Has the Tutor Head confirmed that the tutoring met the expected standard for explanation, participation, and support?", Answer = Model.AdminReviewInput.HeadConfirmedQuality },
-                                new { Number = 4, Name = "ConcernsResolvedOrDocumented", Text = "Have concerns raised in any of the three reviews been resolved or documented for follow-up?", Answer = Model.AdminReviewInput.ConcernsResolvedOrDocumented },
-                                new { Number = 5, Name = "EvidenceSupportsApproval", Text = "Taken together, do the three reviews provide enough evidence to approve this session as completed?", Answer = Model.AdminReviewInput.EvidenceSupportsApproval }
+                                new { Number = 1, Name = "HeadConfirmedQuality", Text = "Has the Tutor Head confirmed that the tutoring met the expected standard for explanation, participation, and support?", Answer = Model.AdminReviewInput.HeadConfirmedQuality },
+                                new { Number = 2, Name = "ReviewEvidenceIsConsistent", Text = "Do the student, tutor, and Tutor Head reviews provide a consistent account of the session?", Answer = Model.AdminReviewInput.ReviewEvidenceIsConsistent },
+                                new { Number = 3, Name = "ConcernsResolvedOrDocumented", Text = "Have concerns raised in any of the three reviews been resolved or documented for follow-up?", Answer = Model.AdminReviewInput.ConcernsResolvedOrDocumented }
                             })
                             {
                                 <fieldset>
@@ -264,6 +277,15 @@
                                     </div>
                                 </fieldset>
                             }
+                            <fieldset>
+                                <legend>4. What decision are you making for this session?</legend>
+                                <div class="admin-session-review-options">
+                                    <label><input type="radio" name="AdminReviewInput.EvidenceSupportsApproval" value="true"
+                                                  checked="@(Model.AdminReviewInput.EvidenceSupportsApproval == true)" required /> Approve</label>
+                                    <label><input type="radio" name="AdminReviewInput.EvidenceSupportsApproval" value="false"
+                                                  checked="@(Model.AdminReviewInput.EvidenceSupportsApproval == false)" /> Decline</label>
+                                </div>
+                            </fieldset>
                             <button type="submit">Save administrator review</button>
                         </form>
                     }

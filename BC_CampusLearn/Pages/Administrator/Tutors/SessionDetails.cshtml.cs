@@ -24,6 +24,13 @@ public class SessionDetailsModel(
 
     public IReadOnlyList<ReviewAnswer> TutorHeadReviewAnswers { get; private set; } = [];
 
+    public bool HasVisibleTutorHeadConcern =>
+        string.Equals(
+            TutorHeadReview?.ConcernLevel,
+            "Concerns",
+            StringComparison.OrdinalIgnoreCase) &&
+        Session.AdminSessionReview?.EvidenceSupportsApproval != true;
+
     public sealed record ReviewAnswer(string Question, string Value);
 
     [BindProperty]
@@ -69,9 +76,8 @@ public class SessionDetailsModel(
         {
             AdminReviewInput = new AdminSessionReviewInput
             {
-                AllReviewsSubmitted = saved.AllReviewsSubmitted,
-                HeadConfirmedSession = saved.HeadConfirmedSession,
                 HeadConfirmedQuality = saved.HeadConfirmedQuality,
+                ReviewEvidenceIsConsistent = saved.ReviewEvidenceIsConsistent,
                 ConcernsResolvedOrDocumented = saved.ConcernsResolvedOrDocumented,
                 EvidenceSupportsApproval = saved.EvidenceSupportsApproval
             };
@@ -87,14 +93,13 @@ public class SessionDetailsModel(
         int id,
         CancellationToken cancellationToken)
     {
-        if (!AdminReviewInput.AllReviewsSubmitted.HasValue ||
-            !AdminReviewInput.HeadConfirmedSession.HasValue ||
-            !AdminReviewInput.HeadConfirmedQuality.HasValue ||
+        if (!AdminReviewInput.HeadConfirmedQuality.HasValue ||
+            !AdminReviewInput.ReviewEvidenceIsConsistent.HasValue ||
             !AdminReviewInput.ConcernsResolvedOrDocumented.HasValue ||
             !AdminReviewInput.EvidenceSupportsApproval.HasValue)
         {
             ModelState.AddModelError(string.Empty,
-                "Answer every question with Yes or No before saving.");
+                "Complete every review check and choose Approve or Decline before saving.");
         }
 
         Booking? booking = await context.Bookings
@@ -124,8 +129,8 @@ public class SessionDetailsModel(
             BookingId = booking.BookingId
         };
         review.ReviewerBcUserId = currentUserService.GetRequiredUser().BcUserId;
-        review.AllReviewsSubmitted = AdminReviewInput.AllReviewsSubmitted!.Value;
-        review.HeadConfirmedSession = AdminReviewInput.HeadConfirmedSession!.Value;
+        review.ReviewEvidenceIsConsistent =
+            AdminReviewInput.ReviewEvidenceIsConsistent!.Value;
         review.HeadConfirmedQuality = AdminReviewInput.HeadConfirmedQuality!.Value;
         review.ConcernsResolvedOrDocumented =
             AdminReviewInput.ConcernsResolvedOrDocumented!.Value;

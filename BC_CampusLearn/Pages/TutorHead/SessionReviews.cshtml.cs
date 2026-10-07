@@ -2,6 +2,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Gemini;
+using BC_CampusLearn.Services.Settings;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -119,14 +120,12 @@ public class SessionReviewsModel(
                 settings.IsTutorHeadReviewDeadlineRecurring,
                 settings.UseLastDayOfMonthForTutorHeadReviewDeadline))
             .SingleOrDefaultAsync(cancellationToken);
-        ReviewPeriodDates basePeriod = configuredDeadline is not null
-            ? ReviewPeriodDates.ForDeadline(
+        ReviewPeriodWindow period = configuredDeadline is not null
+            ? MonthlyReviewPeriod.Resolve(
                 configuredDeadline.Deadline,
-                configuredDeadline.UseLastDayOfMonth)
-            : ReviewPeriodDates.ForMonth(today);
-        ReviewPeriodDates period = basePeriod.AdvancePastExpiredDeadlines(
-            today,
-            configuredDeadline?.UseLastDayOfMonth == true);
+                configuredDeadline.UseLastDayOfMonth,
+                today)
+            : ForCurrentMonth(today);
         DateOnly displayedDeadline = configuredDeadline is
             { IsRecurring: false }
                 ? configuredDeadline.Deadline
@@ -393,77 +392,13 @@ public class SessionReviewsModel(
     }
 
 
-    private sealed record ReviewPeriodDates(
-        DateOnly StartDate,
-        DateOnly EndDate,
-        DateOnly Deadline)
+    private static ReviewPeriodWindow ForCurrentMonth(DateOnly date)
     {
-        public static ReviewPeriodDates ForMonth(DateOnly date)
-        {
-            var start = new DateOnly(date.Year, date.Month, 1);
-            return new ReviewPeriodDates(
-                start,
-                start.AddMonths(1).AddDays(-1),
-                start.AddMonths(1).AddDays(4));
-        }
-
-        public static ReviewPeriodDates ForDeadline(
-            DateOnly deadline,
-            bool useLastDayOfMonth)
-        {
-            DateOnly previousDeadline = MonthlyOccurrence(
-                deadline,
-                -1,
-                useLastDayOfMonth);
-            return new ReviewPeriodDates(
-                previousDeadline.AddDays(1),
-                deadline,
-                deadline);
-        }
-
-        public ReviewPeriodDates AdvancePastExpiredDeadlines(
-            DateOnly today,
-            bool useLastDayOfMonth)
-        {
-            int elapsedPeriods = 0;
-            DateOnly activeDeadline = Deadline;
-            while (today > activeDeadline)
-            {
-                elapsedPeriods++;
-                activeDeadline = MonthlyOccurrence(
-                    Deadline,
-                    elapsedPeriods,
-                    useLastDayOfMonth);
-            }
-
-            if (elapsedPeriods == 0)
-            {
-                return this;
-            }
-
-            DateOnly previousDeadline = MonthlyOccurrence(
-                Deadline,
-                elapsedPeriods - 1,
-                useLastDayOfMonth);
-            return new ReviewPeriodDates(
-                previousDeadline.AddDays(1),
-                activeDeadline,
-                activeDeadline);
-        }
-
-        private static DateOnly MonthlyOccurrence(
-            DateOnly deadline,
-            int months,
-            bool useLastDayOfMonth)
-        {
-            DateOnly occurrence = deadline.AddMonths(months);
-            return useLastDayOfMonth
-                ? new DateOnly(
-                    occurrence.Year,
-                    occurrence.Month,
-                    1).AddMonths(1).AddDays(-1)
-                : occurrence;
-        }
+        DateOnly start = new(date.Year, date.Month, 1);
+        return new ReviewPeriodWindow(
+            start,
+            start.AddMonths(1).AddDays(-1),
+            start.AddMonths(1).AddDays(4));
     }
 
     private sealed record ReviewDeadlineSettings(

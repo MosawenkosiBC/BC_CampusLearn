@@ -27,7 +27,7 @@
 .admin-session-review-body > p { margin: 0; }
 .admin-session-reviews { min-width: 0; }
 .admin-session-review-tabs { display: grid; gap: 1.25rem; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 1.25rem; }
-.admin-session-review-tab { align-content: center; align-items: start; background: #fff; border: 0; border-radius: .45rem; box-shadow: 0 .35rem .9rem rgba(25,30,32,.12); color: #272b2c; display: grid; font-family: var(--campus-font-family); font-size: .86rem; font-weight: 650; gap: .4rem; grid-template-columns: minmax(0,1fr); min-height: 5rem; padding: .85rem 1rem; text-align: left; width: 100%; }
+.admin-session-review-tab { align-content: center; align-items: start; background: #fff; border: 0; border-radius: .45rem; box-shadow: 0 .35rem .9rem rgba(25,30,32,.12); color: #272b2c; display: grid; font-family: var(--campus-font-family); font-size: .86rem; font-weight: 650; gap: .4rem; grid-template-columns: minmax(0,1fr); min-height: 5rem; padding: .85rem 1rem; position: relative; text-align: left; width: 100%; }
 .admin-session-review-tab:hover { background: #f3f5f5; box-shadow: 0 .5rem 1.1rem rgba(25,30,32,.16); }
 .admin-session-review-tab:focus-visible { background: #e9eeee; outline: 0; text-decoration: underline; text-underline-offset: .18rem; }
 .admin-session-review-tab.is-active { background: #363c3d; color: #fff; }
@@ -40,6 +40,8 @@
 .admin-session-review-tab--admin:hover,
 .admin-session-review-tab--admin:focus-visible { background: #f7f3f5; }
 .admin-session-review-tab--admin.is-active { background: #ad0151; color: #fff; }
+.admin-session-review-tab-concern { color: #c43b36; display: inline-flex; position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); }
+.admin-session-review-tab-concern svg { height: 1.55rem; width: 1.55rem; }
 .admin-session-review-panel-card { background: #fff; border: 1px solid #f0f1f2; border-radius: .5rem; box-shadow: 0 .25rem .8rem rgba(25,30,38,.1); min-height: 18rem; overflow: hidden; text-align: center; }
 .admin-session-review-panel-card[hidden] { display: none; }
 .admin-session-review-panel-card:focus { outline: none; }
