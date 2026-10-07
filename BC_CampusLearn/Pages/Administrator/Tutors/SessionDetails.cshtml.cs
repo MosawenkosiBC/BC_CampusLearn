@@ -24,6 +24,17 @@ public class SessionDetailsModel(
 
     public IReadOnlyList<ReviewAnswer> TutorHeadReviewAnswers { get; private set; } = [];
 
+    public bool IsSuperAdmin =>
+        currentUserService.GetRequiredUser().Role == BcUserRole.SuperAdmin;
+
+    public bool CanRecordSuperAdminReview =>
+        IsSuperAdmin &&
+        Session.Status == BookingStatus.Completed &&
+        Session.StudentEvaluation is not null &&
+        Session.TutorEvaluation is not null &&
+        TutorHeadReview is not null &&
+        Session.AdminSessionReview is not null;
+
     public bool HasVisibleTutorHeadConcern =>
         string.Equals(
             TutorHeadReview?.ConcernLevel,
@@ -40,6 +51,7 @@ public class SessionDetailsModel(
     public string? AdminReviewMessage { get; set; }
 
     public bool CanRecordAdminReview =>
+        !IsSuperAdmin &&
         Session.Status == BookingStatus.Completed &&
         Session.StudentEvaluation is not null &&
         Session.TutorEvaluation is not null &&
@@ -58,6 +70,7 @@ public class SessionDetailsModel(
             .Include(item => item.StudentEvaluation)
             .Include(item => item.TutorEvaluation)
             .Include(item => item.AdminSessionReview)
+            .Include(item => item.SuperAdminSessionReview)
             .Include(item => item.SessionReviews).ThenInclude(item => item.Reviewer)
             .Include(item => item.PreparationLinks)
             .Include(item => item.Documents)
@@ -93,6 +106,11 @@ public class SessionDetailsModel(
         int id,
         CancellationToken cancellationToken)
     {
+        if (IsSuperAdmin)
+        {
+            return Forbid();
+        }
+
         if (!AdminReviewInput.HeadConfirmedQuality.HasValue ||
             !AdminReviewInput.ReviewEvidenceIsConsistent.HasValue ||
             !AdminReviewInput.ConcernsResolvedOrDocumented.HasValue ||
@@ -142,8 +160,65 @@ public class SessionDetailsModel(
             context.AdminSessionReviews.Add(review);
         }
         await context.SaveChangesAsync(cancellationToken);
-        AdminReviewMessage = "Administrator review recorded.";
-        return RedirectToPage(new { id });
+        AdminReviewMessage = review.EvidenceSupportsApproval
+            ? "Session accepted successfully."
+            : "Session declined successfully.";
+        return RedirectToPage(
+            "/Administrator/Tutors/SessionDetails",
+            new { id });
+    }
+
+    public async Task<IActionResult> OnPostSuperAdminReviewAsync(
+        int id,
+        bool accepted,
+        CancellationToken cancellationToken)
+    {
+        CurrentUser currentUser = currentUserService.GetRequiredUser();
+        if (currentUser.Role != BcUserRole.SuperAdmin)
+        {
+            return Forbid();
+        }
+
+        Booking? booking = await context.Bookings
+            .Include(item => item.StudentEvaluation)
+            .Include(item => item.TutorEvaluation)
+            .Include(item => item.AdminSessionReview)
+            .Include(item => item.SuperAdminSessionReview)
+            .Include(item => item.SessionReviews).ThenInclude(item => item.Reviewer)
+            .SingleOrDefaultAsync(item => item.BookingId == id,
+                cancellationToken);
+        if (booking is null)
+        {
+            return NotFound();
+        }
+
+        bool hasEveryPriorReview =
+            booking.Status == BookingStatus.Completed &&
+            booking.StudentEvaluation is not null &&
+            booking.TutorEvaluation is not null &&
+            booking.AdminSessionReview is not null &&
+            booking.SessionReviews.Any(review =>
+                review.Reviewer.Role == BcUserRole.HeadOfTutors);
+        if (!hasEveryPriorReview)
+        {
+            return BadRequest();
+        }
+
+        SuperAdminSessionReview review = booking.SuperAdminSessionReview ??
+            new SuperAdminSessionReview { BookingId = booking.BookingId };
+        review.ReviewerBcUserId = currentUser.BcUserId;
+        review.IsAccepted = accepted;
+        review.RecordedAt = timeProvider.GetUtcNow();
+        if (booking.SuperAdminSessionReview is null)
+        {
+            context.SuperAdminSessionReviews.Add(review);
+        }
+
+        await context.SaveChangesAsync(cancellationToken);
+        AdminReviewMessage = accepted
+            ? "Session accepted by the Superadmin."
+            : "Session rejected by the Superadmin.";
+        return RedirectToPage("/Administrator/Admin/BookingsAndSessions");
     }
 
     private static IReadOnlyList<ReviewAnswer> BuildStudentReviewAnswers(Booking session)

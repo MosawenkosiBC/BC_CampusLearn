@@ -394,6 +394,13 @@
                         Model.Session.StudentEvaluation is not null;
                     bool tutorReviewCompleted =
                         Model.Session.TutorEvaluation is not null;
+                    bool? superAdminDecision = Model.SuperAdminDecision;
+                    string superAdminStatus = superAdminDecision switch
+                    {
+                        true => "Accepted",
+                        false => "Rejected",
+                        _ => "Pending"
+                    };
 
                     <section class="completed-session-reviews"
                              aria-labelledby="completed-session-reviews-title">
@@ -445,6 +452,16 @@
                                     <strong>Not completed</strong>
                                 </button>
                             }
+                            <div class="review-status-row @(superAdminDecision == true ? "is-completed" : superAdminDecision == false ? "is-rejected" : "is-pending")"
+                                 role="status"
+                                 aria-label="Superadmin session approval: @superAdminStatus">
+                                <span class="review-status-check"
+                                      aria-hidden="true"></span>
+                                <span class="review-status-label">
+                                    Session approval
+                                </span>
+                                <strong>@superAdminStatus</strong>
+                            </div>
                         </div>
                     </section>
                 }

@@ -24,11 +24,26 @@
         @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.AdminReviewMessage))
     }
     <div class="admin-session-content">
-        <button type="button" class="admin-session-summary-button"
-                data-bs-toggle="modal" data-bs-target="#session-summary-modal"
-                aria-controls="session-summary-modal">
-            <span>View Session Summary</span>
-        </button>
+        <div class="admin-session-top-actions">
+            <button type="button" class="admin-session-summary-button"
+                    data-bs-toggle="modal" data-bs-target="#session-summary-modal"
+                    aria-controls="session-summary-modal">
+                <span>View Session Summary</span>
+            </button>
+            @if (Model.CanRecordSuperAdminReview)
+            {
+                <form method="post" asp-page-handler="SuperAdminReview"
+                      asp-route-id="@session.BookingId"
+                      class="admin-session-final-actions">
+                    <button type="submit" name="accepted" value="true"
+                            class="admin-session-final-action is-accept"
+                            aria-label="Accept this session">Accept</button>
+                    <button type="submit" name="accepted" value="false"
+                            class="admin-session-final-action is-reject"
+                            aria-label="Reject this session">Reject</button>
+                </form>
+            }
+        </div>
 
         <div class="modal fade admin-session-summary-modal" id="session-summary-modal"
              tabindex="-1" aria-labelledby="session-summary-title" aria-hidden="true">
@@ -246,7 +261,9 @@
                 <header class="admin-session-review-panel-heading">
                     <div>
                         <h2>Administrator Review</h2>
-                        <p>Review the submitted evidence and record the final administrative decision.</p>
+                        <p>@(Model.IsSuperAdmin
+                            ? "Submitted administrator responses for this session."
+                            : "Review the submitted evidence and record the administrative decision.")</p>
                     </div>
                     @if (session.AdminSessionReview is { } savedReview)
                     {
@@ -256,7 +273,28 @@
                     }
                 </header>
                 <div class="admin-session-review-body">
-                    @if (Model.CanRecordAdminReview)
+                    @if (Model.IsSuperAdmin && session.AdminSessionReview is { } administratorReview)
+                    {
+                        <dl class="admin-session-answers">
+                            <div>
+                                <dt>1. Did the Tutor Head confirm that the tutoring met the expected standard?</dt>
+                                <dd>@(administratorReview.HeadConfirmedQuality ? "Yes" : "No")</dd>
+                            </div>
+                            <div>
+                                <dt>2. Do the student, tutor, and Tutor Head reviews provide a consistent account?</dt>
+                                <dd>@(administratorReview.ReviewEvidenceIsConsistent ? "Yes" : "No")</dd>
+                            </div>
+                            <div>
+                                <dt>3. Were concerns resolved or documented for follow-up?</dt>
+                                <dd>@(administratorReview.ConcernsResolvedOrDocumented ? "Yes" : "No")</dd>
+                            </div>
+                            <div>
+                                <dt>4. Administrator decision</dt>
+                                <dd>@(administratorReview.EvidenceSupportsApproval ? "Approved" : "Declined")</dd>
+                            </div>
+                        </dl>
+                    }
+                    else if (Model.CanRecordAdminReview)
                     {
                         <form method="post" asp-page-handler="AdminReview" asp-route-id="@session.BookingId"
                               class="admin-session-review-form">
@@ -295,6 +333,15 @@
                     }
                 </div>
             </section>
+
+            @if (session.SuperAdminSessionReview is { } finalReview)
+            {
+                <p class="admin-session-final-status @(finalReview.IsAccepted ? "is-accepted" : "is-rejected")"
+                   role="status">
+                    Superadmin decision: @(finalReview.IsAccepted ? "Accepted" : "Rejected")
+                    <span>Recorded @finalReview.RecordedAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")</span>
+                </p>
+            }
         </section>
     </div>
 </section>

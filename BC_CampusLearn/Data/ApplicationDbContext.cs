@@ -72,6 +72,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<AdminSessionReview> AdminSessionReviews =>
         Set<AdminSessionReview>();
 
+    public DbSet<SuperAdminSessionReview> SuperAdminSessionReviews =>
+        Set<SuperAdminSessionReview>();
+
     public DbSet<SessionAiAssessment> SessionAiAssessments =>
         Set<SessionAiAssessment>();
 

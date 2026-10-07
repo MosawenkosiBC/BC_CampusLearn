@@ -2017,6 +2017,38 @@ body.tutor-evaluation-panel-open {
     color: #171717;
 }
 
+.review-status-row.is-pending strong {
+    color: #6b7280;
+}
+
+.review-status-row.is-rejected .review-status-check {
+    background: #b42318;
+    border-color: #b42318;
+}
+
+.review-status-row.is-rejected .review-status-check::before,
+.review-status-row.is-rejected .review-status-check::after {
+    background: #fff;
+    content: "";
+    height: 0.1rem;
+    left: 0.18rem;
+    position: absolute;
+    top: 0.38rem;
+    width: 0.62rem;
+}
+
+.review-status-row.is-rejected .review-status-check::before {
+    transform: rotate(45deg);
+}
+
+.review-status-row.is-rejected .review-status-check::after {
+    transform: rotate(-45deg);
+}
+
+.review-status-row.is-rejected strong {
+    color: #b42318;
+}
+
 button.review-status-row {
     background: transparent;
     border-left: 0;

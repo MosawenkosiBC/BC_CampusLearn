@@ -239,8 +239,11 @@ public class AdminTutorsTests
         };
         SetPageContext(page);
 
-        Assert.IsType<RedirectToPageResult>(
+        RedirectToPageResult result = Assert.IsType<RedirectToPageResult>(
             await page.OnPostAdminReviewAsync(booking.BookingId, CancellationToken.None));
+        Assert.Equal("/Administrator/Tutors/SessionDetails", result.PageName);
+        Assert.Equal(booking.BookingId, result.RouteValues?["id"]);
+        Assert.Equal("Session declined successfully.", page.AdminReviewMessage);
 
         AdminSessionReview saved = await context.AdminSessionReviews.SingleAsync();
         Assert.Equal(booking.BookingId, saved.BookingId);
@@ -249,6 +252,76 @@ public class AdminTutorsTests
         Assert.False(saved.HeadConfirmedQuality);
         Assert.True(saved.ConcernsResolvedOrDocumented);
         Assert.False(saved.EvidenceSupportsApproval);
+        Assert.Equal(recordedAt, saved.RecordedAt);
+    }
+
+    [Fact]
+    public async Task SuperAdminCanRecordFinalDecisionAfterEveryPriorReview()
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        TutorCourseModule assignment = await context.TutorCourseModules.FirstAsync();
+        var superAdmin = new BcUser
+        {
+            BcUserId = 60,
+            PersonnelNumber = "SA60",
+            DisplayName = "Superadmin",
+            Role = BcUserRole.SuperAdmin
+        };
+        context.BcUsers.Add(superAdmin);
+        Booking booking = new()
+        {
+            TutorId = assignment.TutorId,
+            TutorCourseModule = assignment,
+            ProgrammeModuleId = assignment.ProgrammeModuleId,
+            Status = BookingStatus.Completed,
+            StudentEvaluation = new StudentEvaluation(),
+            TutorEvaluation = new TutorStudentEvaluation(),
+            AdminSessionReview = new AdminSessionReview
+            {
+                ReviewerBcUserId = 1,
+                HeadConfirmedQuality = true,
+                ReviewEvidenceIsConsistent = true,
+                ConcernsResolvedOrDocumented = true,
+                EvidenceSupportsApproval = true,
+                RecordedAt = DateTimeOffset.UtcNow
+            },
+            SessionReviews = [new SessionReview
+            {
+                ReviewerBcUserId = 50,
+                Reviewer = new BcUser
+                {
+                    BcUserId = 50,
+                    PersonnelNumber = "H50",
+                    DisplayName = "Tutor Head",
+                    Role = BcUserRole.HeadOfTutors
+                },
+                Rating = 5,
+                CreatedAt = DateTimeOffset.UtcNow
+            }]
+        };
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+
+        DateTimeOffset recordedAt = new(2026, 10, 7, 9, 30, 0, TimeSpan.Zero);
+        var page = new SessionDetailsModel(
+            context,
+            new TestWebHostEnvironment(),
+            new TestCurrentUserService(BcUserRole.SuperAdmin, superAdmin.BcUserId),
+            new TestTimeProvider(recordedAt));
+        SetPageContext(page);
+
+        RedirectToPageResult result = Assert.IsType<RedirectToPageResult>(
+            await page.OnPostSuperAdminReviewAsync(
+            booking.BookingId,
+            accepted: false,
+            CancellationToken.None));
+        Assert.Equal("/Administrator/Admin/BookingsAndSessions", result.PageName);
+
+        SuperAdminSessionReview saved =
+            await context.SuperAdminSessionReviews.SingleAsync();
+        Assert.False(saved.IsAccepted);
+        Assert.Equal(superAdmin.BcUserId, saved.ReviewerBcUserId);
         Assert.Equal(recordedAt, saved.RecordedAt);
     }
 
@@ -732,12 +805,14 @@ public class AdminTutorsTests
         public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }
 
-    private sealed class TestCurrentUserService : ICurrentUserService
+    private sealed class TestCurrentUserService(
+        BcUserRole role = BcUserRole.Admin,
+        int userId = 1) : ICurrentUserService
     {
         public bool IsAuthenticated => true;
 
         public CurrentUser GetRequiredUser() =>
-            new(1, "A1", "Administrator", null, BcUserRole.Admin);
+            new(userId, "A1", "Administrator", null, role);
     }
 
     private static void SetPageContext(PageModel page)
