@@ -87,6 +87,86 @@ public class SeniorTutorApplicationsTests
         Assert.False(page.ModelState.IsValid);
     }
 
+    [Fact]
+    public async Task AdministratorTutorPageLoadsSeniorTutorApplicationsTab()
+    {
+        await using ApplicationDbContext context = await CreateContextAsync();
+        context.SeniorTutorApplications.AddRange(
+            new SeniorTutorApplication
+            {
+                TutorId = 1,
+                AcademicAverage = 82,
+                BestDescription = "Good leadership skills",
+                SuitabilityReason = "Pending application",
+                Status = TutorAccountRequestStatus.Pending,
+                SubmittedAt = DateTime.UtcNow
+            },
+            new SeniorTutorApplication
+            {
+                TutorId = 1,
+                AcademicAverage = 76,
+                BestDescription = "Professional",
+                SuitabilityReason = "Reviewed application",
+                Status = TutorAccountRequestStatus.Approved,
+                SubmittedAt = DateTime.UtcNow.AddDays(-1)
+            });
+        await context.SaveChangesAsync();
+        var page = new global::BC_CampusLearn.Pages.Administrator.Tutors.IndexModel(
+            context,
+            null!)
+        {
+            Tab = "senior-applications"
+        };
+
+        await page.OnGetAsync(default);
+
+        Assert.Equal("senior-applications", page.Tab);
+        Assert.Equal(2, page.TotalApplications);
+        Assert.Equal(1, page.PendingApplications);
+        Assert.Equal(2, page.SeniorTutorApplications.Count);
+        Assert.Equal(
+            TutorAccountRequestStatus.Pending,
+            page.SeniorTutorApplications[0].Status);
+    }
+
+    [Fact]
+    public async Task AdministratorCanAcceptSeniorTutorApplication()
+    {
+        await using ApplicationDbContext context = await CreateContextAsync();
+        var application = new SeniorTutorApplication
+        {
+            TutorId = 1,
+            AcademicAverage = 80,
+            BestDescription = "Good leadership skills",
+            SuitabilityReason = "I can support and coordinate the tutor team.",
+            Status = TutorAccountRequestStatus.Pending,
+            SubmittedAt = DateTime.UtcNow
+        };
+        context.SeniorTutorApplications.Add(application);
+        await context.SaveChangesAsync();
+        var page = new global::BC_CampusLearn.Pages.Administrator.Tutors
+            .SeniorTutorApplicationDetailsModel(context)
+        {
+            ReviewNote = "Strong tutoring record."
+        };
+        page.PageContext = new PageContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+
+        IActionResult result = await page.OnPostReviewAsync(
+            application.SeniorTutorApplicationId,
+            approve: true,
+            default);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(TutorAccountRequestStatus.Approved, application.Status);
+        Assert.NotNull(application.ReviewedAt);
+        UserNotification notification = await context.UserNotifications.SingleAsync();
+        Assert.Equal(1, notification.RecipientBcUserId);
+        Assert.Contains("accepted", notification.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static SeniorTutorApplicationsModel CreatePage(ApplicationDbContext context)
     {
         var page = new SeniorTutorApplicationsModel(
