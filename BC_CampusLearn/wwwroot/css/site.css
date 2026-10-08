@@ -330,6 +330,15 @@ body {
   .campus-breadcrumbs-item + .campus-breadcrumbs-item::before {
     padding: 0 0.45rem;
   }
+
+  .campus-breadcrumb-label-compact-mobile {
+    font-size: 0;
+  }
+
+  .campus-breadcrumb-label-compact-mobile::after {
+    content: attr(data-mobile-label);
+    font-size: 14px;
+  }
 }
 
 @media (max-width: 767.98px) {

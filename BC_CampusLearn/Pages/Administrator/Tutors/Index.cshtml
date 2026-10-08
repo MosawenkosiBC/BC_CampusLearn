@@ -16,12 +16,15 @@
         <h1 id="admin-tutors-title">Tutors</h1>
     </header>
 
-    <div class="admin-tutors-actions">
-        <button type="button" class="add-tutor-button" data-add-tutor-open>
-            <span aria-hidden="true">+</span>
-            Add tutor
-        </button>
-    </div>
+    @if (Model.Tab == "all")
+    {
+        <div class="admin-tutors-actions">
+            <button type="button" class="add-tutor-button" data-add-tutor-open>
+                <span aria-hidden="true">+</span>
+                Add tutor
+            </button>
+        </div>
+    }
 
     @if (!string.IsNullOrWhiteSpace(Model.PageMessage))
     {
@@ -32,7 +35,24 @@
         <p class="alert alert-danger" role="alert">@Model.PageError</p>
     }
 
-    <div class="admin-tutors-workspace">
+    <nav class="admin-tutor-tabs" aria-label="Tutor management">
+        <a asp-page="Index"
+           class="@(Model.Tab == "all" ? "selected" : null)"
+           aria-current="@(Model.Tab == "all" ? "page" : null)">
+            All Tutors
+        </a>
+        <a asp-page="Index"
+           asp-route-Tab="senior-applications"
+           class="@(Model.Tab == "senior-applications" ? "selected" : null)"
+           aria-current="@(Model.Tab == "senior-applications" ? "page" : null)">
+            Senior Tutor Applications
+            <span aria-label="@Model.PendingApplications pending">@Model.PendingApplications</span>
+        </a>
+    </nav>
+
+    @if (Model.Tab == "all")
+    {
+        <div class="admin-tutors-workspace">
         <aside class="admin-tutor-filters" aria-labelledby="admin-filter-title">
             <div class="admin-filter-heading">
                 <h2 id="admin-filter-title">Filters</h2>
@@ -129,8 +149,105 @@
                 })
             }
         </div>
-    </div>
-    <partial name="/Pages/Administrator/_AddTutorModal.cshtml" model="Model" />
+        </div>
+        <partial name="/Pages/Administrator/_AddTutorModal.cshtml" model="Model" />
+    }
+    else
+    {
+        var firstVisibleApplication = Model.TotalApplications == 0
+            ? 0
+            : ((Model.ApplicationPage - 1) * IndexModel.ApplicationPageSize) + 1;
+        var lastVisibleApplication = Math.Min(
+            Model.ApplicationPage * IndexModel.ApplicationPageSize,
+            Model.TotalApplications);
+        var visibleApplicationRange = Model.TotalApplications == 0
+            ? "0"
+            : $"{firstVisibleApplication}–{lastVisibleApplication}";
+
+        <div class="admin-senior-applications" id="senior-applications">
+            <p class="admin-tutor-result-count" role="status">
+                Showing <strong>@visibleApplicationRange</strong> of
+                <strong>@Model.TotalApplications</strong> applications
+            </p>
+
+            <div class="admin-tutors-table-wrap"
+                 role="region"
+                 aria-label="Senior tutor applications table"
+                 tabindex="0">
+                <table class="admin-tutors-table admin-senior-applications-table">
+                    <caption class="visually-hidden">Senior tutor applications</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Applicant</th>
+                            <th scope="col">Programme</th>
+                            <th scope="col">Academic average</th>
+                            <th scope="col">Submitted</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var application in Model.SeniorTutorApplications)
+                        {
+                            var applicantName = string.IsNullOrWhiteSpace(
+                                application.Tutor.BcUser.DisplayName)
+                                ? application.Tutor.BcUser.PersonnelNumber
+                                : application.Tutor.BcUser.DisplayName;
+                            var statusClass = application.Status.ToString().ToLowerInvariant();
+                            <tr>
+                                <th scope="row">
+                                    @applicantName
+                                    <span class="admin-tutor-secondary">
+                                        @(application.Tutor.BcUser.Email ?? "Email not provided")
+                                    </span>
+                                </th>
+                                <td>@application.Tutor.Programme.Name</td>
+                                <td>@application.AcademicAverage.ToString("0.##")%</td>
+                                <td>
+                                    <time datetime="@application.SubmittedAt.ToString("O")">
+                                        @application.SubmittedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                                    </time>
+                                </td>
+                                <td>
+                                    <span class="admin-tutor-status admin-senior-status--@statusClass">
+                                        @application.Status
+                                    </span>
+                                </td>
+                                <td>
+                                    <a asp-page="SeniorTutorApplicationDetails"
+                                       asp-route-id="@application.SeniorTutorApplicationId"
+                                       class="admin-tutor-profile-link admin-senior-view-button">
+                                        View application
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                        @if (Model.SeniorTutorApplications.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" class="admin-tutors-empty">
+                                    No senior tutor applications have been submitted yet.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.ApplicationPages > 1)
+            {
+                @await Component.InvokeAsync("Pagination", new
+                {
+                    currentPage = Model.ApplicationPage,
+                    totalPages = Model.ApplicationPages,
+                    pageRouteValueName = "ApplicationPage",
+                    fragment = "senior-applications",
+                    ariaLabel = "Senior tutor application pages"
+                })
+            }
+        </div>
+
+    }
 </section>
 
 @section Scripts {

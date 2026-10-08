@@ -4,6 +4,49 @@ document.addEventListener("DOMContentLoaded", () => {
         ".tutor-profile-nav-link.is-active");
     const mobileProfileTabs = window.matchMedia("(max-width: 767.98px)");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const accountTabScrollKey = "tutor-account-tab-scroll-position";
+
+    try {
+        const savedScrollPosition = JSON.parse(
+            sessionStorage.getItem(accountTabScrollKey) ?? "null");
+        const currentPath = window.location.pathname.toLocaleLowerCase();
+
+        if (savedScrollPosition?.path === currentPath &&
+            Number.isFinite(savedScrollPosition.scrollY)) {
+            sessionStorage.removeItem(accountTabScrollKey);
+            if ("scrollRestoration" in history) {
+                history.scrollRestoration = "manual";
+            }
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                window.scrollTo({
+                    top: savedScrollPosition.scrollY,
+                    behavior: "auto"
+                });
+            }));
+        }
+    } catch {
+        // Storage can be unavailable in privacy-restricted browsing modes.
+    }
+
+    profileTabs?.querySelectorAll(".tutor-profile-nav-link").forEach((link) => {
+        link.addEventListener("click", (event) => {
+            if (event.button !== 0 || event.metaKey || event.ctrlKey ||
+                event.shiftKey || event.altKey) {
+                return;
+            }
+
+            try {
+                const targetPath = new URL(link.href, window.location.href)
+                    .pathname.toLocaleLowerCase();
+                sessionStorage.setItem(accountTabScrollKey, JSON.stringify({
+                    path: targetPath,
+                    scrollY: window.scrollY
+                }));
+            } catch {
+                // Tab navigation should still work when storage is unavailable.
+            }
+        });
+    });
 
     if (profileTabs && activeProfileTab && mobileProfileTabs.matches) {
         const profileTabLinks = Array.from(

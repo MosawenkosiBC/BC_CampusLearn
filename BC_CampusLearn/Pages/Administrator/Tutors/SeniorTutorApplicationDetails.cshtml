@@ -1,0 +1,227 @@
+@page "{id:int}"
+@model BC_CampusLearn.Pages.Administrator.Tutors.SeniorTutorApplicationDetailsModel
+@using BC_CampusLearn.Models.Entities
+@{
+    ViewData["Title"] = "Senior Tutor Application";
+    var application = Model.Application;
+    var tutor = application.Tutor;
+    var applicantName = string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName)
+        ? tutor.BcUser.PersonnelNumber
+        : tutor.BcUser.DisplayName;
+    var statusClass = application.Status.ToString().ToLowerInvariant();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-tutors.css" asp-append-version="true" />
+}
+
+<section class="admin-dashboard admin-senior-review-page"
+         aria-labelledby="senior-application-title">
+    <a asp-page="Index"
+       asp-route-Tab="senior-applications"
+       class="admin-senior-back-link">
+        <span aria-hidden="true">←</span> Senior Tutor Applications
+    </a>
+
+    <header class="admin-senior-review-header">
+        <div>
+            <p class="admin-senior-eyebrow">Senior Tutor Application</p>
+            <h1 id="senior-application-title">@applicantName</h1>
+            <p>Submitted @application.SubmittedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</p>
+        </div>
+        <span class="admin-tutor-status admin-senior-status--@statusClass">
+            @application.Status
+        </span>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ReviewMessage))
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.ReviewMessage))
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.ReviewError))
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(
+            Model.ReviewError,
+            CampusAlertVariant.Danger))
+    }
+
+    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+    <div class="admin-senior-review-layout">
+        <main class="admin-senior-review-main">
+            <section class="admin-senior-panel" aria-labelledby="performance-title">
+                <div class="admin-senior-section-heading">
+                    <div>
+                        <h2 id="performance-title">Tutor performance</h2>
+                        <p>All-time statistics from recorded tutoring sessions.</p>
+                    </div>
+                </div>
+
+                <div class="admin-senior-metric-grid">
+                    <article>
+                        <span>Total sessions</span>
+                        <strong>@Model.TotalSessions</strong>
+                    </article>
+                    <article>
+                        <span>Completed sessions</span>
+                        <strong>@Model.CompletedSessions</strong>
+                    </article>
+                    <article>
+                        <span>Total tutoring hours</span>
+                        <strong>@Model.TotalTutoringHours.ToString("0.##")</strong>
+                    </article>
+                    <article>
+                        <span>Unique tutees</span>
+                        <strong>@Model.UniqueTutees</strong>
+                    </article>
+                    <article>
+                        <span>Completion rate</span>
+                        <strong>@Model.CompletionRate.ToString("0.#")%</strong>
+                    </article>
+                    <article>
+                        <span>Average student rating</span>
+                        <strong>
+                            @(Model.AverageRating.HasValue
+                                ? $"{Model.AverageRating.Value:0.0}/5"
+                                : "No ratings")
+                        </strong>
+                        <small>@Model.RatingCount @(Model.RatingCount == 1 ? "rating" : "ratings")</small>
+                    </article>
+                </div>
+            </section>
+
+            <section class="admin-senior-panel" aria-labelledby="session-status-title">
+                <div class="admin-senior-section-heading">
+                    <div>
+                        <h2 id="session-status-title">Session status breakdown</h2>
+                        <p>Every recorded session, grouped by its current status.</p>
+                    </div>
+                </div>
+                <div class="admin-senior-status-grid">
+                    @foreach (var statistic in Model.SessionStatuses)
+                    {
+                        <article>
+                            <span>@statistic.Status</span>
+                            <strong>@statistic.Count</strong>
+                        </article>
+                    }
+                </div>
+            </section>
+
+            <section class="admin-senior-panel" aria-labelledby="module-performance-title">
+                <div class="admin-senior-section-heading">
+                    <div>
+                        <h2 id="module-performance-title">Top tutored modules</h2>
+                        <p>Modules ranked by completed sessions.</p>
+                    </div>
+                </div>
+                @if (Model.TopModules.Count == 0)
+                {
+                    <p class="admin-senior-empty">No completed sessions are available.</p>
+                }
+                else
+                {
+                    <ol class="admin-senior-module-list">
+                        @foreach (var module in Model.TopModules)
+                        {
+                            <li>
+                                <span><strong>@module.Code</strong> @module.Name</span>
+                                <span>@module.SessionCount completed</span>
+                            </li>
+                        }
+                    </ol>
+                }
+            </section>
+
+            <section class="admin-senior-panel" aria-labelledby="application-answers-title">
+                <div class="admin-senior-section-heading">
+                    <div>
+                        <h2 id="application-answers-title">Application answers</h2>
+                        <p>The information submitted by the tutor.</p>
+                    </div>
+                </div>
+                <dl class="admin-senior-answer-summary">
+                    <div>
+                        <dt>Academic average</dt>
+                        <dd>@application.AcademicAverage.ToString("0.##")%</dd>
+                    </div>
+                    <div>
+                        <dt>Best description</dt>
+                        <dd>@application.BestDescription</dd>
+                    </div>
+                </dl>
+                <div class="admin-senior-written-answer">
+                    <h3>Why do you think you are a suitable candidate for the Senior Tutor Role?</h3>
+                    <p>@application.SuitabilityReason</p>
+                </div>
+            </section>
+        </main>
+
+        <aside class="admin-senior-review-sidebar">
+            <section class="admin-senior-panel" aria-labelledby="applicant-details-title">
+                <h2 id="applicant-details-title">Applicant details</h2>
+                <dl class="admin-senior-applicant-details">
+                    <div><dt>Student number</dt><dd>@(tutor.BcUser.PersonnelNumber ?? "Not provided")</dd></div>
+                    <div><dt>Email</dt><dd>@(tutor.BcUser.Email ?? "Not provided")</dd></div>
+                    <div><dt>Programme</dt><dd>@tutor.Programme.Name</dd></div>
+                    <div><dt>Year of study</dt><dd>@tutor.YearOfStudy</dd></div>
+                    <div><dt>Campus</dt><dd>@tutor.CampusOfStudy</dd></div>
+                    <div><dt>Tutor academic average</dt><dd>@tutor.OverallAverage.ToString("0.##")%</dd></div>
+                    <div><dt>Active modules</dt><dd>@tutor.TutorCourseModules.Count</dd></div>
+                </dl>
+                <a asp-page="Profile"
+                   asp-route-id="@tutor.TutorId"
+                   class="admin-senior-profile-link">
+                    View full tutor profile
+                </a>
+            </section>
+
+            <section class="admin-senior-panel admin-senior-decision-panel"
+                     aria-labelledby="decision-title">
+                <h2 id="decision-title">Application decision</h2>
+                @if (application.Status == TutorAccountRequestStatus.Pending)
+                {
+                    <p>Review the application and performance statistics before making a final decision.</p>
+                    <form method="post" asp-page-handler="Review" asp-route-id="@application.SeniorTutorApplicationId">
+                        <label asp-for="ReviewNote">
+                            Decision note
+                            <span>Required when rejecting</span>
+                        </label>
+                        <textarea asp-for="ReviewNote"
+                                  rows="4"
+                                  maxlength="500"
+                                  placeholder="Add context for the tutor"></textarea>
+                        <span asp-validation-for="ReviewNote" class="text-danger"></span>
+                        <div class="admin-senior-decision-actions">
+                            <button type="submit"
+                                    name="approve"
+                                    value="false"
+                                    class="admin-senior-reject-button">
+                                Reject
+                            </button>
+                            <button type="submit"
+                                    name="approve"
+                                    value="true"
+                                    class="admin-senior-accept-button">
+                                Accept
+                            </button>
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    <dl class="admin-senior-decision-details">
+                        <div><dt>Decision</dt><dd>@application.Status</dd></div>
+                        <div><dt>Reviewed by</dt><dd>@(application.ReviewedBy ?? "Administrator")</dd></div>
+                        <div><dt>Reviewed</dt><dd>@application.ReviewedAt?.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</dd></div>
+                        @if (!string.IsNullOrWhiteSpace(application.ReviewNote))
+                        {
+                            <div><dt>Decision note</dt><dd>@application.ReviewNote</dd></div>
+                        }
+                    </dl>
+                }
+            </section>
+        </aside>
+    </div>
+</section>

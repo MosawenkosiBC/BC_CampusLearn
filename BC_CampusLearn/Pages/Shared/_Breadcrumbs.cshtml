@@ -71,6 +71,10 @@
                 : ("Tutors", "/Administrator/Tutors/Index"));
             breadcrumbs.Add(("Tutor Profile", null));
             break;
+        case "/Administrator/Tutors/SeniorTutorApplicationDetails":
+            breadcrumbs.Add(("Tutors", "/Administrator/Tutors/Index"));
+            breadcrumbs.Add(("Senior Tutor Application", null));
+            break;
         case "/Administrator/Tutors/SessionDetails":
             breadcrumbs.Add(("Bookings and Sessions", "/Administrator/Admin/BookingsAndSessions"));
             breadcrumbs.Add(("Session Details", null));
@@ -140,6 +144,10 @@
         case "/Tutors/StatisticsOverview":
             breadcrumbs.Add(("Personal Details", "/Tutors/Profile"));
             breadcrumbs.Add(("Statistics Overview", null));
+            break;
+        case "/Tutors/SeniorTutorApplications":
+            breadcrumbs.Add(("Personal Details", "/Tutors/Profile"));
+            breadcrumbs.Add(("Senior Tutor Applications", null));
             break;
         case "/TutorHead/SessionReviews":
             breadcrumbs.Add(("Session Reviews", null));
@@ -220,6 +228,7 @@
                 var breadcrumb = breadcrumbs[index];
                 var isCurrent = index == breadcrumbs.Count - 1;
                 var isCollapsed = breadcrumb.Label == "...";
+                var useCompactMobileLabel = isCurrent && pagePath == "/Tutors/SeniorTutorApplications";
 
                 <li class="campus-breadcrumbs-item@(isCurrent ? " is-current" : null)@(isCollapsed ? " is-collapsed" : null)"
                     @if (isCurrent)
@@ -249,7 +258,16 @@
                     }
                     else
                     {
-                        <span title="@(isCollapsed ? null : breadcrumb.Label)">@breadcrumb.Label</span>
+                        if (useCompactMobileLabel)
+                        {
+                            <span class="campus-breadcrumb-label-compact-mobile"
+                                  data-mobile-label="ST Applications"
+                                  title="@breadcrumb.Label">@breadcrumb.Label</span>
+                        }
+                        else
+                        {
+                            <span title="@(isCollapsed ? null : breadcrumb.Label)">@breadcrumb.Label</span>
+                        }
                     }
                 </li>
             }

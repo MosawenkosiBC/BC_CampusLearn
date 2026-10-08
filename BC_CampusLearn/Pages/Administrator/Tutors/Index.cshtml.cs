@@ -11,6 +11,9 @@ public class IndexModel(ApplicationDbContext context, IStudentDetailsService stu
     : ManualTutorPageModel(context, studentDetailsService)
 {
     public const int PageSize = 8;
+    public const int ApplicationPageSize = 10;
+    [BindProperty(SupportsGet = true)]
+    public string Tab { get; set; } = "all";
     [BindProperty(SupportsGet = true)]
     public string? SearchName { get; set; }
     [BindProperty(SupportsGet = true)]
@@ -21,11 +24,36 @@ public class IndexModel(ApplicationDbContext context, IStudentDetailsService stu
     public List<int> Years { get; set; } = [];
     [BindProperty(SupportsGet = true)]
     public int TutorPage { get; set; } = 1;
+    [BindProperty(SupportsGet = true)]
+    public int ApplicationPage { get; set; } = 1;
     public int TotalTutors { get; private set; }
     public int TotalPages { get; private set; }
+    public int TotalApplications { get; private set; }
+    public int ApplicationPages { get; private set; }
+    public int PendingApplications { get; private set; }
     public IReadOnlyList<Tutor> Tutors { get; private set; } = [];
+    public IReadOnlyList<SeniorTutorApplication> SeniorTutorApplications
+    { get; private set; } = [];
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
+    {
+        Tab = Tab == "senior-applications" ? "senior-applications" : "all";
+        PendingApplications = await Context.SeniorTutorApplications
+            .AsNoTracking()
+            .CountAsync(
+                application => application.Status == TutorAccountRequestStatus.Pending,
+                cancellationToken);
+
+        if (Tab == "senior-applications")
+        {
+            await LoadSeniorTutorApplicationsAsync(cancellationToken);
+            return;
+        }
+
+        await LoadTutorsAsync(cancellationToken);
+    }
+
+    private async Task LoadTutorsAsync(CancellationToken cancellationToken)
     {
         await LoadManualTutorOptionsAsync(cancellationToken);
 
@@ -65,6 +93,31 @@ public class IndexModel(ApplicationDbContext context, IStudentDetailsService stu
             .ThenBy(tutor => tutor.TutorId)
             .Skip((TutorPage - 1) * PageSize)
             .Take(PageSize)
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task LoadSeniorTutorApplicationsAsync(
+        CancellationToken cancellationToken)
+    {
+        IQueryable<SeniorTutorApplication> query = Context.SeniorTutorApplications
+            .AsNoTracking();
+
+        TotalApplications = await query.CountAsync(cancellationToken);
+        ApplicationPages = Math.Max(
+            1,
+            (int)Math.Ceiling(TotalApplications / (double)ApplicationPageSize));
+        ApplicationPage = Math.Clamp(ApplicationPage, 1, ApplicationPages);
+
+        SeniorTutorApplications = await query
+            .Include(application => application.Tutor)
+                .ThenInclude(tutor => tutor.BcUser)
+            .Include(application => application.Tutor)
+                .ThenInclude(tutor => tutor.Programme)
+            .OrderBy(application => application.Status)
+            .ThenByDescending(application => application.SubmittedAt)
+            .ThenByDescending(application => application.SeniorTutorApplicationId)
+            .Skip((ApplicationPage - 1) * ApplicationPageSize)
+            .Take(ApplicationPageSize)
             .ToListAsync(cancellationToken);
     }
 }

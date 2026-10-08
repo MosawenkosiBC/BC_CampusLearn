@@ -4,6 +4,7 @@ using BC_CampusLearn.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BC_CampusLearn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261008075007_AddSeniorTutorApplications")]
+    partial class AddSeniorTutorApplications
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -168,7 +171,7 @@ namespace BC_CampusLearn.Migrations
 
                     b.ToTable("BcUsers", null, t =>
                         {
-                            t.HasCheckConstraint("CK_BcUsers_Role", "[Role] BETWEEN 1 AND 7");
+                            t.HasCheckConstraint("CK_BcUsers_Role", "[Role] BETWEEN 1 AND 6");
                         });
                 });
 
@@ -661,18 +664,10 @@ namespace BC_CampusLearn.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
-                    b.Property<decimal?>("SeniorTutorPaymentAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<string>("SupportEmail")
                         .IsRequired()
                         .HasMaxLength(320)
                         .HasColumnType("nvarchar(320)");
-
-                    b.Property<decimal?>("TutorHeadPaymentAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateOnly>("TutorHeadReviewDeadline")
                         .HasColumnType("date");
@@ -682,10 +677,6 @@ namespace BC_CampusLearn.Migrations
 
                     b.Property<DateOnly>("TutorHeadReviewPeriodStartDate")
                         .HasColumnType("date");
-
-                    b.Property<decimal?>("TutorPaymentAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -1411,10 +1402,6 @@ namespace BC_CampusLearn.Migrations
 
                     b.Property<int>("BookingId")
                         .HasColumnType("int");
-
-                    b.Property<decimal?>("CompensationAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsAccepted")
                         .HasColumnType("bit");
