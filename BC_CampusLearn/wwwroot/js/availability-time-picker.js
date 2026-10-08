@@ -91,7 +91,7 @@
                 const select = index => {
                     index = Math.max(0, Math.min(wheelValues.length - 1, index));
                     paint(index);
-                    element.scrollTo({ top: index * 32, behavior: "instant" });
+                    element.scrollTop = index * 32;
                 };
                 element.addEventListener("scroll", () => {
                     if (opening || panel.hidden) return;
@@ -172,7 +172,9 @@
                 if (!field.contains(event.target) && !panel.contains(event.target)) close();
             });
             panel.addEventListener("focusout", event => {
-                if (!panel.contains(event.relatedTarget) && event.relatedTarget !== trigger) close();
+                // Safari may send a null relatedTarget when tapping a button.
+                // Outside taps and Escape still dismiss the popup.
+                if (event.relatedTarget && !panel.contains(event.relatedTarget) && event.relatedTarget !== trigger) close();
             });
             input.closest(".modal")?.addEventListener("hide.bs.modal", () => close());
             window.addEventListener("resize", position);

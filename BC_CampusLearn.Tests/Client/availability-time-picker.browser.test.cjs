@@ -5,10 +5,15 @@ const path = require('node:path');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch { /* Browser checks require Playwright. */ }
 
-test('plus opens the 24-hour wheels and Done adds one validated slot', { skip: !chromium }, async () => {
+for (const device of [
+    { name: 'desktop', options: { viewport: { width: 800, height: 650 } } },
+    { name: 'mobile touch', options: { viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true } }
+]) {
+test(`plus opens the 24-hour wheels and Done adds one validated slot (${device.name})`, { skip: !chromium }, async () => {
     const browser = await chromium.launch({ headless: true, channel: 'msedge' });
     try {
-        const page = await browser.newPage({ viewport: { width: 800, height: 650 } });
+        const page = await browser.newPage(device.options);
+        const activate = locator => device.options.hasTouch ? locator.tap() : locator.click();
         await page.setContent(`<style>body{font-family:Arial;padding:40px}main{width:280px}.row{display:flex;margin:12px 0}</style>
             <main class="manage-availability-page"><form>
             <div class="row"><input id="recurring-time" type="time"><button type="button" id="recurring-add">+</button></div>
@@ -44,8 +49,16 @@ test('plus opens the 24-hour wheels and Done adds one validated slot', { skip: !
         })();` });
         await page.addScriptTag({ path: path.resolve(__dirname, '../../BC_CampusLearn/wwwroot/js/availability-time-picker.js') });
         const popup = page.locator('.availability-wheel-popover:visible');
+        // Safari can report a null destination when a tap moves focus off a wheel.
+        // This must not dismiss the picker before the Done button receives its click.
+        await activate(page.locator('#recurring-add'));
+        await popup.getByRole('listbox', { name: 'Hour', exact: true }).evaluate(element => {
+            element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+        });
+        assert.equal(await popup.count(), 1);
+        await activate(popup.getByRole('button', { name: 'Clear' }));
         const selectTime = async (button, hour, minute, enter = false) => {
-            await page.locator(button).click();
+            await activate(page.locator(button));
             assert.equal(await popup.getByRole('listbox').count(), 2);
             const hours = popup.getByRole('listbox', { name: 'Hour', exact: true });
             const minutes = popup.getByRole('listbox', { name: 'Minute', exact: true });
@@ -54,7 +67,7 @@ test('plus opens the 24-hour wheels and Done adds one validated slot', { skip: !
             await minutes.press('Home');
             for (let i = 0; i < minute; i++) await minutes.press('ArrowDown');
             if (enter) await minutes.press('Enter');
-            else await popup.getByRole('button', { name: 'Done' }).click();
+            else await activate(popup.getByRole('button', { name: 'Done' }));
             assert.equal(await page.locator('.availability-wheel-popover:visible').count(), 0);
         };
         await selectTime('#recurring-add', 9, 0);
@@ -72,8 +85,9 @@ test('plus opens the 24-hour wheels and Done adds one validated slot', { skip: !
         assert.deepEqual(await page.evaluate(() => window.specificSlots), ['00:00']);
         await selectTime('#specific-add', 23, 59);
         assert.deepEqual(await page.evaluate(() => window.specificSlots), ['00:00', '23:59']);
-        await page.locator('#specific-add').click();
-        await popup.getByRole('button', { name: 'Clear' }).click();
+        await activate(page.locator('#specific-add'));
+        await activate(popup.getByRole('button', { name: 'Clear' }));
         assert.deepEqual(await page.evaluate(() => window.specificSlots), ['00:00', '23:59']);
     } finally { await browser.close(); }
 });
+}
