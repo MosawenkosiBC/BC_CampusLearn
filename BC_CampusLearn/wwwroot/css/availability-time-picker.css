@@ -1,0 +1,38 @@
+.availability-wheel-field { display: inline-flex; flex: 1; min-width: 0; width: 100%; }
+.availability-wheel-trigger {
+    background: transparent; border: 0; border-radius: .5rem; color: #363c3d;
+    cursor: pointer; font: inherit; min-height: 42px; padding: .5rem .65rem;
+    text-align: left; width: 100%;
+}
+.availability-wheel-trigger:focus-visible { outline: 2px solid #ad0151; outline-offset: 2px; }
+.availability-wheel-popover {
+    background: #fff; border: 1px solid #eeeeef; border-radius: .85rem;
+    box-shadow: 0 8px 32px rgba(25, 25, 30, .16); color: #363c3d;
+    padding: 12px; position: fixed; width: 248px; z-index: 1100;
+}
+.availability-wheel-popover[hidden] { display: none; }
+.availability-wheel-columns { display: grid; grid-template-columns: 1fr 1fr; position: relative; }
+.availability-wheel-highlight {
+    background: #f0f0f2; border-radius: .4rem; height: 32px;
+    left: 0; pointer-events: none; position: absolute; right: 0; top: 64px;
+}
+.availability-wheel-column {
+    height: 160px; overflow-y: auto; overscroll-behavior: contain; padding: 64px 0;
+    position: relative; scrollbar-width: none; scroll-snap-type: y mandatory;
+    touch-action: pan-y; box-sizing: border-box;
+}
+.availability-wheel-column::-webkit-scrollbar { display: none; }
+.availability-wheel-column:focus-visible { outline: 2px solid #ad0151; outline-offset: -2px; border-radius: .4rem; }
+.availability-wheel-option {
+    align-items: center; cursor: pointer; display: flex; font-size: 16px;
+    height: 32px; justify-content: center; scroll-snap-align: center; font-variant-numeric: tabular-nums;
+}
+.availability-wheel-option.is-selected { font-weight: 600; }
+.availability-wheel-actions { display: flex; justify-content: space-between; margin-top: 8px; }
+.availability-wheel-actions button {
+    background: transparent; border: 0; border-radius: .4rem; color: #626b70;
+    cursor: pointer; font: inherit; min-height: 40px; padding: .4rem .8rem;
+}
+.availability-wheel-actions button:last-child { color: #ad0151; font-weight: 600; }
+.availability-wheel-actions button:focus-visible { outline: 2px solid #ad0151; }
+@media (prefers-reduced-motion: reduce) { .availability-wheel-column { scroll-behavior: auto; } }

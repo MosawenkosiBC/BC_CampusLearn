@@ -28,6 +28,10 @@ public class TutorOnboardingViewComponent(
         if (tutor is null || !string.IsNullOrWhiteSpace(tutor.Biography))
             return Content(string.Empty);
 
+        ViewData["TutorOnboardingStorageKey"] = $"campuslearn:tutor-onboarding:{userId}";
+        ViewData["TutorOnboardingLoginId"] = HttpContext.User
+            .FindFirst(TutorOnboardingSession.ClaimType)?.Value ?? "legacy";
+
         return View("~/Pages/Shared/Components/TutorOnboarding/Default.cshtml",
             new TutorOnboardingInput
             {

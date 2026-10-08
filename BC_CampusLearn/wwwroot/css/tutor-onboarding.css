@@ -6,6 +6,7 @@
     font-size: 1rem;
 }
 .tutor-onboarding .modal-header { border: 0; padding: 1.5rem 1.5rem .5rem; }
+.tutor-onboarding .modal-header .btn-close { align-self: flex-start; }
 .tutor-onboarding .modal-body { padding: .5rem 1.5rem 1.5rem; }
 .tutor-onboarding .modal-title { font-size: 1.75rem; font-weight: 700; margin-top: .35rem; }
 .tutor-onboarding-eyebrow { color: #526e58; font-size: .875rem; font-weight: 600; }
@@ -34,6 +35,7 @@
 .tutor-onboarding-actions p { margin: 0; }
 .tutor-onboarding-actions button { min-height: 44px; }
 .tutor-onboarding-errors[hidden] { display: none; }
+.tutor-onboarding-field [data-onboarding-bio-error][hidden] { display: none; }
 @media (max-width: 575.98px) {
     .tutor-onboarding .modal-header { padding: 1.25rem 1rem .5rem; }
     .tutor-onboarding .modal-body { padding: .5rem 1rem 1.25rem; }

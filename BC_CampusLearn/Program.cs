@@ -102,6 +102,10 @@ else
             builder.Configuration.GetSection("AzureAd"));
 }
 
+builder.Services.PostConfigure<CookieAuthenticationOptions>(
+    CookieAuthenticationDefaults.AuthenticationScheme,
+    TutorOnboardingSession.Configure);
+
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(

@@ -15,6 +15,7 @@
                   novalidate
                   data-manual-tutor-form
                   data-student-details-url="@(Model.RequiresStudentVerification ? Url.Page(null, "StudentDetails") : null)">
+                <p class="admin-manual-field-error" role="alert" data-manual-form-error hidden></p>
                 <div class="admin-add-tutor-grid">
                     <div class="admin-add-tutor-field admin-add-tutor-field--full">
                         <label for="manual-student-search">Student</label>
@@ -52,6 +53,7 @@
                                 </span>
                             </span>
                         </span>
+                        <span class="admin-manual-field-error" role="alert" data-manual-error-for="ManualTutor.BcUserId"></span>
                         @if (Model.RequiresStudentVerification)
                         {
                             <p role="status" aria-live="polite" data-student-verification-status>Select a student to verify their details.</p>
@@ -64,17 +66,21 @@
                                 data-manual-programme>
                             <option value="">Select a programme</option>
                         </select>
+                        <span class="admin-manual-field-error" role="alert" data-manual-error-for="ManualTutor.ProgrammeId"></span>
                     </label>
                     <label class="admin-add-tutor-field">
                         <span>Year of study</span>
                         <input asp-for="ManualTutor.YearOfStudy"
                                type="number"
                                data-manual-year />
+                        <span class="admin-manual-field-error" role="alert" data-manual-error-for="ManualTutor.YearOfStudy"></span>
                     </label>
                     <label class="admin-add-tutor-field">
-                        <span>Overall average</span>
+                        <span>Overall average (%) <span class="admin-required-marker" aria-hidden="true">*</span></span>
                         <input asp-for="ManualTutor.OverallAverage"
-                               type="number" step="0.01" />
+                               type="number" step="any" data-val="false" aria-describedby="manual-average-error" />
+                        <span id="manual-average-error" class="admin-manual-field-error" role="alert"
+                              data-manual-error-for="ManualTutor.OverallAverage"></span>
                     </label>
                     <label class="admin-add-tutor-field">
                         <span>Campus</span>
@@ -92,18 +98,22 @@
                                 }
                             </select>
                         }
+                        <span class="admin-manual-field-error" role="alert" data-manual-error-for="ManualTutor.CampusOfStudy"></span>
                     </label>
                     <label class="admin-add-tutor-field">
                         <span>Phone number <small>(optional)</small></span>
                         <input asp-for="ManualTutor.PhoneNumber" type="tel" />
+                        <span class="admin-manual-field-error" role="alert" data-manual-error-for="ManualTutor.PhoneNumber"></span>
                     </label>
                     <label class="admin-add-tutor-field admin-add-tutor-field--full">
                         <span>Preferred tutoring mode</span>
                         <select asp-for="ManualTutor.PreferredTutoringMode"
                                 asp-items="Html.GetEnumSelectList<PreferredTutoringMode>()"></select>
+                        <span class="admin-manual-field-error" role="alert" data-manual-error-for="ManualTutor.PreferredTutoringMode"></span>
                     </label>
                     <fieldset class="admin-manual-modules admin-add-tutor-field--full">
                         <legend>Modules to teach</legend>
+                        <span class="admin-manual-field-error" role="alert" data-manual-error-for="ManualTutor.ProgrammeModuleIds"></span>
                         <p>Select the programme and year of study to see eligible modules.</p>
                         <label class="admin-manual-module-search">
                             <span class="visually-hidden">Search modules</span>

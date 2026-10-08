@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
@@ -6,6 +7,8 @@ using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Pages.Tutors;
 using BC_CampusLearn.ViewComponents;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -19,6 +22,64 @@ namespace BC_CampusLearn.Tests;
 
 public class TutorOnboardingTests
 {
+    [Fact]
+    public async Task EachLoginGetsANewPromptSessionWithoutReplacingExistingCookieEvents()
+    {
+        var options = new CookieAuthenticationOptions();
+        int previousEventCalls = 0;
+        options.Events.OnSigningIn = _ => { previousEventCalls++; return Task.CompletedTask; };
+        TutorOnboardingSession.Configure(options);
+        var principal = new ClaimsPrincipal(new ClaimsIdentity("Cookies"));
+        var signingIn = new CookieSigningInContext(new DefaultHttpContext(),
+            new AuthenticationScheme("Cookies", null, typeof(CookieAuthenticationHandler)),
+            options, principal, new AuthenticationProperties(), new CookieOptions());
+
+        await options.Events.OnSigningIn(signingIn);
+        string firstLoginId = principal.FindFirst(TutorOnboardingSession.ClaimType)!.Value;
+        await options.Events.OnSigningIn(signingIn);
+
+        Assert.Equal(2, previousEventCalls);
+        var claim = Assert.Single(principal.FindAll(TutorOnboardingSession.ClaimType));
+        Assert.NotEqual(firstLoginId, claim.Value);
+    }
+
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(29, false)]
+    [InlineData(30, true)]
+    [InlineData(500, true)]
+    [InlineData(501, false)]
+    public async Task BioSubmissionChecksTrimmedLengthEvenWithoutClientValidation(int length, bool accepted)
+    {
+        await using var context = CreateContext();
+        Tutor tutor = SeedTutor(context);
+        await context.SaveChangesAsync();
+        var page = CreatePage(context);
+        page.Input = new TutorOnboardingInput
+        {
+            Biography = "   " + new string('a', length) + "   ",
+            PhoneNumber = "0821234567", PreferredTutoringMode = PreferredTutoringMode.Both
+        };
+
+        Validate(page);
+        // Server validation uses the trimmed bio, including the 500-character boundary.
+        var result = await page.OnPostAsync(default);
+
+        if (accepted)
+        {
+            Assert.IsType<RedirectToPageResult>(result);
+            Assert.Equal(new string('a', length), tutor.Biography);
+            Assert.Equal(PreferredTutoringMode.Both, tutor.PreferredTutoringMode);
+        }
+        else
+        {
+            Assert.IsType<PageResult>(result);
+            Assert.False(page.ModelState.IsValid);
+            Assert.Null(tutor.Biography);
+            Assert.Equal(PreferredTutoringMode.Online, tutor.PreferredTutoringMode);
+        }
+    }
+
     [Theory]
     [InlineData(null, TutorStatus.Approved, true, BcUserRole.Tutor, true)]
     [InlineData("  ", TutorStatus.Approved, true, BcUserRole.Tutor, true)]
@@ -115,7 +176,7 @@ public class TutorOnboardingTests
         Tutor tutor = SeedTutor(context, status: status, active: active);
         await context.SaveChangesAsync();
         var page = CreatePage(context, role);
-        page.Input = new TutorOnboardingInput { Biography = "My bio", PreferredTutoringMode = PreferredTutoringMode.Online };
+        page.Input = new TutorOnboardingInput { Biography = "I help students learn programming with practical examples.", PreferredTutoringMode = PreferredTutoringMode.Online };
 
         Assert.IsType<ForbidResult>(await page.OnPostAsync(default));
         Assert.Null(tutor.Biography);
@@ -161,7 +222,7 @@ public class TutorOnboardingTests
     [InlineData(null, true)]
     public void PhoneIsOptionalButMustBeValidWhenProvided(string? phone, bool expected)
     {
-        var input = new TutorOnboardingInput { Biography = "My bio", PhoneNumber = phone, PreferredTutoringMode = PreferredTutoringMode.Online };
+        var input = new TutorOnboardingInput { Biography = "I help students learn programming with practical examples.", PhoneNumber = phone, PreferredTutoringMode = PreferredTutoringMode.Online };
         Assert.Equal(expected, Validator.TryValidateObject(input, new ValidationContext(input), new List<ValidationResult>(), true));
     }
 
@@ -175,7 +236,7 @@ public class TutorOnboardingTests
         var page = new OnboardingModel(context, new TestUser(BcUserRole.Tutor),
             new TestEnvironment { WebRootPath = root })
         { PageContext = new PageContext { HttpContext = new DefaultHttpContext() } };
-        page.Input = new TutorOnboardingInput { Biography = "I help students learn.", PreferredTutoringMode = PreferredTutoringMode.Online };
+        page.Input = new TutorOnboardingInput { Biography = "I help students learn programming with practical examples.", PreferredTutoringMode = PreferredTutoringMode.Online };
         byte[] png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aZ9sAAAAASUVORK5CYII=");
         using var stream = new MemoryStream(png);
         page.ProfileImage = new FormFile(stream, 0, stream.Length, "ProfileImage", "photo.png")

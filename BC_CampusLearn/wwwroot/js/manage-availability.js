@@ -242,11 +242,7 @@
         const formatSpecificTime = (minutes) => {
             const hours = Math.floor(minutes / 60) % 24;
             const minute = minutes % 60;
-            const time = new Date(2000, 0, 1, hours, minute);
-            return time.toLocaleTimeString(undefined, {
-                hour: "numeric",
-                minute: "2-digit"
-            });
+            return `${String(hours).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
         };
 
         const renderSpecificTimes = () => {
@@ -288,6 +284,9 @@
         };
 
         specificAddButton.addEventListener("click", () => {
+            specificTimeInput.dispatchEvent(new Event("availability-time-open"));
+        });
+        specificTimeInput.addEventListener("availability-time-confirm", () => {
             const time = specificTimeInput.value;
 
             if (!time) {
@@ -323,6 +322,7 @@
 
             specificTimes.push(time);
             specificTimeInput.value = "";
+            specificTimeInput.dispatchEvent(new Event("change", { bubbles: true }));
             showSpecificError("");
             renderSpecificTimes();
         });
@@ -396,11 +396,7 @@
 
         const formatRangeTime = (value) => {
             const [hours, minutes] = value.split(":").map(Number);
-            const time = new Date(2000, 0, 1, hours, minutes);
-            return time.toLocaleTimeString(undefined, {
-                hour: "numeric",
-                minute: "2-digit"
-            });
+            return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
         };
 
         const showRangeError = (message) => {
@@ -472,6 +468,8 @@
             rangesByWeek.set(key, [...ranges, { start, end }]);
             startInput.value = "";
             endInput.value = "";
+            startInput.dispatchEvent(new Event("change", { bubbles: true }));
+            endInput.dispatchEvent(new Event("change", { bubbles: true }));
             showRangeError("");
             renderRanges();
         });
@@ -681,11 +679,7 @@
         const formatSlotTime = (minutes) => {
             const hours = Math.floor(minutes / 60) % 24;
             const minute = minutes % 60;
-            const time = new Date(2000, 0, 1, hours, minute);
-            return time.toLocaleTimeString(undefined, {
-                hour: "numeric",
-                minute: "2-digit"
-            });
+            return `${String(hours).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
         };
 
         const renderScheduleTimes = () => {
@@ -729,6 +723,9 @@
         };
 
         addSlotButton.addEventListener("click", () => {
+            slotTimeInput.dispatchEvent(new Event("availability-time-open"));
+        });
+        slotTimeInput.addEventListener("availability-time-confirm", () => {
             const time = slotTimeInput.value;
 
             if (!time) {
@@ -777,14 +774,9 @@
 
             scheduleTimes.push(time);
             slotTimeInput.value = "";
+            slotTimeInput.dispatchEvent(new Event("change", { bubbles: true }));
             showEditorError("");
             renderScheduleTimes();
-        });
-
-        slotTimeInput.addEventListener("blur", (event) => {
-            if (slotTimeInput.value && event.relatedTarget !== addSlotButton) {
-                addSlotButton.click();
-            }
         });
 
         recurringEditor.addEventListener("submit", (event) => {
@@ -1112,6 +1104,7 @@
             if (editAvailabilityTime) {
                 editAvailabilityTime.value =
                     trigger.dataset.availabilityTime ?? "";
+                editAvailabilityTime.dispatchEvent(new Event("change", { bubbles: true }));
             }
         });
     });
