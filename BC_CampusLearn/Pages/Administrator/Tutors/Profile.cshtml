@@ -2,6 +2,7 @@
 @model BC_CampusLearn.Pages.Administrator.Tutors.ProfileModel
 @{
     ViewData["Title"] = "Tutor Profile";
+    ViewData["CompensationReturnUrl"] = Model.CompensationReturnUrl;
     var tutor = Model.Tutor;
     var displayName = string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName) ? tutor.BcUser.PersonnelNumber : tutor.BcUser.DisplayName;
 }
@@ -19,7 +20,7 @@
                 <nav class="admin-rating-periods" aria-label="Profile date range">
                     @foreach (var period in new[] { "day", "week", "month" })
                     {
-                        <a asp-page="Profile" asp-route-id="@tutor.TutorId" asp-route-period="@period"
+                        <a asp-page="Profile" asp-route-id="@tutor.TutorId" asp-route-period="@period" asp-route-returnUrl="@Model.CompensationReturnUrl"
                            class="@(Model.Period == period ? "is-selected" : null)" aria-current="@(Model.Period == period ? "page" : null)">@(char.ToUpperInvariant(period[0]) + period.Substring(1))</a>
                     }
                     <button type="button" class="@(Model.Period == "custom" ? "is-selected" : null)"
@@ -32,6 +33,7 @@
                 }
             </div>
             <a asp-page="Profile" asp-route-id="@tutor.TutorId" asp-route-period="@Model.Period"
+               asp-route-returnUrl="@Model.CompensationReturnUrl"
                asp-route-startDate="@(Model.Period == "custom" ? Model.StartDate?.ToString("yyyy-MM-dd") : null)"
                asp-route-endDate="@(Model.Period == "custom" ? Model.EndDate?.ToString("yyyy-MM-dd") : null)"
                asp-route-sessionPage="@Model.SessionPage" class="admin-profile-refresh"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Refresh</a>
@@ -41,6 +43,7 @@
          data-date-error="@(Model.DateFilterError is not null ? "true" : "false")">
         <div class="modal-dialog modal-dialog-centered">
             <form method="get" asp-page="Profile" asp-route-id="@tutor.TutorId" class="modal-content" id="custom-date-form">
+                <input type="hidden" name="ReturnUrl" value="@Model.CompensationReturnUrl" />
                 <div class="modal-header">
                     <h2 class="modal-title fs-5" id="custom-date-title">Custom date range</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -263,6 +266,7 @@
     <div class="modal fade" id="deregister-tutor-modal" tabindex="-1" aria-labelledby="deregister-tutor-title" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form method="post" asp-page-handler="Deregister" asp-route-id="@tutor.TutorId" class="modal-content">
+                <input type="hidden" name="ReturnUrl" value="@Model.CompensationReturnUrl" />
                 <div class="modal-header">
                     <div>
                         <h2 class="modal-title fs-5" id="deregister-tutor-title">Deregister @displayName?</h2>

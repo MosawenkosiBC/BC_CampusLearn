@@ -9,6 +9,7 @@ public class PlatformSettings
     public string CampusTimeZoneId { get; set; } = "Africa/Johannesburg";
     public string CurrencyCode { get; set; } = "ZAR";
     public decimal? TutorPaymentAmount { get; set; }
+    public decimal? SeniorTutorPaymentAmount { get; set; }
     public decimal? TutorHeadPaymentAmount { get; set; }
     public int AcademicYear { get; set; } = DateTime.UtcNow.Year;
     public string AcademicSemester { get; set; } = "Semester 1";

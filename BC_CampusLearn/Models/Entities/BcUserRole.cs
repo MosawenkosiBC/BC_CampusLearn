@@ -7,5 +7,6 @@ public enum BcUserRole
     HeadOfTutors = 3,
     Admin = 4,
     SuperAdmin = 5,
-    Dev = 6
+    SeniorTutor = 6,
+    Dev = 7
 }

@@ -21,6 +21,21 @@ namespace BC_CampusLearn.Tests;
 
 public class AdminTutorsTests
 {
+    [Theory]
+    [InlineData("/Administrator/Admin/Compensation", true)]
+    [InlineData("/Administrator/Admin/Compensation?Period=custom&From=2026-09-21&To=2026-10-31", true)]
+    [InlineData(null, false)]
+    [InlineData("https://example.com/Administrator/Admin/Compensation", false)]
+    [InlineData("//example.com/Administrator/Admin/Compensation", false)]
+    [InlineData("/Administrator/Admin/Compensation/../Dashboard", false)]
+    [InlineData("/Administrator/Admin/Compensation?x=\\example.com", false)]
+    public void ProfileReturnLinkAcceptsOnlyCompensationPage(string? returnUrl, bool accepted)
+    {
+        using var context = CreateContext();
+        var page = new ProfileModel(context) { ReturnUrl = returnUrl };
+        Assert.Equal(accepted ? returnUrl : null, page.CompensationReturnUrl);
+    }
+
     [Fact]
     public async Task StudentLookupUsesSelectedStudentNumberAndReturnsVerifiedDetails()
     {

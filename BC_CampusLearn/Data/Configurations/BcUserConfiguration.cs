@@ -42,7 +42,7 @@ public class BcUserConfiguration : IEntityTypeConfiguration<BcUser>
         {
             table.HasCheckConstraint(
                 "CK_BcUsers_Role",
-                "[Role] BETWEEN 1 AND 6");
+                "[Role] BETWEEN 1 AND 7");
         });
     }
 }

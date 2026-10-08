@@ -450,6 +450,7 @@ public class UsersAccessModel(
 
     public static string RoleLabel(BcUserRole role) => role switch
     {
+        BcUserRole.SeniorTutor => "Senior Tutor",
         BcUserRole.HeadOfTutors => "Head of Tutors",
         BcUserRole.SuperAdmin => "Super Admin",
         _ => role.ToString()

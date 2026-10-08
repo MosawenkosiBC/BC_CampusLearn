@@ -2,6 +2,7 @@
     var pagePath = ViewContext.RouteData.Values["Page"]?.ToString() ?? "/Index";
     var pageTitle = ViewData["Title"]?.ToString();
     var breadcrumbs = new List<(string Label, string? Page)>();
+    var compensationReturnUrl = ViewData["CompensationReturnUrl"] as string;
     var hasAdminRole = User.IsInRole(nameof(BcUserRole.Admin)) ||
         User.IsInRole(nameof(BcUserRole.SuperAdmin)) ||
         User.IsInRole(nameof(BcUserRole.Dev));
@@ -65,7 +66,9 @@
             breadcrumbs.Add(("Tutors", null));
             break;
         case "/Administrator/Tutors/Profile":
-            breadcrumbs.Add(("Tutors", "/Administrator/Tutors/Index"));
+            breadcrumbs.Add(compensationReturnUrl is not null
+                ? ("Compensation", "/Administrator/Admin/Compensation")
+                : ("Tutors", "/Administrator/Tutors/Index"));
             breadcrumbs.Add(("Tutor Profile", null));
             break;
         case "/Administrator/Tutors/SessionDetails":
@@ -229,7 +232,11 @@
                     }>
                     @if (!string.IsNullOrWhiteSpace(breadcrumb.Page))
                     {
-                        if (breadcrumb.Page == "/Administrator/Tutors/Profile" &&
+                        if (breadcrumb.Page == "/Administrator/Admin/Compensation" && compensationReturnUrl is not null)
+                        {
+                            <a href="@compensationReturnUrl" title="@breadcrumb.Label">@breadcrumb.Label</a>
+                        }
+                        else if (breadcrumb.Page == "/Administrator/Tutors/Profile" &&
                             ViewData["AdminTutorProfileId"] is int tutorId)
                         {
                             <a asp-page="@breadcrumb.Page" asp-route-id="@tutorId"

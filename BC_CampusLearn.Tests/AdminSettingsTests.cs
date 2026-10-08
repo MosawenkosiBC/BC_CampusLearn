@@ -26,6 +26,7 @@ public class AdminSettingsTests
             var input = new TutorPaymentsModel.PaymentSettingsInput
             {
                 TutorPaymentAmount = 125.50m,
+                SeniorTutorPaymentAmount = 250.75m,
                 TutorHeadPaymentAmount = 999999999.99m
             };
             var results = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
@@ -35,9 +36,11 @@ public class AdminSettingsTests
 
             Assert.True(Validate());
             input.TutorPaymentAmount = -1m;
+            input.SeniorTutorPaymentAmount = -1m;
             input.TutorHeadPaymentAmount = 1000000000m;
             Assert.False(Validate());
             Assert.Contains(results, result => result.MemberNames.Contains("TutorPaymentAmount"));
+            Assert.Contains(results, result => result.MemberNames.Contains("SeniorTutorPaymentAmount"));
             Assert.Contains(results, result => result.MemberNames.Contains("TutorHeadPaymentAmount"));
         }
         finally
@@ -53,7 +56,7 @@ public class AdminSettingsTests
         AddBaseData(context, BcUserRole.SuperAdmin);
         await context.SaveChangesAsync();
         var page = CreatePaymentPage(context, BcUserRole.SuperAdmin);
-        page.Input = new() { TutorPaymentAmount = 125.50m, TutorHeadPaymentAmount = 350m };
+        page.Input = new() { TutorPaymentAmount = 125.50m, SeniorTutorPaymentAmount = 250.75m, TutorHeadPaymentAmount = 350m };
 
         Assert.IsType<RedirectToPageResult>(await page.OnPostAsync(CancellationToken.None));
         context.ChangeTracker.Clear();
@@ -62,13 +65,16 @@ public class AdminSettingsTests
             await reloaded.OnGetAsync(CancellationToken.None));
         Assert.Equal(125.50m, reloaded.Input.TutorPaymentAmount);
         Assert.Equal(350m, reloaded.Input.TutorHeadPaymentAmount);
+        Assert.Equal(250.75m, reloaded.Input.SeniorTutorPaymentAmount);
         Assert.Equal("ZAR", reloaded.CurrencyCode);
-        Assert.Equal(2, await context.SettingAuditLogs.CountAsync());
+        Assert.Equal(3, await context.SettingAuditLogs.CountAsync());
         Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
             log => log.SettingName == "Tutor head payment amount" && log.NewValue == "350.00");
+        Assert.Contains(await context.SettingAuditLogs.ToListAsync(),
+            log => log.SettingName == "Senior tutor payment amount" && log.NewValue == "250.75");
 
         await reloaded.OnPostAsync(CancellationToken.None);
-        Assert.Equal(2, await context.SettingAuditLogs.CountAsync());
+        Assert.Equal(3, await context.SettingAuditLogs.CountAsync());
     }
 
     [Theory]
@@ -81,7 +87,7 @@ public class AdminSettingsTests
         AddBaseData(context, role);
         await context.SaveChangesAsync();
         var page = CreatePaymentPage(context, role);
-        page.Input = new() { TutorPaymentAmount = 100m, TutorHeadPaymentAmount = 200m };
+        page.Input = new() { TutorPaymentAmount = 100m, SeniorTutorPaymentAmount = 150m, TutorHeadPaymentAmount = 200m };
 
         Assert.IsType<ForbidResult>(await page.OnGetAsync(CancellationToken.None));
         Assert.IsType<ForbidResult>(await page.OnPostAsync(CancellationToken.None));
@@ -103,6 +109,7 @@ public class AdminSettingsTests
         page.Input = new()
         {
             TutorPaymentAmount = 100m,
+            SeniorTutorPaymentAmount = 150m,
             TutorHeadPaymentAmount = value is null ? null : decimal.Parse(value,
                 System.Globalization.CultureInfo.InvariantCulture)
         };
@@ -118,6 +125,36 @@ public class AdminSettingsTests
         ApplicationDbContext context, BcUserRole role) => new(
             context, CurrentUserService(role), TimeProvider.System,
             new SettingsAuditService(context, TimeProvider.System));
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("-1")]
+    [InlineData("1000000000")]
+    [InlineData("1.001")]
+    public async Task InvalidSeniorTutorAmountDoesNotSavePaymentSettings(string? value)
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        await context.SaveChangesAsync();
+        var page = CreatePaymentPage(context, BcUserRole.SuperAdmin);
+        page.Input = new()
+        {
+            TutorPaymentAmount = 100m,
+            TutorHeadPaymentAmount = 300m,
+            SeniorTutorPaymentAmount = value is null ? null : decimal.Parse(value,
+                System.Globalization.CultureInfo.InvariantCulture)
+        };
+
+        Assert.IsType<Microsoft.AspNetCore.Mvc.RazorPages.PageResult>(
+            await page.OnPostAsync(CancellationToken.None));
+        Assert.False(page.ModelState.IsValid);
+        Assert.Contains("Input.SeniorTutorPaymentAmount", page.ModelState.Keys);
+        var settings = await context.PlatformSettings.SingleAsync();
+        Assert.Null(settings.SeniorTutorPaymentAmount);
+        Assert.Null(settings.TutorPaymentAmount);
+        Assert.Null(settings.TutorHeadPaymentAmount);
+        Assert.Empty(await context.SettingAuditLogs.ToListAsync());
+    }
 
     [Fact]
     public async Task SavingGeneralSettingsPersistsChangesAndAuditEntries()

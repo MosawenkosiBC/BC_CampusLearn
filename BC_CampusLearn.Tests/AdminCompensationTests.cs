@@ -21,6 +21,59 @@ public class AdminCompensationTests
     private static readonly XNamespace S = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
 
     [Fact]
+    public void SeniorTutorUsesRoleSixAndHasReadableLabels()
+    {
+        Assert.Equal(6, (int)BcUserRole.SeniorTutor);
+        Assert.Equal(7, (int)BcUserRole.Dev);
+        Assert.Equal("Senior Tutor", UsersAccessModel.RoleLabel((BcUserRole)6));
+        var tutor = new CompensationModel.TutorEarnings(1, "Tutor", "T1", "", "Pretoria", 1, 100m, (BcUserRole)6);
+        Assert.Equal("Senior Tutor", tutor.RoleLabel);
+    }
+
+    [Fact]
+    public async Task PaginationShowsElevenTutorsAndPreservesWholePeriodTotalsAndExport()
+    {
+        await using var context = CreateContext();
+        for (int id = 1; id <= 12; id++)
+        {
+            var assignment = Assignment(id);
+            assignment.Tutor.BcUser.DisplayName = $"Tutor {id:00}";
+            assignment.Tutor.BcUser.Role = id == 12 ? BcUserRole.HeadOfTutors :
+                id == 11 ? BcUserRole.SeniorTutor : BcUserRole.Tutor;
+            context.TutorCourseModules.Add(assignment);
+            context.Bookings.Add(Booking(id, assignment, "2026-10-01T08:00:00Z", 100m));
+        }
+        await context.SaveChangesAsync();
+        var page = Page(context);
+        page.Period = "custom";
+        page.From = new(2026, 10, 1);
+        page.To = new(2026, 10, 1);
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Equal(11, page.PagedTutors.Count);
+        Assert.Equal(2, page.TotalPages);
+        Assert.All(page.PagedTutors.Take(10), tutor => Assert.Equal("Tutor", tutor.RoleLabel));
+        Assert.Equal("Senior Tutor", page.PagedTutors[10].RoleLabel);
+
+        page.TutorPage = 2;
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Equal(12, Assert.Single(page.PagedTutors).TutorId);
+        Assert.Equal("Head of Tutor", page.PagedTutors[0].RoleLabel);
+        Assert.Equal(12, page.TutorCount);
+        Assert.Equal(12, page.ApprovedSessionCount);
+        Assert.Equal(1200m, page.TotalEarnings);
+        var export = Assert.IsType<FileContentResult>(await page.OnGetDownloadAsync(CancellationToken.None));
+        using var zip = new ZipArchive(new MemoryStream(export.FileContents));
+        Assert.Equal("1200", Cell(Read(zip, "xl/worksheets/sheet1.xml"), "G25").Element(S + "v")?.Value);
+
+        page.TutorPage = 999;
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Equal(2, page.TutorPage);
+        page.TutorPage = -1;
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Equal(1, page.TutorPage);
+    }
+
+    [Fact]
     public async Task OpeningWithoutQueryParametersDoesNotRequirePeriodAndShowsConfiguredDates()
     {
         var services = new ServiceCollection();
@@ -112,12 +165,26 @@ public class AdminCompensationTests
         Assert.Equal("inlineStr", Cell(summary, "B11").Attribute("t")?.Value);
         Assert.Equal("=SUM(1,2) & Tutor", Cell(summary, "B11").Descendants(S + "t").Single().Value);
         Assert.Equal("125.50", Cell(summary, "G11").Element(S + "v")?.Value);
-        Assert.Equal("SUM(G11:G11)", Cell(summary, "G12").Element(S + "f")?.Value);
-        Assert.Equal("125.50", Cell(summary, "G12").Element(S + "v")?.Value);
-        Assert.Equal("125.50", Cell(details, "I12").Element(S + "v")?.Value);
-        double startDate = double.Parse(Cell(summary, "B2").Element(S + "v")!.Value, CultureInfo.InvariantCulture);
+        Assert.Equal("SUM(G11:G11)", Cell(summary, "G14").Element(S + "f")?.Value);
+        Assert.Equal("125.50", Cell(summary, "G14").Element(S + "v")?.Value);
+        Assert.Equal("125.50", Cell(details, "I14").Element(S + "v")?.Value);
+        foreach (var sheet in new[] { summary, details })
+        {
+            Assert.DoesNotContain(sheet.Descendants(S + "row"), row => new[] { "2", "12", "13" }.Contains(row.Attribute("r")?.Value));
+            Assert.DoesNotContain(sheet.Descendants(S + "t"), text => text.Value is "Currency" or "Period basis" or "Tutor ID");
+            Assert.Equal("6", Cell(sheet, "A14").Attribute("s")?.Value);
+        }
+        Assert.Equal("Number", Cell(summary, "A10").Descendants(S + "t").Single().Value);
+        Assert.Equal("Number", Cell(details, "B10").Descendants(S + "t").Single().Value);
+        var styles = Read(zip, "xl/styles.xml");
+        var totalStyle = styles.Root!.Element(S + "cellXfs")!.Elements().ElementAt(6);
+        Assert.Equal("2", totalStyle.Attribute("fontId")?.Value);
+        Assert.Equal("3", totalStyle.Attribute("fillId")?.Value);
+        Assert.Equal("FF000000", styles.Root.Element(S + "fills")!.Elements().ElementAt(3)
+            .Descendants(S + "fgColor").Single().Attribute("rgb")?.Value);
+        double startDate = double.Parse(Cell(summary, "B3").Element(S + "v")!.Value, CultureInfo.InvariantCulture);
         Assert.Equal(new DateTime(2026, 9, 1), DateTime.FromOADate(startDate));
-        Assert.Equal(Cell(summary, "B2").Element(S + "v")!.Value, Cell(summary, "B3").Element(S + "v")!.Value);
+        Assert.Equal(Cell(summary, "B3").Element(S + "v")!.Value, Cell(summary, "B4").Element(S + "v")!.Value);
         Assert.Equal("5", Cell(details, "G11").Attribute("s")?.Value);
         Assert.Equal(new DateTime(2026, 9, 1, 10, 0, 0), DateTime.FromOADate(
             double.Parse(Cell(details, "G11").Element(S + "v")!.Value, CultureInfo.InvariantCulture)));
@@ -219,7 +286,7 @@ public class AdminCompensationTests
 
         var settingsPage = new TutorPaymentsModel(context, new UserService(BcUserRole.SuperAdmin),
             TimeProvider.System, new SettingsAuditService(context, TimeProvider.System));
-        settingsPage.Input = new() { TutorPaymentAmount = 150m, TutorHeadPaymentAmount = 300m };
+        settingsPage.Input = new() { TutorPaymentAmount = 150m, SeniorTutorPaymentAmount = 200m, TutorHeadPaymentAmount = 300m };
         await settingsPage.OnPostAsync(CancellationToken.None);
         var reloaded = Page(context);
         await reloaded.OnGetAsync(CancellationToken.None);

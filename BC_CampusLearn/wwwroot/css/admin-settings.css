@@ -157,6 +157,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.settings-payment-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
 .settings-field { display: flex; flex-direction: column; min-width: 0; }
 .settings-field--wide { grid-column: 1 / -1; }
 .settings-field label,

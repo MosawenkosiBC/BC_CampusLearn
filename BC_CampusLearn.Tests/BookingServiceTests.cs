@@ -25,6 +25,7 @@ public class BookingServiceTests
             StudyAreaId = 1,
             Name = "Online",
             DisplayOrder = 1,
+
             IsActive = true
         });
         await context.SaveChangesAsync();

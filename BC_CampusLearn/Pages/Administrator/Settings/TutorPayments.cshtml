@@ -14,20 +14,23 @@
     <div class="settings-layout">
         <partial name="_SettingsNavigation" />
         <section class="settings-section" aria-labelledby="payments-title">
-            <header class="settings-section-heading"><div><h2 id="payments-title">Tutor payments</h2><p>Set separate payment amounts for tutors and tutor heads in @Model.CurrencyCode.</p></div></header>
+            <header class="settings-section-heading"><div><h2 id="payments-title">Tutor payments</h2><p>Set payout amounts for tutors, senior tutors and tutor heads.</p></div></header>
             <form method="post" class="settings-form">
                 <div asp-validation-summary="ModelOnly" class="settings-validation"></div>
-                <div class="settings-field-grid">
+                <div class="settings-field-grid settings-payment-fields">
                     <div class="settings-field">
                         <label asp-for="Input.TutorPaymentAmount"></label>
-                        <input asp-for="Input.TutorPaymentAmount" type="number" min="0" max="999999999.99" step="0.01" required aria-describedby="tutor-payment-currency" />
-                        <small id="tutor-payment-currency">@Model.CurrencyCode per approved one-hour session. Applies to new approvals and approved sessions without a saved amount; existing earnings stay unchanged.</small>
+                        <input asp-for="Input.TutorPaymentAmount" type="number" min="0" max="999999999.99" step="0.01" required />
                         <span asp-validation-for="Input.TutorPaymentAmount"></span>
                     </div>
                     <div class="settings-field">
+                        <label asp-for="Input.SeniorTutorPaymentAmount"></label>
+                        <input asp-for="Input.SeniorTutorPaymentAmount" type="number" min="0" max="999999999.99" step="0.01" required />
+                        <span asp-validation-for="Input.SeniorTutorPaymentAmount"></span>
+                    </div>
+                    <div class="settings-field">
                         <label asp-for="Input.TutorHeadPaymentAmount"></label>
-                        <input asp-for="Input.TutorHeadPaymentAmount" type="number" min="0" max="999999999.99" step="0.01" required aria-describedby="tutor-head-payment-currency" />
-                        <small id="tutor-head-payment-currency">Amount in @Model.CurrencyCode for tutor heads.</small>
+                        <input asp-for="Input.TutorHeadPaymentAmount" type="number" min="0" max="999999999.99" step="0.01" required />
                         <span asp-validation-for="Input.TutorHeadPaymentAmount"></span>
                     </div>
                 </div>

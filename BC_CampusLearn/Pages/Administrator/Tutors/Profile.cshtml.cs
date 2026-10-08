@@ -12,6 +12,16 @@ namespace BC_CampusLearn.Pages.Administrator.Tutors;
 public class ProfileModel(ApplicationDbContext context, ICurrentUserService? currentUserService = null,
     TimeProvider? timeProvider = null) : PageModel
 {
+    [BindProperty(SupportsGet = true)]
+    public string? ReturnUrl { get; set; }
+
+    public string? CompensationReturnUrl =>
+        ReturnUrl is not null &&
+        (ReturnUrl.Equals("/Administrator/Admin/Compensation", StringComparison.OrdinalIgnoreCase) ||
+         ReturnUrl.StartsWith("/Administrator/Admin/Compensation?", StringComparison.OrdinalIgnoreCase)) &&
+        !ReturnUrl.Any(char.IsControl) && !ReturnUrl.Contains('\\')
+            ? ReturnUrl : null;
+
     [BindProperty, Required, StringLength(1000)]
     public string? DeregistrationReason { get; set; }
     [TempData]
@@ -27,7 +37,7 @@ public class ProfileModel(ApplicationDbContext context, ICurrentUserService? cur
             .DeregisterAsync(id, currentUserService.GetRequiredUser(), DeregistrationReason, cancellationToken);
         if (error is not null) DeregistrationError = error;
         else DeregistrationMessage = "Tutor deregistered. Their session history and conversations have been preserved, and a thank-you notification has been sent.";
-        return RedirectToPage(new { id });
+        return RedirectToPage(new { id, returnUrl = CompensationReturnUrl });
     }
     public Tutor Tutor { get; private set; } = null!;
     public int CompletedSessions { get; private set; }

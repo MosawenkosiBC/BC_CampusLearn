@@ -36,6 +36,7 @@ public class TutorPaymentsModel(
         Input = new()
         {
             TutorPaymentAmount = settings.TutorPaymentAmount,
+            SeniorTutorPaymentAmount = settings.SeniorTutorPaymentAmount,
             TutorHeadPaymentAmount = settings.TutorHeadPaymentAmount
         };
         return Page();
@@ -47,6 +48,7 @@ public class TutorPaymentsModel(
         if (currentUser.Role != BcUserRole.SuperAdmin) return Forbid();
 
         ValidateAmount(Input.TutorPaymentAmount, nameof(Input.TutorPaymentAmount));
+        ValidateAmount(Input.SeniorTutorPaymentAmount, nameof(Input.SeniorTutorPaymentAmount));
         ValidateAmount(Input.TutorHeadPaymentAmount, nameof(Input.TutorHeadPaymentAmount));
         PlatformSettings settings = await GetSettingsAsync(cancellationToken);
         CurrencyCode = settings.CurrencyCode;
@@ -54,11 +56,14 @@ public class TutorPaymentsModel(
 
         bool changed = auditService.Record("Tutor payments", "Tutor payment amount",
             Amount(settings.TutorPaymentAmount), Amount(Input.TutorPaymentAmount), currentUser);
+        changed |= auditService.Record("Tutor payments", "Senior tutor payment amount",
+            Amount(settings.SeniorTutorPaymentAmount), Amount(Input.SeniorTutorPaymentAmount), currentUser);
         changed |= auditService.Record("Tutor payments", "Tutor head payment amount",
             Amount(settings.TutorHeadPaymentAmount), Amount(Input.TutorHeadPaymentAmount), currentUser);
         if (changed)
         {
             settings.TutorPaymentAmount = Input.TutorPaymentAmount;
+            settings.SeniorTutorPaymentAmount = Input.SeniorTutorPaymentAmount;
             settings.TutorHeadPaymentAmount = Input.TutorHeadPaymentAmount;
             settings.UpdatedByBcUserId = currentUser.BcUserId;
             settings.UpdatedAt = timeProvider.GetUtcNow();
@@ -109,6 +114,11 @@ public class TutorPaymentsModel(
             ParseLimitsInInvariantCulture = true)]
         [Display(Name = "Tutor payment amount")]
         public decimal? TutorPaymentAmount { get; set; }
+
+        [Required, Range(typeof(decimal), "0", "999999999.99",
+            ParseLimitsInInvariantCulture = true)]
+        [Display(Name = "Senior tutor payment amount")]
+        public decimal? SeniorTutorPaymentAmount { get; set; }
 
         [Required, Range(typeof(decimal), "0", "999999999.99",
             ParseLimitsInInvariantCulture = true)]

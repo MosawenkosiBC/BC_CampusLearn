@@ -3,6 +3,13 @@
 @using System.Globalization
 @{
     ViewData["Title"] = "Compensation";
+    string? profileReturnUrl = Url.Page("/Administrator/Admin/Compensation", new
+    {
+        Period = Model.Period,
+        TutorPage = Model.TutorPage,
+        From = Model.Period == "custom" ? Model.PeriodStart.ToString("yyyy-MM-dd") : null,
+        To = Model.Period == "custom" ? Model.PeriodEnd.ToString("yyyy-MM-dd") : null
+    });
     string Money(decimal? value) => value.HasValue
         ? $"{Model.CurrencyCode} {value.Value.ToString("N2", CultureInfo.InvariantCulture)}"
         : "Awaiting payment amount";
@@ -11,10 +18,11 @@
     <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin-statistics.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin-compensation.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/pagination.css" asp-append-version="true" />
 }
 
 <section class="admin-dashboard admin-compensation" aria-labelledby="compensation-title">
-    <header class="compensation-heading">
+    <header class="admin-dashboard-header compensation-heading">
         <div><h1 id="compensation-title">Compensation</h1></div>
         <div class="compensation-tools">
         <span class="compensation-period">@Model.PeriodLabel</span>
@@ -36,27 +44,54 @@
             <div class="alert alert-warning" role="status">@Model.UnpricedSessionCount approved session(s) still need a payment amount. <a asp-page="/Administrator/Settings/TutorPayments">Set the tutor payment amount</a> to complete the totals and enable the finance download.</div>
         }
         <div class="admin-statistics-kpis compensation-stats" aria-label="Compensation statistics">
-            <article class="admin-statistics-kpi"><span class="admin-statistics-kpi-icon is-green"><i class="bi bi-check-circle" aria-hidden="true"></i></span><div><h2>Approved sessions</h2><strong>@Model.ApprovedSessionCount</strong></div></article>
-            <article class="admin-statistics-kpi"><span class="admin-statistics-kpi-icon is-plum"><i class="bi bi-cash-stack" aria-hidden="true"></i></span><div><h2>Total money</h2><strong>@Money(Model.TotalEarnings)</strong></div></article>
-            <article class="admin-statistics-kpi"><span class="admin-statistics-kpi-icon is-blue"><i class="bi bi-people" aria-hidden="true"></i></span><div><h2>Individual tutors</h2><strong>@Model.TutorCount</strong></div></article>
+            <article class="admin-statistics-kpi">
+                <span class="admin-statistics-kpi-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                            <path d="M20 22H6a2 2 0 0 1-2-2m0 0a2 2 0 0 1 2-2h14V8M4 20V8c0-2.828 0-4.243.879-5.121C5.757 2 7.172 2 10 2" />
+                            <path d="M19.5 18s-1 .763-1 2s1 2 1 2M13 5l2 2l5-5" />
+                        </g>
+                    </svg>
+                </span>
+                <div><h2>Approved sessions</h2><strong>@Model.ApprovedSessionCount</strong></div>
+            </article>
+            <article class="admin-statistics-kpi"><span class="admin-statistics-kpi-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span><div><h2>Total money</h2><strong>@Money(Model.TotalEarnings)</strong></div></article>
+            <article class="admin-statistics-kpi">
+                <span class="admin-statistics-kpi-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.5 7a4 4 0 1 1-8 0a4 4 0 0 1 8 0M8 11a3 3 0 0 1 0-6m6 16H8.875C7.839 21 7 20.105 7 19c0-2.5 2.813-5 7.5-5q.255 0 .5.01M4 20h-.5c-.828 0-1.5-.768-1.5-1.715c0-1.612 1.273-3.224 3.5-3.924M19 15v6m-3-3h6" />
+                    </svg>
+                </span>
+                <div><h2>Total tutor</h2><strong>@Model.TutorCount</strong></div>
+            </article>
         </div>
         <section class="compensation-panel" aria-label="Tutor earnings">
             <div class="compensation-table-scroll">
                 <table class="compensation-table">
                     <caption class="visually-hidden">Tutor earnings for @Model.PeriodLabel</caption>
-                    <thead><tr><th scope="col">Tutor</th><th scope="col">Personnel number</th><th scope="col">Campus</th><th scope="col" class="numeric">Approved sessions</th><th scope="col" class="numeric">Amount earned</th></tr></thead>
+                    <thead><tr><th scope="col">Tutor</th><th scope="col">Role</th><th scope="col">Personnel number</th><th scope="col">Campus</th><th scope="col" class="numeric">Approved sessions</th><th scope="col" class="numeric">Amount earned</th></tr></thead>
                     <tbody>
                         @if (Model.Tutors.Count == 0)
                         {
-                            <tr><td colspan="5" class="compensation-empty">No approved sessions in this period. Choose another date range to view earnings.</td></tr>
+                            <tr><td colspan="6" class="compensation-empty">No approved sessions in this period. Choose another date range to view earnings.</td></tr>
                         }
-                        @foreach (var tutor in Model.Tutors)
+                        @foreach (var tutor in Model.PagedTutors)
                         {
-                            <tr><td><a asp-page="/Administrator/Tutors/Profile" asp-route-id="@tutor.TutorId">@tutor.Name</a></td><td>@tutor.PersonnelNumber</td><td>@tutor.Campus</td><td class="numeric">@tutor.ApprovedSessions</td><td class="numeric">@Money(tutor.Earnings)</td></tr>
+                            <tr><td><a asp-page="/Administrator/Tutors/Profile" asp-route-id="@tutor.TutorId" asp-route-returnUrl="@profileReturnUrl">@tutor.Name</a></td><td>@tutor.RoleLabel</td><td>@tutor.PersonnelNumber</td><td>@tutor.Campus</td><td class="numeric">@tutor.ApprovedSessions</td><td class="numeric">@Money(tutor.Earnings)</td></tr>
                         }
                     </tbody>
                 </table>
             </div>
+            @if (Model.TotalPages > 1)
+            {
+                @await Component.InvokeAsync("Pagination", new
+                {
+                    currentPage = Model.TutorPage,
+                    totalPages = Model.TotalPages,
+                    pageRouteValueName = "TutorPage",
+                    ariaLabel = "Tutor earnings table pages"
+                })
+            }
         </section>
     }
 </section>

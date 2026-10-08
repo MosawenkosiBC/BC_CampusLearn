@@ -17,27 +17,27 @@ public static class CompensationWorkbook
     {
         if (sessions.Any(session => session.Amount is null))
             throw new InvalidOperationException("Every exported session must have a payment amount.");
-        var summary = Metadata("Tutor compensation", from, to, currency, generatedAt);
-        summary.Add(Row(7, Text("Approved sessions"), Number(sessions.Count)));
-        summary.Add(Row(8, Text("Individual tutors"), Number(tutors.Count)));
-        summary.Add(Row(10, Headers("Tutor ID", "Tutor", "Personnel number", "Email", "Campus", "Approved sessions", $"Amount earned ({currency})")));
+        var summary = Metadata("Tutor compensation", from, to, generatedAt);
+        summary.Add(Row(6, Text("Approved sessions"), Number(sessions.Count)));
+        summary.Add(Row(7, Text("Total tutors"), Number(tutors.Count)));
+        summary.Add(Row(10, Headers("Number", "Tutor", "Personnel number", "Email", "Campus", "Approved sessions", $"Amount earned ({currency})")));
         int row = 11;
         foreach (var tutor in tutors)
             summary.Add(Row(row++, Number(tutor.TutorId), Text(tutor.Name), Text(tutor.PersonnelNumber),
                 Text(tutor.Email), Text(tutor.Campus), Number(tutor.ApprovedSessions), Number(tutor.Earnings ?? 0m, 3)));
-        summary.Add(Row(row, Text("Total", 2), Text(""), Text(""), Text(""), Text(""),
+        summary.Add(Row(row + 2, Text("Total", 6), Text(""), Text(""), Text(""), Text(""),
             Formula(tutors.Count == 0 ? "0" : $"SUM(F11:F{row - 1})", sessions.Count),
             Formula(tutors.Count == 0 ? "0" : $"SUM(G11:G{row - 1})", sessions.Sum(session => session.Amount!.Value), 3)));
 
-        var details = Metadata("Approved session details", from, to, currency, generatedAt);
-        details.Add(Row(10, Headers("Session ID", "Tutor ID", "Tutor", "Personnel number", "Campus", "Module", "Session date (SAST)", "Super admin approved (SAST)", $"Amount earned ({currency})")));
+        var details = Metadata("Approved session details", from, to, generatedAt);
+        details.Add(Row(10, Headers("Session ID", "Number", "Tutor", "Personnel number", "Campus", "Module", "Session date (SAST)", "Super admin approved (SAST)", $"Amount earned ({currency})")));
         row = 11;
         foreach (var session in sessions)
             details.Add(Row(row++, Number(session.BookingId), Number(session.TutorId), Text(session.TutorName),
                 Text(session.PersonnelNumber), Text(session.Campus), Text(session.ModuleCode),
                 Date(session.SessionDate.ToOffset(CampusOffset).DateTime, 5),
                 Date(session.ApprovedAt.ToOffset(CampusOffset).DateTime, 5), Number(session.Amount!.Value, 3)));
-        details.Add(Row(row, Text("Total", 2), Text(""), Text(""), Text(""), Text(""), Text(""), Text(""), Text(""),
+        details.Add(Row(row + 2, Text("Total", 6), Text(""), Text(""), Text(""), Text(""), Text(""), Text(""), Text(""),
             Formula(sessions.Count == 0 ? "0" : $"SUM(I11:I{row - 1})", sessions.Sum(session => session.Amount!.Value), 3)));
 
         using var output = new MemoryStream();
@@ -64,14 +64,12 @@ public static class CompensationWorkbook
         return output.ToArray();
     }
 
-    private static List<XElement> Metadata(string title, DateOnly from, DateOnly to, string currency, DateTimeOffset generatedAt) =>
+    private static List<XElement> Metadata(string title, DateOnly from, DateOnly to, DateTimeOffset generatedAt) =>
     [
         Row(1, Text(title, 1)),
-        Row(2, Text("Period start (inclusive)"), Date(from.ToDateTime(TimeOnly.MinValue), 4)),
-        Row(3, Text("Period end (inclusive)"), Date(to.ToDateTime(TimeOnly.MinValue), 4)),
-        Row(4, Text("Generated (SAST)"), Date(generatedAt.ToOffset(CampusOffset).DateTime, 5)),
-        Row(5, Text("Currency"), Text(currency)),
-        Row(6, Text("Period basis"), Text("Completion dates (scheduled dates if unavailable); super admin approved; South African time (UTC+02:00)."))
+        Row(3, Text("Period start (inclusive)"), Date(from.ToDateTime(TimeOnly.MinValue), 4)),
+        Row(4, Text("Period end (inclusive)"), Date(to.ToDateTime(TimeOnly.MinValue), 4)),
+        Row(5, Text("Generated (SAST)"), Date(generatedAt.ToOffset(CampusOffset).DateTime, 5))
     ];
 
     private static XElement Text(string value, int style = 0) => new(S + "c", new XAttribute("t", "inlineStr"),
@@ -126,13 +124,14 @@ public static class CompensationWorkbook
                 new XElement(S + "numFmt", new XAttribute("numFmtId", "164"), new XAttribute("formatCode", "dd mmm yyyy")),
                 new XElement(S + "numFmt", new XAttribute("numFmtId", "165"), new XAttribute("formatCode", "dd mmm yyyy hh:mm"))),
             new XElement(S + "fonts", new XAttribute("count", "3"), Font(false, 11, "FF303941"), Font(true, 18, "FF872E5A"), Font(true, 11, "FFFFFFFF")),
-            new XElement(S + "fills", new XAttribute("count", "3"),
+            new XElement(S + "fills", new XAttribute("count", "4"),
                 new XElement(S + "fill", new XElement(S + "patternFill", new XAttribute("patternType", "none"))),
                 new XElement(S + "fill", new XElement(S + "patternFill", new XAttribute("patternType", "gray125"))),
-                new XElement(S + "fill", new XElement(S + "patternFill", new XAttribute("patternType", "solid"), new XElement(S + "fgColor", new XAttribute("rgb", "FF872E5A")), new XElement(S + "bgColor", new XAttribute("indexed", "64"))))),
+                new XElement(S + "fill", new XElement(S + "patternFill", new XAttribute("patternType", "solid"), new XElement(S + "fgColor", new XAttribute("rgb", "FF872E5A")), new XElement(S + "bgColor", new XAttribute("indexed", "64")))),
+                new XElement(S + "fill", new XElement(S + "patternFill", new XAttribute("patternType", "solid"), new XElement(S + "fgColor", new XAttribute("rgb", "FF000000")), new XElement(S + "bgColor", new XAttribute("indexed", "64"))))),
             new XElement(S + "borders", new XAttribute("count", "1"), new XElement(S + "border", new XElement(S + "left"), new XElement(S + "right"), new XElement(S + "top"), new XElement(S + "bottom"), new XElement(S + "diagonal"))),
             new XElement(S + "cellStyleXfs", new XAttribute("count", "1"), Xf(0, 0, 0)),
-            new XElement(S + "cellXfs", new XAttribute("count", "6"), Xf(0, 0, 0), Xf(1, 0, 0), Xf(2, 2, 0), Xf(0, 0, 4), Xf(0, 0, 164), Xf(0, 0, 165)),
+            new XElement(S + "cellXfs", new XAttribute("count", "7"), Xf(0, 0, 0), Xf(1, 0, 0), Xf(2, 2, 0), Xf(0, 0, 4), Xf(0, 0, 164), Xf(0, 0, 165), Xf(2, 3, 0)),
             new XElement(S + "cellStyles", new XAttribute("count", "1"), new XElement(S + "cellStyle", new XAttribute("name", "Normal"), new XAttribute("xfId", "0"), new XAttribute("builtinId", "0"))));
     }
     private static void Write(ZipArchive zip, string path, XElement root)
