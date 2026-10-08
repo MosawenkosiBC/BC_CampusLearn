@@ -22,6 +22,121 @@ namespace BC_CampusLearn.Tests;
 public class AdminTutorsTests
 {
     [Theory]
+    [InlineData(TutorStatus.Approved, false)]
+    [InlineData(TutorStatus.Suspended, false)]
+    [InlineData(TutorStatus.Deregistered, false)]
+    [InlineData(TutorStatus.Approved, true)]
+    [InlineData(TutorStatus.Suspended, true)]
+    [InlineData(TutorStatus.Deregistered, true)]
+    public async Task FormerTutorsCanBeLookedUpAndAddedWithoutLosingHistory(
+        TutorStatus formerStatus, bool placementPage)
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        Tutor former = await context.Tutors.Include(t => t.BcUser)
+            .Include(t => t.TutorCourseModules).SingleAsync(t => t.TutorId == 1);
+        former.IsActive = false;
+        former.Status = formerStatus;
+        former.DeregisteredAt = DateTimeOffset.UtcNow.AddDays(-7);
+        former.DeregistrationReason = "Completed previous term";
+        var originalCreatedAt = former.CreatedAt;
+        var originalDeregisteredAt = former.DeregisteredAt;
+        former.TutorCourseModules.Single().IsActive = false;
+        context.ProgrammeModules.AddRange(
+            new ProgrammeModule { ProgrammeModuleId = 2, ProgrammeId = 1, YearOfStudy = 1,
+                ModuleCode = "OLD101", ModuleName = "Previous module" },
+            new ProgrammeModule { ProgrammeModuleId = 3, ProgrammeId = 1, YearOfStudy = 1,
+                ModuleCode = "NEW101", ModuleName = "New module" });
+        former.TutorCourseModules.Add(new TutorCourseModule { ProgrammeModuleId = 2, IsActive = false });
+        context.Bookings.Add(new Booking
+        {
+            BookingId = 100, TutorId = former.TutorId, ProgrammeModuleId = 2,
+            Status = BookingStatus.Completed, StudentName = "Previous Student"
+        });
+        await context.SaveChangesAsync();
+        Assert.Equal(BcUserRole.Student, former.BcUser.Role);
+
+        var service = new TestStudentDetailsService();
+        BC_CampusLearn.Pages.Administrator.ManualTutorPageModel page = placementPage
+            ? new BC_CampusLearn.Pages.Administrator.Admin.ApplicationsModel(context, studentDetailsService: service)
+                { Stage = "placement" }
+            : new IndexModel(context, service);
+        SetPageContext(page);
+        if (page is IndexModel directory)
+            await directory.OnGetAsync(CancellationToken.None);
+        else
+            await ((BC_CampusLearn.Pages.Administrator.Admin.ApplicationsModel)page).OnGetAsync(CancellationToken.None);
+        Assert.Contains(page.StudentOptions, option => option.Value == "1");
+        var lookup = Assert.IsType<JsonResult>(await page.OnGetStudentDetailsAsync(1, CancellationToken.None));
+        Assert.Null(lookup.StatusCode);
+        Assert.Equal("New Tutor", JsonSerializer.SerializeToElement(lookup.Value).GetProperty("displayName").GetString());
+        Assert.Equal(["S1"], service.RequestedNumbers);
+
+        page.ManualTutor = new()
+        {
+            BcUserId = 1, OverallAverage = 82, ProgrammeModuleIds = [1, 3],
+            ProgrammeId = 999, YearOfStudy = 4, CampusOfStudy = "Untrusted campus"
+        };
+        await page.OnPostAddTutorAsync(CancellationToken.None);
+        Assert.Null(page.PageError);
+        context.ChangeTracker.Clear();
+        Tutor restored = await context.Tutors.Include(t => t.BcUser)
+            .Include(t => t.TutorCourseModules).SingleAsync(t => t.BcUserId == 1);
+        Assert.Equal(18, await context.Tutors.CountAsync());
+        Assert.Equal(1, restored.TutorId);
+        Assert.Equal(BcUserRole.Tutor, restored.BcUser.Role);
+        Assert.Equal(TutorStatus.Approved, restored.Status);
+        Assert.True(restored.IsActive);
+        Assert.Equal(TutorApplicationStage.Placement, restored.ApplicationStage);
+        Assert.Equal(1, restored.ProgrammeId);
+        Assert.Equal(2, restored.YearOfStudy);
+        Assert.Equal("Pretoria Campus", restored.CampusOfStudy);
+        Assert.Equal(originalCreatedAt, restored.CreatedAt);
+        Assert.Equal(originalDeregisteredAt, restored.DeregisteredAt);
+        Assert.Equal("Completed previous term", restored.DeregistrationReason);
+        Assert.Equal(3, restored.TutorCourseModules.Count);
+        Assert.True(restored.TutorCourseModules.Single(a => a.ProgrammeModuleId == 1).IsActive);
+        Assert.False(restored.TutorCourseModules.Single(a => a.ProgrammeModuleId == 2).IsActive);
+        Assert.True(restored.TutorCourseModules.Single(a => a.ProgrammeModuleId == 3).IsActive);
+        var historicalBooking = await context.Bookings.Include(b => b.TutorCourseModule).SingleAsync();
+        Assert.Equal(restored.TutorId, historicalBooking.TutorId);
+        Assert.Equal(2, historicalBooking.TutorCourseModule.ProgrammeModuleId);
+        Assert.Equal(BookingStatus.Completed, historicalBooking.Status);
+
+        var placements = new BC_CampusLearn.Pages.Administrator.Admin.ApplicationsModel(context) { Stage = "placement" };
+        await placements.OnGetAsync(CancellationToken.None);
+        var candidate = Assert.Single(placements.Candidates.Where(c => c.TutorId == 1));
+        Assert.Equal(2, candidate.ModuleCount);
+        Assert.Equal(2, candidate.Modules.Count);
+        Assert.DoesNotContain(candidate.Modules, module => module.Code == "OLD101");
+        Assert.DoesNotContain(placements.StudentOptions, option => option.Value == "1");
+    }
+
+    [Theory]
+    [InlineData(TutorStatus.Pending)]
+    [InlineData(TutorStatus.Rejected)]
+    public async Task ExistingApplicantsCannotBeReactivatedThroughAddTutor(TutorStatus status)
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        Tutor tutor = await context.Tutors.Include(t => t.BcUser).SingleAsync(t => t.TutorId == 1);
+        tutor.Status = status;
+        tutor.IsActive = false;
+        await context.SaveChangesAsync();
+        var service = new TestStudentDetailsService();
+        var page = new IndexModel(context, service) { ManualTutor = new() { BcUserId = 1 } };
+        SetPageContext(page);
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.DoesNotContain(page.StudentOptions, option => option.Value == "1");
+        Assert.Equal(400, Assert.IsType<JsonResult>(await page.OnGetStudentDetailsAsync(1, CancellationToken.None)).StatusCode);
+        await page.OnPostAddTutorAsync(CancellationToken.None);
+        Assert.NotNull(page.PageError);
+        Assert.Empty(service.RequestedNumbers);
+        Assert.Equal(status, tutor.Status);
+        Assert.False(tutor.IsActive);
+    }
+
+    [Theory]
     [InlineData("/Administrator/Admin/Compensation", true)]
     [InlineData("/Administrator/Admin/Compensation?Period=custom&From=2026-09-21&To=2026-10-31", true)]
     [InlineData(null, false)]

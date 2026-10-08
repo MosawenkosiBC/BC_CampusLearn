@@ -2,6 +2,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Students;
 using System.ComponentModel.DataAnnotations;
+using System.Linq.Expressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -20,10 +21,18 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
     public bool RequiresStudentVerification => true;
     private StudentDetails? _verifiedStudent;
 
+    private static readonly Expression<Func<BcUser, bool>> EligibleStudent = user =>
+        user.Role == BcUserRole.Student &&
+        (user.Tutor == null || (!user.Tutor.IsActive &&
+            (user.Tutor.Status == TutorStatus.Approved ||
+             user.Tutor.Status == TutorStatus.Suspended ||
+             user.Tutor.Status == TutorStatus.Deregistered)));
+    private static readonly Func<BcUser, bool> IsEligibleStudent = EligibleStudent.Compile();
+
     public async Task<IActionResult> OnGetStudentDetailsAsync(int studentId, CancellationToken cancellationToken)
     {
-        var student = await Context.BcUsers.AsNoTracking().SingleOrDefaultAsync(
-            user => user.BcUserId == studentId && user.Role == BcUserRole.Student && user.Tutor == null,
+        var student = await Context.BcUsers.AsNoTracking().Where(EligibleStudent).SingleOrDefaultAsync(
+            user => user.BcUserId == studentId,
             cancellationToken);
         if (student is null)
             return new JsonResult(new { error = "Select an eligible student." }) { StatusCode = 400 };
@@ -123,6 +132,7 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
         ModelState.Clear();
         BcUser? student = await _context.BcUsers
             .Include(user => user.Tutor)
+                .ThenInclude(tutor => tutor!.TutorCourseModules)
             .SingleOrDefaultAsync(
                 user => user.BcUserId == ManualTutor.BcUserId,
                 cancellationToken);
@@ -133,7 +143,7 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
             return RedirectAfterAddTutor();
         }
 
-        if (student.Tutor is not null)
+        if (student.Tutor is not null && !IsEligibleStudent(student))
         {
             PageError = "This student already has a tutor profile.";
             return RedirectAfterAddTutor();
@@ -195,35 +205,42 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
         DateTime addedAt = DateTime.UtcNow;
         ApplyVerifiedStudentIdentity(student);
         student.Role = BcUserRole.Tutor;
-        var tutor = new Tutor
+        // Reuse former tutors so their bookings, documents and audit history stay linked.
+        var tutor = student.Tutor ?? new Tutor
         {
-            ProgrammeId = ManualTutor.ProgrammeId,
-            OverallAverage = ManualTutor.OverallAverage,
-            YearOfStudy = ManualTutor.YearOfStudy,
-            PhoneNumber = string.IsNullOrWhiteSpace(ManualTutor.PhoneNumber)
-                ? null
-                : ManualTutor.PhoneNumber.Trim(),
-            CampusOfStudy = ManualTutor.CampusOfStudy.Trim(),
-            PreferredTutoringMode = ManualTutor.PreferredTutoringMode,
             ReasonForTutoring = "",
             TeachingStyle = "",
             PreviousTutoringExperience = "",
             DemonstrationVideoUrl = "",
-            Status = TutorStatus.Approved,
-            ApplicationStage = TutorApplicationStage.Placement,
-            IsActive = true,
             SubmittedAt = addedAt,
-            ReviewedAt = addedAt,
-            CreatedAt = addedAt,
-            UpdatedAt = addedAt
+            CreatedAt = addedAt
         };
+        tutor.ProgrammeId = ManualTutor.ProgrammeId;
+        tutor.OverallAverage = ManualTutor.OverallAverage;
+        tutor.YearOfStudy = ManualTutor.YearOfStudy;
+        tutor.PhoneNumber = string.IsNullOrWhiteSpace(ManualTutor.PhoneNumber)
+                ? null
+                : ManualTutor.PhoneNumber.Trim();
+        tutor.CampusOfStudy = ManualTutor.CampusOfStudy.Trim();
+        tutor.PreferredTutoringMode = ManualTutor.PreferredTutoringMode;
+        tutor.Status = TutorStatus.Approved;
+        tutor.ApplicationStage = TutorApplicationStage.Placement;
+        tutor.IsActive = true;
+        tutor.ReviewedAt = addedAt;
+        tutor.UpdatedAt = addedAt;
+
+        foreach (var assignment in tutor.TutorCourseModules)
+            assignment.IsActive = moduleIds.Contains(assignment.ProgrammeModuleId);
 
         foreach (int moduleId in moduleIds)
         {
-            tutor.TutorCourseModules.Add(new TutorCourseModule
+            if (!tutor.TutorCourseModules.Any(assignment => assignment.ProgrammeModuleId == moduleId))
             {
-                ProgrammeModuleId = moduleId
-            });
+                tutor.TutorCourseModules.Add(new TutorCourseModule
+                {
+                    ProgrammeModuleId = moduleId
+                });
+            }
         }
         student.Tutor = tutor;
 
@@ -237,8 +254,7 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
     {
         StudentOptions = await _context.BcUsers
             .AsNoTracking()
-            .Where(user => user.Role == BcUserRole.Student &&
-                user.Tutor == null)
+            .Where(EligibleStudent)
             .OrderBy(user => user.DisplayName)
             .Select(user => new SelectListItem
             {

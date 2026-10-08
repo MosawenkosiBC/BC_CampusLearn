@@ -93,7 +93,8 @@ public class ApplicationsModel : ManualTutorPageModel
         IQueryable<Tutor> applications = _context.Tutors
             .AsNoTracking()
             .Where(tutor =>
-                tutor.Status != TutorStatus.Rejected &&
+                (tutor.Status == TutorStatus.Pending ||
+                    (tutor.Status == TutorStatus.Approved && tutor.IsActive)) &&
                 tutor.ApplicationStage != TutorApplicationStage.Rejected);
         string? normalizedSearch = Search?.Trim();
 
@@ -150,7 +151,7 @@ public class ApplicationsModel : ManualTutorPageModel
                 ProgrammeName = tutor.Programme.Name,
                 YearOfStudy = tutor.YearOfStudy,
                 OverallAverage = tutor.OverallAverage,
-                ModuleCount = tutor.TutorCourseModules.Count,
+                ModuleCount = tutor.TutorCourseModules.Count(item => item.IsActive),
                 SubmittedAt = tutor.SubmittedAt,
                 Status = tutor.Status,
                 ApplicationStage = tutor.Status == TutorStatus.Approved
@@ -181,6 +182,7 @@ public class ApplicationsModel : ManualTutorPageModel
                     })
                     .ToList(),
                 Modules = tutor.TutorCourseModules
+                    .Where(item => item.IsActive)
                     .OrderBy(item => item.ProgrammeModule.ModuleCode)
                     .Select(item => new CandidateModule
                     {

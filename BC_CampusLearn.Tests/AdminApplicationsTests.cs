@@ -12,6 +12,66 @@ namespace BC_CampusLearn.Tests;
 
 public class AdminApplicationsTests
 {
+    [Theory]
+    [InlineData(TutorStatus.Approved, false)]
+    [InlineData(TutorStatus.Suspended, false)]
+    [InlineData(TutorStatus.Suspended, true)]
+    [InlineData(TutorStatus.Deregistered, false)]
+    [InlineData(TutorStatus.Deregistered, true)]
+    public async Task ApplicationsExcludeDeactivatedTutorsFromPlacementAndCounts(
+        TutorStatus status, bool isActive)
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        context.BcUsers.AddRange(
+            CreateUser(1, "Active Tutor", "ST7001"),
+            CreateUser(2, "Deactivated Tutor", "ST7002"));
+        Tutor active = CreateTutor(1, TutorStatus.Approved);
+        active.ApplicationStage = TutorApplicationStage.Placement;
+        active.IsActive = true;
+        Tutor deactivated = CreateTutor(2, TutorStatus.Approved);
+        deactivated.ApplicationStage = TutorApplicationStage.Placement;
+        deactivated.IsActive = true;
+        context.Tutors.AddRange(active, deactivated);
+        await context.SaveChangesAsync();
+
+        var page = new ApplicationsModel(context) { Stage = "placement" };
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Equal(2, page.PlacementCount);
+        Assert.Equal(2, page.Candidates.Count);
+
+        deactivated.Status = status;
+        deactivated.IsActive = isActive;
+        await context.SaveChangesAsync();
+
+        foreach (string stage in new[] { "applications", "shortlist", "interview", "placement" })
+        {
+            page.Stage = stage;
+            await page.OnGetAsync(CancellationToken.None);
+            Assert.Equal(1, page.PlacementCount);
+            Assert.Equal(0, page.ApplicationCount);
+            Assert.Equal(0, page.ShortlistCount);
+            Assert.Equal(0, page.InterviewCount);
+            if (stage == "placement")
+                Assert.Equal(active.TutorId, Assert.Single(page.Candidates).TutorId);
+            else
+                Assert.Empty(page.Candidates);
+        }
+
+        page.Stage = "placement";
+        page.Search = "Deactivated";
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Empty(page.Candidates);
+        Assert.Equal(0, page.PlacementCount);
+    }
+
     [Fact]
     public async Task ApplicationsPageCountsAndSearchesVisibleCandidates()
     {
