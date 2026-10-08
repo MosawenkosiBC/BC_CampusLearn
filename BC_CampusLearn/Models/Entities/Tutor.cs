@@ -60,6 +60,9 @@ public class Tutor
     public ICollection<TutorModuleChangeRequest> ModuleChangeRequests { get; set; }
         = new List<TutorModuleChangeRequest>();
 
+    public ICollection<SeniorTutorApplication> SeniorTutorApplications { get; set; }
+        = new List<SeniorTutorApplication>();
+
     public ICollection<TutorDeregistrationRequest> DeregistrationRequests { get; set; }
         = new List<TutorDeregistrationRequest>();
 

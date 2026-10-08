@@ -215,7 +215,8 @@ builder.Services.AddRazorPages(options =>
         "/Tutors/ManageResources",
         "/Tutors/Profile",
         "/Tutors/PublicProfile",
-        "/Tutors/StatisticsOverview"
+        "/Tutors/StatisticsOverview",
+        "/Tutors/SeniorTutorApplications"
     };
 
     foreach (string page in tutorOnlyPages)

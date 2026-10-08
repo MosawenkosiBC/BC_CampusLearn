@@ -1,0 +1,309 @@
+@page
+@model BC_CampusLearn.Pages.Tutors.SeniorTutorApplicationsModel
+
+@{
+    ViewData["Title"] = "Senior Tutor Applications";
+    bool hasPendingApplication = Model.LatestApplication?.Status == TutorAccountRequestStatus.Pending;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/components/navigation-drawer.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/tutor-profile.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<section class="tutor-profile-page py-4">
+    <h1 class="tutor-manage-profile-title">Manage Account</h1>
+
+    @if (TempData["SeniorTutorApplicationSaved"] is true)
+    {
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(
+                "Your senior tutor application has been submitted for review.",
+                CampusAlertVariant.Success))
+    }
+
+    <div class="tutor-profile-mobile-card">
+        <aside class="tutor-profile-card" aria-label="Tutor account navigation">
+            <div class="tutor-profile-identity">
+                <div class="tutor-profile-photo-wrap">
+                    @if (!string.IsNullOrWhiteSpace(Model.ProfileImagePath))
+                    {
+                        <img class="tutor-profile-photo"
+                             src="@Model.ProfileImagePath"
+                             alt="Profile photo of @Model.DisplayName" />
+                    }
+                    else
+                    {
+                        <div class="tutor-profile-photo tutor-profile-initials"
+                             aria-label="@Model.DisplayName initials">
+                            @Model.Initials
+                        </div>
+                    }
+
+                    <form method="post"
+                          enctype="multipart/form-data"
+                          asp-page="/Tutors/Profile"
+                          asp-page-handler="UploadProfileImage"
+                          class="tutor-profile-photo-form"
+                          data-profile-image-form>
+                        <input type="hidden" name="returnPage" value="/Tutors/SeniorTutorApplications" />
+                        <label class="tutor-profile-camera"
+                               for="senior-tutor-profile-image"
+                               title="Add profile image">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M9 4.5 7.7 6H5a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3h-2.7L15 4.5zm3 13a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9m0-2a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                            </svg>
+                            <span class="visually-hidden">Add profile image</span>
+                        </label>
+                        <input id="senior-tutor-profile-image"
+                               name="ProfileImage"
+                               class="visually-hidden"
+                               type="file"
+                               accept="image/jpeg,image/png,image/webp"
+                               data-profile-image-input />
+                    </form>
+                </div>
+                <h1>@Model.DisplayName</h1>
+                <p>@Model.StudentNumber</p>
+            </div>
+
+            <div class="tutor-profile-divider"></div>
+
+            <nav class="tutor-profile-nav" aria-label="Tutor profile sections">
+                <a asp-page="/Tutors/Profile" class="tutor-profile-nav-link">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2 19c0-2.5 3-5 8-5s8 2.5 8 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <span class="tutor-profile-personal-label-full">Personal Details</span>
+                    <span class="tutor-profile-personal-label-mobile">Details</span>
+                </a>
+                <a asp-page="/Tutors/PublicProfile" class="tutor-profile-nav-link">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2 12h20M12 2c3 3 4 6 4 10s-1 7-4 10c-3-3-4-6-4-10s1-7 4-10" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <span>Public Profile</span>
+                </a>
+                <a asp-page="/Tutors/StatisticsOverview" class="tutor-profile-nav-link">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 21H3v-8h4zm7 0h-4V3h4zm7-13v13h-4V8z" /></svg>
+                    <span class="tutor-profile-statistics-label-full">Statistics Overview</span>
+                    <span class="tutor-profile-statistics-label-mobile">Statistics</span>
+                </a>
+                <a asp-page="/Tutors/SeniorTutorApplications"
+                   class="tutor-profile-nav-link is-active"
+                   aria-current="page">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        <path fill="none" stroke="currentColor" stroke-linecap="round"
+                              stroke-linejoin="round" stroke-width="1.5"
+                              d="m13.728 3.444l1.76 3.549c.24.494.88.968 1.42 1.058l3.189.535c2.04.343 2.52 1.835 1.05 3.307l-2.48 2.5c-.42.423-.65 1.24-.52 1.825l.71 3.095c.56 2.45-.73 3.397-2.88 2.117l-2.99-1.785c-.54-.322-1.43-.322-1.98 0L8.019 21.43c-2.14 1.28-3.44.322-2.88-2.117l.71-3.095c.13-.585-.1-1.402-.52-1.825l-2.48-2.5C1.39 10.42 1.86 8.929 3.899 8.586l3.19-.535c.53-.09 1.17-.564 1.41-1.058l1.76-3.549c.96-1.925 2.52-1.925 3.47 0" />
+                    </svg>
+                    <span class="tutor-profile-senior-label-full">ST Applications</span>
+                    <span class="tutor-profile-senior-label-mobile">ST Applications</span>
+                </a>
+            </nav>
+        </aside>
+
+        <div class="tutor-senior-applications">
+            <h2>Senior Tutor Applications</h2>
+
+            <section class="tutor-senior-application-card" aria-labelledby="senior-job-purpose">
+                <div class="tutor-senior-introduction">
+                    <h3 id="senior-job-purpose">Job Purpose</h3>
+                    <p>
+                        The peer-tutoring programme at Belgium Campus iTversity assists students with academic challenges,
+                        with particular focus on content they may find difficult to understand as taught by their lecturers.
+                    </p>
+                    <p>
+                        The programme supports students who need additional assistance as well as those who want to improve
+                        their grades and are not necessarily underperforming or at risk.
+                    </p>
+                </div>
+
+                <div class="tutor-senior-information-grid">
+                    <section class="tutor-senior-information-section">
+                        <button type="button"
+                                class="tutor-senior-information-heading"
+                                data-senior-information-accordion
+                                aria-expanded="true"
+                                aria-controls="senior-duties-panel">
+                            <h3>Duties &amp; Responsibilities</h3>
+                            <svg viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="m5 7.5l5 5l5-5" />
+                            </svg>
+                        </button>
+                        <div id="senior-duties-panel" class="tutor-senior-information-panel">
+                            <p>The senior tutor ensures that the following functions are fulfilled throughout the year:</p>
+                            <ul>
+                                <li>Organise and facilitate regular meetings with the rest of the tutors.</li>
+                                <li>Market and advertise the peer-tutoring programme to students at all three campuses.</li>
+                                <li>Remind tutors of meetings, workshops, timesheets, and other required submissions.</li>
+                                <li>Provide monthly feedback about tutors to the HOD.</li>
+                                <li>Raise pressing concerns regarding the programme or tutors.</li>
+                                <li>Facilitate the establishment of a resource centre for tutors.</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section class="tutor-senior-information-section">
+                        <button type="button"
+                                class="tutor-senior-information-heading"
+                                data-senior-information-accordion
+                                aria-expanded="true"
+                                aria-controls="senior-requirements-panel">
+                            <h3>Additional Requirements</h3>
+                            <svg viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="m5 7.5l5 5l5-5" />
+                            </svg>
+                        </button>
+                        <div id="senior-requirements-panel" class="tutor-senior-information-panel">
+                            <ul>
+                                <li>At least one year of tutoring at Belgium Campus iTversity.</li>
+                                <li>Must be a contact student.</li>
+                                <li>Must be registered at the Pretoria Campus.</li>
+                                <li>Must have an academic average of 72% or higher.</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section class="tutor-senior-information-section">
+                        <button type="button"
+                                class="tutor-senior-information-heading"
+                                data-senior-information-accordion
+                                aria-expanded="true"
+                                aria-controls="senior-benefits-panel">
+                            <h3>Benefits</h3>
+                            <svg viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="m5 7.5l5 5l5-5" />
+                            </svg>
+                        </button>
+                        <div id="senior-benefits-panel" class="tutor-senior-information-panel">
+                            <ul>
+                                <li>A higher hourly rate for tutoring sessions.</li>
+                                <li>A senior tutor T-shirt.</li>
+                                <li>A letter of recommendation.</li>
+                                <li>A certificate.</li>
+                            </ul>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="tutor-senior-application-action">
+                    <div>
+                        <h3>Ready to apply?</h3>
+                        <p>If you meet the requirements and believe you are suitable for the vacancy, complete the application form.</p>
+                        @if (Model.LatestApplication is not null)
+                        {
+                            <p class="tutor-senior-status">
+                                Latest application: <strong>@Model.LatestApplication.Status</strong>
+                                <span>Submitted @Model.LatestApplication.SubmittedAt.ToLocalTime().ToString("dd MMM yyyy")</span>
+                            </p>
+                        }
+                    </div>
+                    <button type="button"
+                            class="tutor-modal-primary tutor-senior-apply-button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#senior-tutor-application-modal"
+                            disabled="@hasPendingApplication">
+                        @(hasPendingApplication ? "Application pending" : "Apply to become a senior tutor")
+                    </button>
+                </div>
+            </section>
+        </div>
+    </div>
+</section>
+
+@section Modals {
+<div class="modal fade tutor-account-modal"
+     id="senior-tutor-application-modal"
+     tabindex="-1"
+     aria-labelledby="senior-tutor-application-title"
+     aria-hidden="true"
+     data-open-on-load="@Model.OpenApplicationModal.ToString().ToLowerInvariant()">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <form method="post"
+                  asp-page-handler="Apply"
+                  data-senior-tutor-application-form
+                  novalidate>
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title" id="senior-tutor-application-title">Apply to become a senior tutor</h2>
+                        <p>Complete all three questions. Your application will be sent for review.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div asp-validation-summary="ModelOnly" class="tutor-profile-validation"></div>
+
+                    <div class="tutor-profile-field">
+                        <label asp-for="Input.AcademicAverage">
+                            1. Academic average (must be 72% or more)
+                            <span class="tutor-required-marker" aria-hidden="true">*</span>
+                        </label>
+                        <div class="tutor-senior-average-input">
+                            <input asp-for="Input.AcademicAverage"
+                                   type="text"
+                                   inputmode="decimal"
+                                   autocomplete="off"
+                                   data-senior-average />
+                            <span aria-hidden="true">%</span>
+                        </div>
+                        <span asp-validation-for="Input.AcademicAverage" data-senior-average-error></span>
+                    </div>
+
+                    <fieldset class="tutor-senior-choice-field">
+                        <legend>
+                            2. Choose one option that describes you best.
+                            <span class="tutor-required-marker" aria-hidden="true">*</span>
+                        </legend>
+                        <div class="tutor-senior-choice-options">
+                            @foreach (string option in new[]
+                            {
+                                "Self-driven",
+                                "Self-disciplined",
+                                "Motivated",
+                                "Professional",
+                                "Good time management skills",
+                                "Good interpersonal skills",
+                                "Good leadership skills"
+                            })
+                            {
+                                <label>
+                                    <input type="radio"
+                                           asp-for="Input.BestDescription"
+                                           value="@option"
+                                           data-senior-description />
+                                    <span>@option</span>
+                                </label>
+                            }
+                        </div>
+                        <span asp-validation-for="Input.BestDescription" data-senior-description-error></span>
+                    </fieldset>
+
+                    <div class="tutor-profile-field tutor-senior-summary-field">
+                        <label asp-for="Input.SuitabilityReason">
+                            3. Why do you think you are a suitable candidate for the Senior Tutor Role?
+                            <span class="tutor-required-marker" aria-hidden="true">*</span>
+                        </label>
+                        <textarea asp-for="Input.SuitabilityReason"
+                                  rows="5"
+                                  data-senior-reason></textarea>
+                        <span asp-validation-for="Input.SuitabilityReason" data-senior-reason-error></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="tutor-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="tutor-modal-primary">Submit application</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+}
+
+<partial name="_ProfileImageCropper" />
+
+@section Scripts {
+    <script src="~/js/components/navigation-drawer.js" asp-append-version="true"></script>
+    <script src="~/js/tutor-profile.js" asp-append-version="true"></script>
+    <script src="~/js/senior-tutor-applications.js" asp-append-version="true"></script>
+}
