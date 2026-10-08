@@ -219,10 +219,62 @@
         }
     };
 
-    manualTutorForm?.addEventListener("submit", event => {
+    const manualErrors = Array.from(manualTutorForm?.querySelectorAll("[data-manual-error-for]") ?? []);
+    const manualFormError = manualTutorForm?.querySelector("[data-manual-form-error]");
+    let manualTutorSubmitting = false;
+
+    manualTutorForm?.addEventListener("input", event => {
+        const field = event.target.name;
+        const error = manualErrors.find(item => item.dataset.manualErrorFor === field);
+        if (error) error.textContent = "";
+        event.target.removeAttribute("aria-invalid");
+    });
+
+    manualTutorForm?.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (manualTutorSubmitting) return;
+        manualErrors.forEach(error => { error.textContent = ""; });
+        manualTutorForm.querySelectorAll("[aria-invalid]").forEach(input => input.removeAttribute("aria-invalid"));
+        if (manualFormError) { manualFormError.textContent = ""; manualFormError.hidden = true; }
         if (studentDetailsUrl && verifiedStudentId !== manualTutorForm.querySelector("[data-student-choice]:checked")?.value) {
-            event.preventDefault();
-            if (verificationStatus) verificationStatus.textContent = "Select a student and wait for their details to be verified.";
+            const error = manualErrors.find(item => item.dataset.manualErrorFor === "ManualTutor.BcUserId");
+            if (error) error.textContent = "Select a student and wait for their details to be verified.";
+            studentSearch?.focus();
+            return;
+        }
+
+        manualTutorSubmitting = true;
+        if (addTutorSubmit) addTutorSubmit.disabled = true;
+        try {
+            const response = await fetch(manualTutorForm.action, {
+                method: "POST",
+                body: new FormData(manualTutorForm),
+                headers: { Accept: "application/json" }
+            });
+            const result = await response.json();
+            if (response.ok && result.succeeded) {
+                window.location.reload();
+                return;
+            }
+            if (!result.errors) throw new Error("Unable to add the tutor. Please try again.");
+            let firstInput = null;
+            for (const [field, message] of Object.entries(result.errors)) {
+                const error = manualErrors.find(item => item.dataset.manualErrorFor === field);
+                if (error) error.textContent = message;
+                const input = field === "ManualTutor.BcUserId" ? studentSearch
+                    : Array.from(manualTutorForm.elements).find(element => element.name === field && !element.disabled);
+                input?.setAttribute("aria-invalid", "true");
+                firstInput ??= input;
+            }
+            firstInput?.focus();
+        } catch {
+            if (manualFormError) {
+                manualFormError.textContent = "Unable to add the tutor. Please try again.";
+                manualFormError.hidden = false;
+            }
+        } finally {
+            manualTutorSubmitting = false;
+            if (addTutorSubmit) addTutorSubmit.disabled = false;
         }
     });
     resetStudentVerification();

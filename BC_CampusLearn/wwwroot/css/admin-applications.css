@@ -621,6 +621,22 @@
     grid-column: 1 / -1;
 }
 
+.admin-add-tutor-field .admin-required-marker {
+    color: #dc3545;
+}
+
+.admin-add-tutor-modal .admin-manual-field-error {
+    display: block;
+    margin-top: 0.25rem;
+    color: #dc3545;
+    font-size: 0.875rem;
+}
+
+.admin-add-tutor-modal .admin-manual-field-error:empty,
+.admin-add-tutor-modal .admin-manual-field-error[hidden] {
+    display: none;
+}
+
 .admin-add-tutor-field > label > span {
     display: block;
     margin-bottom: 0.4rem;

@@ -6,7 +6,7 @@ namespace BC_CampusLearn.Models.ViewModels;
 public class TutorOnboardingInput
 {
     [Required(ErrorMessage = "Write a short bio to introduce yourself to students.")]
-    [StringLength(500, ErrorMessage = "Your bio cannot exceed 500 characters.")]
+    [StringLength(500, MinimumLength = 30, ErrorMessage = "Your bio must be between 30 and 500 characters.")]
     public string? Biography { get; set; }
 
     [RegularExpression(@"^\d{10}$", ErrorMessage = "Enter a 10-digit phone number.")]

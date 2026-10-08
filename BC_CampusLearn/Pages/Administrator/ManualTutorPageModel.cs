@@ -29,6 +29,24 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
              user.Tutor.Status == TutorStatus.Deregistered)));
     private static readonly Func<BcUser, bool> IsEligibleStudent = EligibleStudent.Compile();
 
+    private bool IsManualTutorJsonRequest => HttpContext?.Request.Headers.Accept
+        .Any(value => value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true) == true;
+
+    private IActionResult ManualTutorFailure(string message, string field)
+        => ManualTutorFailure(message, new Dictionary<string, string>
+        {
+            [$"ManualTutor.{field}"] = message
+        });
+
+    private IActionResult ManualTutorFailure(string message, Dictionary<string, string> errors)
+    {
+        if (IsManualTutorJsonRequest)
+            return new JsonResult(new { errors }) { StatusCode = 400 };
+
+        PageError = message;
+        return RedirectAfterAddTutor();
+    }
+
     public async Task<IActionResult> OnGetStudentDetailsAsync(int studentId, CancellationToken cancellationToken)
     {
         var student = await Context.BcUsers.AsNoTracking().Where(EligibleStudent).SingleOrDefaultAsync(
@@ -139,27 +157,23 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
 
         if (student is null)
         {
-            PageError = "Select an eligible student.";
-            return RedirectAfterAddTutor();
+            return ManualTutorFailure("Select an eligible student.", nameof(ManualTutorInput.BcUserId));
         }
 
         if (student.Tutor is not null && !IsEligibleStudent(student))
         {
-            PageError = "This student already has a tutor profile.";
-            return RedirectAfterAddTutor();
+            return ManualTutorFailure("This student already has a tutor profile.", nameof(ManualTutorInput.BcUserId));
         }
 
         if (student.Role != BcUserRole.Student)
         {
-            PageError = "Only students can be added as tutors.";
-            return RedirectAfterAddTutor();
+            return ManualTutorFailure("Only students can be added as tutors.", nameof(ManualTutorInput.BcUserId));
         }
 
         string? verificationError = await VerifyManualTutorAsync(student, cancellationToken);
         if (verificationError is not null)
         {
-            PageError = verificationError;
-            return RedirectAfterAddTutor();
+            return ManualTutorFailure(verificationError, nameof(ManualTutorInput.BcUserId));
         }
 
         var validationResults = new List<ValidationResult>();
@@ -168,16 +182,25 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
         if (!Validator.TryValidateObject(ManualTutor, validationContext,
                 validationResults, validateAllProperties: true))
         {
-            PageError = "Enter valid details for the tutor you want to add.";
-            return RedirectAfterAddTutor();
+            string message = validationResults.FirstOrDefault(result =>
+                result.MemberNames.Contains(nameof(ManualTutorInput.OverallAverage)))?.ErrorMessage
+                ?? "Enter valid details for the tutor you want to add.";
+            var errors = validationResults
+                .SelectMany(result => result.MemberNames.Select(member => new
+                {
+                    Field = $"ManualTutor.{member}",
+                    Message = result.ErrorMessage ?? message
+                }))
+                .GroupBy(error => error.Field)
+                .ToDictionary(group => group.Key, group => group.First().Message);
+            return ManualTutorFailure(message, errors);
         }
 
         bool programmeExists = await _context.ProgrammesOfStudy.AnyAsync(
             programme => programme.Id == ManualTutor.ProgrammeId, cancellationToken);
         if (!programmeExists)
         {
-            PageError = "Select a valid programme.";
-            return RedirectAfterAddTutor();
+            return ManualTutorFailure("Select a valid programme.", nameof(ManualTutorInput.ProgrammeId));
         }
 
         List<int> moduleIds = ManualTutor.ProgrammeModuleIds
@@ -185,8 +208,7 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
             .ToList();
         if (moduleIds.Count == 0)
         {
-            PageError = "Select at least one module for the tutor.";
-            return RedirectAfterAddTutor();
+            return ManualTutorFailure("Select at least one module for the tutor.", nameof(ManualTutorInput.ProgrammeModuleIds));
         }
 
         int eligibleModuleCount = await _context.ProgrammeModules
@@ -198,8 +220,8 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
                 cancellationToken);
         if (eligibleModuleCount != moduleIds.Count)
         {
-            PageError = "Select modules from the chosen programme that are eligible for the tutor's year of study.";
-            return RedirectAfterAddTutor();
+            return ManualTutorFailure("Select modules from the chosen programme that are eligible for the tutor's year of study.",
+                nameof(ManualTutorInput.ProgrammeModuleIds));
         }
 
         DateTime addedAt = DateTime.UtcNow;
@@ -216,7 +238,7 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
             CreatedAt = addedAt
         };
         tutor.ProgrammeId = ManualTutor.ProgrammeId;
-        tutor.OverallAverage = ManualTutor.OverallAverage;
+        tutor.OverallAverage = ManualTutor.OverallAverage!.Value;
         tutor.YearOfStudy = ManualTutor.YearOfStudy;
         tutor.PhoneNumber = string.IsNullOrWhiteSpace(ManualTutor.PhoneNumber)
                 ? null
@@ -246,6 +268,8 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
 
         await _context.SaveChangesAsync(cancellationToken);
         PageMessage = $"{student.DisplayName} was added as a tutor.";
+        if (IsManualTutorJsonRequest)
+            return new JsonResult(new { succeeded = true });
         return RedirectAfterAddTutor();
     }
 
@@ -300,8 +324,10 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
         [Range(1, 4)]
         public int YearOfStudy { get; set; }
 
-        [Range(typeof(decimal), "0", "100")]
-        public decimal OverallAverage { get; set; }
+        [Required(ErrorMessage = "Enter the tutor's overall average.")]
+        [Range(typeof(decimal), "65", "100", MinimumIsExclusive = true,
+            ErrorMessage = "The overall average must be greater than 65% and no more than 100%.")]
+        public decimal? OverallAverage { get; set; }
 
         [Required, StringLength(100)]
         public string CampusOfStudy { get; set; } = string.Empty;

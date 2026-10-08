@@ -49,8 +49,12 @@ public class OnboardingModel(
         // A second submission from an older tab must not overwrite a completed profile.
         if (!string.IsNullOrWhiteSpace(tutor.Biography)) return Completed();
 
+        Input.Biography = Input.Biography?.Trim();
+        ModelState.Remove("Input.Biography");
         if (string.IsNullOrWhiteSpace(Input.Biography))
             ModelState.AddModelError("Input.Biography", "Write a short bio to introduce yourself to students.");
+        else if (Input.Biography.Trim().Length is < 30 or > 500)
+            ModelState.AddModelError("Input.Biography", "Your bio must be between 30 and 500 characters.");
 
         string? extension = null;
         if (ProfileImage is { Length: > 0 })

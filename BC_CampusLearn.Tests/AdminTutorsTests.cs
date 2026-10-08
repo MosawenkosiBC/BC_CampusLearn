@@ -22,6 +22,120 @@ namespace BC_CampusLearn.Tests;
 public class AdminTutorsTests
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ManualTutorReturnsInlineAverageErrorsAndAllowsCorrectedSubmission(bool placementPage)
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var student = new BcUser { BcUserId = 100, PersonnelNumber = "S100", DisplayName = "New Student" };
+        context.BcUsers.Add(student);
+        await context.SaveChangesAsync();
+        var service = new TestStudentDetailsService();
+        BC_CampusLearn.Pages.Administrator.ManualTutorPageModel page = placementPage
+            ? new BC_CampusLearn.Pages.Administrator.Admin.ApplicationsModel(context, studentDetailsService: service)
+            : new IndexModel(context, service);
+        SetPageContext(page);
+        page.HttpContext.Request.Headers.Accept = "application/json";
+        page.ManualTutor = new() { BcUserId = 100, ProgrammeModuleIds = [1] };
+
+        foreach (decimal? average in new decimal?[] { null, 65, 101 })
+        {
+            page.ManualTutor.OverallAverage = average;
+            var response = Assert.IsType<JsonResult>(await page.OnPostAddTutorAsync(CancellationToken.None));
+            Assert.Equal(400, response.StatusCode);
+            var errors = JsonSerializer.SerializeToElement(response.Value).GetProperty("errors");
+            Assert.Equal(average is null ? "Enter the tutor's overall average."
+                : "The overall average must be greater than 65% and no more than 100%.",
+                errors.GetProperty("ManualTutor.OverallAverage").GetString());
+            Assert.Null(page.PageError);
+            Assert.Null(student.Tutor);
+            Assert.Equal(BcUserRole.Student, student.Role);
+            Assert.Equal([1], page.ManualTutor.ProgrammeModuleIds);
+            Assert.Equal(18, await context.Tutors.CountAsync());
+        }
+
+        page.ManualTutor.OverallAverage = 75;
+        var success = Assert.IsType<JsonResult>(await page.OnPostAddTutorAsync(CancellationToken.None));
+        Assert.True(JsonSerializer.SerializeToElement(success.Value).GetProperty("succeeded").GetBoolean());
+        Assert.Equal("New Tutor was added as a tutor.", page.PageMessage);
+        Assert.Equal(BcUserRole.Tutor, student.Role);
+        Assert.True(student.Tutor!.IsActive);
+        Assert.Equal(19, await context.Tutors.CountAsync());
+    }
+
+    [Theory]
+    [InlineData(null, false)]
+    [InlineData("0", false)]
+    [InlineData("64.99", false)]
+    [InlineData("65", false)]
+    [InlineData("65.01", true)]
+    [InlineData("100", true)]
+    [InlineData("100.01", false)]
+    public async Task ManualTutorRequiresAverageStrictlyAbove65(string? average, bool accepted)
+    {
+        // Exercise both entry points and both new and returning tutors.
+        foreach (bool placementPage in new[] { false, true })
+        foreach (bool returningTutor in new[] { false, true })
+        {
+            await using var context = CreateContext();
+            await SeedTutors(context);
+            BcUser student;
+            if (returningTutor)
+            {
+                var former = await context.Tutors.Include(t => t.BcUser).SingleAsync(t => t.TutorId == 1);
+                former.IsActive = false;
+                former.Status = TutorStatus.Deregistered;
+                student = former.BcUser;
+            }
+            else
+            {
+                student = new BcUser { BcUserId = 100, PersonnelNumber = "S100", DisplayName = "New Student" };
+                context.BcUsers.Add(student);
+            }
+            await context.SaveChangesAsync();
+            string originalName = student.DisplayName;
+            var service = new TestStudentDetailsService();
+            BC_CampusLearn.Pages.Administrator.ManualTutorPageModel page = placementPage
+                ? new BC_CampusLearn.Pages.Administrator.Admin.ApplicationsModel(context, studentDetailsService: service)
+                : new IndexModel(context, service);
+            SetPageContext(page);
+            page.ManualTutor = new()
+            {
+                BcUserId = student.BcUserId, ProgrammeModuleIds = [1],
+                OverallAverage = average is null ? null : decimal.Parse(average, System.Globalization.CultureInfo.InvariantCulture)
+            };
+
+            await page.OnPostAddTutorAsync(CancellationToken.None);
+
+            if (accepted)
+            {
+                Assert.Null(page.PageError);
+                Assert.Equal(BcUserRole.Tutor, student.Role);
+                Assert.True(student.Tutor!.IsActive);
+                Assert.Equal(page.ManualTutor.OverallAverage, student.Tutor.OverallAverage);
+                Assert.Equal(returningTutor ? 18 : 19, await context.Tutors.CountAsync());
+            }
+            else
+            {
+                Assert.Equal(average is null
+                    ? "Enter the tutor's overall average."
+                    : "The overall average must be greater than 65% and no more than 100%.", page.PageError);
+                Assert.Equal(BcUserRole.Student, student.Role);
+                Assert.Equal(originalName, student.DisplayName);
+                Assert.Equal(18, await context.Tutors.CountAsync());
+                if (returningTutor)
+                {
+                    Assert.Equal(TutorStatus.Deregistered, student.Tutor!.Status);
+                    Assert.False(student.Tutor.IsActive);
+                }
+                else
+                    Assert.Null(student.Tutor);
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(TutorStatus.Approved, false)]
     [InlineData(TutorStatus.Suspended, false)]
     [InlineData(TutorStatus.Deregistered, false)]

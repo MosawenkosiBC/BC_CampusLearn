@@ -1,21 +1,21 @@
 @model BC_CampusLearn.Models.ViewModels.TutorOnboardingInput
 
 <div class="modal fade tutor-onboarding" id="tutor-onboarding-modal" tabindex="-1"
-     aria-labelledby="tutor-onboarding-title" aria-describedby="tutor-onboarding-intro"
-     data-bs-backdrop="static" data-bs-keyboard="false">
+     aria-labelledby="tutor-onboarding-title"
+     data-onboarding-storage-key="@ViewData["TutorOnboardingStorageKey"]"
+     data-onboarding-login-id="@ViewData["TutorOnboardingLoginId"]">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <span class="tutor-onboarding-eyebrow">Welcome to the tutor team</span>
                     <h2 class="modal-title" id="tutor-onboarding-title">You’re approved!</h2>
                 </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p id="tutor-onboarding-intro">Let’s complete your profile so students can get to know you.</p>
                 <partial name="~/Pages/Tutors/_OnboardingForm.cshtml" model="Model" />
             </div>
         </div>
     </div>
 </div>
-<noscript><p><a asp-page="/Tutors/Onboarding">Complete your tutor profile</a> to get started.</p></noscript>
+<noscript><p><a asp-page="/Tutors/Onboarding">Complete your tutor profile</a></p></noscript>
