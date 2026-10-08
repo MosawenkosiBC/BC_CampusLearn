@@ -286,7 +286,15 @@
                         </label>
                         <textarea asp-for="Input.SuitabilityReason"
                                   rows="5"
-                                  data-senior-reason></textarea>
+                                  data-senior-reason
+                                  data-max-length="2000"
+                                  aria-describedby="senior-suitability-counter"></textarea>
+                        <span id="senior-suitability-counter"
+                              class="tutor-senior-summary-counter"
+                              data-senior-reason-counter
+                              aria-live="polite">
+                            2,000 characters remaining
+                        </span>
                         <span asp-validation-for="Input.SuitabilityReason" data-senior-reason-error></span>
                     </div>
                 </div>

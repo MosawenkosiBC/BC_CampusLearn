@@ -40,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const descriptions = Array.from(
         form.querySelectorAll("[data-senior-description]"));
     const reason = form.querySelector("[data-senior-reason]");
+    const reasonCounter = form.querySelector("[data-senior-reason-counter]");
     const averageError = form.querySelector("[data-senior-average-error]");
     const descriptionError = form.querySelector("[data-senior-description-error]");
     const reasonError = form.querySelector("[data-senior-reason-error]");
@@ -88,11 +89,31 @@ document.addEventListener("DOMContentLoaded", () => {
         return !message;
     };
 
+    const updateReasonCounter = () => {
+        if (!reason || !reasonCounter) {
+            return;
+        }
+
+        const maximumLength = Number(reason.dataset.maxLength);
+        if (reason.value.length > maximumLength) {
+            reason.value = reason.value.slice(0, maximumLength);
+        }
+
+        const remaining = Math.max(maximumLength - reason.value.length, 0);
+        reasonCounter.textContent =
+            `${remaining.toLocaleString()} characters remaining`;
+    };
+
     average?.addEventListener("input", validateAverage);
     descriptions.forEach((option) => option.addEventListener(
         "change",
         validateDescription));
-    reason?.addEventListener("input", validateReason);
+    reason?.addEventListener("input", () => {
+        updateReasonCounter();
+        validateReason();
+    });
+
+    updateReasonCounter();
 
     form.addEventListener("submit", (event) => {
         const isAverageValid = validateAverage();
