@@ -13,7 +13,10 @@
         activate(link.getAttribute("href"));
     }));
 
-    if (window.location.hash) activate(window.location.hash);
+    if (window.location.hash && links.some(link =>
+        link.getAttribute("href") === window.location.hash)) {
+        activate(window.location.hash);
+    }
 
     page.ownerDocument.querySelectorAll("form[data-confirm]").forEach(form => {
         form.addEventListener("submit", event => {

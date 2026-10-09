@@ -1,3 +1,4 @@
+using BC_CampusLearn.Services.Notifications;
 using System.Data;
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
@@ -74,10 +75,7 @@ public sealed class TutorDeregistrationService(ApplicationDbContext context, Tim
             {
                 RecipientBcUserId = tutor.BcUserId,
                 Title = "Thank you for your contribution as a tutor",
-                Message = "Your registration in the tutoring programme has ended. Thank you for the time, care and knowledge you shared with fellow students. " +
-                    "Your contribution is appreciated, and we wish you every success in your studies and future opportunities. " +
-                    "Your student account remains available, and you can still view your past sessions and conversations. " +
-                    "If you would like to discuss this change or future tutoring opportunities, please contact Student Support.",
+                Message = await AdminNotificationCatalog.GetMessageAsync(context, AdminNotificationCatalog.Farewell, cancellationToken),
                 LinkUrl = "/Tutors/Sessions",
                 CreatedAt = now
             });

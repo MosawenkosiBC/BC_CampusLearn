@@ -27,7 +27,7 @@ public class BookingServiceTests
             DisplayOrder = 1,
 
             IsActive = true
-        });
+        }); 
         await context.SaveChangesAsync();
 
         var currentUser = new CurrentUser(

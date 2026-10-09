@@ -11,6 +11,8 @@ public class ApplicationDbContext : DbContext
     {
     }
 
+    public DbSet<NotificationTemplateSetting> NotificationTemplateSettings => Set<NotificationTemplateSetting>();
+
     public DbSet<Announcement> Announcements => Set<Announcement>();
 
     public DbSet<Tutor> Tutors => Set<Tutor>();

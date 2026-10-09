@@ -1,3 +1,4 @@
+using BC_CampusLearn.Services.Notifications;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -204,7 +205,7 @@ public static class TutorApplicationReview
         {
             RecipientBcUserId = candidate.BcUserId,
             Title = "Tutor application moved to interview",
-            Message = "Great news! Your tutor application has progressed to the interview stage. We’re excited to learn more about you and the contribution you could make as a Mzala Connect tutor. Your interview details will be shared with you shortly. Congratulations on reaching this stage, and best of luck with your interview!",
+            Message = await AdminNotificationCatalog.GetMessageAsync(context, AdminNotificationCatalog.Interview, cancellationToken),
             LinkUrl = "/Tutors/TutorApplication",
             CreatedAt = DateTimeOffset.UtcNow
         });
@@ -372,7 +373,7 @@ public static class TutorApplicationReview
         {
             RecipientBcUserId = candidate.BcUserId,
             Title = "Tutor application approved",
-            Message = "Congratulations! We’re delighted to let you know that your tutor application has been approved. Welcome to the Mzala Connect Tutor Team! We’re excited to have you join us and look forward to the positive impact you’ll make by supporting and inspiring fellow students. Your tutoring journey starts here. Well done! 🎓",
+            Message = await AdminNotificationCatalog.GetMessageAsync(context, AdminNotificationCatalog.Approval, cancellationToken),
             LinkUrl = "/Tutors/TutorApplication",
             CreatedAt = DateTimeOffset.UtcNow
         });

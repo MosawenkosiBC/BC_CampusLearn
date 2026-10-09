@@ -15,9 +15,21 @@
     }
     <div class="settings-layout">
         <partial name="_SettingsNavigation" />
-        <section class="settings-section" aria-labelledby="announcements-title">
+        <section class="settings-section" aria-label="Announcements and admin notifications">
+            <nav class="notification-category-tabs announcement-workspace-tabs" role="tablist" aria-label="Announcement settings" data-notification-tabs data-tab-parameter="Tab">
+                <a asp-page="./Notifications" asp-route-Tab="announcements" asp-route-Category="@Model.Category"
+                   id="tab-announcements" role="tab" aria-controls="announcement-composer"
+                   aria-selected="@((Model.Tab == "announcements").ToString().ToLowerInvariant())" tabindex="@(Model.Tab == "announcements" ? 0 : -1)"
+                   class="@(Model.Tab == "announcements" ? "selected" : null)" data-tab-value="announcements">Announcements</a>
+                <a asp-page="./Notifications" asp-route-Tab="notifications" asp-route-Category="@Model.Category" asp-fragment="admin-notification-settings"
+                   id="tab-admin-notifications" role="tab" aria-controls="admin-notification-settings"
+                   aria-selected="@((Model.Tab == "notifications").ToString().ToLowerInvariant())" tabindex="@(Model.Tab == "notifications" ? 0 : -1)"
+                   class="@(Model.Tab == "notifications" ? "selected" : null)" data-tab-value="notifications">Admin notifications</a>
+            </nav>
+            <section id="announcement-composer" role="tabpanel" aria-labelledby="tab-announcements" hidden="@(Model.Tab != "announcements")">
             <header class="settings-section-heading"><div><h2 id="announcements-title">Announcements</h2><p>Share updates with tutors or all students.</p></div></header>
             <form method="post" class="settings-form" data-announcement-form>
+                <input type="hidden" name="Tab" value="announcements" />
                 <div asp-validation-summary="ModelOnly" class="settings-validation" role="alert"></div>
                 <div class="settings-field-grid">
                     <div class="settings-field"><label asp-for="Input.Title">Title</label><input asp-for="Input.Title" maxlength="160" placeholder="e.g. Tutor workshop" /><span asp-validation-for="Input.Title"></span></div>
@@ -51,6 +63,81 @@
                     <button type="submit" class="settings-primary-button">Send announcement</button>
                 </footer>
             </form>
+            </section>
+            <section id="admin-notification-settings" class="admin-notification-settings" role="tabpanel" aria-labelledby="tab-admin-notifications" hidden="@(Model.Tab != "notifications")">
+                <header>
+                    <h2 id="admin-notifications-title">Admin notification settings</h2>
+                    <p>Read the notifications sent by administrator and Tutor Head actions. Customise the editable messages for future notifications.</p>
+                    <p class="notification-settings-help">Each message is sent automatically when its listed action occurs. Fields in braces are filled with the relevant details. Changes apply to new notifications.</p>
+                </header>
+                <nav class="notification-category-tabs" role="tablist" aria-label="Notification categories" data-notification-tabs data-tab-parameter="Category">
+                    @foreach (var category in Model.NotificationTemplates.GroupBy(item => item.Definition.Category))
+                    {
+                        string categoryId = "notification-category-" + category.Key.ToLowerInvariant().Replace(" ", "-");
+                        bool selected = category.Key == Model.Category;
+                        <a asp-page="./Notifications" asp-route-Tab="notifications" asp-route-Category="@category.Key" asp-fragment="admin-notification-settings"
+                           id="tab-@categoryId" role="tab" aria-controls="@categoryId"
+                           aria-selected="@selected.ToString().ToLowerInvariant()" tabindex="@(selected ? 0 : -1)"
+                           class="@(selected ? "selected" : null)" data-tab-value="@category.Key">
+                            @category.Key <span>@category.Count()</span>
+                        </a>
+                    }
+                </nav>
+                <div class="notification-category-list">
+                    @foreach (var category in Model.NotificationTemplates.GroupBy(item => item.Definition.Category))
+                    {
+                        string categoryId = "notification-category-" + category.Key.ToLowerInvariant().Replace(" ", "-");
+                        <section class="notification-category" id="@categoryId" role="tabpanel" aria-labelledby="tab-@categoryId" hidden="@(category.Key != Model.Category)">
+                            <div class="notification-template-list">
+                                @foreach (var item in category)
+                                {
+                                    var definition = item.Definition;
+                                    bool failed = Model.FailedTemplateKey == definition.Key;
+                                    <details class="notification-template" open="@(failed ? true : (bool?)null)">
+                                        <summary>
+                                            <span>@definition.Title</span>
+                                            <span class="notification-template-status">@(definition.Editable ? item.Customized ? "Custom message" : "Editable" : "Read only")</span>
+                                        </summary>
+                                        <div class="notification-template-body">
+                                            <dl class="notification-template-context">
+                                                <div><dt>Sent to</dt><dd>@definition.Recipient</dd></div>
+                                                <div><dt>Sent by</dt><dd>@definition.Source</dd></div>
+                                                <div><dt>When</dt><dd>@definition.Trigger</dd></div>
+                                            </dl>
+                                            @if (definition.Editable)
+                                            {
+                                                <form method="post" asp-page-handler="SaveTemplate">
+                                                    <input type="hidden" name="templateKey" value="@definition.Key" />
+                                                    <input type="hidden" name="Category" value="@definition.Category" />
+                                                    <input type="hidden" name="Tab" value="notifications" />
+                                                    <div class="settings-field">
+                                                        <label for="message-@definition.Key">Notification message</label>
+                                                        <textarea id="message-@definition.Key" name="message" rows="6" maxlength="4000" required aria-describedby="message-help-@definition.Key">@item.Message</textarea>
+                                                        <small id="message-help-@definition.Key">Up to 4,000 characters. Saving changes the wording used when this action next occurs.</small>
+                                                    </div>
+                                                    @if (failed)
+                                                    {
+                                                        <p class="notification-template-error" role="alert">@Model.TemplateError</p>
+                                                    }
+                                                    <div class="notification-template-actions">
+                                                        <button type="submit" class="settings-primary-button">Save message</button>
+                                                        <button type="submit" asp-page-handler="ResetTemplate" formnovalidate class="settings-secondary-button" disabled="@(!item.Customized)">Restore default</button>
+                                                    </div>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <h3>Notification message</h3>
+                                                <p class="notification-template-message">@item.Message</p>
+                                            }
+                                        </div>
+                                    </details>
+                                }
+                            </div>
+                        </section>
+                    }
+                </div>
+            </section>
         </section>
     </div>
 </main>
@@ -58,5 +145,6 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     <script src="~/js/resource-rich-text-editor.js" asp-append-version="true"></script>
     <script src="~/js/announcements.js" asp-append-version="true"></script>
+    <script src="~/js/notification-tabs.js" asp-append-version="true"></script>
     <script src="~/js/admin-settings.js" asp-append-version="true"></script>
 }
