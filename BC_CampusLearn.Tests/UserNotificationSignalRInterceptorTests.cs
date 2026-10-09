@@ -41,6 +41,41 @@ public class UserNotificationSignalRInterceptorTests
         Assert.Single(proxy.Arguments!);
     }
 
+    [Fact]
+    public async Task SendingAnnouncementPushesToEachRecipientGroupAfterPersistence()
+    {
+        var proxy = new RecordingClientProxy();
+        var clients = new RecordingHubClients(proxy);
+        var interceptor = new UserNotificationSignalRInterceptor(
+            new TestHubContext(clients), NullLogger<UserNotificationSignalRInterceptor>.Instance);
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString()).AddInterceptors(interceptor).Options;
+        await using var context = new ApplicationDbContext(options);
+        context.BcUsers.AddRange(
+            new BcUser { BcUserId = 1, DisplayName = "Admin", Role = BcUserRole.Admin },
+            new BcUser { BcUserId = 2, DisplayName = "Student" },
+            new BcUser { BcUserId = 3, DisplayName = "Tutor", Role = BcUserRole.SeniorTutor });
+        await context.SaveChangesAsync();
+        var page = new BC_CampusLearn.Pages.Administrator.Settings.NotificationsModel(
+            context, new AnnouncementUser(), TimeProvider.System);
+        page.Input = new()
+        {
+            Title = "Workshop", Content = "Join the workshop.",
+            Audience = AnnouncementAudience.AllStudents
+        };
+        Assert.IsType<Microsoft.AspNetCore.Mvc.RedirectToPageResult>(await page.OnPostAsync(default));
+        Assert.Single(await context.Announcements.ToListAsync());
+        Assert.Equal(2, await context.UserNotifications.CountAsync());
+        Assert.Equal(new[] { "user-2", "user-3" }, clients.RequestedGroups.Order().ToArray());
+        Assert.Equal("ReceiveUserNotification", proxy.MethodName);
+    }
+
+    private sealed class AnnouncementUser : BC_CampusLearn.Authentication.ICurrentUserService
+    {
+        public bool IsAuthenticated => true;
+        public BC_CampusLearn.Authentication.CurrentUser GetRequiredUser() =>
+            new(1, null, "Admin", null, BcUserRole.Admin);
+    }
     private sealed class TestHubContext(IHubClients clients)
         : IHubContext<SessionHub>
     {
@@ -67,6 +102,7 @@ public class UserNotificationSignalRInterceptorTests
     private sealed class RecordingHubClients(IClientProxy proxy)
         : IHubClients
     {
+        public List<string> RequestedGroups { get; } = new();
         public string? RequestedGroupName { get; private set; }
         public IClientProxy All => proxy;
         public IClientProxy AllExcept(IReadOnlyList<string> excludedConnectionIds) => proxy;
@@ -75,6 +111,7 @@ public class UserNotificationSignalRInterceptorTests
 
         public IClientProxy Group(string groupName)
         {
+            RequestedGroups.Add(groupName);
             RequestedGroupName = groupName;
             return proxy;
         }

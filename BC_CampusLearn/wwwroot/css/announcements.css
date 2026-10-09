@@ -1,0 +1,24 @@
+.announcement-message { margin-top: 1.5rem; }
+.announcement-message .ql-toolbar { border-radius: .5rem .5rem 0 0; }
+.announcement-message .ql-container { border-radius: 0 0 .5rem .5rem; font: inherit; }
+.announcement-message .ql-editor { min-height: 16rem; }
+.announcement-detail { max-width: 60rem; margin: 2rem auto; padding: 1.5rem; }
+.announcement-detail header { margin-bottom: 2rem; }
+.announcement-detail p { overflow-wrap: anywhere; }
+.announcement-detail .is-plain-text { white-space: pre-wrap; }
+
+.announcement-detail .ql-editor { padding: 0; font-size: 1rem; line-height: 1.6; overflow-wrap: anywhere; }
+.announcement-audience { border: 0; margin: 0; padding: 0; min-width: 0; }
+.announcement-audience legend { float: none; width: auto; font-size: .8rem; line-height: 1.5; font-weight: 500; margin-bottom: .42rem; }
+.announcement-audience-toggle { box-sizing: border-box; display: flex; height: 44px; gap: .25rem; padding: .25rem; background: #f2f6f6; border: 1px solid #dfe8e8; border-radius: .55rem; }
+.announcement-audience-toggle label { position: relative; flex: 1; cursor: pointer; margin: 0; }
+.announcement-audience-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.announcement-audience-toggle span { display: flex; align-items: center; justify-content: center; height: 100%; min-height: 0; padding: 0 .7rem; border-radius: .4rem; color: #586566; font-size: .8rem; text-align: center; }
+.announcement-audience-toggle input:checked + span { color: #fff; background: #218f8f; }
+.announcement-audience-toggle input:focus-visible + span { outline: 3px solid #85d2d2; outline-offset: 2px; }
+.announcement-audience > .field-validation-error { display: block; margin-top: .35rem; color: #b3485a; font-size: .72rem; }
+
+[data-announcement-form] .settings-field-grid { align-items: start; }
+[data-announcement-form] .settings-field-grid .settings-field > label { line-height: 1.5; }
+[data-announcement-form] #Input_Title { box-sizing: border-box; height: 44px; min-height: 44px; padding: .65rem .8rem; }
+.announcement-audience-help { color: #727a7b; font-size: .75rem; line-height: 1.5; margin: .5rem 0 0; }

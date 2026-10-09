@@ -91,21 +91,7 @@
     };
 
     if (quillHost && content && window.Quill) {
-        quill = new window.Quill(quillHost, {
-            theme: "snow",
-            placeholder: "Write the explanation, study notes, instructions or activity here...",
-            formats: editorFormats,
-            modules: {
-                toolbar: [
-                    [{ header: [2, 3, false] }],
-                    ["bold", "italic", "underline"],
-                    [{ list: "ordered" }, { list: "bullet" }],
-                    ["blockquote", "code-block"],
-                    ["link"],
-                    ["clean"]
-                ]
-            }
-        });
+        quill = window.createResourceRichTextEditor(quillHost, "Write the explanation, study notes, instructions or activity here...");
 
         const storedDelta = parseStoredContent(content.value);
         if (storedDelta) {

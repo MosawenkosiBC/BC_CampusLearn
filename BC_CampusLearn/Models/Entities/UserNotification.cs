@@ -3,6 +3,8 @@ namespace BC_CampusLearn.Models.Entities;
 public class UserNotification
 {
     public long UserNotificationId { get; set; }
+    public Guid? AnnouncementId { get; set; }
+    public Announcement? Announcement { get; set; }
     public int RecipientBcUserId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;

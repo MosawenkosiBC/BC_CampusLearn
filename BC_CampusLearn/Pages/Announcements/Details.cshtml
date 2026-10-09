@@ -1,0 +1,22 @@
+@page
+@model BC_CampusLearn.Pages.Announcements.DetailsModel
+@{ ViewData["Title"] = Model.Announcement.Title; }
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.bubble.css" />
+    <link rel="stylesheet" href="~/css/announcements.css" asp-append-version="true" />
+}
+<main class="announcement-detail">
+    <header>
+        <p>Announcement · @(Model.Announcement.Audience == AnnouncementAudience.TutorsOnly ? "Tutors only" : "All students (including tutors)")</p>
+        <h1>@Model.Announcement.Title</h1>
+        <p>Sent by @Model.Announcement.Sender.DisplayName · @Model.Announcement.SentAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")</p>
+    </header>
+    <textarea hidden data-student-resource-delta>@Model.Announcement.Content</textarea>
+    <div data-student-resource-content></div>
+    <noscript><p>Enable JavaScript to read this announcement.</p></noscript>
+    <p><a asp-page="/Notifications/Index">Back to notifications</a></p>
+</main>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <script src="~/js/learning-resource-reader.js" asp-append-version="true"></script>
+}

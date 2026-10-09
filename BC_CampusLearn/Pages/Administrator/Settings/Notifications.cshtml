@@ -1,22 +1,62 @@
-@page
+@page "/Administrator/Settings/Announcements"
 @model BC_CampusLearn.Pages.Administrator.Settings.NotificationsModel
-@{ ViewData["Title"] = "Notification settings"; }
+@{ ViewData["Title"] = "Announcements"; }
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin-settings.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" />
+    <link rel="stylesheet" href="~/css/announcements.css" asp-append-version="true" />
 }
 <main class="admin-settings" aria-labelledby="settings-title" data-settings-page>
     <header class="admin-dashboard-header"><h1 id="settings-title">Settings</h1></header>
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.SuccessMessage))
+    }
     <div class="settings-layout">
         <partial name="_SettingsNavigation" />
-        <section class="settings-section settings-section--placeholder" aria-labelledby="notifications-title">
-            <header class="settings-section-heading"><div><h2 id="notifications-title">Notifications</h2><p>Delivery channels and event-specific preferences will live here.</p></div><span class="settings-status">Skeleton</span></header>
-            <div class="settings-placeholder-grid">
-                <article><i class="bi bi-app-indicator"></i><h3>In-app</h3><p>Control operational alerts inside the platform.</p></article>
-                <article><i class="bi bi-envelope"></i><h3>Email</h3><p>Configure email delivery and the reply-to identity.</p></article>
-                <article><i class="bi bi-alarm"></i><h3>Reminders</h3><p>Choose reminder timing for sessions and approvals.</p></article>
-            </div>
+        <section class="settings-section" aria-labelledby="announcements-title">
+            <header class="settings-section-heading"><div><h2 id="announcements-title">Announcements</h2><p>Share updates with tutors or all students.</p></div></header>
+            <form method="post" class="settings-form" data-announcement-form>
+                <div asp-validation-summary="ModelOnly" class="settings-validation" role="alert"></div>
+                <div class="settings-field-grid">
+                    <div class="settings-field"><label asp-for="Input.Title">Title</label><input asp-for="Input.Title" maxlength="160" placeholder="e.g. Tutor workshop" /><span asp-validation-for="Input.Title"></span></div>
+                    <fieldset class="announcement-audience" aria-describedby="announcement-audience-help">
+                        <legend>Audience</legend>
+                        <div class="announcement-audience-toggle">
+                            <label>
+                                <input asp-for="Input.Audience" type="radio" id="audience-tutors" value="TutorsOnly" />
+                                <span>Tutors only</span>
+                            </label>
+                            <label>
+                                <input asp-for="Input.Audience" type="radio" id="audience-students" value="AllStudents" />
+                                <span>All students</span>
+                            </label>
+                        </div>
+                        <p id="announcement-audience-help" class="announcement-audience-help" data-announcement-audience-help aria-live="polite">
+                            @(Model.Input.Audience == AnnouncementAudience.TutorsOnly
+                                ? "Notifications will be sent to tutors only."
+                                : "Notifications will be sent to all students, including tutors.")
+                        </p>
+                        <span asp-validation-for="Input.Audience"></span>
+                    </fieldset>
+                </div>
+                <div class="settings-field announcement-message">
+                    <label for="announcement-editor">Message</label>
+                    <textarea asp-for="Input.Content" rows="8" data-announcement-content aria-label="Announcement message"></textarea>
+                    <div id="announcement-editor" data-announcement-editor hidden></div>
+                    <span asp-validation-for="Input.Content" data-announcement-validation role="alert"></span>
+                </div>
+                <footer class="settings-form-footer">
+                    <button type="submit" class="settings-primary-button">Send announcement</button>
+                </footer>
+            </form>
         </section>
     </div>
 </main>
-@section Scripts { <script src="~/js/admin-settings.js" asp-append-version="true"></script> }
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <script src="~/js/resource-rich-text-editor.js" asp-append-version="true"></script>
+    <script src="~/js/announcements.js" asp-append-version="true"></script>
+    <script src="~/js/admin-settings.js" asp-append-version="true"></script>
+}
