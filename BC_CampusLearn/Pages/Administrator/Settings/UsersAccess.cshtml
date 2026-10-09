@@ -35,36 +35,12 @@
                 </header>
 
                 <div class="admin-tutors-workspace settings-access-workspace">
-                    <aside class="admin-tutor-filters" aria-labelledby="access-filter-title">
-                        <div class="admin-filter-heading">
-                            <h3 id="access-filter-title">Filters</h3>
-                            <a asp-page="/Administrator/Settings/UsersAccess">Clear All</a>
-                        </div>
-                        <form method="get" asp-page="/Administrator/Settings/UsersAccess" asp-fragment="access-results">
-                            <div class="admin-filter-group">
-                                <label asp-for="SearchTerm">Search users</label>
-                                <div class="admin-filter-search">
-                                    <input asp-for="SearchTerm" type="search" placeholder="Name, personnel number or email" />
-                                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
-                                </div>
-                            </div>
-                            <fieldset class="admin-filter-years">
-                                <legend>Role</legend>
-                                <label><input type="checkbox" name="Roles" value="HeadOfTutors" checked="@(Model.Roles.Contains(BcUserRole.HeadOfTutors))" /><span>Head of Tutors</span></label>
-                                <label><input type="checkbox" name="Roles" value="Admin" checked="@(Model.Roles.Contains(BcUserRole.Admin))" /><span>Admin</span></label>
-                                <label><input type="checkbox" name="Roles" value="SuperAdmin" checked="@(Model.Roles.Contains(BcUserRole.SuperAdmin))" /><span>Super Admin</span></label>
-                                <label><input type="checkbox" name="Roles" value="Dev" checked="@(Model.Roles.Contains(BcUserRole.Dev))" /><span>Developer</span></label>
-                            </fieldset>
-                            <fieldset class="admin-filter-years">
-                                <legend>Status</legend>
-                                <label><input type="checkbox" name="AccessStatus" value="Active" checked="@(Model.AccessStatus.Contains(UsersAccessModel.AccessStatusFilter.Active))" /><span>Active</span></label>
-                                <label><input type="checkbox" name="AccessStatus" value="Inactive" checked="@(Model.AccessStatus.Contains(UsersAccessModel.AccessStatusFilter.Inactive))" /><span>Inactive</span></label>
-                            </fieldset>
-                            <button type="submit" class="admin-apply-filters">Apply Filters</button>
-                        </form>
-                    </aside>
-
                     <div class="admin-tutor-results" id="access-results">
+                        <div class="settings-results-toolbar">
+                            <button type="button" class="settings-secondary-button settings-filter-button" data-bs-toggle="modal" data-bs-target="#access-filter-modal" aria-controls="access-filter-modal">
+                                <i class="bi bi-funnel" aria-hidden="true"></i> Filter
+                            </button>
+                        </div>
                         <p class="admin-tutor-result-count" role="status">
                             Showing <strong>@Model.AccessUsers.Count</strong> of <strong>@Model.FilteredAccessUsers</strong> users
                         </p>
@@ -109,6 +85,46 @@
     </div>
 </main>
 @section Modals {
+    <div class="modal fade settings-filter-modal" id="access-filter-modal" tabindex="-1" aria-labelledby="access-filter-modal-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="access-filter-modal-title">Filter users</h2>
+                    <div class="settings-filter-header-actions">
+                        <a asp-page="/Administrator/Settings/UsersAccess" asp-fragment="access-results" class="settings-filter-clear">Clear filters</a>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+                <form method="get" asp-page="/Administrator/Settings/UsersAccess" asp-fragment="access-results">
+                    <div class="modal-body">
+                        <div class="admin-filter-group">
+                            <label asp-for="SearchTerm">Search users</label>
+                            <div class="admin-filter-search">
+                                <input asp-for="SearchTerm" type="search" placeholder="Name, personnel number or email" />
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                            </div>
+                        </div>
+                        <fieldset class="admin-filter-years">
+                            <legend>Role</legend>
+                            <label><input type="checkbox" name="Roles" value="HeadOfTutors" checked="@(Model.Roles.Contains(BcUserRole.HeadOfTutors))" /><span>Head of Tutors</span></label>
+                            <label><input type="checkbox" name="Roles" value="Admin" checked="@(Model.Roles.Contains(BcUserRole.Admin))" /><span>Admin</span></label>
+                            <label><input type="checkbox" name="Roles" value="SuperAdmin" checked="@(Model.Roles.Contains(BcUserRole.SuperAdmin))" /><span>Super Admin</span></label>
+                            <label><input type="checkbox" name="Roles" value="Dev" checked="@(Model.Roles.Contains(BcUserRole.Dev))" /><span>Developer</span></label>
+                        </fieldset>
+                        <fieldset class="admin-filter-years">
+                            <legend>Status</legend>
+                            <label><input type="checkbox" name="AccessStatus" value="Active" checked="@(Model.AccessStatus.Contains(UsersAccessModel.AccessStatusFilter.Active))" /><span>Active</span></label>
+                            <label><input type="checkbox" name="AccessStatus" value="Inactive" checked="@(Model.AccessStatus.Contains(UsersAccessModel.AccessStatusFilter.Inactive))" /><span>Inactive</span></label>
+                        </fieldset>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="settings-secondary-button" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="settings-primary-button">Apply filters</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     @if (Model.CanManageAccess)
     {
         <div class="modal fade settings-grant-access-modal" id="access-role-modal" tabindex="-1"

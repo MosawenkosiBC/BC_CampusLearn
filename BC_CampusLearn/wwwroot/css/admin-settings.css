@@ -307,8 +307,6 @@
 
 .settings-study-areas-workspace,
 .settings-access-workspace { padding: 1.5rem; }
-.settings-study-areas-workspace .admin-filter-heading h3,
-.settings-access-workspace .admin-filter-heading h3 { font-size: 1.25rem; font-weight: 500; margin: 0; }
 .settings-study-areas-table,
 .settings-access-table { min-width: 60rem; }
 .admin-settings .settings-section-heading h2 { font-weight: 600; }
@@ -414,3 +412,35 @@
     .settings-switch span,
     .settings-switch span::after { transition: none; }
 }
+
+/* Settings filters share one modal instead of a separate sidebar card. */
+.settings-study-areas-workspace,
+.settings-access-workspace { grid-template-columns: minmax(0, 1fr); }
+.settings-results-toolbar { display: flex; justify-content: flex-end; width: 100%; margin-bottom: 1rem; }
+.settings-results-toolbar .settings-filter-button { display: inline-flex; align-items: center; gap: 0.5rem; margin-left: auto; flex: 0 0 auto; }
+.settings-filter-modal .modal-content { border: 0; border-radius: 0.75rem; overflow: hidden; }
+.settings-filter-modal .modal-title { font-size: 1.2rem; font-weight: 600; }
+.settings-filter-modal form { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.settings-filter-modal .modal-body { padding: 1.5rem; overflow-y: auto; }
+.settings-filter-modal .admin-filter-years:last-child { margin-bottom: 0; }
+.settings-filter-modal .modal-footer { gap: 0.5rem; }
+.settings-filter-modal .modal-header { gap: 1rem; flex-wrap: wrap; }
+.settings-filter-header-actions { display: flex; align-items: center; gap: 1rem; margin-left: auto; }
+.settings-filter-header-actions .btn-close { margin: 0; }
+.settings-filter-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #cfd5d6;
+    border-radius: 999px;
+    background: #f4f6f6;
+    color: #343a3b;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.settings-filter-clear:hover { background: #e8eded; color: #202526; }
+.settings-filter-modal :is(input, button, a):focus-visible { outline: 3px solid #4f87a5; outline-offset: 3px; }
