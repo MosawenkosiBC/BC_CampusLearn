@@ -1,4 +1,20 @@
 (() => {
+    const rejectRemainingModal = document.querySelector("[data-reject-remaining-modal]");
+    document.querySelector("[data-reject-remaining-open]")
+        ?.addEventListener("click", () => rejectRemainingModal?.showModal());
+    rejectRemainingModal?.addEventListener("click", event => {
+        if (event.target === rejectRemainingModal) {
+            rejectRemainingModal.close();
+        }
+    });
+    document.querySelector("[data-reject-remaining-form]")
+        ?.addEventListener("submit", event => {
+            const button = event.currentTarget.querySelector("button[type='submit']");
+            if (button) {
+                button.disabled = true;
+                button.textContent = "Rejecting and deleting…";
+            }
+        });
     const settingsForm = document.querySelector(
         "[data-application-settings-form]");
     const toggle = settingsForm?.querySelector(

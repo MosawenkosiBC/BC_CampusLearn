@@ -199,10 +199,89 @@
     margin: 0.5rem 0 1.65rem;
 }
 
+.application-phase-actions,
+.application-rejection-actions,
+.application-selection,
+.application-selection label {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.application-phase-actions {
+    justify-content: space-between;
+    margin: -0.65rem 0 1rem;
+}
+
+.application-rejection-actions {
+    justify-content: flex-end;
+    margin-left: auto;
+}
+
+.application-selection {
+    font-size: 0.8rem;
+}
+
+.application-selection input,
+.applicant-checkbox {
+    accent-color: #363c3d;
+    cursor: pointer;
+    flex-shrink: 0;
+    height: 1.1rem;
+    width: 1.1rem;
+}
+
+.applicant-checkbox {
+    margin-right: 0.75rem;
+}
+
 .placement-actions {
     display: flex;
     justify-content: flex-end;
     margin: -0.65rem 0 1rem;
+}
+
+.reject-remaining-warning {
+    background: #fff1f0;
+    border-left: 4px solid #b42318;
+    color: #912018;
+    font-weight: 600;
+    padding: 0.85rem 1rem;
+}
+
+.reject-remaining-button {
+    background: #b42318;
+    border: 1px solid #b42318;
+    border-radius: 0.45rem;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    min-height: 2.75rem;
+    padding: 0.6rem 1rem;
+}
+
+.reject-remaining-button:hover:not(:disabled),
+.reject-remaining-button:focus-visible {
+    background: #912018;
+    outline: 2px solid #b42318;
+    outline-offset: 2px;
+}
+
+.reject-remaining-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.admin-modal-actions button[type="submit"].reject-remaining-button {
+    background: #b42318;
+    border-color: #b42318;
+    color: #fff;
+}
+
+.admin-modal-actions button[type="submit"].reject-remaining-button:hover:not(:disabled),
+.admin-modal-actions button[type="submit"].reject-remaining-button:focus-visible {
+    background: #912018;
 }
 
 .add-tutor-button {
@@ -366,6 +445,25 @@
         minmax(5.5rem, 0.65fr);
     padding: 0.85rem 0.25rem 0.7rem;
     text-transform: uppercase;
+}
+
+.application-sort-link {
+    align-items: center;
+    color: inherit;
+    display: inline-flex;
+    gap: 0.3rem;
+    text-decoration: none;
+}
+
+.application-sort-link:hover,
+.application-sort-link:focus-visible {
+    color: #272b2c;
+    text-decoration: underline;
+}
+
+.application-sort-link:focus-visible {
+    outline: 2px solid #4ac1c1;
+    outline-offset: 3px;
 }
 
 .application-candidate-row {
@@ -2246,6 +2344,11 @@ button.candidate-view-link {
     }
 
     .application-table-heading {
+        gap: 0.5rem;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .application-table-heading > span {
         display: none;
     }
 

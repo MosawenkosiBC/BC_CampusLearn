@@ -21,16 +21,19 @@ public class ApplicationsModel : ManualTutorPageModel
     private readonly ApplicationDbContext _context;
     private readonly ICurrentUserService? _currentUserService;
     private readonly ITutorApplicationEmailSender? _emailSender;
+    private readonly IWebHostEnvironment? _environment;
 
     public ApplicationsModel(
         ApplicationDbContext context,
         ICurrentUserService? currentUserService = null,
         ITutorApplicationEmailSender? emailSender = null,
-        IStudentDetailsService? studentDetailsService = null) : base(context, studentDetailsService)
+        IStudentDetailsService? studentDetailsService = null,
+        IWebHostEnvironment? environment = null) : base(context, studentDetailsService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _emailSender = emailSender;
+        _environment = environment;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -39,11 +42,18 @@ public class ApplicationsModel : ManualTutorPageModel
     [BindProperty(SupportsGet = true)]
     public string? Search { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public string Sort { get; set; } = "average";
+
+    [BindProperty(SupportsGet = true)]
+    public string SortDirection { get; set; } = "desc";
+
     public bool OpenApplications { get; private set; }
     public int? ShortlistLimit { get; private set; }
     public DateTime? ApplicationOpenDate { get; private set; }
     public DateTime? ApplicationCloseDate { get; private set; }
     public int ApplicationCount { get; private set; }
+    public int RemainingApplicationCount { get; private set; }
     public int ShortlistCount { get; private set; }
     public int InterviewCount { get; private set; }
     public int PlacementCount { get; private set; }
@@ -84,6 +94,9 @@ public class ApplicationsModel : ManualTutorPageModel
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         NormalizeStage();
+        Sort = Sort is "average" or "programme" or "year" or "modules"
+            ? Sort : "average";
+        SortDirection = SortDirection == "asc" ? "asc" : "desc";
         await TutorApplicationReview
             .RemoveRejectedApplicationsWhenCycleClosedAsync(
                 _context,
@@ -97,6 +110,10 @@ public class ApplicationsModel : ManualTutorPageModel
                     (tutor.Status == TutorStatus.Approved && tutor.IsActive)) &&
                 tutor.ApplicationStage != TutorApplicationStage.Rejected);
         string? normalizedSearch = Search?.Trim();
+        RemainingApplicationCount = await applications.CountAsync(tutor =>
+            tutor.Status == TutorStatus.Pending &&
+            tutor.ApplicationStage == TutorApplicationStage.Submitted,
+            cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(normalizedSearch))
         {
@@ -139,8 +156,22 @@ public class ApplicationsModel : ManualTutorPageModel
                 tutor.ApplicationStage == TutorApplicationStage.Submitted)
         };
 
-        Candidates = await candidates
-            .OrderByDescending(tutor => tutor.SubmittedAt)
+        var orderedCandidates = (Sort, SortDirection) switch
+        {
+            ("programme", "asc") => candidates.OrderBy(tutor => tutor.Programme.Name),
+            ("programme", _) => candidates.OrderByDescending(tutor => tutor.Programme.Name),
+            ("year", "asc") => candidates.OrderBy(tutor => tutor.YearOfStudy),
+            ("year", _) => candidates.OrderByDescending(tutor => tutor.YearOfStudy),
+            ("modules", "asc") => candidates.OrderBy(tutor => tutor.TutorCourseModules.Count(item => item.IsActive)),
+            ("modules", _) => candidates.OrderByDescending(tutor => tutor.TutorCourseModules.Count(item => item.IsActive)),
+            ("average", "asc") => candidates.OrderBy(tutor => tutor.OverallAverage),
+            _ => candidates.OrderByDescending(tutor => tutor.OverallAverage)
+        };
+
+        Candidates = await orderedCandidates
+            .ThenByDescending(tutor => tutor.OverallAverage)
+            .ThenByDescending(tutor => tutor.SubmittedAt)
+            .ThenBy(tutor => tutor.TutorId)
             .Select(tutor => new ApplicationCandidate
             {
                 TutorId = tutor.TutorId,
@@ -206,6 +237,48 @@ public class ApplicationsModel : ManualTutorPageModel
         {
             await LoadManualTutorOptionsAsync(cancellationToken);
         }
+    }
+
+    public async Task<IActionResult> OnPostRejectSelectedAsync(
+        int[]? selectedTutorIds,
+        bool confirmRejectSelected,
+        CancellationToken cancellationToken)
+    {
+        if (!confirmRejectSelected)
+            PageError = "Confirm that you want to reject the selected applicants and permanently delete their tutor profiles and documents.";
+        else
+        {
+            ShortlistResult result = await TutorApplicationReview.RejectSelectedAsync(
+                _context, selectedTutorIds ?? Array.Empty<int>(), cancellationToken,
+                _currentUserService?.GetRequiredUser().BcUserId, _environment?.ContentRootPath);
+            if (result.Succeeded)
+                PageMessage = result.Message;
+            else
+                PageError = result.Message;
+        }
+        return RedirectToPage(new { Stage = "applications", Search, Sort, SortDirection });
+    }
+
+    public async Task<IActionResult> OnPostRejectRemainingAsync(
+        bool confirmRejectRemaining,
+        CancellationToken cancellationToken)
+    {
+        if (!confirmRejectRemaining)
+        {
+            PageError = "Confirm that you want to reject all remaining applications and permanently delete their tutor profiles and documents.";
+        }
+        else
+        {
+            ShortlistResult result = await TutorApplicationReview.RejectRemainingAsync(
+                _context, cancellationToken,
+                _currentUserService?.GetRequiredUser().BcUserId,
+                _environment?.ContentRootPath);
+            if (result.Succeeded)
+                PageMessage = result.Message;
+            else
+                PageError = result.Message;
+        }
+        return RedirectToPage(new { Stage = "applications", Search, Sort, SortDirection });
     }
 
     public async Task<IActionResult> OnPostSettingsAsync(

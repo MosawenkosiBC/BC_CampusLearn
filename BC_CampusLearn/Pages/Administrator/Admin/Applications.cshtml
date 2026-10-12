@@ -6,6 +6,7 @@
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/components/pagination.css" asp-append-version="true" />
     <link rel="stylesheet"
           href="~/css/admin-applications.css"
           asp-append-version="true" />
@@ -39,6 +40,8 @@
 
         <form method="get" class="applications-search-form" role="search">
             <input type="hidden" name="Stage" value="@Model.Stage" />
+            <input type="hidden" name="Sort" value="@Model.Sort" />
+            <input type="hidden" name="SortDirection" value="@Model.SortDirection" />
             <div class="applications-search-group">
             <div class="applications-search">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -51,6 +54,8 @@
                 {
                     <a asp-page="/Administrator/Admin/Applications"
                        asp-route-Stage="@Model.Stage"
+                       asp-route-Sort="@Model.Sort"
+                       asp-route-SortDirection="@Model.SortDirection"
                        class="applications-search-clear"
                        aria-label="Clear candidate search"
                        title="Clear search">
@@ -190,6 +195,8 @@
     <nav class="application-stage-tabs" aria-label="Application stages">
         <a asp-page="/Administrator/Admin/Applications"
            asp-route-Stage="applications"
+           asp-route-Sort="@Model.Sort"
+           asp-route-SortDirection="@Model.SortDirection"
            asp-route-Search="@Model.Search"
            class="application-stage-tab @(Model.Stage == "applications" ? "is-active" : null)"
            aria-current="@(Model.Stage == "applications" ? "page" : null)">
@@ -202,6 +209,8 @@
 
         <a asp-page="/Administrator/Admin/Applications"
            asp-route-Stage="shortlist"
+           asp-route-Sort="@Model.Sort"
+           asp-route-SortDirection="@Model.SortDirection"
            asp-route-Search="@Model.Search"
            class="application-stage-tab @(Model.Stage == "shortlist" ? "is-active" : null)"
            aria-current="@(Model.Stage == "shortlist" ? "page" : null)">
@@ -215,6 +224,8 @@
 
         <a asp-page="/Administrator/Admin/Applications"
            asp-route-Stage="interview"
+           asp-route-Sort="@Model.Sort"
+           asp-route-SortDirection="@Model.SortDirection"
            asp-route-Search="@Model.Search"
            class="application-stage-tab @(Model.Stage == "interview" ? "is-active" : null)"
            aria-current="@(Model.Stage == "interview" ? "page" : null)">
@@ -228,6 +239,8 @@
 
         <a asp-page="/Administrator/Admin/Applications"
            asp-route-Stage="placement"
+           asp-route-Sort="@Model.Sort"
+           asp-route-SortDirection="@Model.SortDirection"
            asp-route-Search="@Model.Search"
            class="application-stage-tab @(Model.Stage == "placement" ? "is-active" : null)"
            aria-current="@(Model.Stage == "placement" ? "page" : null)">
@@ -239,6 +252,89 @@
             <strong>@Model.PlacementCount</strong>
         </a>
     </nav>
+
+    @if (Model.Stage == "applications")
+    {
+        <div class="application-phase-actions">
+            <div class="application-selection">
+                <label>
+                    <input type="checkbox" data-select-visible-applicants />
+                    Select this page
+                </label>
+                <span data-applicant-selection-count aria-live="polite">0 selected</span>
+            </div>
+            <div class="application-rejection-actions">
+                <button type="button"
+                        class="reject-remaining-button"
+                        data-reject-selected-open
+                        aria-haspopup="dialog"
+                        aria-controls="reject-selected-dialog"
+                        disabled>Reject selected applicants</button>
+                <button type="button"
+                        class="reject-remaining-button"
+                        data-reject-remaining-open
+                        aria-haspopup="dialog"
+                        aria-controls="reject-remaining-dialog"
+                        disabled="@(Model.RemainingApplicationCount == 0)">
+                    Reject remaining applications
+                </button>
+            </div>
+        </div>
+        <dialog id="reject-selected-dialog"
+                class="admin-application-modal"
+                role="alertdialog"
+                data-reject-selected-modal
+                aria-labelledby="reject-selected-title"
+                aria-describedby="reject-selected-warning">
+            <button type="button" class="admin-modal-close" data-admin-modal-close aria-label="Close">&times;</button>
+            <h2 id="reject-selected-title">Warning: reject selected applicants?</h2>
+            <p id="reject-selected-warning" class="reject-remaining-warning">
+                This permanently deletes the selected applicants' tutor profiles and all their uploaded application documents.
+                This action cannot be undone.
+            </p>
+            <p>You are rejecting <strong data-reject-selected-count>0</strong> selected applicants. Each will receive an in-app rejection notification.</p>
+            <form method="post" asp-page-handler="RejectSelected" data-reject-selected-form>
+                <input type="hidden" name="confirmRejectSelected" value="true" />
+                <input type="hidden" name="Search" value="@Model.Search" />
+                <input type="hidden" name="Sort" value="@Model.Sort" />
+                <input type="hidden" name="SortDirection" value="@Model.SortDirection" />
+                <div data-selected-applicant-inputs></div>
+                <div class="admin-modal-actions">
+                    <button type="button" class="admin-modal-no-target" data-admin-modal-close autofocus>Cancel</button>
+                    <button type="submit" class="reject-remaining-button">Reject and delete selected</button>
+                </div>
+            </form>
+        </dialog>
+        <dialog id="reject-remaining-dialog"
+                class="admin-application-modal"
+                role="alertdialog"
+                data-reject-remaining-modal
+                aria-labelledby="reject-remaining-title"
+                aria-describedby="reject-remaining-warning">
+            <button type="button" class="admin-modal-close" data-admin-modal-close aria-label="Close">&times;</button>
+            <h2 id="reject-remaining-title">Warning: reject and delete remaining applications?</h2>
+            <p id="reject-remaining-warning" class="reject-remaining-warning">
+                This permanently deletes the remaining applicants' tutor profiles and all their uploaded application documents.
+                This action cannot be undone.
+            </p>
+            <p>
+                This will reject all @Model.RemainingApplicationCount remaining applications,
+                including candidates on other pages or outside your current search.
+                Shortlisted, interview, and placement candidates will remain unchanged.
+            </p>
+            <p>Each rejected candidate will receive an in-app notification that their application was unsuccessful.</p>
+            <form method="post" asp-page-handler="RejectRemaining" data-reject-remaining-form>
+                <input type="hidden" name="confirmRejectRemaining" value="true" />
+                <input type="hidden" name="Search" value="@Model.Search" />
+                <input type="hidden" name="Sort" value="@Model.Sort" />
+                <input type="hidden" name="SortDirection" value="@Model.SortDirection" />
+                <div class="admin-modal-actions">
+                    <button type="button" class="admin-modal-no-target" data-admin-modal-close autofocus>Cancel</button>
+                    <button type="submit" class="reject-remaining-button">Reject and delete applications</button>
+                </div>
+            </form>
+        </dialog>
+    }
 
     @if (Model.Stage == "placement")
     {
@@ -253,12 +349,31 @@
     }
 
     <section class="application-candidate-panel" aria-label="Application candidates">
-        <div class="application-table-heading" aria-hidden="true">
+        <div class="application-table-heading">
             <span>Candidate</span>
-            <span>Programme</span>
-            <span>Year</span>
-            <span>Average</span>
-            <span>Modules</span>
+            @foreach (var (column, label) in new[]
+            {
+                ("programme", "Programme"), ("year", "Year"),
+                ("average", "Average"), ("modules", "Modules")
+            })
+            {
+                bool isActive = Model.Sort == column;
+                string nextDirection = isActive && Model.SortDirection == "asc" ? "desc" : "asc";
+                string sortLabel = (isActive
+                    ? $"{label}, sorted {(Model.SortDirection == "asc" ? "ascending" : "descending")}. "
+                    : "") + $"Sort by {label} {(nextDirection == "asc" ? "ascending" : "descending")}";
+                <a class="application-sort-link"
+                   asp-page="/Administrator/Admin/Applications"
+                   asp-route-Stage="@Model.Stage"
+                   asp-route-Search="@Model.Search"
+                   asp-route-Sort="@column"
+                   asp-route-SortDirection="@nextDirection"
+                   asp-fragment="application-candidates"
+                   aria-label="@sortLabel">
+                    @label
+                    <span aria-hidden="true">@(isActive ? (Model.SortDirection == "asc" ? "↑" : "↓") : "↕")</span>
+                </a>
+            }
             <span>Submitted</span>
             <span>Status</span>
             <span>Action</span>
@@ -281,11 +396,19 @@
         }
         else
         {
-            <div class="application-candidate-list">
+            <div id="application-candidates" class="application-candidate-list">
                 @foreach (var candidate in Model.Candidates)
                 {
-                    <article class="application-candidate-row">
+                    <article class="application-candidate-row" data-pagination-row>
                         <div class="candidate-identity">
+                            @if (Model.Stage == "applications")
+                            {
+                                <input type="checkbox"
+                                       class="applicant-checkbox"
+                                       value="@candidate.TutorId"
+                                       data-applicant-select
+                                       aria-label="Select @candidate.DisplayName (@candidate.PersonnelNumber)" />
+                            }
                             <div>
                                 <h3>@candidate.DisplayName</h3>
                                 <p>@candidate.PersonnelNumber</p>
@@ -362,6 +485,13 @@
                 }
             </div>
         }
+        @await Component.InvokeAsync("Pagination", new
+        {
+            targetId = "application-candidates",
+            mobilePageSize = 11,
+            defaultPageSize = 11,
+            ariaLabel = $"{Model.Stage} candidate pages"
+        })
     </section>
 
     @if (Model.Stage == "shortlist")
@@ -1183,5 +1313,7 @@ Mzala Connect Tutor Team</textarea>
 </section>
 
 @section Scripts {
+    <script src="~/js/components/pagination.js" asp-append-version="true"></script>
+    <script src="~/js/admin-application-selection.js" asp-append-version="true"></script>
     <script src="~/js/admin-applications.js" asp-append-version="true"></script>
 }
