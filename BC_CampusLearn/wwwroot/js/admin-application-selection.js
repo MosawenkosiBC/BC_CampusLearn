@@ -15,6 +15,7 @@
         const count = selected().length;
         document.querySelector("[data-applicant-selection-count]").textContent = `${count} selected`;
         openButton.disabled = count === 0;
+        openButton.hidden = count === 0;
         const visibleRows = visible();
         const checkedCount = visibleRows.filter(checkbox => checkbox.checked).length;
         selectVisible.disabled = visibleRows.length === 0;

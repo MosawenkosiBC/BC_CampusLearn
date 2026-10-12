@@ -256,19 +256,13 @@
     @if (Model.Stage == "applications")
     {
         <div class="application-phase-actions">
-            <div class="application-selection">
-                <label>
-                    <input type="checkbox" data-select-visible-applicants />
-                    Select this page
-                </label>
-                <span data-applicant-selection-count aria-live="polite">0 selected</span>
-            </div>
             <div class="application-rejection-actions">
                 <button type="button"
                         class="reject-remaining-button"
                         data-reject-selected-open
                         aria-haspopup="dialog"
                         aria-controls="reject-selected-dialog"
+                        hidden
                         disabled>Reject selected applicants</button>
                 <button type="button"
                         class="reject-remaining-button"
@@ -349,6 +343,16 @@
     }
 
     <section class="application-candidate-panel" aria-label="Application candidates">
+        @if (Model.Stage == "applications")
+        {
+            <div class="application-selection">
+                <label>
+                    <input type="checkbox" data-select-visible-applicants />
+                    Select this page
+                </label>
+                <span data-applicant-selection-count aria-live="polite">0 selected</span>
+            </div>
+        }
         <div class="application-table-heading">
             <span>Candidate</span>
             @foreach (var (column, label) in new[]
