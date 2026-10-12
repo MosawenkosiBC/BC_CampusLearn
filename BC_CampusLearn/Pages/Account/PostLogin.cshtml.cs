@@ -30,7 +30,8 @@ public class PostLoginModel : PageModel
 
         string dashboardPage = currentUser.Role switch
         {
-            BcUserRole.Tutor or BcUserRole.HeadOfTutors =>
+            BcUserRole.Tutor or BcUserRole.SeniorTutor or
+                BcUserRole.HeadOfTutors =>
                 "/Tutors/TutorDashboard",
             BcUserRole.Admin or BcUserRole.SuperAdmin or BcUserRole.Dev =>
                 "/Administrator/Admin/Dashboard",

@@ -13,16 +13,16 @@
         showActionChoices();
         roleModal.querySelector("[data-access-role-name]").textContent = trigger.dataset.userName;
         const promoteButton = roleModal.querySelector('[data-access-choose="promote"]');
-        promoteButton.hidden = Number(trigger.dataset.userRole) === 3;
+        const demotionOnly = [3, 6].includes(Number(trigger.dataset.userRole));
+        promoteButton.hidden = demotionOnly;
         promoteButton.disabled = Number(trigger.dataset.userRole) >= 5;
-        const tutorHead = Number(trigger.dataset.userRole) === 3;
-        roleModal.querySelector("[data-access-role-back]").textContent = tutorHead ? "Cancel" : "Back";
-        if (tutorHead) chooseAction("demote");
+        roleModal.querySelector("[data-access-role-back]").textContent = demotionOnly ? "Cancel" : "Back";
+        if (demotionOnly) chooseAction("demote");
     });
     const chooseAction = action => {
         if (!selectedActionUser) return;
         const promote = action === "promote";
-        if (promote && (Number(selectedActionUser.userRole) === 3 || Number(selectedActionUser.userRole) >= 5)) return;
+        if (promote && ([3, 6].includes(Number(selectedActionUser.userRole)) || Number(selectedActionUser.userRole) >= 5)) return;
         const form = roleModal.querySelector("[data-access-role-form]");
         form.reset();
         form.hidden = false;
@@ -52,7 +52,7 @@
         button.addEventListener("click", () => chooseAction(button.dataset.accessChoose));
     });
     roleModal?.querySelector("[data-access-role-back]").addEventListener("click", () => {
-        if (Number(selectedActionUser?.userRole) === 3) {
+        if ([3, 6].includes(Number(selectedActionUser?.userRole))) {
             window.bootstrap.Modal.getOrCreateInstance(roleModal).hide();
             return;
         }

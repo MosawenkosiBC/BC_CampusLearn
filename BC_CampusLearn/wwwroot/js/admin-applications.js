@@ -15,10 +15,6 @@
                 button.textContent = "Rejecting and deleting…";
             }
         });
-    const settingsForm = document.querySelector(
-        "[data-application-settings-form]");
-    const toggle = settingsForm?.querySelector(
-        "[data-applications-toggle]");
     const settingsModal = document.querySelector(
         "[data-application-settings-modal]");
     const thresholdModal = document.querySelector(
@@ -29,10 +25,42 @@
         "[data-cycle-settings-form]");
     const cycleOpenDate = cycleForm?.querySelector(
         "[data-cycle-open-date]");
+    const cycleOpenDateDisplay = cycleForm?.querySelector(
+        "[data-cycle-open-date-display]");
     const cycleCloseDate = cycleForm?.querySelector(
         "[data-cycle-close-date]");
+    const cycleCloseDateDisplay = cycleForm?.querySelector(
+        "[data-cycle-close-date-display]");
+    const cycleTutorCountdown = cycleForm?.querySelector(
+        "[data-cycle-tutor-countdown]");
     const cycleValidation = cycleForm?.querySelector(
         "[data-cycle-validation]");
+    const cycleTutorToggle = cycleForm?.querySelector(
+        "[data-cycle-tutor-toggle]");
+    const cycleTutorSettings = Array.from(cycleForm?.querySelectorAll(
+        "[data-cycle-tutor-setting]") ?? []);
+    const cycleTutorWindow = cycleForm?.querySelector(
+        "[data-cycle-tutor-window]");
+    const cycleSeniorToggle = cycleForm?.querySelector(
+        "[data-cycle-senior-toggle]");
+    const cycleSeniorSettings = Array.from(cycleForm?.querySelectorAll(
+        "[data-cycle-senior-setting]") ?? []);
+    const cycleSeniorWindow = cycleForm?.querySelector(
+        "[data-cycle-senior-window]");
+    const cycleSeniorOpenDate = cycleForm?.querySelector(
+        "[data-cycle-senior-open-date]");
+    const cycleSeniorOpenDateDisplay = cycleForm?.querySelector(
+        "[data-cycle-senior-open-date-display]");
+    const cycleSeniorCloseDate = cycleForm?.querySelector(
+        "[data-cycle-senior-close-date]");
+    const cycleSeniorCloseDateDisplay = cycleForm?.querySelector(
+        "[data-cycle-senior-close-date-display]");
+    const cycleSeniorCountdown = cycleForm?.querySelector(
+        "[data-cycle-senior-countdown]");
+    const shortlistTargetModal = document.querySelector(
+        "[data-shortlist-target-modal]");
+    const shortlistTargetInput = document.querySelector(
+        "[data-shortlist-target-input]");
     const addTutorModal = document.querySelector(
         "[data-add-tutor-modal]");
     const manualTutorForm = addTutorModal?.querySelector(
@@ -295,37 +323,252 @@
     });
     resetStudentVerification();
 
-    toggle?.addEventListener("change", () => {
-        if (toggle.checked) {
-            toggle.checked = false;
-            settingsModal?.showModal();
+    document.querySelector("[data-open-application-settings]")
+        ?.addEventListener("click", () => settingsModal?.showModal());
+
+    settingsModal?.addEventListener("click", event => {
+        if (event.target !== settingsModal) return;
+        event.preventDefault();
+        event.stopPropagation();
+    });
+
+    settingsModal?.addEventListener("cancel", event => {
+        event.preventDefault();
+    });
+
+    const syncTutorApplicationSettings = () => {
+        const enabled = cycleTutorToggle?.checked ?? false;
+        if (cycleTutorWindow) cycleTutorWindow.hidden = !enabled;
+        cycleTutorSettings.forEach(control => {
+            control.disabled = !enabled;
+            control.required = enabled;
+        });
+    };
+
+    cycleTutorToggle?.addEventListener(
+        "change",
+        () => {
+            syncTutorApplicationSettings();
+            if (cycleTutorToggle.checked) {
+                shortlistTargetModal?.showModal();
+            }
+        });
+    syncTutorApplicationSettings();
+
+    const syncSeniorApplicationSettings = () => {
+        const enabled = cycleSeniorToggle?.checked ?? false;
+        if (cycleSeniorWindow) cycleSeniorWindow.hidden = !enabled;
+        cycleSeniorSettings.forEach(control => {
+            control.disabled = !enabled;
+            control.required = enabled;
+        });
+    };
+
+    cycleSeniorToggle?.addEventListener(
+        "change",
+        syncSeniorApplicationSettings);
+    syncSeniorApplicationSettings();
+
+    document.querySelector("[data-shortlist-target-cancel]")
+        ?.addEventListener("click", () => {
+            if (cycleTutorToggle) cycleTutorToggle.checked = false;
+            syncTutorApplicationSettings();
+            shortlistTargetModal?.close();
+        });
+    document.querySelector("[data-shortlist-target-clear]")
+        ?.addEventListener("click", () => {
+            if (shortlistTargetInput) shortlistTargetInput.value = "";
+            shortlistTargetModal?.close();
+        });
+    document.querySelector("[data-shortlist-target-confirm]")
+        ?.addEventListener("click", () => {
+            if (shortlistTargetInput?.value &&
+                !shortlistTargetInput.checkValidity()) {
+                shortlistTargetInput.reportValidity();
+                return;
+            }
+            shortlistTargetModal?.close();
+        });
+
+    const formatDateInput = value => {
+        const digits = value.replace(/\D/g, "").slice(0, 8);
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 4) {
+            return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+        }
+        return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    };
+
+    const parseDisplayDate = value => {
+        const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+        if (!match) return "";
+
+        const day = Number(match[1]);
+        const month = Number(match[2]);
+        const year = Number(match[3]);
+        const date = new Date(Date.UTC(year, month - 1, day));
+        if (date.getUTCFullYear() !== year ||
+            date.getUTCMonth() !== month - 1 ||
+            date.getUTCDate() !== day) {
+            return "";
+        }
+
+        return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    };
+
+    const formatIsoDate = value => {
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+        return match ? `${match[3]}/${match[2]}/${match[1]}` : "";
+    };
+
+    const bindDisplayDate = (display, hidden, onUpdate) => {
+        if (!display || !hidden) return;
+
+        const update = () => {
+            display.value = formatDateInput(display.value);
+            const isoDate = parseDisplayDate(display.value);
+            hidden.value = isoDate;
+            display.setCustomValidity(
+                display.value && !isoDate
+                    ? "Enter a valid date in dd/mm/yyyy format."
+                    : "");
+            display.toggleAttribute(
+                "aria-invalid",
+                Boolean(display.value && !isoDate));
+            onUpdate();
+        };
+
+        display.addEventListener("input", update);
+        display.addEventListener("blur", update);
+        hidden.addEventListener("change", () => {
+            display.value = formatIsoDate(hidden.value);
+            display.setCustomValidity("");
+            display.removeAttribute("aria-invalid");
+            onUpdate();
+        });
+    };
+
+    document.querySelectorAll("[data-date-picker-target]")
+        .forEach(button => {
+            button.addEventListener("click", () => {
+                const picker = document.getElementById(
+                    button.dataset.datePickerTarget);
+                if (!picker || picker.disabled) return;
+
+                if (typeof picker.showPicker === "function") {
+                    picker.showPicker();
+                } else {
+                    picker.click();
+                }
+            });
+        });
+
+    const syncApplicationCountdown = (openDate, closeDate, countdown) => {
+        if (!countdown || !openDate?.value || !closeDate?.value) {
+            if (countdown) {
+                countdown.textContent = "";
+                countdown.hidden = true;
+            }
             return;
         }
-        settingsForm.requestSubmit();
-    });
+
+        const toUtcDay = value => {
+            const [year, month, day] = value.split("-").map(Number);
+            return Date.UTC(year, month - 1, day);
+        };
+        const now = new Date();
+        const today = Date.UTC(
+            now.getUTCFullYear(),
+            now.getUTCMonth(),
+            now.getUTCDate());
+        const openingDay = toUtcDay(openDate.value);
+        const closingDay = toUtcDay(closeDate.value);
+        const millisecondsPerDay = 24 * 60 * 60 * 1000;
+        const daysUntilOpening = Math.round(
+            (openingDay - today) / millisecondsPerDay);
+        const daysRemaining = Math.round(
+            (closingDay - today) / millisecondsPerDay);
+
+        if (daysUntilOpening > 0) {
+            countdown.textContent = daysUntilOpening === 1
+                ? "Opens tomorrow"
+                : `Opens in ${daysUntilOpening} days`;
+        } else if (daysRemaining < 0) {
+            countdown.textContent = "Closed";
+        } else if (daysRemaining === 0) {
+            countdown.textContent = "Closes today";
+        } else {
+            countdown.textContent = daysRemaining === 1
+                ? "1 day remaining"
+                : `${daysRemaining} days remaining`;
+        }
+        countdown.hidden = false;
+    };
 
     const syncClosingDate = () => {
         if (!cycleOpenDate || !cycleCloseDate) {
             return;
         }
         cycleCloseDate.min = cycleOpenDate.value;
+        syncApplicationCountdown(
+            cycleOpenDate,
+            cycleCloseDate,
+            cycleTutorCountdown);
     };
 
-    cycleOpenDate?.addEventListener("change", syncClosingDate);
+    bindDisplayDate(
+        cycleOpenDateDisplay,
+        cycleOpenDate,
+        syncClosingDate);
+    bindDisplayDate(
+        cycleCloseDateDisplay,
+        cycleCloseDate,
+        syncClosingDate);
     syncClosingDate();
 
+    const syncSeniorClosingDate = () => {
+        if (!cycleSeniorOpenDate || !cycleSeniorCloseDate) return;
+        cycleSeniorCloseDate.min = cycleSeniorOpenDate.value;
+        syncApplicationCountdown(
+            cycleSeniorOpenDate,
+            cycleSeniorCloseDate,
+            cycleSeniorCountdown);
+    };
+
+    bindDisplayDate(
+        cycleSeniorOpenDateDisplay,
+        cycleSeniorOpenDate,
+        syncSeniorClosingDate);
+    bindDisplayDate(
+        cycleSeniorCloseDateDisplay,
+        cycleSeniorCloseDate,
+        syncSeniorClosingDate);
+    syncSeniorClosingDate();
+
     cycleForm?.addEventListener("submit", event => {
-        if (!cycleOpenDate?.value || !cycleCloseDate?.value ||
-            cycleCloseDate.value >= cycleOpenDate.value) {
-            return;
-        }
+        const invalidTutorDates = cycleTutorToggle?.checked &&
+            (!cycleOpenDate?.value || !cycleCloseDate?.value ||
+                cycleCloseDate.value < cycleOpenDate.value);
+        const invalidSeniorDates = cycleSeniorToggle?.checked &&
+            (!cycleSeniorOpenDate?.value || !cycleSeniorCloseDate?.value ||
+                cycleSeniorCloseDate.value < cycleSeniorOpenDate.value);
+        if (!invalidTutorDates && !invalidSeniorDates) return;
+
         event.preventDefault();
+        const invalidCloseDate = invalidTutorDates
+            ? (!cycleOpenDate?.value
+                ? cycleOpenDateDisplay
+                : cycleCloseDateDisplay)
+            : (!cycleSeniorOpenDate?.value
+                ? cycleSeniorOpenDateDisplay
+                : cycleSeniorCloseDateDisplay);
         if (cycleValidation) {
-            cycleValidation.textContent =
-                "The closing date must be on or after the opening date.";
+            cycleValidation.textContent = invalidTutorDates
+                ? "Enter valid Become a Tutor opening and closing dates."
+                : "Enter valid Senior Tutor application opening and closing dates.";
         }
-        cycleCloseDate.setAttribute("aria-invalid", "true");
-        cycleCloseDate.focus();
+        invalidCloseDate?.setAttribute("aria-invalid", "true");
+        invalidCloseDate?.focus();
     });
 
     document.querySelectorAll("[data-admin-modal-close]")

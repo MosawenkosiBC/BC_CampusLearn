@@ -25,7 +25,7 @@
         <div class="settings-content">
             <section class="settings-section" aria-labelledby="access-title">
                 <header class="settings-section-heading">
-                    <div><h2 id="access-title">Users and access</h2><p>View administrative users and control privileged roles.</p></div>
+                    <div><h2 id="access-title">Users and access</h2><p>View users and manage Senior Tutor or administrative roles.</p></div>
                     @if (Model.CanManageAccess)
                     {
                         <button type="button" class="settings-primary-button settings-access-add"
@@ -50,6 +50,7 @@
                             </div>
                             <fieldset class="admin-filter-years">
                                 <legend>Role</legend>
+                                <label><input type="checkbox" name="Roles" value="SeniorTutor" checked="@(Model.Roles.Contains(BcUserRole.SeniorTutor))" /><span>Senior Tutor</span></label>
                                 <label><input type="checkbox" name="Roles" value="HeadOfTutors" checked="@(Model.Roles.Contains(BcUserRole.HeadOfTutors))" /><span>Head of Tutors</span></label>
                                 <label><input type="checkbox" name="Roles" value="Admin" checked="@(Model.Roles.Contains(BcUserRole.Admin))" /><span>Admin</span></label>
                                 <label><input type="checkbox" name="Roles" value="SuperAdmin" checked="@(Model.Roles.Contains(BcUserRole.SuperAdmin))" /><span>Super Admin</span></label>
@@ -70,7 +71,7 @@
                         </p>
                         <div class="admin-tutors-table-wrap" role="region" aria-label="Users and access table" tabindex="0">
                             <table class="admin-tutors-table settings-access-table">
-                                <caption class="visually-hidden">Users with administrative access</caption>
+                                <caption class="visually-hidden">Users with Senior Tutor or administrative roles</caption>
                                 <thead><tr><th scope="col">User</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Last login</th><th scope="col">Action</th></tr></thead>
                                 <tbody>
                                 @foreach (var user in Model.AccessUsers)

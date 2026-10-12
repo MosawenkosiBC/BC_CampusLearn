@@ -11,6 +11,7 @@
             "/LearningResources/Details",
             StringComparison.OrdinalIgnoreCase));
     var isTutor = User.IsInRole(nameof(BcUserRole.Tutor)) ||
+        User.IsInRole(nameof(BcUserRole.SeniorTutor)) ||
         User.IsInRole(nameof(BcUserRole.HeadOfTutors));
     var dashboardPage = isAdministrator
         ? "/Administrator/Admin/Dashboard"
@@ -249,6 +250,13 @@
                             ViewData["AdminTutorProfileId"] is int tutorId)
                         {
                             <a asp-page="@breadcrumb.Page" asp-route-id="@tutorId"
+                               title="@breadcrumb.Label">@breadcrumb.Label</a>
+                        }
+                        else if (breadcrumb.Page == "/Administrator/Tutors/Index" &&
+                            pagePath == "/Administrator/Tutors/SeniorTutorApplicationDetails")
+                        {
+                            <a asp-page="@breadcrumb.Page"
+                               asp-route-Tab="senior-applications"
                                title="@breadcrumb.Label">@breadcrumb.Label</a>
                         }
                         else

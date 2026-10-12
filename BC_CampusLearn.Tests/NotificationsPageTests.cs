@@ -168,6 +168,30 @@ public class NotificationsPageTests
     }
 
     [Fact]
+    public void OpenSeniorTutorApplicationsNotificationUsesRequirementsAction()
+    {
+        var notification = new IndexModel.NotificationItem(
+            45,
+            "⭐ Senior Tutor applications are open",
+            "Ready to take the next step in your tutoring journey?\n\n" +
+                "Requirements:\n\n" +
+                "• At least one year of tutoring at Belgium Campus\n" +
+                "• Active, approved tutor\n" +
+                "• Pretoria contact student\n" +
+                "• Academic average of 72% or higher\n\n" +
+                "Applications close: 31 October 2026",
+            "/Tutors/SeniorTutorApplications",
+            Now,
+            null);
+
+        Assert.Equal("View requirements and apply", notification.ActionLabel);
+        Assert.Equal(
+            "Ready to take the next step in your tutoring journey?",
+            notification.PreviewMessage);
+        Assert.Equal("31 October 2026", notification.HighlightedClosingDate);
+    }
+
+    [Fact]
     public void ApprovedTutorNotificationExposesCelebrationMessage()
     {
         var notification = new IndexModel.NotificationItem(

@@ -23,6 +23,8 @@ public class SeniorTutorApplicationConfiguration
             .HasConversion<int>()
             .HasDefaultValue(TutorAccountRequestStatus.Pending)
             .IsConcurrencyToken();
+        builder.Property(application => application.IsArchived)
+            .HasDefaultValue(false);
         builder.Property(application => application.SubmittedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
         builder.Property(application => application.ReviewedBy)

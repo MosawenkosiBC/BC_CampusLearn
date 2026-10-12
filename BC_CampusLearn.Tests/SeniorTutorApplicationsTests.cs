@@ -59,6 +59,30 @@ public class SeniorTutorApplicationsTests
     }
 
     [Fact]
+    public async Task ClosedSeniorTutorApplicationsCannotBeSubmitted()
+    {
+        await using ApplicationDbContext context = await CreateContextAsync();
+        TutorApplicationSettings settings = await context
+            .TutorApplicationSettings.SingleAsync();
+        settings.SeniorTutorApplicationsOpen = false;
+        await context.SaveChangesAsync();
+        SeniorTutorApplicationsModel page = CreatePage(context);
+        page.Input = new SeniorTutorApplicationInput
+        {
+            AcademicAverage = "80",
+            BestDescription = "Good leadership skills",
+            SuitabilityReason = "I am ready to lead the tutor team."
+        };
+
+        IActionResult result = await page.OnPostApplyAsync(default);
+
+        Assert.IsType<PageResult>(result);
+        Assert.True(page.ShowClosedApplicationsModal);
+        Assert.False(page.ApplicationsOpen);
+        Assert.Empty(await context.SeniorTutorApplications.ToListAsync());
+    }
+
+    [Fact]
     public async Task TutorCannotSubmitWhileAnApplicationIsPending()
     {
         await using ApplicationDbContext context = await CreateContextAsync();
@@ -88,6 +112,67 @@ public class SeniorTutorApplicationsTests
     }
 
     [Fact]
+    public async Task SeniorTutorCannotSubmitAnotherApplication()
+    {
+        await using ApplicationDbContext context = await CreateContextAsync();
+        BcUser user = await context.BcUsers.SingleAsync();
+        user.Role = BcUserRole.SeniorTutor;
+        await context.SaveChangesAsync();
+        SeniorTutorApplicationsModel page = CreatePage(
+            context,
+            BcUserRole.SeniorTutor);
+        page.Input = new SeniorTutorApplicationInput
+        {
+            AcademicAverage = "80",
+            BestDescription = "Good leadership skills",
+            SuitabilityReason = "I am already a senior tutor."
+        };
+
+        IActionResult result = await page.OnPostApplyAsync(default);
+
+        Assert.IsType<ForbidResult>(result);
+        Assert.Empty(await context.SeniorTutorApplications.ToListAsync());
+    }
+
+    [Fact]
+    public async Task DemotedTutorDoesNotSeeStaleApprovedApplication()
+    {
+        await using ApplicationDbContext context = await CreateContextAsync();
+        context.SeniorTutorApplications.Add(new SeniorTutorApplication
+        {
+            TutorId = 1,
+            AcademicAverage = 80,
+            BestDescription = "Good leadership skills",
+            SuitabilityReason = "Previously approved application",
+            Status = TutorAccountRequestStatus.Approved,
+            IsArchived = true,
+            SubmittedAt = DateTime.UtcNow.AddDays(-1)
+        });
+        await context.SaveChangesAsync();
+        SeniorTutorApplicationsModel page = CreatePage(context);
+
+        IActionResult result = await page.OnGetAsync(default);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Null(page.LatestApplication);
+        Assert.False(page.IsSeniorTutor);
+    }
+
+    [Fact]
+    public async Task ActiveTutorUpdatesPreserveSeniorTutorRole()
+    {
+        await using ApplicationDbContext context = await CreateContextAsync();
+        BcUser user = await context.BcUsers.SingleAsync();
+        Tutor tutor = await context.Tutors.SingleAsync();
+        user.Role = BcUserRole.SeniorTutor;
+        tutor.OverallAverage = 81;
+
+        await context.SaveChangesAsync();
+
+        Assert.Equal(BcUserRole.SeniorTutor, user.Role);
+    }
+
+    [Fact]
     public async Task AdministratorTutorPageLoadsSeniorTutorApplicationsTab()
     {
         await using ApplicationDbContext context = await CreateContextAsync();
@@ -108,6 +193,7 @@ public class SeniorTutorApplicationsTests
                 BestDescription = "Professional",
                 SuitabilityReason = "Reviewed application",
                 Status = TutorAccountRequestStatus.Approved,
+                IsArchived = true,
                 SubmittedAt = DateTime.UtcNow.AddDays(-1)
             });
         await context.SaveChangesAsync();
@@ -121,12 +207,25 @@ public class SeniorTutorApplicationsTests
         await page.OnGetAsync(default);
 
         Assert.Equal("senior-applications", page.Tab);
-        Assert.Equal(2, page.TotalApplications);
+        Assert.Equal(1, page.TotalApplications);
         Assert.Equal(1, page.PendingApplications);
-        Assert.Equal(2, page.SeniorTutorApplications.Count);
+        Assert.Single(page.SeniorTutorApplications);
         Assert.Equal(
             TutorAccountRequestStatus.Pending,
             page.SeniorTutorApplications[0].Status);
+
+        BcUser user = await context.BcUsers.SingleAsync();
+        user.Role = BcUserRole.SeniorTutor;
+        await context.SaveChangesAsync();
+        page.ApplicationStatus = TutorAccountRequestStatus.Approved;
+        await page.OnGetAsync(default);
+
+        Assert.Equal(1, page.TotalApplications);
+        Assert.Equal("all", page.ApplicationArchive);
+        SeniorTutorApplication archived = Assert.Single(
+            page.SeniorTutorApplications);
+        Assert.True(archived.IsArchived);
+        Assert.Equal(TutorAccountRequestStatus.Approved, archived.Status);
     }
 
     [Fact]
@@ -159,15 +258,23 @@ public class SeniorTutorApplicationsTests
             approve: true,
             default);
 
-        Assert.IsType<RedirectToPageResult>(result);
+        RedirectToPageResult redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("Index", redirect.PageName);
+        Assert.Equal("senior-applications", redirect.RouteValues?["Tab"]);
         Assert.Equal(TutorAccountRequestStatus.Approved, application.Status);
+        Assert.True(application.IsArchived);
+        Assert.Equal(
+            BcUserRole.SeniorTutor,
+            (await context.BcUsers.SingleAsync()).Role);
         Assert.NotNull(application.ReviewedAt);
         UserNotification notification = await context.UserNotifications.SingleAsync();
         Assert.Equal(1, notification.RecipientBcUserId);
         Assert.Contains("accepted", notification.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static SeniorTutorApplicationsModel CreatePage(ApplicationDbContext context)
+    private static SeniorTutorApplicationsModel CreatePage(
+        ApplicationDbContext context,
+        BcUserRole role = BcUserRole.Tutor)
     {
         var page = new SeniorTutorApplicationsModel(
             context,
@@ -176,7 +283,7 @@ public class SeniorTutorApplicationsTests
                 "600001",
                 "Test Tutor",
                 "tutor@example.com",
-                BcUserRole.Tutor)));
+                role)));
         var httpContext = new DefaultHttpContext();
         page.PageContext = new PageContext { HttpContext = httpContext };
         page.TempData = new TempDataDictionary(
@@ -191,6 +298,11 @@ public class SeniorTutorApplicationsTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         var context = new ApplicationDbContext(options);
+        context.TutorApplicationSettings.Add(new TutorApplicationSettings
+        {
+            SeniorTutorApplicationsOpen = true,
+            UpdatedAt = DateTime.UtcNow
+        });
         context.Tutors.Add(new Tutor
         {
             TutorId = 1,
@@ -201,7 +313,8 @@ public class SeniorTutorApplicationsTests
                 BcUserId = 1,
                 PersonnelNumber = "600001",
                 DisplayName = "Test Tutor",
-                Email = "tutor@example.com"
+                Email = "tutor@example.com",
+                Role = BcUserRole.Tutor
             },
             Programme = new ProgrammeOfStudy
             {

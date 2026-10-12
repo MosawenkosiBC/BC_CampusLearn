@@ -10,7 +10,6 @@ using BC_CampusLearn.Services.Notifications;
 using BC_CampusLearn.Services.Settings;
 using BC_CampusLearn.Services.Events;
 using BC_CampusLearn.Services.Gemini;
-using BC_CampusLearn.Services.Events;
 using BC_CampusLearn.Hubs;
 using BC_CampusLearn.Models.Entities;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -112,6 +111,7 @@ builder.Services.AddAuthorization(options =>
         AuthorizationPolicies.TutorAccess,
         policy => policy.RequireRole(
             nameof(BcUserRole.Tutor),
+            nameof(BcUserRole.SeniorTutor),
             nameof(BcUserRole.HeadOfTutors)));
 
     options.AddPolicy(
@@ -194,6 +194,8 @@ builder.Services.AddSignalR();
 
 builder.Services.AddHostedService<
     ExpiredAvailabilityCleanupService>();
+builder.Services.AddHostedService<
+    TutorApplicationAvailabilityService>();
 
 builder.Services.AddRazorPages(options =>
 {

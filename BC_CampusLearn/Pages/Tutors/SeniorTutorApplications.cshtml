@@ -188,8 +188,12 @@
 
                 <div class="tutor-senior-application-action">
                     <div>
-                        <h3>Ready to apply?</h3>
-                        <p>If you meet the requirements and believe you are suitable for the vacancy, complete the application form.</p>
+                        <h3>@(Model.IsSeniorTutor ? "You are a Senior Tutor" : "Ready to apply?")</h3>
+                        <p>
+                            @(Model.IsSeniorTutor
+                                ? "Your Senior Tutor application has been accepted."
+                                : "If you meet the requirements and believe you are suitable for the vacancy, complete the application form.")
+                        </p>
                         @if (Model.LatestApplication is not null)
                         {
                             <p class="tutor-senior-status">
@@ -198,13 +202,26 @@
                             </p>
                         }
                     </div>
-                    <button type="button"
-                            class="tutor-modal-primary tutor-senior-apply-button"
-                            data-bs-toggle="modal"
-                            data-bs-target="#senior-tutor-application-modal"
-                            disabled="@hasPendingApplication">
-                        @(hasPendingApplication ? "Application pending" : "Apply to become a senior tutor")
-                    </button>
+                    @if (!Model.IsSeniorTutor)
+                    {
+                        @if (hasPendingApplication)
+                        {
+                            <button type="button"
+                                    class="tutor-modal-primary tutor-senior-apply-button"
+                                    disabled>Application pending</button>
+                        }
+                        else
+                        {
+                            <button type="button"
+                                    class="tutor-modal-primary tutor-senior-apply-button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="@(Model.ApplicationsOpen
+                                        ? "#senior-tutor-application-modal"
+                                        : "#senior-tutor-applications-closed-modal")">
+                                Apply to become a senior tutor
+                            </button>
+                        }
+                    }
                 </div>
             </section>
         </div>
@@ -212,6 +229,30 @@
 </section>
 
 @section Modals {
+@if (!Model.IsSeniorTutor)
+{
+<div class="modal fade tutor-account-modal"
+     id="senior-tutor-applications-closed-modal"
+     tabindex="-1"
+     aria-labelledby="senior-tutor-applications-closed-title"
+     aria-hidden="true"
+     data-open-on-load="@Model.ShowClosedApplicationsModal.ToString().ToLowerInvariant()">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="senior-tutor-applications-closed-title">Applications closed</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Senior Tutor applications are currently closed. You can apply when applications open again.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="tutor-modal-primary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade tutor-account-modal"
      id="senior-tutor-application-modal"
      tabindex="-1"
@@ -306,6 +347,7 @@
         </div>
     </div>
 </div>
+}
 }
 
 <partial name="_ProfileImageCropper" />

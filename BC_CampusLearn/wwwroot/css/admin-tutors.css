@@ -92,6 +92,17 @@
     color: #222;
     font-size: 1rem;
 }
+.admin-filter-group select {
+    appearance: none;
+    background: #ededed url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23444' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E") right 0.75rem center / 1rem no-repeat;
+    border: 0;
+    border-radius: 0.65rem;
+    color: #222;
+    font-size: 1rem;
+    min-height: 44px;
+    padding: 0.6rem 2.5rem 0.6rem 0.75rem;
+    width: 100%;
+}
 .admin-filter-search svg {
     position: absolute;
     width: 1.1rem;
@@ -131,7 +142,7 @@
     font-weight: 600;
 }
 .admin-apply-filters:hover { background: #292929; }
-.admin-tutor-filters :is(input, button, a):focus-visible { outline: 3px solid #4f87a5; outline-offset: 3px; }
+.admin-tutor-filters :is(input, select, button, a):focus-visible { outline: 3px solid #4f87a5; outline-offset: 3px; }
 @media (max-width: 991.98px) {
     .admin-tutors-workspace { grid-template-columns: 1fr; }
     .admin-filter-years { margin-bottom: 1.5rem; }
@@ -234,20 +245,8 @@
 
 .admin-senior-review-page { max-width: 1500px; }
 
-.admin-senior-back-link {
-    align-items: center;
-    color: #4f565f;
-    display: inline-flex;
-    font-weight: 600;
-    gap: 0.45rem;
-    margin-bottom: 1.25rem;
-    text-decoration: none;
-}
-
-.admin-senior-back-link:hover { color: #202426; }
-
 .admin-senior-review-header {
-    align-items: flex-start;
+    align-items: center;
     display: flex;
     gap: 1.5rem;
     justify-content: space-between;
@@ -260,14 +259,25 @@
 }
 
 .admin-senior-review-header p { color: #687078; margin: 0; }
-.admin-senior-review-header > .admin-tutor-status { margin-top: 0.25rem; }
 
-.admin-senior-eyebrow {
-    color: #363c3d !important;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+.admin-senior-applicant-photo,
+.admin-senior-applicant-photo img,
+.admin-senior-applicant-photo > span {
+    border-radius: 50%;
+    height: 96px;
+    width: 96px;
+}
+
+.admin-senior-applicant-photo { margin: 1rem auto 1.25rem; }
+.admin-senior-applicant-photo img { display: block; object-fit: cover; }
+.admin-senior-applicant-photo > span {
+    align-items: center;
+    background: #eceeef;
+    color: #4f565f;
+    display: flex;
+    font-size: 1.55rem;
+    font-weight: 650;
+    justify-content: center;
 }
 
 .admin-senior-review-layout {
@@ -291,7 +301,7 @@
 
 .admin-senior-panel {
     background: #fff;
-    border: 1px solid #e6e8ec;
+    border: 0;
     border-radius: 0.65rem;
     box-shadow: 0 0.3rem 1rem rgba(25, 30, 38, 0.07);
     padding: clamp(1rem, 2.5vw, 1.5rem);
@@ -305,6 +315,17 @@
 }
 
 .admin-senior-section-heading { margin-bottom: 1.15rem; }
+.admin-senior-answers-heading {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.admin-senior-answers-heading > .admin-tutor-status {
+    flex: 0 0 auto;
+    margin-top: 0.1rem;
+}
 .admin-senior-section-heading p,
 .admin-senior-decision-panel > p {
     color: #687078;
@@ -312,65 +333,98 @@
     margin: 0.35rem 0 0;
 }
 
-.admin-senior-metric-grid {
+.admin-senior-chart-grid {
     display: grid;
-    gap: 0.85rem;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.admin-senior-metric-grid article,
-.admin-senior-status-grid article {
+.admin-senior-chart-card {
     background: #f7f8fa;
-    border: 1px solid #e8eaed;
-    border-radius: 0.55rem;
-    display: grid;
-    gap: 0.25rem;
-    padding: 0.9rem 1rem;
+    border: 0;
+    border-radius: 0.6rem;
+    min-width: 0;
+    padding: 1rem;
 }
 
-.admin-senior-metric-grid span,
-.admin-senior-status-grid span {
-    color: #626b78;
-    font-size: 0.78rem;
+.admin-senior-chart-card--wide { grid-column: 1 / -1; }
+.admin-senior-chart-card h3 { font-size: 0.95rem; margin: 0; }
+.admin-senior-chart-card > div:first-child > p {
+    color: #687078;
+    font-size: 0.8rem;
+    margin: 0.25rem 0 0;
 }
 
-.admin-senior-metric-grid strong,
-.admin-senior-status-grid strong {
-    color: #202426;
-    font-size: 1.35rem;
-}
-
-.admin-senior-metric-grid small { color: #777f89; font-size: 0.72rem; }
-
-.admin-senior-status-grid {
+.admin-senior-activity-metrics {
     display: grid;
     gap: 0.75rem;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 1rem;
 }
 
-.admin-senior-module-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-.admin-senior-module-list li {
-    align-items: center;
-    border-bottom: 1px solid #edf0f3;
+.admin-senior-activity-metric {
+    background: #fff;
+    border-radius: 0.5rem;
     display: flex;
-    gap: 1rem;
-    justify-content: space-between;
-    padding: 0.8rem 0;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 1rem;
 }
 
-.admin-senior-module-list li:first-child { padding-top: 0; }
-.admin-senior-module-list li:last-child { border-bottom: 0; padding-bottom: 0; }
-.admin-senior-module-list li > span { overflow-wrap: anywhere; }
-.admin-senior-module-list li > span:last-child {
-    color: #626b78;
-    flex: 0 0 auto;
-    font-size: 0.82rem;
+.admin-senior-activity-metric strong {
+    color: #252a30;
+    font-size: 1.45rem;
+    line-height: 1.1;
 }
+
+.admin-senior-activity-metric strong small {
+    font-size: 0.75em;
+    font-weight: 600;
+}
+
+.admin-senior-activity-metric span {
+    color: #687078;
+    font-size: 0.8rem;
+}
+
+.admin-senior-chart-wrap {
+    height: 205px;
+    margin: 0.8rem auto 0;
+    max-width: 260px;
+    position: relative;
+}
+
+.admin-senior-chart-wrap--bar {
+    height: 220px;
+    max-width: 100%;
+}
+
+.admin-senior-average-rating {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.35rem;
+}
+
+.admin-senior-rating-stars {
+    display: inline-flex;
+    gap: 0.12rem;
+}
+
+.admin-senior-rating-stars > span {
+    background: linear-gradient(
+        90deg,
+        #e59b2f var(--star-fill),
+        #d5d8dc var(--star-fill));
+    background-clip: text;
+    color: transparent;
+    font-size: 1rem;
+    line-height: 1;
+    -webkit-background-clip: text;
+}
+
+.admin-senior-average-rating small { color: #687078; font-size: 0.78rem; }
 
 .admin-senior-empty { color: #687078; margin: 0; }
 
@@ -384,7 +438,7 @@
 .admin-senior-answer-summary div,
 .admin-senior-written-answer p {
     background: #f7f8fa;
-    border: 1px solid #e6e8ec;
+    border: 0;
     border-radius: 0.5rem;
     padding: 0.9rem 1rem;
 }
@@ -412,7 +466,7 @@
 
 .admin-senior-applicant-details > div,
 .admin-senior-decision-details > div {
-    border-bottom: 1px solid #edf0f3;
+    border-bottom: 0;
     padding: 0.7rem 0;
 }
 
@@ -462,6 +516,16 @@
     outline: 0;
 }
 
+.admin-senior-decision-panel textarea[aria-invalid="true"] {
+    border-color: #b42318;
+}
+
+.admin-senior-decision-panel .field-validation-error {
+    display: block;
+    font-size: 0.75rem;
+    margin-top: 0.35rem;
+}
+
 .admin-senior-decision-actions { display: grid; gap: 0.65rem; grid-template-columns: 1fr 1fr; margin-top: 1rem; }
 .admin-senior-decision-actions button {
     border-radius: 0.45rem;
@@ -475,6 +539,15 @@
 .admin-senior-accept-button { background: #246338; border: 1px solid #246338; color: #fff; }
 .admin-senior-accept-button:hover { background: #194b2a; border-color: #194b2a; }
 
+.admin-senior-reject-modal { border: 0; }
+.admin-senior-reject-modal .modal-title { font-size: 1.15rem; }
+.admin-senior-reject-modal .modal-body p:last-child { margin-bottom: 0; }
+.admin-senior-reject-modal .modal-footer .admin-senior-reject-button {
+    border-radius: 0.4rem;
+    min-height: 2.4rem;
+    padding: 0.5rem 0.85rem;
+}
+
 .admin-senior-review-page :is(a, button, textarea):focus-visible {
     outline: 3px solid #4f87a5;
     outline-offset: 3px;
@@ -486,8 +559,8 @@
 }
 
 @media (max-width: 767.98px) {
-    .admin-senior-metric-grid,
-    .admin-senior-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .admin-senior-chart-grid { grid-template-columns: 1fr; }
+    .admin-senior-chart-card--wide { grid-column: auto; }
     .admin-senior-review-sidebar { grid-template-columns: 1fr; }
 }
 
@@ -498,9 +571,11 @@
         gap: 18px;
         overflow-x: auto;
     }
-    .admin-senior-review-header { align-items: flex-start; flex-direction: column; gap: 0.75rem; }
-    .admin-senior-metric-grid,
-    .admin-senior-status-grid,
+    .admin-senior-applicant-photo,
+    .admin-senior-applicant-photo img,
+    .admin-senior-applicant-photo > span { height: 76px; width: 76px; }
     .admin-senior-answer-summary { grid-template-columns: 1fr; }
-    .admin-senior-module-list li { align-items: flex-start; flex-direction: column; gap: 0.3rem; }
+    .admin-senior-activity-metrics { grid-template-columns: 1fr; }
+    .admin-senior-chart-wrap { height: 190px; }
+    .admin-senior-chart-wrap--bar { height: 205px; }
 }

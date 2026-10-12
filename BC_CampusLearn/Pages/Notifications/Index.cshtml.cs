@@ -146,7 +146,12 @@ public class IndexModel(
             : SummaryMessage;
 
         public string? ActionLabel =>
-            Title.EndsWith(
+            Title.Equals(
+                "⭐ Senior Tutor applications are open",
+                StringComparison.Ordinal) &&
+            IsSeniorTutorApplicationLink
+                ? "View requirements and apply"
+                : Title.EndsWith(
                 "Tutor applications are open",
                 StringComparison.Ordinal) &&
             IsTutorApplicationLink
@@ -176,6 +181,11 @@ public class IndexModel(
         private bool IsTutorApplicationLink =>
             LinkUrl.Equals(
                 "/Tutors/TutorApplication",
+                StringComparison.OrdinalIgnoreCase);
+
+        private bool IsSeniorTutorApplicationLink =>
+            LinkUrl.Equals(
+                "/Tutors/SeniorTutorApplications",
                 StringComparison.OrdinalIgnoreCase);
 
         private bool IsSessionLink =>

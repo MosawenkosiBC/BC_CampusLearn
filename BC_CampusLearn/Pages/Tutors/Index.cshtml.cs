@@ -70,6 +70,7 @@ public class IndexModel : PageModel
         bool hasStudentCampus = currentUser.Role is
             BcUserRole.Student or
             BcUserRole.Tutor or
+            BcUserRole.SeniorTutor or
             BcUserRole.HeadOfTutors;
         string? preferredCampus = null;
 

@@ -172,7 +172,8 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
         }
 
         // An old sign-in persona must not restore tutor access after deregistration.
-        if (user.Role is BcUserRole.Tutor or BcUserRole.HeadOfTutors &&
+        if (user.Role is BcUserRole.Tutor or BcUserRole.SeniorTutor or
+            BcUserRole.HeadOfTutors &&
             await _context.Tutors.AnyAsync(tutor =>
                 tutor.BcUserId == user.BcUserId && tutor.Status == TutorStatus.Deregistered))
         {
@@ -196,7 +197,8 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
         }
 
         string? tutorProfileImagePath = user.Role is
-                BcUserRole.Tutor or BcUserRole.HeadOfTutors
+                BcUserRole.Tutor or BcUserRole.SeniorTutor or
+                BcUserRole.HeadOfTutors
             ? await _context.Tutors
                 .AsNoTracking()
                 .Where(tutor => tutor.BcUserId == user.BcUserId)

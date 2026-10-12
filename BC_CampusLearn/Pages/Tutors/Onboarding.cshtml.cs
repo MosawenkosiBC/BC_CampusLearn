@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Pages.Tutors;
 
-[Authorize(Roles = nameof(BcUserRole.Tutor))]
+[Authorize(Roles = $"{nameof(BcUserRole.Tutor)},{nameof(BcUserRole.SeniorTutor)}")]
 public class OnboardingModel(
     ApplicationDbContext context,
     ICurrentUserService currentUserService,
@@ -24,7 +24,8 @@ public class OnboardingModel(
     private Task<Tutor?> FindTutorAsync(CancellationToken cancellationToken)
     {
         CurrentUser currentUser = currentUserService.GetRequiredUser();
-        if (currentUser.Role != BcUserRole.Tutor) return Task.FromResult<Tutor?>(null);
+        if (currentUser.Role is not (BcUserRole.Tutor or BcUserRole.SeniorTutor))
+            return Task.FromResult<Tutor?>(null);
         int userId = currentUser.BcUserId;
         return context.Tutors.SingleOrDefaultAsync(t =>
             t.BcUserId == userId && t.Status == TutorStatus.Approved && t.IsActive,

@@ -14,16 +14,14 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
     public string? ReviewNote { get; set; }
 
     [TempData]
-    public string? ReviewMessage { get; set; }
-
-    [TempData]
     public string? ReviewError { get; set; }
 
     public SeniorTutorApplication Application { get; private set; } = null!;
     public IReadOnlyList<SessionStatusStatistic> SessionStatuses
     { get; private set; } = [];
     public IReadOnlyList<ModuleStatistic> TopModules { get; private set; } = [];
-    public int TotalSessions { get; private set; }
+    public IReadOnlyList<RatingStatistic> RatingDistribution
+    { get; private set; } = [];
     public int CompletedSessions { get; private set; }
     public int UniqueTutees { get; private set; }
     public decimal TotalTutoringHours { get; private set; }
@@ -60,6 +58,7 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
         SeniorTutorApplication? application = await context
             .SeniorTutorApplications
             .Include(item => item.Tutor)
+                .ThenInclude(tutor => tutor.BcUser)
             .SingleOrDefaultAsync(
                 item => item.SeniorTutorApplicationId == id,
                 cancellationToken);
@@ -82,6 +81,11 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
         application.ReviewedAt = DateTime.UtcNow;
         application.ReviewedBy = User.Identity?.Name ?? "Administrator";
         application.ReviewNote = ReviewNote;
+        if (approve)
+        {
+            application.Tutor.BcUser.Role = BcUserRole.SeniorTutor;
+            application.IsArchived = true;
+        }
 
         context.UserNotifications.Add(new UserNotification
         {
@@ -104,10 +108,10 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
             return RedirectToPage(new { id });
         }
 
-        ReviewMessage = approve
+        TempData["PageMessage"] = approve
             ? "Senior tutor application accepted. The tutor has been notified."
             : "Senior tutor application rejected. The tutor has been notified.";
-        return RedirectToPage(new { id });
+        return RedirectToPage("Index", new { Tab = "senior-applications" });
     }
 
     private async Task<bool> LoadAsync(
@@ -152,7 +156,6 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
             })
             .ToListAsync(cancellationToken);
 
-        TotalSessions = bookings.Count;
         List<BookingStatisticRow> completed = bookings
             .Where(booking => booking.Status == BookingStatus.Completed)
             .ToList();
@@ -178,11 +181,14 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
             ? null
             : Math.Round(ratings.Average(value => (decimal)value), 1);
 
+        RatingDistribution = Enumerable.Range(1, 5)
+            .Select(rating => new RatingStatistic(
+                rating,
+                ratings.Count(value => value == rating)))
+            .ToList();
+
         BookingStatus[] statusOrder =
         [
-            BookingStatus.Pending,
-            BookingStatus.Confirmed,
-            BookingStatus.InProgress,
             BookingStatus.Completed,
             BookingStatus.Cancelled,
             BookingStatus.Declined
@@ -225,6 +231,7 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
 
     public sealed record SessionStatusStatistic(BookingStatus Status, int Count);
     public sealed record ModuleStatistic(string Code, string Name, int SessionCount);
+    public sealed record RatingStatistic(int Rating, int Count);
 
     private sealed class BookingStatisticRow
     {

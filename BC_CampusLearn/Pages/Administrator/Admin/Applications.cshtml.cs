@@ -2,6 +2,7 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
+using BC_CampusLearn.Services.Notifications;
 using BC_CampusLearn.Services.Tutors;
 using BC_CampusLearn.Services.Students;
 using System.ComponentModel.DataAnnotations;
@@ -49,9 +50,12 @@ public class ApplicationsModel : ManualTutorPageModel
     public string SortDirection { get; set; } = "desc";
 
     public bool OpenApplications { get; private set; }
+    public bool SeniorTutorApplicationsOpen { get; private set; }
     public int? ShortlistLimit { get; private set; }
     public DateTime? ApplicationOpenDate { get; private set; }
     public DateTime? ApplicationCloseDate { get; private set; }
+    public DateTime? SeniorTutorApplicationOpenDate { get; private set; }
+    public DateTime? SeniorTutorApplicationCloseDate { get; private set; }
     public int ApplicationCount { get; private set; }
     public int RemainingApplicationCount { get; private set; }
     public int ShortlistCount { get; private set; }
@@ -283,14 +287,19 @@ public class ApplicationsModel : ManualTutorPageModel
 
     public async Task<IActionResult> OnPostSettingsAsync(
         bool isOpen,
+        bool seniorTutorApplicationsOpen,
         int? shortlistLimit,
         DateTime? openDate,
         DateTime? closeDate,
+        DateTime? seniorOpenDate,
+        DateTime? seniorCloseDate,
         CancellationToken cancellationToken)
     {
         TutorApplicationSettings? settings = await _context
             .TutorApplicationSettings.SingleOrDefaultAsync(cancellationToken);
         bool applicationsWereOpen = settings?.IsOpen ?? false;
+        bool seniorTutorApplicationsWereOpen =
+            settings?.SeniorTutorApplicationsOpen ?? false;
 
         if (settings is null)
         {
@@ -298,23 +307,39 @@ public class ApplicationsModel : ManualTutorPageModel
             _context.TutorApplicationSettings.Add(settings);
         }
 
-        if (isOpen && (!shortlistLimit.HasValue || shortlistLimit.Value < 1 ||
+        if (isOpen && ((shortlistLimit.HasValue && shortlistLimit.Value < 1) ||
             !openDate.HasValue || !closeDate.HasValue ||
             openDate.Value.Date > closeDate.Value.Date ||
             closeDate.Value.Date < DateTime.UtcNow.Date))
         {
-            PageError = "Enter a shortlist target and a valid opening and closing date.";
+            PageError = "Enter valid opening and closing dates. The shortlist target is optional.";
+            ShowApplicationSettingsModal = true;
+            return RedirectToPage(new { Stage, Search });
+        }
+
+        if (seniorTutorApplicationsOpen &&
+            (!seniorOpenDate.HasValue || !seniorCloseDate.HasValue ||
+             seniorOpenDate.Value.Date > seniorCloseDate.Value.Date ||
+             seniorCloseDate.Value.Date < DateTime.UtcNow.Date))
+        {
+            PageError = "Enter valid Senior Tutor application opening and closing dates.";
             ShowApplicationSettingsModal = true;
             return RedirectToPage(new { Stage, Search });
         }
 
         settings.IsOpen = isOpen;
+        settings.SeniorTutorApplicationsOpen = seniorTutorApplicationsOpen;
         if (isOpen)
         {
             settings.ShortlistLimit = shortlistLimit;
             settings.OpenDate = openDate!.Value.Date;
             settings.CloseDate = closeDate!.Value.Date;
             settings.ContinueAfterShortlistLimit = false;
+        }
+        if (seniorTutorApplicationsOpen)
+        {
+            settings.SeniorTutorOpenDate = seniorOpenDate!.Value.Date;
+            settings.SeniorTutorCloseDate = seniorCloseDate!.Value.Date;
         }
         settings.NotifyStudents = isOpen;
         settings.UpdatedAt = DateTime.UtcNow;
@@ -344,6 +369,39 @@ public class ApplicationsModel : ManualTutorPageModel
                 }));
         }
 
+        if (seniorTutorApplicationsOpen &&
+            !seniorTutorApplicationsWereOpen)
+        {
+            List<int> tutorUserIds = await _context.BcUsers
+                .AsNoTracking()
+                .Where(user =>
+                    user.Role == BcUserRole.Tutor &&
+                    user.Tutor != null &&
+                    user.Tutor.IsActive &&
+                    user.Tutor.Status == TutorStatus.Approved)
+                .Select(user => user.BcUserId)
+                .ToListAsync(cancellationToken);
+            DateTimeOffset createdAt = DateTimeOffset.UtcNow;
+            AdminNotificationDefinition notificationDefinition =
+                AdminNotificationCatalog.Find(
+                    AdminNotificationCatalog.SeniorApplicationsOpen)!;
+            string notificationMessage = notificationDefinition.DefaultMessage
+                .Replace(
+                    "{closing date}",
+                    $"{seniorCloseDate:dd MMMM yyyy}",
+                    StringComparison.Ordinal);
+
+            _context.UserNotifications.AddRange(tutorUserIds.Select(userId =>
+                new UserNotification
+                {
+                    RecipientBcUserId = userId,
+                    Title = notificationDefinition.Title,
+                    Message = notificationMessage,
+                    LinkUrl = "/Tutors/SeniorTutorApplications",
+                    CreatedAt = createdAt
+                }));
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
 
         if (!settings.IsAcceptingApplications(DateTime.UtcNow))
@@ -354,9 +412,7 @@ public class ApplicationsModel : ManualTutorPageModel
                     cancellationToken);
         }
 
-        PageMessage = isOpen
-            ? "Tutor applications are now open."
-            : "Tutor applications are now closed.";
+        PageMessage = "Application availability was updated.";
         return RedirectToPage(new
         {
             Stage = isOpen ? Stage : "applications",
@@ -679,12 +735,20 @@ public class ApplicationsModel : ManualTutorPageModel
     private async Task LoadSettingsAsync(CancellationToken cancellationToken)
     {
         TutorApplicationSettings? settings = await _context
-            .TutorApplicationSettings.AsNoTracking()
+            .TutorApplicationSettings
             .SingleOrDefaultAsync(cancellationToken);
+        if (settings?.CloseExpiredApplications(DateTime.UtcNow) == true)
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
         OpenApplications = settings?.IsOpen ?? false;
+        SeniorTutorApplicationsOpen =
+            settings?.SeniorTutorApplicationsOpen ?? false;
         ShortlistLimit = settings?.ShortlistLimit;
         ApplicationOpenDate = settings?.OpenDate;
         ApplicationCloseDate = settings?.CloseDate;
+        SeniorTutorApplicationOpenDate = settings?.SeniorTutorOpenDate;
+        SeniorTutorApplicationCloseDate = settings?.SeniorTutorCloseDate;
     }
 
     private void NormalizeStage()

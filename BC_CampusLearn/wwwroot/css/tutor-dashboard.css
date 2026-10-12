@@ -1,3 +1,86 @@
+.tutor-dashboard-heading {
+    align-items: center;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.tutor-dashboard-heading h1 {
+    grid-column: 2;
+    margin: 0;
+    text-align: center;
+}
+
+.tutor-dashboard-heading .tutor-dashboard-senior-application--desktop {
+    grid-column: 3;
+    justify-self: end;
+}
+
+.tutor-dashboard-senior-application {
+    align-items: center;
+    background-color: #4ac1c1;
+    border: 1px solid #4ac1c1;
+    border-radius: 0.3rem;
+    color: #fff;
+    display: inline-flex;
+    font-size: 1.15rem;
+    font-weight: 600;
+    gap: 0.55rem;
+    justify-content: center;
+    min-height: 3.25rem;
+    padding: 0.65rem 1.15rem;
+    text-decoration: none;
+    transition:
+        background-color 160ms ease,
+        border-color 160ms ease,
+        color 160ms ease,
+        transform 160ms ease;
+}
+
+.tutor-dashboard-senior-application svg {
+    flex: 0 0 auto;
+    font-size: 1.3em;
+}
+
+.tutor-dashboard-senior-application:hover,
+.tutor-dashboard-senior-application:focus-visible {
+    background-color: #3aabab;
+    border-color: #3aabab;
+    color: #fff;
+    outline: none;
+    transform: translateY(-0.1rem);
+}
+
+.tutor-dashboard-senior-application--mobile {
+    display: none;
+}
+
+@media (max-width: 767.98px) {
+    .tutor-dashboard-heading {
+        display: flex;
+        justify-content: center;
+    }
+
+    .tutor-dashboard-heading h1 {
+        text-align: center;
+    }
+
+    .tutor-dashboard-senior-application--desktop {
+        display: none;
+    }
+
+    .tutor-dashboard-senior-application--mobile {
+        display: flex;
+        font-size: 14px;
+        margin-top: 1rem;
+        width: 100%;
+    }
+
+    .tutor-dashboard-senior-application--mobile + .tutor-dashboard-schedule {
+        margin-top: 2rem;
+    }
+}
+
 .tutor-dashboard-summary {
     --bs-gutter-x: 0;
     --bs-gutter-y: 0;
@@ -1789,7 +1872,7 @@
     font-size: 16px;
 }
 
-.tutor-dashboard-page > h1 {
+.tutor-dashboard-heading h1 {
     font-size: clamp(2rem, 4vw, 2.75rem);
     line-height: 1.15;
 }

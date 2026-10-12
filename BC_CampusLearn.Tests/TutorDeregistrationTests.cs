@@ -14,6 +14,7 @@ public class TutorDeregistrationTests
 {
     [Theory]
     [InlineData(BcUserRole.Tutor)]
+    [InlineData(BcUserRole.SeniorTutor)]
     [InlineData(BcUserRole.HeadOfTutors)]
     public async Task DeregistrationDemotesUserAndBlocksDashboardEvenWithStaleRole(BcUserRole role)
     {

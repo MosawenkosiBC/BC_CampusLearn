@@ -194,18 +194,34 @@ public class UsersAccessModel(
             .SingleOrDefaultAsync(user => user.BcUserId == userId, cancellationToken);
         if (target is null) return NotFound();
         if (target.Role == BcUserRole.Dev) return Forbid();
-        if (!IsAdministrativeRole(target.Role)) return AccessError("This user does not have an administrative role to demote.");
+        if (!IsAdministrativeRole(target.Role) &&
+            target.Role != BcUserRole.SeniorTutor)
+        {
+            return AccessError("This user does not have a role that can be demoted here.");
+        }
         if (target.Role == BcUserRole.SuperAdmin &&
             await IsLastActiveSuperAdminAsync(target.BcUserId, cancellationToken))
             return AccessError("The last active Super Admin cannot be demoted.");
 
+        bool removingSeniorTutorRole = target.Role == BcUserRole.SeniorTutor;
         string previous = target.Role.ToString();
         target.Role = DemotionRole(target.Role, IsApprovedTutor(target));
         target.IsAdministrativeAccessActive = true;
+        if (removingSeniorTutorRole)
+        {
+            List<SeniorTutorApplication> applications = await context
+                .SeniorTutorApplications
+                .Where(application =>
+                    application.Tutor.BcUserId == target.BcUserId)
+                .ToListAsync(cancellationToken);
+            context.SeniorTutorApplications.RemoveRange(applications);
+        }
         EnsureAdminProfile(target);
         RecordAccessAudit(target, "Administrative role", previous, target.Role.ToString(), currentUser, reason);
         await context.SaveChangesAsync(cancellationToken);
-        SuccessMessage = $"{target.DisplayName} was demoted to {RoleLabel(target.Role)}.";
+        SuccessMessage = removingSeniorTutorRole
+            ? $"{target.DisplayName} was demoted to Tutor. Their Senior Tutor application was removed."
+            : $"{target.DisplayName} was demoted to {RoleLabel(target.Role)}.";
         return RedirectToPage();
     }
 
@@ -307,7 +323,8 @@ public class UsersAccessModel(
                     IsAdministrativeRole(selected.Role), selected.IsAdministrativeAccessActive);
         }
         IQueryable<BcUser> query = context.BcUsers.AsNoTracking()
-            .Where(user => user.Role == BcUserRole.HeadOfTutors ||
+            .Where(user => user.Role == BcUserRole.SeniorTutor ||
+                user.Role == BcUserRole.HeadOfTutors ||
                 user.Role == BcUserRole.Admin ||
                 user.Role == BcUserRole.SuperAdmin ||
                 user.Role == BcUserRole.Dev);
@@ -443,6 +460,7 @@ public class UsersAccessModel(
         role is BcUserRole.Admin or BcUserRole.SuperAdmin or BcUserRole.HeadOfTutors;
 
     public static BcUserRole DemotionRole(BcUserRole role, bool isTutor) =>
+        role == BcUserRole.SeniorTutor ? BcUserRole.Tutor :
         role == BcUserRole.SuperAdmin ? BcUserRole.Admin :
         isTutor ? BcUserRole.Tutor : BcUserRole.Student;
 

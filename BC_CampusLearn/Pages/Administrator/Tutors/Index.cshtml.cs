@@ -26,6 +26,12 @@ public class IndexModel(ApplicationDbContext context, IStudentDetailsService stu
     public int TutorPage { get; set; } = 1;
     [BindProperty(SupportsGet = true)]
     public int ApplicationPage { get; set; } = 1;
+    [BindProperty(SupportsGet = true)]
+    public string? ApplicationSearch { get; set; }
+    [BindProperty(SupportsGet = true)]
+    public TutorAccountRequestStatus? ApplicationStatus { get; set; }
+    [BindProperty(SupportsGet = true)]
+    public string ApplicationArchive { get; set; } = "current";
     public int TotalTutors { get; private set; }
     public int TotalPages { get; private set; }
     public int TotalApplications { get; private set; }
@@ -41,7 +47,8 @@ public class IndexModel(ApplicationDbContext context, IStudentDetailsService stu
         PendingApplications = await Context.SeniorTutorApplications
             .AsNoTracking()
             .CountAsync(
-                application => application.Status == TutorAccountRequestStatus.Pending,
+                application => !application.IsArchived &&
+                    application.Status == TutorAccountRequestStatus.Pending,
                 cancellationToken);
 
         if (Tab == "senior-applications")
@@ -100,7 +107,50 @@ public class IndexModel(ApplicationDbContext context, IStudentDetailsService stu
         CancellationToken cancellationToken)
     {
         IQueryable<SeniorTutorApplication> query = Context.SeniorTutorApplications
-            .AsNoTracking();
+            .AsNoTracking()
+            .Where(application =>
+                application.Status != TutorAccountRequestStatus.Approved ||
+                application.Tutor.BcUser.Role == BcUserRole.SeniorTutor);
+
+        ApplicationSearch = string.IsNullOrWhiteSpace(ApplicationSearch)
+            ? null
+            : ApplicationSearch.Trim();
+        string archiveFilter = ApplicationArchive?.Trim().ToLowerInvariant()
+            ?? "current";
+        ApplicationArchive = archiveFilter is "archived" or "all"
+            ? archiveFilter
+            : "current";
+        if (ApplicationStatus.HasValue &&
+            !Enum.IsDefined(ApplicationStatus.Value))
+        {
+            ApplicationStatus = null;
+        }
+        if (ApplicationStatus == TutorAccountRequestStatus.Approved &&
+            ApplicationArchive == "current")
+        {
+            ApplicationArchive = "all";
+        }
+        if (ApplicationSearch is not null)
+        {
+            string search = ApplicationSearch;
+            query = query.Where(application =>
+                application.Tutor.BcUser.DisplayName.Contains(search) ||
+                (application.Tutor.BcUser.PersonnelNumber != null &&
+                    application.Tutor.BcUser.PersonnelNumber.Contains(search)) ||
+                (application.Tutor.BcUser.Email != null &&
+                    application.Tutor.BcUser.Email.Contains(search)));
+        }
+        if (ApplicationStatus.HasValue)
+        {
+            query = query.Where(application =>
+                application.Status == ApplicationStatus.Value);
+        }
+        query = ApplicationArchive switch
+        {
+            "archived" => query.Where(application => application.IsArchived),
+            "all" => query,
+            _ => query.Where(application => !application.IsArchived)
+        };
 
         TotalApplications = await query.CountAsync(cancellationToken);
         ApplicationPages = Math.Max(

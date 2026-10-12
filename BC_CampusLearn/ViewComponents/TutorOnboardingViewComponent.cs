@@ -14,7 +14,8 @@ public class TutorOnboardingViewComponent(
     public async Task<IViewComponentResult> InvokeAsync()
     {
         if (!currentUserService.IsAuthenticated ||
-            currentUserService.GetRequiredUser().Role != BcUserRole.Tutor ||
+            currentUserService.GetRequiredUser().Role is not
+                (BcUserRole.Tutor or BcUserRole.SeniorTutor) ||
             string.Equals(ViewContext.RouteData.Values["Page"]?.ToString(),
                 "/Tutors/Onboarding", StringComparison.OrdinalIgnoreCase))
             return Content(string.Empty);

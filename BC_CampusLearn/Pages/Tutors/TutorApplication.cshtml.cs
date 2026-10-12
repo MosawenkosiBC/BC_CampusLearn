@@ -67,6 +67,8 @@ public class TutorApplicationModel : PageModel
     public bool StudentDetailsVerified { get; private set; }
     public string? StudentDetailsErrorMessage { get; private set; }
     public bool ApplicationsOpen { get; private set; }
+    public bool SeniorTutorApplicationsOpen { get; private set; }
+    public bool CanApplyForSeniorTutor { get; private set; }
     public bool ShowClosedApplicationsModal { get; private set; }
     public int ApplicationYear { get; private set; }
 
@@ -379,6 +381,9 @@ public class TutorApplicationModel : PageModel
             .SingleOrDefaultAsync(cancellationToken);
         ApplicationsOpen = applicationSettings?.IsAcceptingApplications(
             DateTime.UtcNow) ?? false;
+        SeniorTutorApplicationsOpen =
+            applicationSettings?.IsAcceptingSeniorTutorApplications(
+                DateTime.UtcNow) ?? false;
         ApplicationYear = applicationSettings?.GetApplicationYear(
             DateTime.UtcNow) ?? DateTime.UtcNow.Year + 1;
 
@@ -407,9 +412,18 @@ public class TutorApplicationModel : PageModel
             {
                 tutor.Status,
                 tutor.ApplicationStage,
-                tutor.ShortlistReason
+                tutor.ShortlistReason,
+                tutor.IsActive,
+                tutor.BcUser.Role
             })
             .SingleOrDefaultAsync(cancellationToken);
+
+        CanApplyForSeniorTutor = existingApplication is
+        {
+            Status: TutorStatus.Approved,
+            IsActive: true,
+            Role: BcUserRole.Tutor
+        };
 
         ExistingApplicationMessage = existingApplication switch
         {

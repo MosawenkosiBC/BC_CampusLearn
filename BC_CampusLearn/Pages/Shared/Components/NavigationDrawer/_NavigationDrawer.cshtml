@@ -44,6 +44,7 @@
         !isManageAvailability &&
         !isManageResources;
     bool isTutor = User.IsInRole(nameof(BcUserRole.Tutor)) ||
+        User.IsInRole(nameof(BcUserRole.SeniorTutor)) ||
         User.IsInRole(nameof(BcUserRole.HeadOfTutors));
     bool isTutorHead = User.IsInRole(nameof(BcUserRole.HeadOfTutors));
     bool isSessionReviews = currentPage.StartsWith(

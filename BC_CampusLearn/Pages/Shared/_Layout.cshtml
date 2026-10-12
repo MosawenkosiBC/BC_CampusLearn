@@ -91,6 +91,7 @@
             "/Tutors/Details",
             StringComparison.OrdinalIgnoreCase);
     bool isTutor = User.IsInRole(nameof(BcUserRole.Tutor)) ||
+        User.IsInRole(nameof(BcUserRole.SeniorTutor)) ||
         User.IsInRole(nameof(BcUserRole.HeadOfTutors));
     string dashboardPage = isAdmin
         ? "/Administrator/Admin/Dashboard"
@@ -722,6 +723,7 @@
                                 : displayName[..1];
                             initials = initials.ToUpperInvariant();
                             bool isTutor = User.IsInRole(nameof(BcUserRole.Tutor)) ||
+                                User.IsInRole(nameof(BcUserRole.SeniorTutor)) ||
                                 User.IsInRole(nameof(BcUserRole.HeadOfTutors));
                             string? tutorProfileImagePath = User.FindFirst(
                                 EntraClaimTypes.TutorProfileImagePath)?.Value;

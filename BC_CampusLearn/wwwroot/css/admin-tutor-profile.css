@@ -136,7 +136,6 @@
 }
 .admin-profile-actions { display: flex; align-items: flex-start; justify-content: flex-end; gap: 1rem; flex-wrap: wrap; }
 .admin-profile-date-filter { min-width: 0; max-width: 100%; }
-.admin-profile-date-error { color: #b42318; font-size: .85rem; max-width: 440px; margin: .65rem 0 0; }
 .admin-profile-heading { flex-wrap: wrap; }
 @media (max-width: 575.98px) {
     .admin-profile-actions { justify-content: flex-start; width: 100%; }

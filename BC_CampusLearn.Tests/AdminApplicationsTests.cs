@@ -1058,6 +1058,9 @@ public class AdminApplicationsTests
         var closeRedirect = Assert.IsType<Microsoft.AspNetCore.Mvc.RedirectToPageResult>(
             await page.OnPostSettingsAsync(
             false,
+            false,
+            null,
+            null,
             null,
             null,
             null,
@@ -1129,9 +1132,12 @@ public class AdminApplicationsTests
         DateTime closeDate = openDate.AddMonths(1);
         await page.OnPostSettingsAsync(
             true,
+            false,
             2,
             openDate,
             closeDate,
+            null,
+            null,
             CancellationToken.None);
         var shortlistRedirect = Assert.IsType<Microsoft.AspNetCore.Mvc.RedirectToPageResult>(
             await page.OnPostShortlistAsync(
@@ -1164,6 +1170,35 @@ public class AdminApplicationsTests
     }
 
     [Fact]
+    public async Task OpeningTutorApplicationsDoesNotRequireShortlistTarget()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        await using var context = new ApplicationDbContext(options);
+        var page = new ApplicationsModel(context);
+        DateTime openDate = DateTime.UtcNow.Date;
+        DateTime closeDate = openDate.AddDays(14);
+
+        await page.OnPostSettingsAsync(
+            true,
+            false,
+            null,
+            openDate,
+            closeDate,
+            null,
+            null,
+            CancellationToken.None);
+
+        TutorApplicationSettings settings = await context
+            .TutorApplicationSettings.SingleAsync();
+        Assert.True(settings.IsOpen);
+        Assert.Null(settings.ShortlistLimit);
+        Assert.Equal(openDate, settings.OpenDate);
+        Assert.Equal(closeDate, settings.CloseDate);
+    }
+
+    [Fact]
     public async Task OpeningApplicationsNotifiesEveryStudentWithApplicationLink()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -1189,9 +1224,12 @@ public class AdminApplicationsTests
 
         await page.OnPostSettingsAsync(
             true,
+            false,
             2,
             openDate,
             closeDate,
+            null,
+            null,
             CancellationToken.None);
 
         List<UserNotification> notifications = await context.UserNotifications
@@ -1214,12 +1252,119 @@ public class AdminApplicationsTests
 
         await page.OnPostSettingsAsync(
             true,
+            false,
             2,
             openDate,
             closeDate,
+            null,
+            null,
             CancellationToken.None);
 
         Assert.Equal(2, await context.UserNotifications.CountAsync());
+    }
+
+    [Fact]
+    public async Task OpeningSeniorApplicationsNotifiesOnlyActiveApprovedTutors()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        context.BcUsers.AddRange(
+            CreateUser(1, "Eligible Tutor", "ST5201"),
+            CreateUser(2, "Inactive Tutor", "ST5202"),
+            CreateUser(3, "Pending Tutor", "ST5203"),
+            new BcUser
+            {
+                BcUserId = 4,
+                DisplayName = "Existing Senior Tutor",
+                PersonnelNumber = "ST5204",
+                Role = BcUserRole.SeniorTutor
+            });
+        Tutor eligible = CreateTutor(1, TutorStatus.Approved);
+        eligible.ApplicationStage = TutorApplicationStage.Placement;
+        eligible.IsActive = true;
+        Tutor inactive = CreateTutor(2, TutorStatus.Approved);
+        inactive.ApplicationStage = TutorApplicationStage.Placement;
+        inactive.IsActive = false;
+        Tutor pending = CreateTutor(3, TutorStatus.Pending);
+        pending.IsActive = true;
+        Tutor senior = CreateTutor(4, TutorStatus.Approved);
+        senior.ApplicationStage = TutorApplicationStage.Placement;
+        senior.IsActive = true;
+        context.Tutors.AddRange(eligible, inactive, pending, senior);
+        await context.SaveChangesAsync();
+
+        var page = new ApplicationsModel(context);
+        DateTime seniorOpenDate = DateTime.UtcNow.Date;
+        DateTime seniorCloseDate = seniorOpenDate.AddMonths(1);
+        await page.OnPostSettingsAsync(
+            false,
+            true,
+            null,
+            null,
+            null,
+            seniorOpenDate,
+            seniorCloseDate,
+            CancellationToken.None);
+
+        UserNotification notification = Assert.Single(
+            await context.UserNotifications.ToListAsync());
+        Assert.Equal(1, notification.RecipientBcUserId);
+        Assert.Equal(
+            "⭐ Senior Tutor applications are open",
+            notification.Title);
+        Assert.Contains(
+            "Ready to take the next step in your tutoring journey?",
+            notification.Message);
+        Assert.Contains(
+            "• At least one year of tutoring at Belgium Campus",
+            notification.Message);
+        Assert.Contains("• Active, approved tutor", notification.Message);
+        Assert.Contains("• Pretoria contact student", notification.Message);
+        Assert.Contains(
+            "• Academic average of 72% or higher",
+            notification.Message);
+        Assert.Contains(
+            $"Applications close: {seniorCloseDate:dd MMMM yyyy}",
+            notification.Message);
+        Assert.Equal(
+            "/Tutors/SeniorTutorApplications",
+            notification.LinkUrl);
+        Assert.True((await context.TutorApplicationSettings.SingleAsync())
+            .SeniorTutorApplicationsOpen);
+        TutorApplicationSettings settings = await context
+            .TutorApplicationSettings.SingleAsync();
+        Assert.Equal(seniorOpenDate, settings.SeniorTutorOpenDate);
+        Assert.Equal(seniorCloseDate, settings.SeniorTutorCloseDate);
+    }
+
+    [Fact]
+    public void ExpiredApplicationWindowsAreSwitchedOffIndependently()
+    {
+        DateTime today = new(2026, 10, 12, 8, 0, 0, DateTimeKind.Utc);
+        var settings = new TutorApplicationSettings
+        {
+            IsOpen = true,
+            NotifyStudents = true,
+            CloseDate = today.AddDays(-1),
+            SeniorTutorApplicationsOpen = true,
+            SeniorTutorCloseDate = today.AddDays(-1)
+        };
+
+        bool changed = settings.CloseExpiredApplications(today);
+
+        Assert.True(changed);
+        Assert.False(settings.IsOpen);
+        Assert.False(settings.NotifyStudents);
+        Assert.False(settings.SeniorTutorApplicationsOpen);
+        Assert.Equal(today, settings.UpdatedAt);
     }
 
     [Fact]

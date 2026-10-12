@@ -169,7 +169,8 @@ public class ApplicationDbContext : DbContext
         Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<Tutor> tutorEntry)
     {
         if (user is null ||
-            user.Role is not (BcUserRole.Student or BcUserRole.Tutor))
+            user.Role is not (BcUserRole.Student or BcUserRole.Tutor or
+                BcUserRole.SeniorTutor))
         {
             return;
         }
@@ -178,7 +179,11 @@ public class ApplicationDbContext : DbContext
             tutorEntry.Entity.Status == TutorStatus.Approved &&
             tutorEntry.Entity.ApplicationStage == TutorApplicationStage.Placement &&
             tutorEntry.Entity.IsActive;
-        user.Role = isActiveTutor ? BcUserRole.Tutor : BcUserRole.Student;
+        user.Role = isActiveTutor
+            ? user.Role == BcUserRole.SeniorTutor
+                ? BcUserRole.SeniorTutor
+                : BcUserRole.Tutor
+            : BcUserRole.Student;
     }
 
 
