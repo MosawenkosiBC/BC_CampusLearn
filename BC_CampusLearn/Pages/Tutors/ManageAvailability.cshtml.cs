@@ -689,13 +689,13 @@ public class ManageAvailabilityModel : PageModel
 
     private RedirectToPageResult RedirectToAvailabilityList()
     {
-        return RedirectToPage(new
+        return RedirectToPage(pageName: null, pageHandler: null, routeValues: new
         {
             availabilityPage = AvailabilityPage,
             availabilityDateFilter = AvailabilityDateFilter,
             availabilityDayFilter = AvailabilityDayFilter,
             availabilityTimeFilter = AvailabilityTimeFilter
-        });
+        }, fragment: "availability-results");
     }
 
     private async Task LoadAvailabilityInsightsAsync(
