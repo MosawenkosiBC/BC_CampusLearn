@@ -24,7 +24,7 @@
     margin: 0;
 }
 
-.notifications-mark-all {
+.notifications-select-toggle {
     background: transparent;
     border: 0;
     border-radius: 0;
@@ -39,10 +39,102 @@
     transform: translateY(-50%);
 }
 
-.notifications-mark-all:hover,
-.notifications-mark-all:focus-visible {
+.notifications-select-toggle:hover,
+.notifications-select-toggle:focus-visible {
     background: transparent;
-    color: #8f0043;
+    color: #111;
+}
+
+.notification-selection-toolbar {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem 1rem;
+    margin-bottom: 1rem;
+    padding: .85rem 1rem;
+}
+
+.notification-selection-toolbar[hidden] {
+    display: none;
+}
+
+.notification-select-all {
+    align-items: center;
+    color: #343a3b;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 14px;
+    font-weight: 650;
+    gap: .5rem;
+}
+
+.notification-select-all input,
+.notification-select-control input {
+    accent-color: #2f8586;
+    height: 1.1rem;
+    margin: 0;
+    width: 1.1rem;
+}
+
+.notification-selection-count {
+    color: #697172;
+    font-size: 13px;
+    margin-left: auto;
+}
+
+.notification-selection-actions {
+    display: inline-flex;
+    gap: .55rem;
+}
+
+.notification-selection-actions button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: .45rem;
+    display: inline-flex;
+    font-size: 14px;
+    font-weight: 700;
+    gap: .4rem;
+    justify-content: center;
+    min-height: 2.4rem;
+    padding: .55rem .85rem;
+}
+
+.notification-selection-actions button[hidden] {
+    display: none;
+}
+
+.notification-selection-actions button:not(.notification-delete-selected) {
+    background: transparent;
+    color: #4a5152;
+}
+
+.notification-delete-selected {
+    background: transparent;
+    color: #dc2626;
+}
+
+.notification-delete-selected svg {
+    flex: 0 0 auto;
+    height: 1.05rem;
+    width: 1.05rem;
+}
+
+.notification-selection-actions button:hover:not(:disabled),
+.notification-selection-actions button:focus-visible:not(:disabled) {
+    background: transparent;
+    text-decoration: underline;
+    text-underline-offset: .18rem;
+}
+
+.notification-selection-actions button:disabled {
+    cursor: not-allowed;
+    opacity: .48;
 }
 
 @media (min-width: 1200px) {
@@ -64,6 +156,25 @@
     display: grid;
     gap: 1.5rem;
     grid-template-columns: 6.5rem minmax(0, 1fr);
+}
+
+.notification-select-control {
+    align-items: center;
+    cursor: pointer;
+    display: none;
+    justify-content: center;
+}
+
+.notification-selection-form.is-selecting .notification-row {
+    grid-template-columns: 2rem 6.5rem minmax(0, 1fr);
+}
+
+.notification-selection-form.is-selecting .notification-select-control {
+    display: flex;
+}
+
+.notification-selection-form.is-selecting .notification-card {
+    cursor: pointer;
 }
 
 .notification-date {
@@ -103,6 +214,12 @@
 
 .notification-row.is-unread .notification-card {
     box-shadow: 0 .38rem 1.1rem rgba(25, 30, 32, .13);
+}
+
+.notification-row.is-selected .notification-card {
+    box-shadow:
+        0 0 0 2px #d6dada,
+        0 .38rem 1.1rem rgba(25, 30, 32, .13);
 }
 
 .notification-card-content {
@@ -199,6 +316,83 @@
     margin: 0;
 }
 
+.notification-delete-modal {
+    background: #fff;
+    border: 0;
+    border-radius: .9rem;
+    box-shadow: 0 1.5rem 4rem rgba(20, 25, 26, .28);
+    color: #242829;
+    max-width: 31rem;
+    padding: 0;
+    width: calc(100% - 2rem);
+}
+
+.notification-delete-modal::backdrop {
+    background: rgba(25, 30, 31, .42);
+    backdrop-filter: blur(5px);
+}
+
+.notification-delete-modal-header {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 1.5rem 1.5rem 1rem;
+}
+
+.notification-delete-modal-header h2 {
+    color: #1d2223;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.35;
+    margin: 0;
+}
+
+.notification-delete-modal-body {
+    color: #505758;
+    padding: 0 1.5rem 1.5rem;
+}
+
+.notification-delete-modal-body p {
+    line-height: 1.6;
+    margin: 0;
+}
+
+.notification-delete-modal-footer {
+    align-items: center;
+    background: #f4f6f6;
+    display: flex;
+    gap: .75rem;
+    justify-content: flex-end;
+    padding: 1rem 1.5rem;
+}
+
+.notification-delete-cancel,
+.notification-delete-confirm {
+    border: 0;
+    border-radius: .45rem;
+    font-size: 16px;
+    font-weight: 700;
+    min-height: 2.75rem;
+    padding: .65rem 1rem;
+}
+
+.notification-delete-cancel {
+    background: #e1e5e5;
+    color: #303637;
+}
+
+.notification-delete-confirm {
+    background: #dc2626;
+    color: #fff;
+}
+
+.notification-delete-confirm:hover,
+.notification-delete-confirm:focus-visible {
+    background: #b91c1c;
+    color: #fff;
+}
+
 .notification-modal {
     background: #fff;
     border: 0;
@@ -274,7 +468,6 @@
     line-height: 1.7;
     margin: 0;
     overflow-wrap: anywhere;
-    white-space: pre-line;
 }
 
 .notification-congratulations {
@@ -425,24 +618,94 @@
     }
 
     .notifications-header {
+        align-items: center;
         display: grid;
         gap: 1rem;
+        grid-template-columns: minmax(3.5rem, 1fr) auto minmax(3.5rem, 1fr);
         justify-items: stretch;
     }
 
-    .notifications-header form {
-        display: flex;
-        justify-content: flex-end;
+    .notifications-select-toggle {
+        display: none;
     }
 
-    .notifications-mark-all {
+    .notifications-select-toggle.is-selection-active {
+        display: inline-flex;
+        grid-column: 3;
+        grid-row: 1;
+        justify-self: end;
         position: static;
         transform: none;
+    }
+
+    .notifications-header h1 {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .notification-selection-toolbar {
+        align-items: center;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: .5rem;
+        padding-inline: .75rem;
+    }
+
+    .notification-select-all {
+        font-size: 13px;
+    }
+
+    .notification-selection-count {
+        font-size: 12px;
+        margin-left: 0;
+        white-space: nowrap;
+    }
+
+    .notification-selection-actions {
+        align-items: center;
+        display: inline-flex;
+        gap: .25rem;
+        margin-left: auto;
+        white-space: nowrap;
+    }
+
+    .notification-selection-actions button {
+        font-size: 13px;
+        min-height: 2rem;
+        padding: .35rem .2rem;
+    }
+
+    .notification-delete-selected span {
+        display: none;
+    }
+
+    .notification-delete-selected svg {
+        height: 1.2rem;
+        width: 1.2rem;
+    }
+
+    .notification-card {
+        -webkit-touch-callout: none;
+        touch-action: pan-y;
+        user-select: none;
     }
 
     .notification-row {
         gap: .45rem;
         grid-template-columns: 1fr;
+    }
+
+    .notification-selection-form.is-selecting .notification-row {
+        grid-template-columns: 2rem minmax(0, 1fr);
+    }
+
+    .notification-selection-form.is-selecting .notification-select-control {
+        grid-row: 1 / 3;
+    }
+
+    .notification-selection-form.is-selecting .notification-date,
+    .notification-selection-form.is-selecting .notification-card {
+        grid-column: 2;
     }
 
     .notification-date {
@@ -463,6 +726,15 @@
     .notification-modal-footer {
         align-items: stretch;
         flex-direction: column-reverse;
+    }
+
+    .notification-delete-modal-footer {
+        align-items: stretch;
+        flex-direction: row;
+    }
+
+    .notification-delete-modal-footer button {
+        flex: 1 1 0;
     }
 
 }

@@ -4,10 +4,16 @@
 {
     int currentPage = Model.CurrentPage!.Value;
     int totalPages = Model.TotalPages!.Value;
-    IReadOnlyList<int> pageNumbers = totalPages <= 7
+    IEnumerable<int> nearbyPages = currentPage <= 2
+        ? Enumerable.Range(1, 3)
+        : currentPage >= totalPages - 1
+            ? Enumerable.Range(totalPages - 2, 3)
+            : new[] { currentPage - 1, currentPage, currentPage + 1 };
+    IReadOnlyList<int> pageNumbers = totalPages <= 5
         ? Enumerable.Range(1, totalPages).ToArray()
-        : new[] { 1, totalPages, currentPage - 1, currentPage, currentPage + 1 }
-            .Where(pageNumber => pageNumber >= 1 && pageNumber <= totalPages)
+        : nearbyPages
+            .Append(1)
+            .Append(totalPages)
             .Distinct()
             .OrderBy(pageNumber => pageNumber)
             .ToArray();
@@ -21,8 +27,13 @@
         // Preserve repeated query values, such as multiple selected years.
         pageUrl = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(
             pageUrl,
-            Context.Request.Query.Where(item => !item.Key.Equals(
-                Model.PageRouteValueName, StringComparison.OrdinalIgnoreCase)));
+            Context.Request.Query.Where(item =>
+                !item.Key.Equals(
+                    Model.PageRouteValueName,
+                    StringComparison.OrdinalIgnoreCase) &&
+                !Model.ExcludedQueryKeys.Contains(
+                    item.Key,
+                    StringComparer.OrdinalIgnoreCase)));
         return Model.Fragment is null
             ? pageUrl
             : $"{pageUrl}#{Uri.EscapeDataString(Model.Fragment)}";
@@ -58,7 +69,7 @@
                     <span class="campus-pagination__ellipsis"
                           aria-hidden="true">…</span>
                 }
-                <a class="campus-pagination__page @(pageNumber == currentPage ? "is-current" : null) @(Math.Abs(pageNumber - currentPage) == 1 && pageNumber != 1 && pageNumber != totalPages ? "campus-pagination__page--adjacent" : null)"
+                <a class="campus-pagination__page @(pageNumber == currentPage ? "is-current" : null) @(Math.Abs(pageNumber - currentPage) == 1 && pageNumber != 1 && pageNumber != totalPages && currentPage > 2 && currentPage < totalPages - 1 ? "campus-pagination__page--adjacent" : null)"
                    href="@PageUrl(pageNumber)"
                    aria-label="Page @pageNumber"
                    aria-current="@(pageNumber == currentPage ? "page" : null)">
