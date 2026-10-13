@@ -16,6 +16,9 @@ public sealed class PaginationViewModel
 
     public string PageRouteValueName { get; init; } = "page";
 
+    public IReadOnlyList<string> ExcludedQueryKeys { get; init; } =
+        Array.Empty<string>();
+
     public string? Fragment { get; init; }
 
     public bool UsesServerPagination =>

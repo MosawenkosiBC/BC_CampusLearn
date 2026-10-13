@@ -26,16 +26,15 @@
 <main class="notifications-page" aria-labelledby="notifications-title">
     <header class="notifications-header">
         <h1 id="notifications-title">Notifications</h1>
-        @if (Model.UnreadCount > 0)
+        @if (Model.Notifications.Count > 0)
         {
-            <form method="post" asp-page-handler="MarkAllRead">
-                <input type="hidden"
-                       name="currentPage"
-                       value="@Model.CurrentPage" />
-                <button type="submit" class="notifications-mark-all">
-                    Mark all as read
-                </button>
-            </form>
+            <button type="button"
+                    class="notifications-select-toggle"
+                    data-notification-selection-toggle
+                    aria-controls="notification-selection-form"
+                    aria-expanded="false">
+                Select
+            </button>
         }
     </header>
 
@@ -53,56 +52,164 @@
     }
     else
     {
-        <ol class="notifications-list">
-            @foreach (var notification in Model.Notifications)
-            {
-                DateTimeOffset localCreatedAt = notification.CreatedAt
-                    .ToOffset(TimeSpan.FromHours(2));
-                bool isUnread = !notification.ReadAt.HasValue;
-                <li class="notification-row @(isUnread ? "is-unread" : "is-read")">
-                    <time class="notification-date"
-                          datetime="@notification.CreatedAt.ToString("O")">
-                        @localCreatedAt.ToString("dd/MM/yyyy")
-                    </time>
-                    <a class="notification-card"
-                       asp-page="/Notifications/Index"
-                       asp-route-notificationId="@notification.NotificationId"
-                       aria-label="Open @notification.Title notification">
-                        <span class="notification-card-content">
-                            <span class="notification-card-copy">
-                                <strong>@notification.Title</strong>
-                                <span class="@(notification.HighlightedClosingDate is not null ? "notification-card-message--application" : null)">
-                                    @notification.PreviewMessage
-                                </span>
-                            </span>
-                            <time datetime="@notification.CreatedAt.ToString("O")">
-                                @localCreatedAt.ToString("HH:mm")
-                            </time>
-                        </span>
-                        @if (isUnread)
-                        {
-                            <span class="notification-unread-dot"
-                                  aria-label="Unread"></span>
-                        }
-                    </a>
-                </li>
-            }
-        </ol>
+        <form method="post"
+              asp-page-handler="BulkAction"
+              id="notification-selection-form"
+              class="notification-selection-form"
+              data-notification-selection-form
+              data-total-notifications="@Model.TotalCount"
+              data-unread-notifications="@Model.UnreadCount">
+            <input type="hidden"
+                   name="currentPage"
+                   value="@Model.CurrentPage" />
+            <input type="hidden"
+                   name="selectAll"
+                   value="false"
+                   data-notification-select-all-value />
 
-        @if (Model.TotalPages > 1)
-        {
-            @await Component.InvokeAsync(
-                "Pagination",
-                new
+            <div class="notification-selection-toolbar"
+                 data-notification-selection-toolbar
+                 hidden>
+                <label class="notification-select-all">
+                    <input type="checkbox"
+                           data-notification-select-all />
+                    <span>Select All</span>
+                </label>
+                <span class="notification-selection-count"
+                      data-notification-selection-count
+                      aria-live="polite">0 selected</span>
+                <span class="notification-selection-actions">
+                    <button type="submit"
+                            name="notificationAction"
+                            value="mark-read"
+                            data-notification-mark-read
+                            data-notification-selection-action
+                            hidden
+                            disabled>
+                        Mark as read
+                    </button>
+                    <button type="submit"
+                            name="notificationAction"
+                            value="delete"
+                            class="notification-delete-selected"
+                            data-notification-selection-action
+                            data-notification-delete
+                            aria-label="Delete selected notifications"
+                            disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             width="1em"
+                             height="1em"
+                             viewBox="0 0 24 24"
+                             aria-hidden="true">
+                            <path d="M0 0h24v24H0z" fill="none" />
+                            <path fill="none"
+                                  stroke="currentColor"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="1.5"
+                                  d="M1 5h22m-8.75-4h-4.5a1.5 1.5 0 0 0-1.5 1.5V5h7.5V2.5a1.5 1.5 0 0 0-1.5-1.5m-4.5 16.75v-7.5m4.5 7.5v-7.5m4.61 11.37A1.49 1.49 0 0 1 17.37 23H6.63a1.49 1.49 0 0 1-1.49-1.38L3.75 5h16.5z" />
+                        </svg>
+                        <span>Delete</span>
+                    </button>
+                </span>
+            </div>
+
+            <ol class="notifications-list">
+                @foreach (var notification in Model.Notifications)
                 {
-                    currentPage = Model.CurrentPage,
-                    totalPages = Model.TotalPages,
-                    ariaLabel = "Notifications pages",
-                    pageRouteValueName = "CurrentPage"
-                })
-        }
+                    DateTimeOffset localCreatedAt = notification.CreatedAt
+                        .ToOffset(TimeSpan.FromHours(2));
+                    bool isUnread = !notification.ReadAt.HasValue;
+                    <li class="notification-row @(isUnread ? "is-unread" : "is-read")"
+                        data-notification-row>
+                        <label class="notification-select-control">
+                            <input type="checkbox"
+                                   name="selectedNotificationIds"
+                                   value="@notification.NotificationId"
+                                   data-notification-checkbox />
+                            <span class="visually-hidden">
+                                Select @notification.Title
+                            </span>
+                        </label>
+                        <time class="notification-date"
+                              datetime="@notification.CreatedAt.ToString("O")">
+                            @localCreatedAt.ToString("dd/MM/yyyy")
+                        </time>
+                        <a class="notification-card"
+                           asp-page="/Notifications/Index"
+                           asp-route-notificationId="@notification.NotificationId"
+                           aria-label="Open @notification.Title notification">
+                            <span class="notification-card-content">
+                                <span class="notification-card-copy">
+                                    <strong>@notification.Title</strong>
+                                    <span class="@(notification.HighlightedClosingDate is not null ? "notification-card-message--application" : null)">
+                                        @notification.PreviewMessage
+                                    </span>
+                                </span>
+                                <time datetime="@notification.CreatedAt.ToString("O")">
+                                    @localCreatedAt.ToString("HH:mm")
+                                </time>
+                            </span>
+                            @if (isUnread)
+                            {
+                                <span class="notification-unread-dot"
+                                      aria-label="Unread"></span>
+                            }
+                        </a>
+                    </li>
+                }
+            </ol>
+
+            @if (Model.TotalPages > 1)
+            {
+                @await Component.InvokeAsync(
+                    "Pagination",
+                    new
+                    {
+                        currentPage = Model.CurrentPage,
+                        totalPages = Model.TotalPages,
+                        ariaLabel = "Notifications pages",
+                        pageRouteValueName = "CurrentPage",
+                        excludedQueryKeys = new[] { "notificationId" }
+                    })
+            }
+        </form>
     }
 </main>
+
+<dialog class="notification-delete-modal"
+        data-notification-delete-modal
+        aria-labelledby="notification-delete-title"
+        aria-describedby="notification-delete-message">
+    <div class="notification-delete-modal-header">
+        <h2 id="notification-delete-title">Delete notifications?</h2>
+        <button type="button"
+                class="notification-modal-close"
+                data-notification-delete-cancel
+                aria-label="Cancel deletion">
+            &times;
+        </button>
+    </div>
+    <div class="notification-delete-modal-body">
+        <p id="notification-delete-message">
+            Are you sure you want to delete
+            <strong data-notification-delete-scope></strong>?
+            This cannot be undone.
+        </p>
+    </div>
+    <div class="notification-delete-modal-footer">
+        <button type="button"
+                class="notification-delete-cancel"
+                data-notification-delete-cancel>
+            Cancel
+        </button>
+        <button type="button"
+                class="notification-delete-confirm"
+                data-notification-delete-confirm>
+            Delete
+        </button>
+    </div>
+</dialog>
 
 @if (Model.SelectedNotification is not null)
 {
@@ -131,22 +238,17 @@
                 : Model.SelectedNotification.IsTutorApprovalNotification
                     ? "notification-modal-message--approval"
                     : null)">
-                <span class="notification-message-summary">
-                    @if (Model.SelectedNotification.IsTutorApprovalNotification)
-                    {
-                        <button type="button"
-                                class="notification-congratulations"
-                                data-confetti-trigger
-                                aria-label="Celebrate your tutor approval">
-                            Congratulations!
-                        </button>
-                        <text> @Model.SelectedNotification.TutorApprovalMessage</text>
-                    }
-                    else
-                    {
-                        @Model.SelectedNotification.SummaryMessage
-                    }
-                </span>
+                @if (Model.SelectedNotification.IsTutorApprovalNotification)
+                {
+                    <span class="notification-message-summary"><button type="button"
+                            class="notification-congratulations"
+                            data-confetti-trigger
+                            aria-label="Celebrate your tutor approval">Congratulations!</button><text> @Model.SelectedNotification.TutorApprovalMessage</text></span>
+                }
+                else
+                {
+                    <span class="notification-message-summary">@Model.SelectedNotification.SummaryMessage</span>
+                }
                 @if (Model.SelectedNotification.HighlightedClosingDate is not null)
                 {
                     <strong class="tutor-application-closing-date">

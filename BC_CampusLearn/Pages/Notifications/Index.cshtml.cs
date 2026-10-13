@@ -22,6 +22,7 @@ public class IndexModel(
     public int CurrentPage { get; set; } = 1;
 
     public int UnreadCount { get; private set; }
+    public int TotalCount { get; private set; }
     public int TotalPages { get; private set; }
     public NotificationItem? SelectedNotification { get; private set; }
     public IReadOnlyList<NotificationItem> Notifications { get; private set; }
@@ -55,11 +56,13 @@ public class IndexModel(
             .AsNoTracking()
             .Where(item => item.RecipientBcUserId == user.BcUserId);
 
-        int totalCount = await notifications.CountAsync(cancellationToken);
+        TotalCount = await notifications.CountAsync(cancellationToken);
         UnreadCount = await notifications.CountAsync(
             item => item.ReadAt == null,
             cancellationToken);
-        TotalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)PageSize));
+        TotalPages = Math.Max(
+            1,
+            (int)Math.Ceiling(TotalCount / (double)PageSize));
         CurrentPage = Math.Clamp(CurrentPage, 1, TotalPages);
 
         Notifications = await notifications
@@ -77,21 +80,54 @@ public class IndexModel(
 
     }
 
-    public async Task<IActionResult> OnPostMarkAllReadAsync(
+    public async Task<IActionResult> OnPostBulkActionAsync(
+        string notificationAction,
+        long[]? selectedNotificationIds,
+        bool selectAll,
         int currentPage,
         CancellationToken cancellationToken)
     {
-        CurrentUser user = currentUserService.GetRequiredUser();
-        List<Models.Entities.UserNotification> unread = await context
-            .UserNotifications
-            .Where(item => item.RecipientBcUserId == user.BcUserId &&
-                item.ReadAt == null)
-            .ToListAsync(cancellationToken);
-        DateTimeOffset readAt = timeProvider.GetUtcNow();
-
-        foreach (Models.Entities.UserNotification notification in unread)
+        if (notificationAction is not ("mark-read" or "delete"))
         {
-            notification.ReadAt = readAt;
+            return BadRequest();
+        }
+
+        CurrentUser user = currentUserService.GetRequiredUser();
+        IQueryable<Models.Entities.UserNotification> notificationQuery = context
+            .UserNotifications
+            .Where(item => item.RecipientBcUserId == user.BcUserId);
+
+        if (!selectAll)
+        {
+            long[] notificationIds = selectedNotificationIds?
+                .Distinct()
+                .ToArray() ?? Array.Empty<long>();
+            if (notificationIds.Length == 0)
+            {
+                return RedirectToPage(new
+                {
+                    CurrentPage = Math.Max(1, currentPage)
+                });
+            }
+
+            notificationQuery = notificationQuery.Where(item =>
+                notificationIds.Contains(item.UserNotificationId));
+        }
+
+        List<Models.Entities.UserNotification> notifications =
+            await notificationQuery.ToListAsync(cancellationToken);
+
+        if (notificationAction == "delete")
+        {
+            context.UserNotifications.RemoveRange(notifications);
+        }
+        else
+        {
+            DateTimeOffset readAt = timeProvider.GetUtcNow();
+            foreach (Models.Entities.UserNotification notification in notifications)
+            {
+                notification.ReadAt ??= readAt;
+            }
         }
 
         await context.SaveChangesAsync(cancellationToken);
