@@ -22,7 +22,7 @@
     Model.BookingId.HasValue)
 {
     DateTimeOffset bookedTime =
-        Model.StartTime.ToLocalTime();
+        Model.StartTime.ToOffset(TimeSpan.FromHours(2));
 
     <button type="button"
             class="tutor-slot-tab @slotStatusClass"

@@ -252,11 +252,14 @@
                 else
                 {
                     DateTimeOffset sessionStart =
-                        Model.NextSession.ScheduledStartTime.ToLocalTime();
+                        Model.NextSession.ScheduledStartTime.ToOffset(
+                            TimeSpan.FromHours(2));
                     DateTimeOffset sessionEnd =
-                        Model.NextSession.SessionEnd.ToLocalTime();
+                        Model.NextSession.SessionEnd.ToOffset(
+                            TimeSpan.FromHours(2));
                     string sessionDate =
-                        sessionStart.Date == DateTimeOffset.Now.Date
+                        sessionStart.Date == DateTimeOffset.UtcNow
+                            .ToOffset(TimeSpan.FromHours(2)).Date
                             ? "Today"
                             : sessionStart.ToString("dd MMM yyyy");
 
@@ -509,10 +512,10 @@
                                     {
                                         var localStart =
                                             session.ScheduledStartTime
-                                                .ToLocalTime();
+                                                .ToOffset(TimeSpan.FromHours(2));
                                         var localEnd =
                                             session.SessionEnd
-                                                .ToLocalTime();
+                                                .ToOffset(TimeSpan.FromHours(2));
                                         string statusClass =
                                             session.Status.ToString()
                                                 .ToLowerInvariant();
@@ -704,7 +707,8 @@
                         .Select(slot =>
                         {
                             DateTimeOffset localStart =
-                                slot.StartTime.ToLocalTime();
+                                slot.StartTime.ToOffset(
+                                    TimeSpan.FromHours(2));
                             string status = slot.Status switch
                             {
                                 BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Booked =>
