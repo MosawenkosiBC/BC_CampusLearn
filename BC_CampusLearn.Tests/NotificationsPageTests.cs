@@ -30,21 +30,117 @@ public class NotificationsPageTests
     }
 
     [Fact]
-    public async Task MarkAllReadOnlyUpdatesCurrentUsersNotifications()
+    public async Task MarkSelectedReadOnlyUpdatesOwnedNotifications()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        SeedNotifications(context);
+        await context.SaveChangesAsync();
+        var page = CreatePage(context);
+        UserNotification ownUnread = context.UserNotifications
+            .Single(item => item.Title == "Own unread");
+        UserNotification otherUnread = context.UserNotifications
+            .Single(item => item.Title == "Other user");
+
+        await page.OnPostBulkActionAsync(
+            "mark-read",
+            [ownUnread.UserNotificationId, otherUnread.UserNotificationId],
+            false,
+            1,
+            CancellationToken.None);
+
+        Assert.Equal(Now, ownUnread.ReadAt);
+        Assert.Null(otherUnread.ReadAt);
+    }
+
+    [Fact]
+    public async Task SelectAllMarksCurrentUsersNotificationsAcrossPages()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        for (int index = 1; index <= 10; index++)
+        {
+            context.UserNotifications.Add(new UserNotification
+            {
+                RecipientBcUserId = 1,
+                Title = $"Own notification {index}",
+                Message = $"Message {index}",
+                LinkUrl = "/Student/Dashboard",
+                CreatedAt = Now.AddMinutes(-index)
+            });
+        }
+        context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = 2,
+            Title = "Other user",
+            Message = "Must remain unread",
+            LinkUrl = "/Tutors/TutorDashboard",
+            CreatedAt = Now
+        });
+        await context.SaveChangesAsync();
+        var page = CreatePage(context);
+
+        await page.OnPostBulkActionAsync(
+            "mark-read",
+            null,
+            true,
+            2,
+            CancellationToken.None);
+
+        Assert.All(
+            context.UserNotifications.Where(item => item.RecipientBcUserId == 1),
+            item => Assert.Equal(Now, item.ReadAt));
+        Assert.Null(context.UserNotifications
+            .Single(item => item.RecipientBcUserId == 2)
+            .ReadAt);
+    }
+
+    [Fact]
+    public async Task DeleteSelectedOnlyRemovesOwnedNotifications()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        SeedNotifications(context);
+        await context.SaveChangesAsync();
+        var page = CreatePage(context);
+        UserNotification ownUnread = context.UserNotifications
+            .Single(item => item.Title == "Own unread");
+        UserNotification otherUnread = context.UserNotifications
+            .Single(item => item.Title == "Other user");
+
+        await page.OnPostBulkActionAsync(
+            "delete",
+            [ownUnread.UserNotificationId, otherUnread.UserNotificationId],
+            false,
+            1,
+            CancellationToken.None);
+
+        Assert.DoesNotContain(
+            context.UserNotifications,
+            item => item.UserNotificationId == ownUnread.UserNotificationId);
+        Assert.Contains(
+            context.UserNotifications,
+            item => item.UserNotificationId == otherUnread.UserNotificationId);
+    }
+
+    [Fact]
+    public async Task SelectAllDeletesOnlyCurrentUsersNotifications()
     {
         await using ApplicationDbContext context = CreateContext();
         SeedNotifications(context);
         await context.SaveChangesAsync();
         var page = CreatePage(context);
 
-        await page.OnPostMarkAllReadAsync(1, CancellationToken.None);
+        await page.OnPostBulkActionAsync(
+            "delete",
+            null,
+            true,
+            1,
+            CancellationToken.None);
 
-        Assert.All(
-            context.UserNotifications.Where(item => item.RecipientBcUserId == 1),
-            item => Assert.NotNull(item.ReadAt));
-        Assert.Null(context.UserNotifications
-            .Single(item => item.Title == "Other user")
-            .ReadAt);
+        Assert.DoesNotContain(
+            context.UserNotifications,
+            item => item.RecipientBcUserId == 1);
+        Assert.Contains(
+            context.UserNotifications,
+            item => item.RecipientBcUserId == 2);
     }
 
     [Fact]
@@ -163,6 +259,30 @@ public class NotificationsPageTests
             notification.SummaryMessage);
         Assert.Equal(
             "Apply to become a peer tutor.",
+            notification.PreviewMessage);
+        Assert.Equal("31 October 2026", notification.HighlightedClosingDate);
+    }
+
+    [Fact]
+    public void OpenSeniorTutorApplicationsNotificationUsesRequirementsAction()
+    {
+        var notification = new IndexModel.NotificationItem(
+            45,
+            "⭐ Senior Tutor applications are open",
+            "Ready to take the next step in your tutoring journey?\n\n" +
+                "Requirements:\n\n" +
+                "• At least one year of tutoring at Belgium Campus\n" +
+                "• Active, approved tutor\n" +
+                "• Pretoria contact student\n" +
+                "• Academic average of 72% or higher\n\n" +
+                "Applications close: 31 October 2026",
+            "/Tutors/SeniorTutorApplications",
+            Now,
+            null);
+
+        Assert.Equal("View requirements and apply", notification.ActionLabel);
+        Assert.Equal(
+            "Ready to take the next step in your tutoring journey?",
             notification.PreviewMessage);
         Assert.Equal("31 October 2026", notification.HighlightedClosingDate);
     }

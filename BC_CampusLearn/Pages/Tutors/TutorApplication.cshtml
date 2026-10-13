@@ -266,14 +266,35 @@
                     understood the programme conditions and expectations.
                 </p>
             </div>
-            <button type="button"
-                    class="orientation-agree-button"
-                    data-application-agree
-                    disabled="@(Model.ApplicationsOpen &&
-                        string.IsNullOrWhiteSpace(Model.ExistingApplicationMessage) &&
-                        !Model.StudentDetailsVerified)">
-                I Agree, Start Application
-            </button>
+            @if (Model.CanApplyForSeniorTutor)
+            {
+                @if (Model.SeniorTutorApplicationsOpen)
+                {
+                    <a asp-page="/Tutors/SeniorTutorApplications"
+                       class="orientation-agree-button">
+                        Apply to become a Senior Tutor
+                    </a>
+                }
+                else
+                {
+                    <button type="button"
+                            class="orientation-agree-button"
+                            data-senior-applications-closed-open>
+                        Apply to become a Senior Tutor
+                    </button>
+                }
+            }
+            else
+            {
+                <button type="button"
+                        class="orientation-agree-button"
+                        data-application-agree
+                        disabled="@(Model.ApplicationsOpen &&
+                            string.IsNullOrWhiteSpace(Model.ExistingApplicationMessage) &&
+                            !Model.StudentDetailsVerified)">
+                    I Agree, Start Application
+                </button>
+            }
         </footer>
     </section>
 
@@ -304,6 +325,29 @@
                     data-existing-application-close>
                 Close
             </button>
+        </dialog>
+    }
+
+    @if (Model.CanApplyForSeniorTutor && !Model.SeniorTutorApplicationsOpen)
+    {
+        <dialog class="tutor-application-status-modal"
+                data-senior-applications-closed
+                aria-labelledby="senior-applications-closed-title"
+                aria-describedby="senior-applications-closed-message">
+            <button type="button"
+                    class="application-status-close"
+                    data-senior-applications-closed-close
+                    aria-label="Close applications notice">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+            </button>
+            <h2 id="senior-applications-closed-title">Senior Tutor Applications Closed</h2>
+            <p id="senior-applications-closed-message">
+                Senior Tutor applications are currently closed. You can apply when applications open again.
+            </p>
+            <button type="button" class="application-status-confirm"
+                    data-senior-applications-closed-close>Close</button>
         </dialog>
     }
 

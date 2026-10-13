@@ -1,14 +1,35 @@
 @page "{id:int}"
 @model BC_CampusLearn.Pages.Administrator.Tutors.SeniorTutorApplicationDetailsModel
 @using BC_CampusLearn.Models.Entities
+@using System.Text.Json
 @{
     ViewData["Title"] = "Senior Tutor Application";
     var application = Model.Application;
     var tutor = application.Tutor;
     var applicantName = string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName)
-        ? tutor.BcUser.PersonnelNumber
+        ? tutor.BcUser.PersonnelNumber ?? "Tutor"
         : tutor.BcUser.DisplayName;
     var statusClass = application.Status.ToString().ToLowerInvariant();
+    var nameParts = applicantName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    var applicantInitials = nameParts.Length switch
+    {
+        > 1 => $"{nameParts[0][0]}{nameParts[^1][0]}".ToUpperInvariant(),
+        1 => nameParts[0][..1].ToUpperInvariant(),
+        _ => "T"
+    };
+    string outcomeLabels = JsonSerializer.Serialize(
+        Model.SessionStatuses.Select(item => item.Status.ToString()));
+    string outcomeValues = JsonSerializer.Serialize(
+        Model.SessionStatuses.Select(item => item.Count));
+    string ratingLabels = JsonSerializer.Serialize(
+        Model.RatingDistribution.Select(item =>
+            item.Rating == 1 ? "1 star" : $"{item.Rating} stars"));
+    string ratingValues = JsonSerializer.Serialize(
+        Model.RatingDistribution.Select(item => item.Count));
+    string moduleLabels = JsonSerializer.Serialize(
+        Model.TopModules.Select(item => item.Code));
+    string moduleValues = JsonSerializer.Serialize(
+        Model.TopModules.Select(item => item.SessionCount));
 }
 
 @section Styles {
@@ -18,27 +39,13 @@
 
 <section class="admin-dashboard admin-senior-review-page"
          aria-labelledby="senior-application-title">
-    <a asp-page="Index"
-       asp-route-Tab="senior-applications"
-       class="admin-senior-back-link">
-        <span aria-hidden="true">←</span> Senior Tutor Applications
-    </a>
-
     <header class="admin-senior-review-header">
         <div>
-            <p class="admin-senior-eyebrow">Senior Tutor Application</p>
             <h1 id="senior-application-title">@applicantName</h1>
             <p>Submitted @application.SubmittedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</p>
         </div>
-        <span class="admin-tutor-status admin-senior-status--@statusClass">
-            @application.Status
-        </span>
     </header>
 
-    @if (!string.IsNullOrWhiteSpace(Model.ReviewMessage))
-    {
-        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.ReviewMessage))
-    }
     @if (!string.IsNullOrWhiteSpace(Model.ReviewError))
     {
         @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(
@@ -50,96 +57,15 @@
 
     <div class="admin-senior-review-layout">
         <main class="admin-senior-review-main">
-            <section class="admin-senior-panel" aria-labelledby="performance-title">
-                <div class="admin-senior-section-heading">
-                    <div>
-                        <h2 id="performance-title">Tutor performance</h2>
-                        <p>All-time statistics from recorded tutoring sessions.</p>
-                    </div>
-                </div>
-
-                <div class="admin-senior-metric-grid">
-                    <article>
-                        <span>Total sessions</span>
-                        <strong>@Model.TotalSessions</strong>
-                    </article>
-                    <article>
-                        <span>Completed sessions</span>
-                        <strong>@Model.CompletedSessions</strong>
-                    </article>
-                    <article>
-                        <span>Total tutoring hours</span>
-                        <strong>@Model.TotalTutoringHours.ToString("0.##")</strong>
-                    </article>
-                    <article>
-                        <span>Unique tutees</span>
-                        <strong>@Model.UniqueTutees</strong>
-                    </article>
-                    <article>
-                        <span>Completion rate</span>
-                        <strong>@Model.CompletionRate.ToString("0.#")%</strong>
-                    </article>
-                    <article>
-                        <span>Average student rating</span>
-                        <strong>
-                            @(Model.AverageRating.HasValue
-                                ? $"{Model.AverageRating.Value:0.0}/5"
-                                : "No ratings")
-                        </strong>
-                        <small>@Model.RatingCount @(Model.RatingCount == 1 ? "rating" : "ratings")</small>
-                    </article>
-                </div>
-            </section>
-
-            <section class="admin-senior-panel" aria-labelledby="session-status-title">
-                <div class="admin-senior-section-heading">
-                    <div>
-                        <h2 id="session-status-title">Session status breakdown</h2>
-                        <p>Every recorded session, grouped by its current status.</p>
-                    </div>
-                </div>
-                <div class="admin-senior-status-grid">
-                    @foreach (var statistic in Model.SessionStatuses)
-                    {
-                        <article>
-                            <span>@statistic.Status</span>
-                            <strong>@statistic.Count</strong>
-                        </article>
-                    }
-                </div>
-            </section>
-
-            <section class="admin-senior-panel" aria-labelledby="module-performance-title">
-                <div class="admin-senior-section-heading">
-                    <div>
-                        <h2 id="module-performance-title">Top tutored modules</h2>
-                        <p>Modules ranked by completed sessions.</p>
-                    </div>
-                </div>
-                @if (Model.TopModules.Count == 0)
-                {
-                    <p class="admin-senior-empty">No completed sessions are available.</p>
-                }
-                else
-                {
-                    <ol class="admin-senior-module-list">
-                        @foreach (var module in Model.TopModules)
-                        {
-                            <li>
-                                <span><strong>@module.Code</strong> @module.Name</span>
-                                <span>@module.SessionCount completed</span>
-                            </li>
-                        }
-                    </ol>
-                }
-            </section>
-
             <section class="admin-senior-panel" aria-labelledby="application-answers-title">
-                <div class="admin-senior-section-heading">
+                <div class="admin-senior-section-heading admin-senior-answers-heading">
                     <div>
                         <h2 id="application-answers-title">Application answers</h2>
                         <p>The information submitted by the tutor.</p>
                     </div>
+                    <span class="admin-tutor-status admin-senior-status--@statusClass">
+                        @application.Status
+                    </span>
                 </div>
                 <dl class="admin-senior-answer-summary">
                     <div>
@@ -156,11 +82,127 @@
                     <p>@application.SuitabilityReason</p>
                 </div>
             </section>
+
+            <section class="admin-senior-panel admin-senior-analytics"
+                     aria-labelledby="performance-title">
+                <div class="admin-senior-section-heading">
+                    <div>
+                        <h2 id="performance-title">Tutor performance</h2>
+                    </div>
+                </div>
+
+                <div class="admin-senior-chart-grid">
+                    <article class="admin-senior-chart-card admin-senior-chart-card--wide">
+                        <div>
+                            <h3>Activity overview</h3>
+                            <p>Completed sessions, tutoring hours, and unique tutees.</p>
+                        </div>
+                        <div class="admin-senior-activity-metrics">
+                            <div class="admin-senior-activity-metric">
+                                <strong>@Model.CompletedSessions</strong>
+                                <span>Completed sessions</span>
+                            </div>
+                            <div class="admin-senior-activity-metric">
+                                <strong>@Model.TotalTutoringHours.ToString("0.#") <small>hrs</small></strong>
+                                <span>Tutoring hours</span>
+                            </div>
+                            <div class="admin-senior-activity-metric">
+                                <strong>@Model.UniqueTutees</strong>
+                                <span>Tutees</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="admin-senior-chart-card">
+                        <div>
+                            <h3>Session outcomes</h3>
+                            <p>@Model.CompletionRate.ToString("0.#")% completion rate</p>
+                        </div>
+                        @if (Model.SessionStatuses.Sum(item => item.Count) == 0)
+                        {
+                            <p class="admin-senior-empty">No concluded sessions are available.</p>
+                        }
+                        else
+                        {
+                            <div class="admin-senior-chart-wrap">
+                                <canvas data-senior-outcomes-chart data-labels="@outcomeLabels"
+                                        data-values="@outcomeValues" role="img"
+                                        aria-label="Completed, cancelled, and declined session outcomes"></canvas>
+                            </div>
+                        }
+                    </article>
+
+                    <article class="admin-senior-chart-card">
+                        <div>
+                            <h3>Student ratings</h3>
+                            <div class="admin-senior-average-rating"
+                                 aria-label="@(Model.AverageRating.HasValue ? $"Average rating {Model.AverageRating.Value:0.0} out of 5 from {Model.RatingCount} ratings" : "No student ratings yet")">
+                                <span class="admin-senior-rating-stars" aria-hidden="true">
+                                    @for (var star = 1; star <= 5; star++)
+                                    {
+                                        var starFill = Math.Clamp(
+                                            ((Model.AverageRating ?? 0) - (star - 1)) * 100,
+                                            0,
+                                            100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+                                        <span style="--star-fill: @starFill%">★</span>
+                                    }
+                                </span>
+                                <small>
+                                    @(Model.AverageRating.HasValue
+                                        ? $"{Model.AverageRating.Value:0.0} · {Model.RatingCount} {(Model.RatingCount == 1 ? "rating" : "ratings")}"
+                                        : "No ratings yet")
+                                </small>
+                            </div>
+                        </div>
+                        @if (Model.RatingCount == 0)
+                        {
+                            <p class="admin-senior-empty">No rating data is available.</p>
+                        }
+                        else
+                        {
+                            <div class="admin-senior-chart-wrap">
+                                <canvas data-senior-ratings-chart data-labels="@ratingLabels"
+                                        data-values="@ratingValues" role="img"
+                                        aria-label="Student rating distribution chart"></canvas>
+                            </div>
+                        }
+                    </article>
+
+                    <article class="admin-senior-chart-card admin-senior-chart-card--wide">
+                        <div>
+                            <h3>Top tutored modules</h3>
+                            <p>Completed sessions across the tutor's most active modules.</p>
+                        </div>
+                        @if (Model.TopModules.Count == 0)
+                        {
+                            <p class="admin-senior-empty">No completed sessions are available.</p>
+                        }
+                        else
+                        {
+                            <div class="admin-senior-chart-wrap admin-senior-chart-wrap--bar">
+                                <canvas data-senior-modules-chart data-labels="@moduleLabels"
+                                        data-values="@moduleValues" role="img"
+                                        aria-label="Top tutored modules chart"></canvas>
+                            </div>
+                        }
+                    </article>
+                </div>
+            </section>
         </main>
 
         <aside class="admin-senior-review-sidebar">
             <section class="admin-senior-panel" aria-labelledby="applicant-details-title">
                 <h2 id="applicant-details-title">Applicant details</h2>
+                <div class="admin-senior-applicant-photo">
+                    @if (!string.IsNullOrWhiteSpace(tutor.ProfileImagePath))
+                    {
+                        <img src="@tutor.ProfileImagePath" alt="Profile photo of @applicantName" />
+                    }
+                    else
+                    {
+                        <span aria-label="@applicantName initials">@applicantInitials</span>
+                    }
+                </div>
                 <dl class="admin-senior-applicant-details">
                     <div><dt>Student number</dt><dd>@(tutor.BcUser.PersonnelNumber ?? "Not provided")</dd></div>
                     <div><dt>Email</dt><dd>@(tutor.BcUser.Email ?? "Not provided")</dd></div>
@@ -170,11 +212,8 @@
                     <div><dt>Tutor academic average</dt><dd>@tutor.OverallAverage.ToString("0.##")%</dd></div>
                     <div><dt>Active modules</dt><dd>@tutor.TutorCourseModules.Count</dd></div>
                 </dl>
-                <a asp-page="Profile"
-                   asp-route-id="@tutor.TutorId"
-                   class="admin-senior-profile-link">
-                    View full tutor profile
-                </a>
+                <a asp-page="Profile" asp-route-id="@tutor.TutorId"
+                   class="admin-senior-profile-link">View full tutor profile</a>
             </section>
 
             <section class="admin-senior-panel admin-senior-decision-panel"
@@ -183,29 +222,23 @@
                 @if (application.Status == TutorAccountRequestStatus.Pending)
                 {
                     <p>Review the application and performance statistics before making a final decision.</p>
-                    <form method="post" asp-page-handler="Review" asp-route-id="@application.SeniorTutorApplicationId">
+                    <form id="senior-application-decision-form" method="post"
+                          asp-page-handler="Review" asp-route-id="@application.SeniorTutorApplicationId">
                         <label asp-for="ReviewNote">
                             Decision note
                             <span>Required when rejecting</span>
                         </label>
-                        <textarea asp-for="ReviewNote"
-                                  rows="4"
-                                  maxlength="500"
-                                  placeholder="Add context for the tutor"></textarea>
-                        <span asp-validation-for="ReviewNote" class="text-danger"></span>
+                        <textarea asp-for="ReviewNote" rows="4" maxlength="500"
+                                  placeholder="Add context for the tutor"
+                                  aria-describedby="review-note-validation"></textarea>
+                        <span asp-validation-for="ReviewNote" id="review-note-validation"
+                              class="text-danger" data-review-note-validation></span>
                         <div class="admin-senior-decision-actions">
-                            <button type="submit"
-                                    name="approve"
-                                    value="false"
-                                    class="admin-senior-reject-button">
-                                Reject
-                            </button>
-                            <button type="submit"
-                                    name="approve"
-                                    value="true"
-                                    class="admin-senior-accept-button">
-                                Accept
-                            </button>
+                            <button type="button" class="admin-senior-reject-button"
+                                    data-senior-reject-trigger
+                                    aria-controls="reject-senior-application-modal">Reject</button>
+                            <button type="submit" name="approve" value="true"
+                                    class="admin-senior-accept-button">Accept</button>
                         </div>
                     </form>
                 }
@@ -225,3 +258,34 @@
         </aside>
     </div>
 </section>
+
+@if (application.Status == TutorAccountRequestStatus.Pending)
+{
+    <div class="modal fade" id="reject-senior-application-modal" tabindex="-1"
+         aria-labelledby="reject-senior-application-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content admin-senior-reject-modal">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="reject-senior-application-title">Reject this application?</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>This will reject @applicantName's Senior Tutor application and notify the tutor.</p>
+                    <p>Make sure a rejection reason has been entered in the decision note.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="senior-application-decision-form"
+                            name="approve" value="false"
+                            data-senior-reject-confirm
+                            class="admin-senior-reject-button">Confirm rejection</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+    <script src="~/js/admin-senior-tutor-application.js" asp-append-version="true"></script>
+}

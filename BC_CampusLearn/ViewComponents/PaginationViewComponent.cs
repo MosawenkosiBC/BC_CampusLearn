@@ -13,6 +13,7 @@ public sealed class PaginationViewComponent : ViewComponent
         int? currentPage = null,
         int? totalPages = null,
         string pageRouteValueName = "page",
+        IEnumerable<string>? excludedQueryKeys = null,
         string? fragment = null)
     {
         bool usesServerPagination = currentPage.HasValue || totalPages.HasValue;
@@ -62,6 +63,11 @@ public sealed class PaginationViewComponent : ViewComponent
                 CurrentPage = currentPage,
                 TotalPages = totalPages,
                 PageRouteValueName = pageRouteValueName,
+                ExcludedQueryKeys = excludedQueryKeys?
+                    .Where(key => !string.IsNullOrWhiteSpace(key))
+                    .Select(key => key.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray() ?? Array.Empty<string>(),
                 Fragment = string.IsNullOrWhiteSpace(fragment)
                     ? null
                     : fragment.TrimStart('#')

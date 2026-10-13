@@ -69,7 +69,8 @@ public sealed class TutorDeregistrationService(ApplicationDbContext context, Tim
                 nomination.DenominatedAt = now;
                 nomination.DenominatedByBcUserId = administrator.BcUserId;
             }
-            if (tutor.BcUser.Role is BcUserRole.Tutor or BcUserRole.HeadOfTutors)
+            if (tutor.BcUser.Role is BcUserRole.Tutor or
+                BcUserRole.SeniorTutor or BcUserRole.HeadOfTutors)
                 tutor.BcUser.Role = BcUserRole.Student;
             context.UserNotifications.Add(new UserNotification
             {

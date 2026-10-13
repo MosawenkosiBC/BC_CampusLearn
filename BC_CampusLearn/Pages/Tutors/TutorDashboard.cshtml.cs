@@ -34,6 +34,7 @@ public class TutorDashboardModel : PageModel
     public int CompletedSessionCount { get; private set; }
 
     public bool CanManageResources { get; private set; }
+    public bool ShowSeniorTutorApplicationButton { get; private set; }
 
     public TutorNextSessionViewModel? NextSession
     { get; private set; }
@@ -67,6 +68,23 @@ public class TutorDashboardModel : PageModel
 
         await _lifecycleService.ProcessDueTransitionsAsync(cancellationToken);
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
+        TutorApplicationSettings? applicationSettings = await _context
+            .TutorApplicationSettings
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+        bool canApplyForSeniorTutor = await _context.Tutors
+            .AsNoTracking()
+            .AnyAsync(tutor =>
+                tutor.TutorId == tutorId.Value &&
+                tutor.Status == TutorStatus.Approved &&
+                tutor.IsActive &&
+                (tutor.BcUser.Role == BcUserRole.Tutor ||
+                 tutor.BcUser.Role == BcUserRole.SeniorTutor ||
+                 tutor.BcUser.Role == BcUserRole.HeadOfTutors),
+                cancellationToken);
+        ShowSeniorTutorApplicationButton = canApplyForSeniorTutor &&
+            (applicationSettings?.IsAcceptingSeniorTutorApplications(
+                DateTime.UtcNow) ?? false);
         CanManageResources = currentUser.Role == BcUserRole.HeadOfTutors ||
             await _context.ResourceTutorNominations
                 .AsNoTracking()

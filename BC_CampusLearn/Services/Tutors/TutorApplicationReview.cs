@@ -126,6 +126,136 @@ public static class TutorApplicationReview
         }
 
         DateTime reviewedAt = DateTime.UtcNow;
+        ApplyApplicationRejection(context, candidate, normalizedReason, notificationMessage, reviewedAt);
+        await context.SaveChangesAsync(cancellationToken);
+        return ShortlistResult.Success("Application rejected.");
+    }
+
+    public static async Task<ShortlistResult> RejectRemainingAsync(
+        ApplicationDbContext context,
+        CancellationToken cancellationToken,
+        int? reviewerBcUserId = null,
+        string? contentRootPath = null) =>
+        await RejectApplicationsAsync(context, cancellationToken, reviewerBcUserId, contentRootPath, null);
+
+    public static async Task<ShortlistResult> RejectSelectedAsync(
+        ApplicationDbContext context,
+        IReadOnlyCollection<int> tutorIds,
+        CancellationToken cancellationToken,
+        int? reviewerBcUserId = null,
+        string? contentRootPath = null)
+    {
+        int[] selectedIds = tutorIds.Where(id => id > 0).Distinct().ToArray();
+        if (selectedIds.Length == 0)
+            return ShortlistResult.Failure("Select at least one applicant to reject.");
+        return await RejectApplicationsAsync(context, cancellationToken, reviewerBcUserId, contentRootPath, selectedIds);
+    }
+
+    private static async Task<ShortlistResult> RejectApplicationsAsync(
+        ApplicationDbContext context,
+        CancellationToken cancellationToken,
+        int? reviewerBcUserId,
+        string? contentRootPath,
+        int[]? selectedIds)
+    {
+        BcUser? reviewer = reviewerBcUserId.HasValue
+            ? await context.BcUsers.AsNoTracking().SingleOrDefaultAsync(
+                user => user.BcUserId == reviewerBcUserId.Value, cancellationToken)
+            : null;
+        if (reviewerBcUserId.HasValue && reviewer is null)
+            return ShortlistResult.Failure("The reviewing administrator could not be identified.");
+
+        var query = context.Tutors
+            .Include(tutor => tutor.TutorDocuments)
+            .Include(tutor => tutor.TutorCourseModules)
+            .Include(tutor => tutor.ApplicationReviewDecisions)
+            .Where(tutor =>
+            tutor.Status == TutorStatus.Pending &&
+            tutor.ApplicationStage == TutorApplicationStage.Submitted);
+        if (selectedIds is not null)
+            query = query.Where(tutor => selectedIds.Contains(tutor.TutorId));
+        var candidates = await query.ToListAsync(cancellationToken);
+        if (candidates.Count == 0)
+            return selectedIds is null
+                ? ShortlistResult.Success("There are no remaining applications to reject.")
+                : ShortlistResult.Failure("The selected applicants are no longer awaiting review.");
+
+        var documents = candidates.SelectMany(candidate => candidate.TutorDocuments).ToList();
+        if (documents.Count > 0 && string.IsNullOrWhiteSpace(contentRootPath))
+            return ShortlistResult.Failure("The uploaded document storage could not be accessed. No profiles were deleted.");
+
+        try
+        {
+            // Validate every path before deleting any files.
+            var paths = documents.Select(document => ResolveDocumentDeletionPath(
+                contentRootPath!, document.FilePath)).Distinct().ToList();
+            foreach (string path in paths)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    File.Delete(path);
+                }
+                catch (DirectoryNotFoundException)
+                {
+                    // The upload was already removed; still delete its database record.
+                }
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return ShortlistResult.Failure("The uploaded documents could not be deleted. No profiles were deleted. Please try again.");
+        }
+
+        string reason = selectedIds is null
+            ? "Shortlisting is complete. This application was not selected for the shortlist."
+            : "This application was not selected for the shortlist.";
+        DateTime reviewedAt = DateTime.UtcNow;
+        foreach (Tutor candidate in candidates)
+        {
+            ApplyApplicationRejection(context, candidate, reason, null, reviewedAt);
+        }
+        context.TutorDocuments.RemoveRange(documents);
+        context.TutorCourseModules.RemoveRange(candidates.SelectMany(candidate => candidate.TutorCourseModules));
+        context.TutorApplicationReviewDecisions.RemoveRange(candidates.SelectMany(candidate => candidate.ApplicationReviewDecisions));
+        context.Tutors.RemoveRange(candidates);
+        await context.SaveChangesAsync(cancellationToken);
+        string selection = selectedIds is null ? "remaining" : "selected";
+        return ShortlistResult.Success(candidates.Count == 1
+            ? $"1 {selection} application rejected."
+            : $"{candidates.Count} {selection} applications rejected.");
+    }
+
+    private static string ResolveDocumentDeletionPath(string contentRootPath, string filePath)
+    {
+        string root = Path.GetFullPath(Path.Combine(contentRootPath, "App_Data", "tutor-documents"));
+        string fullPath = Path.GetFullPath(Path.Combine(contentRootPath,
+            filePath.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar)));
+        string rootPrefix = root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        if (!fullPath.StartsWith(rootPrefix, OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+            throw new IOException("The document is outside the tutor document storage.");
+
+        // A linked directory must not redirect deletion outside document storage.
+        for (var directory = new DirectoryInfo(Path.GetDirectoryName(fullPath)!);
+            directory is not null; directory = directory.Parent)
+        {
+            if (directory.Exists && (directory.Attributes & FileAttributes.ReparsePoint) != 0)
+                throw new IOException("The document path contains a linked directory.");
+            if (string.Equals(directory.FullName, Path.GetFullPath(contentRootPath), OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                break;
+        }
+        return fullPath;
+    }
+
+    private static void ApplyApplicationRejection(
+        ApplicationDbContext context,
+        Tutor candidate,
+        string normalizedReason,
+        string? notificationMessage,
+        DateTime reviewedAt)
+    {
         candidate.Status = TutorStatus.Rejected;
         candidate.ApplicationStage = TutorApplicationStage.Rejected;
         candidate.ShortlistReason = string.IsNullOrEmpty(normalizedReason)
@@ -148,10 +278,6 @@ public static class TutorApplicationReview
             LinkUrl = "/Tutors/TutorApplication",
             CreatedAt = DateTimeOffset.UtcNow
         });
-
-        await context.SaveChangesAsync(cancellationToken);
-        return ShortlistResult.Success(
-            "Application rejected.");
     }
 
     public static async Task<ShortlistResult> MoveToInterviewAsync(

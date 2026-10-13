@@ -100,3 +100,29 @@
     justify-content: center;
     min-width: 1.5rem;
 }
+
+@media (max-width: 575.98px) {
+    .campus-pagination {
+        flex-wrap: nowrap;
+        gap: .3rem;
+        justify-content: center;
+        padding-inline: .25rem;
+    }
+
+    .campus-pagination__pages {
+        flex-wrap: nowrap;
+        gap: .3rem;
+    }
+
+    .campus-pagination__direction,
+    .campus-pagination__page {
+        font-size: 14px;
+        height: clamp(34px, 10vw, 40px);
+        min-width: clamp(34px, 10vw, 40px);
+        padding-inline: .4rem;
+    }
+
+    .campus-pagination__ellipsis {
+        min-width: 1rem;
+    }
+}

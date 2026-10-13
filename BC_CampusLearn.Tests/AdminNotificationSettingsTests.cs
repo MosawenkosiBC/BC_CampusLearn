@@ -25,13 +25,24 @@ public class AdminNotificationSettingsTests
         await context.SaveChangesAsync();
         var page = Page(context);
         Assert.IsType<PageResult>(await page.OnGetAsync(default));
-        Assert.Equal(16, page.NotificationTemplates.Count);
-        Assert.Equal(16, page.NotificationTemplates.Select(item => item.Definition.Key).Distinct().Count());
+        Assert.Equal(17, page.NotificationTemplates.Count);
+        Assert.Equal(17, page.NotificationTemplates.Select(item => item.Definition.Key).Distinct().Count());
         Assert.Equal(3, page.NotificationTemplates.Count(item => item.Definition.Editable));
         var approval = Assert.Single(page.NotificationTemplates, item => item.Definition.Key == AdminNotificationCatalog.Approval);
         Assert.Equal("Welcome aboard!", approval.Message);
         Assert.True(approval.Customized);
         Assert.Contains(page.NotificationTemplates, item => item.Definition.Key == AdminNotificationCatalog.Farewell);
+        var seniorApplicationsOpen = Assert.Single(
+            page.NotificationTemplates,
+            item => item.Definition.Key ==
+                AdminNotificationCatalog.SeniorApplicationsOpen);
+        Assert.Equal("Senior tutor applications", seniorApplicationsOpen.Definition.Category);
+        Assert.Equal(
+            "⭐ Senior Tutor applications are open",
+            seniorApplicationsOpen.Definition.Title);
+        Assert.Contains(
+            "Applications close: {closing date}",
+            seniorApplicationsOpen.Message);
     }
 
     [Fact]

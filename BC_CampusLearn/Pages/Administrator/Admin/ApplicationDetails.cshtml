@@ -213,7 +213,11 @@
                           aria-live="polite"></span>
                     @if (!string.IsNullOrWhiteSpace(Model.ReviewError))
                     {
-                        <p class="application-review-error" role="alert">@Model.ReviewError</p>
+                        @await Html.PartialAsync(
+                            "_CampusAlert",
+                            new CampusAlertViewModel(
+                                Model.ReviewError,
+                                CampusAlertVariant.Danger))
                     }
                     <div class="application-review-actions">
                         <button type="button"

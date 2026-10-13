@@ -1,5 +1,6 @@
 @page
 @model BC_CampusLearn.Pages.Administrator.Tutors.IndexModel
+@using BC_CampusLearn.Pages.Administrator.Settings
 @{
     ViewData["Title"] = "Tutors";
 }
@@ -28,11 +29,15 @@
 
     @if (!string.IsNullOrWhiteSpace(Model.PageMessage))
     {
-        <p class="alert alert-success" role="status">@Model.PageMessage</p>
+        @await Html.PartialAsync(
+            "_CampusAlert",
+            new CampusAlertViewModel(Model.PageMessage))
     }
     @if (!string.IsNullOrWhiteSpace(Model.PageError))
     {
-        <p class="alert alert-danger" role="alert">@Model.PageError</p>
+        @await Html.PartialAsync(
+            "_CampusAlert",
+            new CampusAlertViewModel(Model.PageError, CampusAlertVariant.Danger))
     }
 
     <nav class="admin-tutor-tabs" aria-label="Tutor management">
@@ -106,7 +111,7 @@
                     <th scope="col">Email</th>
                     <th scope="col">Programme</th>
                     <th scope="col">Campus</th>
-                    <th scope="col">Status</th>
+                    <th scope="col">Role</th>
                     <th scope="col">Action</th>
                 </tr>
             </thead>
@@ -123,7 +128,9 @@
                         <td>@tutor.Programme.Name</td>
                         <td>@tutor.CampusOfStudy</td>
                         <td>
-                            <span class="admin-tutor-status">@tutor.Status</span>
+                            <span class="admin-tutor-status">
+                                @UsersAccessModel.RoleLabel(tutor.BcUser.Role)
+                            </span>
                         </td>
                         <td>
                             <a asp-page="/Administrator/Tutors/Profile" asp-route-id="@tutor.TutorId"
@@ -164,7 +171,42 @@
             ? "0"
             : $"{firstVisibleApplication}–{lastVisibleApplication}";
 
-        <div class="admin-senior-applications" id="senior-applications">
+        <div class="admin-tutors-workspace admin-senior-applications-workspace">
+            <aside class="admin-tutor-filters" aria-labelledby="senior-application-filter-title">
+                <div class="admin-filter-heading">
+                    <h2 id="senior-application-filter-title">Filters</h2>
+                    <a asp-page="Index" asp-route-Tab="senior-applications">Clear All</a>
+                </div>
+                <form method="get" asp-page="Index">
+                    <input type="hidden" name="Tab" value="senior-applications" />
+                    <div class="admin-filter-group">
+                        <label asp-for="ApplicationSearch">Search applicants</label>
+                        <div class="admin-filter-search">
+                            <input asp-for="ApplicationSearch" type="search"
+                                   placeholder="Name, student number or email" />
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                        </div>
+                    </div>
+                    <div class="admin-filter-group">
+                        <label asp-for="ApplicationStatus">Application status</label>
+                        <select asp-for="ApplicationStatus"
+                                asp-items="Html.GetEnumSelectList<TutorAccountRequestStatus>()">
+                            <option value="">All statuses</option>
+                        </select>
+                    </div>
+                    <div class="admin-filter-group">
+                        <label asp-for="ApplicationArchive">Applications</label>
+                        <select asp-for="ApplicationArchive">
+                            <option value="current">Current applications</option>
+                            <option value="archived">Archived applications</option>
+                            <option value="all">All applications</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="admin-apply-filters">Apply Filters</button>
+                </form>
+            </aside>
+
+            <div class="admin-tutor-results admin-senior-applications" id="senior-applications">
             <p class="admin-tutor-result-count" role="status">
                 Showing <strong>@visibleApplicationRange</strong> of
                 <strong>@Model.TotalApplications</strong> applications
@@ -212,6 +254,10 @@
                                     <span class="admin-tutor-status admin-senior-status--@statusClass">
                                         @application.Status
                                     </span>
+                                    @if (application.IsArchived)
+                                    {
+                                        <span class="admin-tutor-secondary">Archived</span>
+                                    }
                                 </td>
                                 <td>
                                     <a asp-page="SeniorTutorApplicationDetails"
@@ -226,7 +272,7 @@
                         {
                             <tr>
                                 <td colspan="6" class="admin-tutors-empty">
-                                    No senior tutor applications have been submitted yet.
+                                    No senior tutor applications match these filters.
                                 </td>
                             </tr>
                         }
@@ -245,6 +291,7 @@
                     ariaLabel = "Senior tutor application pages"
                 })
             }
+            </div>
         </div>
 
     }

@@ -1020,6 +1020,11 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<bool>("IsArchived")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("ReviewNote")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -1716,6 +1721,17 @@ namespace BC_CampusLearn.Migrations
                     b.Property<DateTime?>("OpenDate")
                         .HasColumnType("date");
 
+                    b.Property<bool>("SeniorTutorApplicationsOpen")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("SeniorTutorCloseDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("SeniorTutorOpenDate")
+                        .HasColumnType("date");
+
                     b.Property<int?>("ShortlistLimit")
                         .HasColumnType("int");
 
@@ -1740,6 +1756,7 @@ namespace BC_CampusLearn.Migrations
                             ContinueAfterShortlistLimit = false,
                             IsOpen = false,
                             NotifyStudents = false,
+                            SeniorTutorApplicationsOpen = false,
                             UpdatedAt = new DateTime(2026, 9, 14, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });

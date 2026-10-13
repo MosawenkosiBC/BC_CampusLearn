@@ -14,6 +14,8 @@ public class SeniorTutorApplication
 
     public TutorAccountRequestStatus Status { get; set; }
 
+    public bool IsArchived { get; set; }
+
     public DateTime SubmittedAt { get; set; }
 
     public DateTime? ReviewedAt { get; set; }

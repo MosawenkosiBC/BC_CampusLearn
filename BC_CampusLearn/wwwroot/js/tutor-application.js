@@ -15,11 +15,33 @@
         "[data-applications-closed]");
     const applicationsClosedButtons = document.querySelectorAll(
         "[data-applications-closed-close]");
+    const seniorApplicationsClosed = document.querySelector(
+        "[data-senior-applications-closed]");
+    const seniorApplicationsClosedOpen = document.querySelector(
+        "[data-senior-applications-closed-open]");
+    const seniorApplicationsClosedButtons = document.querySelectorAll(
+        "[data-senior-applications-closed-close]");
     const siteFooter = document.querySelector("body > footer");
     const orientationAccordionTriggers = Array.from(
         document.querySelectorAll(
             "[data-orientation-accordion-trigger]"));
     const mobileAccordion = window.matchMedia("(max-width: 767.98px)");
+
+    seniorApplicationsClosedOpen?.addEventListener(
+        "click",
+        () => seniorApplicationsClosed?.showModal());
+
+    seniorApplicationsClosedButtons.forEach(button => {
+        button.addEventListener(
+            "click",
+            () => seniorApplicationsClosed?.close());
+    });
+
+    seniorApplicationsClosed?.addEventListener("click", event => {
+        if (event.target === seniorApplicationsClosed) {
+            seniorApplicationsClosed.close();
+        }
+    });
 
     if (!introduction ||
         !agreeButton ||

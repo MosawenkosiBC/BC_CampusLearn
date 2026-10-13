@@ -41,7 +41,16 @@
     {
         @if (Model.UnpricedSessionCount > 0)
         {
-            <div class="alert alert-warning" role="status">@Model.UnpricedSessionCount approved session(s) still need a payment amount. <a asp-page="/Administrator/Settings/TutorPayments">Set the tutor payment amount</a> to complete the totals and enable the finance download.</div>
+            <div class="alert alert-warning alert-dismissible fade show campus-alert" role="status">
+                <i class="bi bi-exclamation-triangle-fill campus-alert-icon" aria-hidden="true"></i>
+                <span class="campus-alert-message">
+                    @Model.UnpricedSessionCount approved session(s) still need a payment amount.
+                    <a asp-page="/Administrator/Settings/TutorPayments">Set the tutor payment amount</a>
+                    to complete the totals and enable the finance download.
+                </span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"
+                        aria-label="Dismiss message"></button>
+            </div>
         }
         <div class="admin-statistics-kpis compensation-stats" aria-label="Compensation statistics">
             <article class="admin-statistics-kpi">

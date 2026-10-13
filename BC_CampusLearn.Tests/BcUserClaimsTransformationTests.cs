@@ -45,8 +45,10 @@ public class BcUserClaimsTransformationTests
 
     [Theory]
     [InlineData("Development", BcUserRole.Tutor)]
+    [InlineData("Development", BcUserRole.SeniorTutor)]
     [InlineData("Development", BcUserRole.HeadOfTutors)]
     [InlineData("Production", BcUserRole.Tutor)]
+    [InlineData("Production", BcUserRole.SeniorTutor)]
     [InlineData("Production", BcUserRole.HeadOfTutors)]
     public async Task DeregisteredTutorCannotRegainRoleFromExistingSignIn(string environment, BcUserRole role)
     {
@@ -78,6 +80,7 @@ public class BcUserClaimsTransformationTests
         Assert.Equal(BcUserRole.Student, (await context.BcUsers.SingleAsync()).Role);
         Assert.True(principal.IsInRole(nameof(BcUserRole.Student)));
         Assert.False(principal.IsInRole(nameof(BcUserRole.Tutor)));
+        Assert.False(principal.IsInRole(nameof(BcUserRole.SeniorTutor)));
         Assert.False(principal.IsInRole(nameof(BcUserRole.HeadOfTutors)));
         Assert.False((await context.Tutors.SingleAsync()).IsActive);
     }

@@ -24,6 +24,12 @@ public class TutorApplicationSettingsConfiguration :
             settings.TutorApplicationSettingsId);
         builder.Property(settings => settings.IsOpen)
             .HasDefaultValue(false);
+        builder.Property(settings => settings.SeniorTutorApplicationsOpen)
+            .HasDefaultValue(false);
+        builder.Property(settings => settings.SeniorTutorOpenDate)
+            .HasColumnType("date");
+        builder.Property(settings => settings.SeniorTutorCloseDate)
+            .HasColumnType("date");
         builder.Property(settings => settings.NotifyStudents)
             .HasDefaultValue(false);
         builder.Property(settings => settings.OpenDate)
@@ -40,6 +46,9 @@ public class TutorApplicationSettingsConfiguration :
             TutorApplicationSettingsId =
                 TutorApplicationSettings.SingletonId,
             IsOpen = false,
+            SeniorTutorApplicationsOpen = false,
+            SeniorTutorOpenDate = null,
+            SeniorTutorCloseDate = null,
             NotifyStudents = false,
             ShortlistLimit = null,
             OpenDate = null,

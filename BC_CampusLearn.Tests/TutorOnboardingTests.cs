@@ -82,6 +82,7 @@ public class TutorOnboardingTests
 
     [Theory]
     [InlineData(null, TutorStatus.Approved, true, BcUserRole.Tutor, true)]
+    [InlineData(null, TutorStatus.Approved, true, BcUserRole.SeniorTutor, true)]
     [InlineData("  ", TutorStatus.Approved, true, BcUserRole.Tutor, true)]
     [InlineData("My existing bio", TutorStatus.Approved, true, BcUserRole.Tutor, false)]
     [InlineData(null, TutorStatus.Pending, true, BcUserRole.Tutor, false)]

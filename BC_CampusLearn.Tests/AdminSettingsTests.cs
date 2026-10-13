@@ -806,6 +806,7 @@ public class AdminSettingsTests
     }
 
     [Theory]
+    [InlineData(BcUserRole.SeniorTutor, true, BcUserRole.Tutor)]
     [InlineData(BcUserRole.HeadOfTutors, true, BcUserRole.Tutor)]
     [InlineData(BcUserRole.HeadOfTutors, false, BcUserRole.Student)]
     [InlineData(BcUserRole.Admin, true, BcUserRole.Tutor)]
@@ -827,6 +828,78 @@ public class AdminSettingsTests
         Assert.Equal(expected.ToString(), audit.NewValue);
         await page.OnGetAsync(CancellationToken.None);
         if (expected != BcUserRole.Admin) Assert.DoesNotContain(page.AccessUsers, user => user.BcUserId == 2);
+    }
+
+    [Fact]
+    public async Task SeniorTutorIsListedInUsersAndAccessSettings()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        context.BcUsers.Add(new BcUser
+        {
+            BcUserId = 2,
+            Email = "senior@campus.test",
+            DisplayName = "Senior Tutor",
+            Role = BcUserRole.SeniorTutor,
+            Tutor = AccessTutor(2)
+        });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        UsersAccessModel.AccessUserRow user = Assert.Single(
+            page.AccessUsers,
+            user => user.BcUserId == 2);
+        Assert.Equal(BcUserRole.SeniorTutor, user.Role);
+        Assert.Equal("Senior Tutor", UsersAccessModel.RoleLabel(user.Role));
+    }
+
+    [Fact]
+    public async Task DemotingSeniorTutorDeletesTheirApplicationHistory()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        Tutor tutor = AccessTutor(2);
+        context.BcUsers.Add(new BcUser
+        {
+            BcUserId = 2,
+            Email = "senior@campus.test",
+            DisplayName = "Senior Tutor",
+            Role = BcUserRole.SeniorTutor,
+            Tutor = tutor
+        });
+        context.SeniorTutorApplications.AddRange(
+            new SeniorTutorApplication
+            {
+                TutorId = 2,
+                AcademicAverage = 80,
+                BestDescription = "Good leadership skills",
+                SuitabilityReason = "Approved application",
+                Status = TutorAccountRequestStatus.Approved,
+                IsArchived = true,
+                SubmittedAt = DateTime.UtcNow.AddDays(-2)
+            },
+            new SeniorTutorApplication
+            {
+                TutorId = 2,
+                AcademicAverage = 78,
+                BestDescription = "Professional",
+                SuitabilityReason = "Earlier application",
+                Status = TutorAccountRequestStatus.Declined,
+                SubmittedAt = DateTime.UtcNow.AddDays(-10)
+            });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+
+        Assert.IsType<RedirectToPageResult>(
+            await page.OnPostDemoteAsync(2, null, CancellationToken.None));
+
+        Assert.Equal(
+            BcUserRole.Tutor,
+            (await context.BcUsers.FindAsync(2))!.Role);
+        Assert.Empty(await context.SeniorTutorApplications.ToListAsync());
+        Assert.Contains("application was removed", page.SuccessMessage);
     }
 
     [Theory]

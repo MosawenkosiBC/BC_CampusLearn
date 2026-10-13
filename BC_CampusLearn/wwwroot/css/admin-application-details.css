@@ -336,8 +336,7 @@
     outline: 3px solid rgba(184, 60, 75, 0.14);
 }
 
-.application-review-validation,
-.application-review-error {
+.application-review-validation {
     color: #a12f3d;
     display: block;
     font-size: 0.75rem;

@@ -43,6 +43,9 @@ public class SeniorTutorApplicationsModel : PageModel
     public SeniorTutorApplicationInput Input { get; set; } = new();
 
     public bool OpenApplicationModal { get; private set; }
+    public bool ShowClosedApplicationsModal { get; private set; }
+    public bool ApplicationsOpen { get; private set; }
+    public bool IsSeniorTutor { get; private set; }
 
     public SeniorTutorApplication? LatestApplication { get; private set; }
 
@@ -71,12 +74,29 @@ public class SeniorTutorApplicationsModel : PageModel
                 item.BcUserId == currentUser.BcUserId &&
                 item.Status == TutorStatus.Approved &&
                 item.IsActive)
-            .Select(item => new { item.TutorId })
+            .Select(item => new { item.TutorId, item.BcUser.Role })
             .SingleOrDefaultAsync(cancellationToken);
 
         if (tutor is null)
         {
             return Forbid();
+        }
+        if (tutor.Role != BcUserRole.Tutor)
+        {
+            return Forbid();
+        }
+
+        TutorApplicationSettings? applicationSettings = await _context
+            .TutorApplicationSettings
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+        bool applicationsOpen = applicationSettings?
+            .IsAcceptingSeniorTutorApplications(DateTime.UtcNow) ?? false;
+        if (!applicationsOpen)
+        {
+            OpenApplicationModal = false;
+            ShowClosedApplicationsModal = true;
+            return await LoadPageAsync(cancellationToken) ? Page() : Forbid();
         }
 
         ValidateInput();
@@ -180,6 +200,7 @@ public class SeniorTutorApplicationsModel : PageModel
                 item.TutorId,
                 item.BcUser.DisplayName,
                 item.BcUser.PersonnelNumber,
+                item.BcUser.Role,
                 item.ProfileImagePath
             })
             .SingleOrDefaultAsync(cancellationToken);
@@ -196,6 +217,13 @@ public class SeniorTutorApplicationsModel : PageModel
                 : "Tutor";
         StudentNumber = tutor.PersonnelNumber ?? currentUser.PersonnelNumber ?? string.Empty;
         ProfileImagePath = tutor.ProfileImagePath;
+        IsSeniorTutor = tutor.Role == BcUserRole.SeniorTutor;
+        TutorApplicationSettings? applicationSettings = await _context
+            .TutorApplicationSettings
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+        ApplicationsOpen = applicationSettings?
+            .IsAcceptingSeniorTutorApplications(DateTime.UtcNow) ?? false;
         string[] nameParts = DisplayName.Split(
             ' ',
             StringSplitOptions.RemoveEmptyEntries);
@@ -208,7 +236,10 @@ public class SeniorTutorApplicationsModel : PageModel
 
         LatestApplication = await _context.SeniorTutorApplications
             .AsNoTracking()
-            .Where(application => application.TutorId == tutor.TutorId)
+            .Where(application =>
+                application.TutorId == tutor.TutorId &&
+                (application.Status != TutorAccountRequestStatus.Approved ||
+                    tutor.Role == BcUserRole.SeniorTutor))
             .OrderByDescending(application => application.SubmittedAt)
             .FirstOrDefaultAsync(cancellationToken);
         return true;

@@ -29,7 +29,11 @@
                 <p class="admin-profile-muted admin-rating-date">@Model.PeriodLabel</p>
                 @if (Model.DateFilterError is not null)
                 {
-                    <p class="admin-profile-date-error" role="alert">@Model.DateFilterError</p>
+                    @await Html.PartialAsync(
+                        "_CampusAlert",
+                        new CampusAlertViewModel(
+                            Model.DateFilterError,
+                            CampusAlertVariant.Danger))
                 }
             </div>
             <a asp-page="Profile" asp-route-id="@tutor.TutorId" asp-route-period="@Model.Period"
@@ -55,7 +59,11 @@
                     <div><label asp-for="EndDate" class="form-label">To</label><input asp-for="EndDate" class="form-control" type="date" min="0001-01-02" max="9999-12-30" required /></div>
                     @if (Model.DateFilterError is not null)
                     {
-                        <p class="admin-profile-date-error" role="alert">@Model.DateFilterError</p>
+                        @await Html.PartialAsync(
+                            "_CampusAlert",
+                            new CampusAlertViewModel(
+                                Model.DateFilterError,
+                                CampusAlertVariant.Danger))
                     }
                 </div>
                 <div class="modal-footer">
