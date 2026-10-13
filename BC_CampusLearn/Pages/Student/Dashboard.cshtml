@@ -164,11 +164,14 @@
                 else
                 {
                     DateTimeOffset sessionStart =
-                        Model.NextSession.AvailableTime.ToLocalTime();
+                        Model.NextSession.AvailableTime.ToOffset(
+                            TimeSpan.FromHours(2));
                     DateTimeOffset sessionEnd =
-                        Model.NextSession.SessionEnd.ToLocalTime();
+                        Model.NextSession.SessionEnd.ToOffset(
+                            TimeSpan.FromHours(2));
                     string sessionDate =
-                        sessionStart.Date == DateTimeOffset.Now.Date
+                        sessionStart.Date == DateTimeOffset.UtcNow
+                            .ToOffset(TimeSpan.FromHours(2)).Date
                             ? "Today"
                             : sessionStart.ToString("dd MMM yyyy");
 
@@ -341,9 +344,11 @@
                                 @foreach (var booking in Model.Sessions)
                                 {
                                     DateTimeOffset localStart =
-                                        booking.AvailableTime.ToLocalTime();
+                                        booking.AvailableTime.ToOffset(
+                                            TimeSpan.FromHours(2));
                                     DateTimeOffset localEnd =
-                                        booking.SessionEnd.ToLocalTime();
+                                        booking.SessionEnd.ToOffset(
+                                            TimeSpan.FromHours(2));
                                     string statusClass =
                                         booking.Status.ToString()
                                             .ToLowerInvariant();
