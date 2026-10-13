@@ -12,6 +12,8 @@ namespace BC_CampusLearn.Services.Teams;
 public interface IBookingTeamsMeetingService
 {
     Task<SessionLifecycleResult> CreateAsync(int tutorBcUserId, int bookingId, CancellationToken cancellationToken = default);
+    Task<SessionLifecycleResult> CancelAsync(int bookingId, CancellationToken cancellationToken = default);
+    Task ProcessPendingCancellationsAsync(CancellationToken cancellationToken = default);
 }
 
 public sealed class BookingTeamsMeetingService(
@@ -128,7 +130,17 @@ public sealed class BookingTeamsMeetingService(
             if (!string.IsNullOrWhiteSpace(meeting.JoinUrl))
                 link.Url = meeting.JoinUrl;
             link.TeamsManualFallbackAllowed = string.IsNullOrWhiteSpace(link.Url);
+            await context.Entry(booking).ReloadAsync(cancellationToken);
+            bool bookingCancelled = booking.Status is BookingStatus.Cancelled or BookingStatus.Declined;
+            if (bookingCancelled)
+                link.TeamsCancellationRequestedAt ??= timeProvider.GetUtcNow();
             await context.SaveChangesAsync(cancellationToken);
+
+            if (bookingCancelled)
+            {
+                await CancelAsync(bookingId, cancellationToken);
+                return SessionLifecycleResult.Failure("The booking was cancelled while the meeting was being created. Its Teams cancellation has been requested. Reload the page.");
+            }
 
             return string.IsNullOrWhiteSpace(link.Url)
                 ? SessionLifecycleResult.Failure("The calendar invitation was created, but its Teams link is still being prepared. Retry shortly to retrieve the same meeting.")
@@ -158,4 +170,82 @@ public sealed class BookingTeamsMeetingService(
         }
     }
 
+    public async Task<SessionLifecycleResult> CancelAsync(int bookingId, CancellationToken cancellationToken = default)
+    {
+        // This method is internal to the booking lifecycle/background worker.
+        // Authorization occurs before the booking is changed; only a persisted
+        // cancelled/declined booking is eligible for remote cancellation.
+        var booking = await context.Bookings.AsNoTracking()
+            .Where(item => item.BookingId == bookingId)
+            .Select(item => new { item.TutorId, item.Status, item.ScheduledStartTime }).SingleOrDefaultAsync(cancellationToken);
+        if (booking is null || booking.Status is not (BookingStatus.Cancelled or BookingStatus.Declined))
+            return SessionLifecycleResult.Failure("Only cancelled or declined bookings can cancel their Teams meeting.");
+
+        MeetingLink? link = await context.MeetingLinks.SingleOrDefaultAsync(item => item.BookingId == bookingId, cancellationToken);
+        if (link is null || link.TeamsCreationRequestId is null) return SessionLifecycleResult.Success();
+        await context.Entry(link).ReloadAsync(cancellationToken);
+        if (link.TeamsCancelledAt is not null) return SessionLifecycleResult.Success();
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        if (link.TeamsCancellationLastAttemptAt > now.AddMinutes(-1))
+            return SessionLifecycleResult.Failure("Meeting cancellation is already pending.");
+        link.TeamsCancellationRequestedAt ??= now;
+        link.TeamsCancellationLastAttemptAt = now;
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return SessionLifecycleResult.Failure("Meeting cancellation is already being processed.");
+        }
+        catch (DbUpdateException)
+        {
+            return SessionLifecycleResult.Failure("Meeting cancellation could not be claimed yet and remains queued.");
+        }
+
+        BcUser? organizer = await context.Tutors.AsNoTracking().Where(item => item.TutorId == booking.TutorId)
+            .Select(item => item.BcUser).SingleOrDefaultAsync(cancellationToken);
+        try
+        {
+            if (string.IsNullOrWhiteSpace(organizer?.EncryptedEntraTenantId) || string.IsNullOrWhiteSpace(organizer.EncryptedEntraObjectId))
+                throw new TeamsMeetingException("The meeting organizer's Microsoft identity is unavailable.");
+            EntraIdentity identity = identities.Unprotect(organizer.EncryptedEntraTenantId, organizer.EncryptedEntraObjectId);
+            if (!Guid.TryParse(configuration["AzureAd:TenantId"], out Guid tenant) || tenant != Guid.Parse(identity.TenantId) ||
+                identities.CreateLookupHash(identity.TenantId, identity.ObjectId) != link.TeamsOrganizerIdentityHash)
+                throw new TeamsMeetingException("The saved meeting organizer could not be verified.");
+
+            if (link.TeamsEventId is null)
+            {
+                link.TeamsEventId = await calendar.FindByTransactionAsync(identity.ObjectId, link.TeamsCreationRequestId.Value, booking.ScheduledStartTime, cancellationToken);
+                if (link.TeamsEventId is null)
+                    throw new TeamsMeetingException("The meeting request has not yet been located in Microsoft's calendar.");
+                await context.SaveChangesAsync(cancellationToken);
+            }
+            await calendar.CancelAsync(identity.ObjectId, link.TeamsEventId, cancellationToken);
+            link.TeamsCancelledAt = timeProvider.GetUtcNow();
+            await context.SaveChangesAsync(cancellationToken);
+            return SessionLifecycleResult.Success();
+        }
+        catch (Exception exception) when (exception is TeamsMeetingException or CryptographicException or InvalidOperationException or FormatException or DbUpdateException)
+        {
+            logger.LogWarning("Teams meeting cancellation remains pending for booking {BookingId}. Failure type: {FailureType}.", bookingId, exception.GetType().Name);
+            return SessionLifecycleResult.Failure("Teams meeting cancellation is pending and will retry automatically.");
+        }
+    }
+
+    public async Task ProcessPendingCancellationsAsync(CancellationToken cancellationToken = default)
+    {
+        DateTimeOffset cutoff = timeProvider.GetUtcNow().AddMinutes(-1);
+        List<int> bookings = await context.MeetingLinks.AsNoTracking()
+            .Where(link => link.TeamsCancellationRequestedAt != null && link.TeamsCancelledAt == null &&
+                link.TeamsCreationRequestId != null && (link.TeamsCancellationLastAttemptAt == null || link.TeamsCancellationLastAttemptAt <= cutoff) &&
+                (link.Booking.Status == BookingStatus.Cancelled || link.Booking.Status == BookingStatus.Declined))
+            .OrderBy(link => link.TeamsCancellationLastAttemptAt ?? link.TeamsCancellationRequestedAt)
+            .Select(link => link.BookingId).Take(5).ToListAsync(cancellationToken);
+        foreach (int bookingId in bookings)
+        {
+            await CancelAsync(bookingId, cancellationToken);
+            context.ChangeTracker.Clear();
+        }
+    }
 }

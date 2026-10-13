@@ -340,6 +340,8 @@
                                                                         class="dropdown-item"
                                                                         data-tutor-confirm-session
                                                                         data-booking-id="@session.BookingId"
+                                                                        data-meeting-link="@session.MeetingLinkUrl"
+                                                                        data-generated-meeting="@(session.HasGeneratedTeamsLink ? "true" : "false")"
                                                                         data-student-name="@session.StudentName">
                                                                     Confirm session
                                                                 </button>
@@ -387,9 +389,6 @@
                 <div class="modal-header">
                     <div>
                         <h2 id="tutor-confirm-session-title">Confirm session</h2>
-                        <p data-tutor-confirm-description>
-                            @(Model.TeamsMeetingCreationEnabled ? "Create a Teams meeting and confirm this session." : "Add the meeting link the student will use to join.")
-                        </p>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close"></button>
@@ -398,6 +397,8 @@
                     @if (Model.TeamsMeetingCreationEnabled)
                     {
                         <p>Confirm to create a Teams meeting and invite the student, for online or face-to-face tutoring. If creation fails, retry or paste a manual meeting link.</p>
+                        <button type="button" class="btn bookings-modal-primary mb-3"
+                                data-generate-teams-link data-generate-url="@Url.Page("/Tutors/Sessions", "GenerateTeamsLink")">Generate Teams link</button>
                     }
                     <div class="alert alert-danger" data-confirm-error role="alert" hidden></div>
                     <p data-confirm-progress role="status" hidden>Creating your Teams meeting and confirming the session…</p>

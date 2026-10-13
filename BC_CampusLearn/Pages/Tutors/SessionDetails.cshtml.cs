@@ -28,6 +28,7 @@ public class SessionDetailsModel : PageModel
     private readonly TimeProvider _timeProvider;
     private readonly ITutorHeadSessionReviewNotifier? _reviewNotifier;
     private readonly TeamsMeetingOptions _teamsOptions;
+    private readonly IBookingTeamsMeetingService? _teamsMeetings;
 
     public SessionDetailsModel(
         ApplicationDbContext context,
@@ -36,7 +37,8 @@ public class SessionDetailsModel : PageModel
         ISessionLifecycleService lifecycleService,
         TimeProvider timeProvider,
         ITutorHeadSessionReviewNotifier? reviewNotifier = null,
-        IOptions<TeamsMeetingOptions>? teamsOptions = null)
+        IOptions<TeamsMeetingOptions>? teamsOptions = null,
+        IBookingTeamsMeetingService? teamsMeetings = null)
     {
         _context = context;
         _currentUserService = currentUserService;
@@ -45,6 +47,7 @@ public class SessionDetailsModel : PageModel
         _timeProvider = timeProvider;
         _reviewNotifier = reviewNotifier;
         _teamsOptions = teamsOptions?.Value ?? new TeamsMeetingOptions();
+        _teamsMeetings = teamsMeetings;
     }
 
     public Booking Session { get; private set; } = null!;
@@ -100,6 +103,18 @@ public class SessionDetailsModel : PageModel
     public bool IsDeregistered { get; private set; }
 
     public bool TeamsMeetingCreationEnabled => _teamsOptions.AllowsTutor(CurrentBcUserId);
+
+    public async Task<IActionResult> OnPostGenerateTeamsLinkAsync(int bookingId, CancellationToken cancellationToken)
+    {
+        if (!(await GetCurrentTutorIdAsync(cancellationToken)).HasValue) return Forbid();
+        SessionLifecycleResult result = _teamsMeetings is null
+            ? SessionLifecycleResult.Failure("Teams meeting creation is not configured.")
+            : await _teamsMeetings.CreateAsync(_currentUserService.GetRequiredUser().BcUserId, bookingId, cancellationToken);
+        string? link = result.Succeeded
+            ? await _context.MeetingLinks.Where(item => item.BookingId == bookingId).Select(item => item.Url).SingleOrDefaultAsync(cancellationToken)
+            : null;
+        return new JsonResult(new { success = result.Succeeded, message = result.ErrorMessage, link });
+    }
 
     public async Task<IActionResult> OnGetAsync(
         int bookingId,
@@ -273,7 +288,7 @@ public class SessionDetailsModel : PageModel
             cancellationToken);
         SessionActionError = !result.Succeeded;
         SessionActionMessage = result.Succeeded
-            ? "Booking declined."
+            ? $"Booking declined. {result.WarningMessage}".Trim()
             : result.ErrorMessage;
         return RedirectToPage(new { bookingId });
     }
@@ -298,7 +313,7 @@ public class SessionDetailsModel : PageModel
             cancellationToken);
         SessionActionError = !result.Succeeded;
         SessionActionMessage = result.Succeeded
-            ? "Session cancelled."
+            ? $"Session cancelled. {result.WarningMessage}".Trim()
             : result.ErrorMessage;
         return RedirectToPage(new { bookingId });
     }

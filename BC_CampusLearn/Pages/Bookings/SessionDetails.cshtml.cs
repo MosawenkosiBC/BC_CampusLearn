@@ -246,7 +246,7 @@ public class SessionDetailsModel : PageModel
 
         SessionActionError = !result.Succeeded;
         SessionActionMessage = result.Succeeded
-            ? "Session cancelled."
+            ? $"Session cancelled. {result.WarningMessage}".Trim()
             : result.ErrorMessage;
         return RedirectToPage(new { bookingId });
     }

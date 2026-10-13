@@ -158,6 +158,7 @@ builder.Services.AddHttpClient<ITeamsCalendarClient, TeamsCalendarClient>(client
     })
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddScoped<IBookingTeamsMeetingService, BookingTeamsMeetingService>();
+builder.Services.AddHostedService<TeamsMeetingCancellationWorker>();
 
 builder.Services.AddScoped<
     ICurrentUserService,

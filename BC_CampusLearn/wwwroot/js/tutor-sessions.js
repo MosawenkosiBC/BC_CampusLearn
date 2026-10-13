@@ -5,8 +5,6 @@
     const bookingIdInput = form?.querySelector(
         "[data-tutor-confirm-booking-id]");
     const meetingLinkInput = form?.querySelector("input[name='meetingLink']");
-    const description = modalElement?.querySelector(
-        "[data-tutor-confirm-description]");
 
     document.querySelectorAll("[data-tutor-confirm-session]")
         .forEach((button) => button.addEventListener("click", () => {
@@ -16,15 +14,8 @@
             }
 
             bookingIdInput.value = button.dataset.bookingId || "";
-            meetingLinkInput.value = "";
-            const studentName = button.dataset.studentName || "the student";
-            if (description) {
-                description.textContent =
-                    form.dataset.teamsEnabled === "true"
-                        ? `Create a Teams meeting and confirm the session with ${studentName}.`
-                        : `Add the meeting link ${studentName} will use to join.`;
-            }
-
+            meetingLinkInput.value = button.dataset.meetingLink || "";
+            meetingLinkInput.readOnly = button.dataset.generatedMeeting === "true";
             bootstrap.Modal.getOrCreateInstance(modalElement).show();
             modalElement.addEventListener(
                 "shown.bs.modal",

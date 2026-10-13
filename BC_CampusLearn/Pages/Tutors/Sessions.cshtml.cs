@@ -23,20 +23,34 @@ public class SessionsModel : PageModel
     private readonly ICurrentUserService _currentUserService;
     private readonly ISessionLifecycleService _lifecycleService;
     private readonly TeamsMeetingOptions _teamsOptions;
+    private readonly IBookingTeamsMeetingService? _teamsMeetings;
 
     public SessionsModel(
         ApplicationDbContext context,
         ICurrentUserService currentUserService,
         ISessionLifecycleService lifecycleService,
-        IOptions<TeamsMeetingOptions>? teamsOptions = null)
+        IOptions<TeamsMeetingOptions>? teamsOptions = null,
+        IBookingTeamsMeetingService? teamsMeetings = null)
     {
         _context = context;
         _currentUserService = currentUserService;
         _lifecycleService = lifecycleService;
         _teamsOptions = teamsOptions?.Value ?? new TeamsMeetingOptions();
+        _teamsMeetings = teamsMeetings;
     }
 
     public bool TeamsMeetingCreationEnabled => _teamsOptions.AllowsTutor(_currentUserService.GetRequiredUser().BcUserId);
+
+    public async Task<IActionResult> OnPostGenerateTeamsLinkAsync(int bookingId, CancellationToken cancellationToken)
+    {
+        SessionLifecycleResult result = _teamsMeetings is null
+            ? SessionLifecycleResult.Failure("Teams meeting creation is not configured.")
+            : await _teamsMeetings.CreateAsync(_currentUserService.GetRequiredUser().BcUserId, bookingId, cancellationToken);
+        string? link = result.Succeeded
+            ? await _context.MeetingLinks.Where(item => item.BookingId == bookingId).Select(item => item.Url).SingleOrDefaultAsync(cancellationToken)
+            : null;
+        return new JsonResult(new { success = result.Succeeded, message = result.ErrorMessage, link });
+    }
 
     [BindProperty(SupportsGet = true)]
     public string? StudentFilter { get; set; }
@@ -198,7 +212,9 @@ public class SessionsModel : PageModel
                 ScheduledStartTime = booking.ScheduledStartTime,
                 Duration = booking.Duration,
                 Status = booking.Status,
-                TutorReviewSubmitted = booking.TutorEvaluation != null
+                TutorReviewSubmitted = booking.TutorEvaluation != null,
+                MeetingLinkUrl = booking.MeetingLink == null ? null : booking.MeetingLink.Url,
+                HasGeneratedTeamsLink = booking.MeetingLink != null && booking.MeetingLink.TeamsEventId != null && !booking.MeetingLink.TeamsManualFallbackAllowed
             })
             .ToListAsync(cancellationToken);
 
@@ -330,7 +346,7 @@ public class SessionsModel : PageModel
 
         if (result.Succeeded)
         {
-            SuccessMessage = "Booking declined.";
+            SuccessMessage = $"Booking declined. {result.WarningMessage}".Trim();
         }
         else
         {

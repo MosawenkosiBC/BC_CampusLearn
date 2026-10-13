@@ -1,6 +1,6 @@
 # Teams calendar meeting pilot
 
-Tutors confirm bookings through the **Confirm session** modal on **Session Details** or **Tutors / Sessions**. Leaving the optional manual link blank creates a Teams-enabled Outlook event, invites the booked student, saves the join URL, and confirms the booking. This applies to **online and face-to-face** sessions. The separate Teams action at the top of Session Details has been removed. Calendar cancellation/rescheduling remain later milestones.
+Tutors confirm bookings through the **Confirm session** modal on **Session Details** or **Tutors / Sessions**. **Generate Teams link**, underneath the explanatory text, creates the calendar-backed Teams meeting and fills the link field without confirming the booking. The button disappears after a link is generated; the generated link is retained when the modal is reopened. Clicking **Confirm session** with the field blank still creates the meeting automatically. Both paths apply to **online and face-to-face** sessions.
 
 If automatic creation fails, the modal stays open with the error. The tutor can retry or enter a valid manual link and confirm. A saved creation request/event is retained for retries; a successful generated link cannot be replaced manually. After a reported failure, manual fallback is allowed, and the request metadata is retained for investigation. A timeout may mean Microsoft created an invitation even though the response was lost; retrying automatic creation reuses the same transaction. Using a manual fallback does not cancel any remote event that may already exist.
 
@@ -10,7 +10,7 @@ New meeting titles are **Mzala Connect tutoring session: [full module name]**, f
 
 1. Use the institutional app registration that has **Microsoft Graph → Calendars.ReadWrite → Application**, with administrator consent. Ensure any Exchange mailbox access restrictions include the pilot tutor.
 2. Configure the existing `AzureAd__TenantId`, `AzureAd__ClientId`, and `AzureAd__ClientSecret` environment variables. Keep the secret in deployment configuration; do not commit it. The existing callback path is for sign-in and is not used by this app-only calendar request.
-3. Apply all pending database migrations, including `AddTeamsCalendarEventMetadata` and `AddTeamsManualFallback`, through the normal deployment procedure. For example, from the repository root: `dotnet ef database update --project BC_CampusLearn`. Use the target database's usual secure configuration. The fallback migration adds a flag to the existing meeting-link table; no existing links are removed.
+3. Apply all pending database migrations, including `AddTeamsCalendarEventMetadata`, `AddTeamsManualFallback`, and `AddTeamsMeetingCancellation`, through the normal deployment procedure. For example, from the repository root: `dotnet ef database update --project BC_CampusLearn`. Use the target database's usual secure configuration. The cancellation migration adds durable request, last-attempt and completion timestamps to the meeting-link table. No existing links are removed.
 4. Set `TeamsMeetings__Enabled=true` and `TeamsMeetings__PilotTutorBcUserIds__0=<pilot tutor BcUserId>` in the application's environment. Additional pilot tutors use indices 1, 2, etc. These are CampusLearn **BcUserId** values, not TutorId or Microsoft object IDs. Both the switch and an explicit pilot account are required.
 5. Use real Microsoft sign-in. In Development, set `Authentication__UseDevelopmentAuthentication=false`. Simulated development identities are deliberately rejected. The pilot tutor must have an active approved tutor profile and log in through institutional Microsoft sign-in so their encrypted tenant/object IDs are populated.
 
@@ -42,15 +42,27 @@ After deploying with persistent key storage, have the pilot tutor sign out, sign
 
 Reference: [Microsoft's Docker key-persistence guidance](https://learn.microsoft.com/en-us/aspnet/core/security/data-protection/configuration/overview?view=aspnetcore-10.0#persisting-keys-when-hosting-in-a-docker-container).
 
+## Cancellation synchronization
+
+Cancelling a booking as the tutor or booked student saves its cancellation request in the same database transaction as the booking change, then immediately calls Microsoft's organizer-calendar `event/cancel` action. This sends a cancellation notice to attendees and removes the scheduled event. Pending bookings that already have a generated event are covered, including a tutor's decline. Automatic booking expiry/cancellation also queues remote cleanup.
+
+If Microsoft is unavailable, the booking remains cancelled and the actor sees that Teams cancellation is pending. A background worker processes the durable queue every minute, at most five bookings per pass. Timestamp concurrency protects retry state and reduces concurrent processing; completed requests are skipped. Missing/already-cancelled events are treated idempotently. Retries run even if the pilot feature is later disabled or a tutor becomes inactive.
+
+If a create response was lost before its event ID could be saved, cancellation searches the organizer's calendar around the scheduled date for the exact saved transaction ID. It does not recreate a cancelled event or guess by title. Unresolved requests remain pending for retry/investigation. This search cannot recover an event that was manually rescheduled outside that date range.
+
+Only events created by Mzala Connect can be cancelled through this integration. The organizer must cancel any manually supplied external meeting. Cancelling a calendar event is not a guarantee that a previously distributed Teams join URL is immediately invalidated; this feature cancels the scheduled event and its invitations, not an ongoing call or a standalone meeting through a different API. Rescheduling synchronization remains a later milestone.
+
+Reference: [Microsoft Graph event cancellation](https://learn.microsoft.com/en-us/graph/api/event-cancel?view=graph-rest-1.0).
+
 ## Live test
 
 1. Arrange upcoming **Online** and **face-to-face** test bookings assigned to the allowlisted tutor, with valid student emails. Use willing test participants: creation sends a real invitation.
 2. Sign in as that tutor and open a booking's **Session Details** page. Choose **Confirmed** in the status control and save to open its confirmation modal. Also test the **Confirm session** action from **Tutors / Sessions**.
-3. Leave the optional manual link blank and click **Confirm session**. The modal shows progress and prevents repeat submissions while the request runs.
+3. Click **Generate Teams link**. Verify that the field is populated, the button disappears, and the booking remains pending. Close/reopen the modal and verify the link remains. Click **Confirm session**. Also test leaving the field blank and confirming directly. Both requests show progress and block repeat clicks while running.
 4. Verify the success message and that the saved event appears in the tutor's Outlook calendar with the tutor as organizer. Check the module, scheduled start and one-hour duration. Times are sent to Graph in UTC; Outlook displays them in the user's selected time zone.
 5. Verify that the student receives an invitation containing a Teams joining link, with the new Mzala Connect title and full module name. The booking should be confirmed, with its saved join link. Face-to-face bookings retain their physical location; normal session-start/join rules still apply.
 6. Test a reported failure with a controlled test setup. Check that the booking remains pending and the modal stays open. Retry with the link blank to retrieve/reuse the same meeting request, or paste a valid manual URL and confirm. A saved request ID is sent as Graph's `transactionId` to prevent duplicate POSTs. A saved event with a pending link is retrieved rather than recreated.
-7. Cancel the test event in the tutor's Outlook calendar after testing and clean up the test booking through CampusLearn. **This pilot does not synchronize booking cancellations or rescheduling with Outlook.**
+7. Cancel one generated booking as the tutor and another as the booked student. Verify the calendar-backed Teams event is cancelled and the student receives a cancellation notice. Also cancel/decline a pending booking after generating its link. Under a controlled Microsoft outage, verify the app reports pending synchronization and the worker completes it after connectivity is restored. Manually cancel any external fallback meetings used during the test.
 
 ## Troubleshooting and limits
 

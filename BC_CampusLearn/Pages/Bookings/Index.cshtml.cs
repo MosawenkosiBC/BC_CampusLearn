@@ -232,7 +232,7 @@ public class IndexModel : PageModel
 
         if (result.Succeeded)
         {
-            SuccessMessage = "Session cancelled.";
+            SuccessMessage = $"Session cancelled. {result.WarningMessage}".Trim();
         }
         else
         {

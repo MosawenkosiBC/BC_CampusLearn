@@ -619,6 +619,16 @@ namespace BC_CampusLearn.Migrations
                     b.Property<int>("BookingId")
                         .HasColumnType("int");
 
+                    b.Property<DateTimeOffset?>("TeamsCancellationLastAttemptAt")
+                        .IsConcurrencyToken()
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("TeamsCancellationRequestedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("TeamsCancelledAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<Guid?>("TeamsCreationRequestId")
                         .IsConcurrencyToken()
                         .HasColumnType("uniqueidentifier");

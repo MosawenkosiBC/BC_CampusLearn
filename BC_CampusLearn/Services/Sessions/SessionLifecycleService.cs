@@ -42,6 +42,7 @@ public class SessionLifecycleService : ISessionLifecycleService
         DateTimeOffset now = _timeProvider.GetUtcNow();
         List<Booking> dueBookings = await _context.Bookings
             .Include(booking => booking.SessionExecution)
+            .Include(booking => booking.MeetingLink)
             .Where(booking =>
                 (booking.Status == BookingStatus.Pending &&
                  booking.ScheduledStartTime <= now) ||
@@ -73,6 +74,7 @@ public class SessionLifecycleService : ISessionLifecycleService
             if (automaticStatus == BookingStatus.Declined &&
                 booking.Status == BookingStatus.Pending)
             {
+                RequestTeamsCancellation(booking, now);
                 ChangeStatus(
                     booking,
                     BookingStatus.Declined,
@@ -88,6 +90,7 @@ public class SessionLifecycleService : ISessionLifecycleService
             else if (automaticStatus == BookingStatus.Cancelled &&
                 booking.Status == BookingStatus.Confirmed)
             {
+                RequestTeamsCancellation(booking, now);
                 ChangeStatus(
                     booking,
                     BookingStatus.Cancelled,
@@ -326,8 +329,9 @@ public class SessionLifecycleService : ISessionLifecycleService
             now,
             cancellationToken);
 
+        RequestTeamsCancellation(booking, now);
         await _context.SaveChangesAsync(cancellationToken);
-        return SessionLifecycleResult.Success();
+        return await CompleteTeamsCancellationAsync(booking, cancellationToken);
     }
 
     public async Task<SessionLifecycleResult> CancelByStudentAsync(
@@ -338,6 +342,7 @@ public class SessionLifecycleService : ISessionLifecycleService
     {
         Booking? booking = await _context.Bookings
             .Include(item => item.StatusHistory)
+            .Include(item => item.MeetingLink)
             .SingleOrDefaultAsync(item =>
                 item.BookingId == bookingId &&
                 item.StudentBcUserId == studentBcUserId,
@@ -401,8 +406,26 @@ public class SessionLifecycleService : ISessionLifecycleService
                     now));
         }
 
+        RequestTeamsCancellation(booking, now);
         await _context.SaveChangesAsync(cancellationToken);
-        return SessionLifecycleResult.Success();
+        return await CompleteTeamsCancellationAsync(booking, cancellationToken);
+    }
+
+    private static void RequestTeamsCancellation(Booking booking, DateTimeOffset now)
+    {
+        if (booking.MeetingLink?.TeamsCreationRequestId is not null)
+            booking.MeetingLink.TeamsCancellationRequestedAt ??= now;
+    }
+
+    private async Task<SessionLifecycleResult> CompleteTeamsCancellationAsync(Booking booking, CancellationToken cancellationToken)
+    {
+        if (booking.MeetingLink?.TeamsCreationRequestId is null)
+            return SessionLifecycleResult.Success(string.IsNullOrWhiteSpace(booking.MeetingLink?.Url) ? null
+                : "Please cancel the manually supplied meeting with its organizer.");
+        if (_teamsMeetings is not null && (await _teamsMeetings.CancelAsync(booking.BookingId, cancellationToken)).Succeeded)
+            return SessionLifecycleResult.Success(booking.MeetingLink.TeamsManualFallbackAllowed
+                ? "Please also cancel any manually supplied meeting with its organizer." : null);
+        return SessionLifecycleResult.Success("The Teams meeting cancellation is pending and will retry automatically.");
     }
 
     public async Task<SessionLifecycleResult> StartAsync(

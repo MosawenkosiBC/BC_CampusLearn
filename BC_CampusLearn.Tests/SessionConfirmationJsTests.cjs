@@ -6,12 +6,16 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, '../BC_CampusLearn/wwwroot/js/session-confirmation.js'), 'utf8');
 
-function setup(fetch) {
+function setup(fetch, { generate = false } = {}) {
     const handlers = {};
     const modalHandlers = {};
     const error = { textContent: '', hidden: true };
     const progress = { textContent: '', hidden: true };
-    const link = { value: '', readOnly: true, focus() { this.focused = true; } };
+    const link = { value: '', readOnly: true, focus() { this.focused = true; }, addEventListener() {} };
+    const generationHandlers = {};
+    const generator = generate ? { hidden: false, disabled: false, dataset: { generateUrl: '/Tutors/Sessions?handler=GenerateTeamsLink' },
+        classList: { toggle() {} }, addEventListener(name, handler) { generationHandlers[name] = handler; } } : null;
+    const row = { dataset: { bookingId: '12' } };
     const buttons = [{ disabled: false }, { disabled: false }];
     const modal = { addEventListener(name, handler) { modalHandlers[name] = handler; } };
     const attributes = {};
@@ -19,7 +23,7 @@ function setup(fetch) {
         action: '/Tutors/Sessions?handler=Confirm', valid: true,
         closest() { return modal; },
         querySelector(selector) {
-            return selector === '[data-confirm-error]' ? error : selector === '[data-confirm-progress]' ? progress : link;
+            return selector === '[data-confirm-error]' ? error : selector === '[data-confirm-progress]' ? progress : selector === '[data-generate-teams-link]' ? generator : link;
         },
         querySelectorAll() { return buttons; },
         reportValidity() { return this.valid; },
@@ -35,15 +39,17 @@ function setup(fetch) {
             this.bookingId = '12';
             this.__RequestVerificationToken = 'test-antiforgery-token';
         }
+        get(name) { return this[name]; }
     }
     vm.runInNewContext(source, {
-        document: { querySelectorAll(selector) { assert.equal(selector, "form[data-session-confirm-form='true']"); return [form]; } },
+        document: { querySelectorAll(selector) { return selector === "[data-tutor-confirm-session]" ? [row] : [form]; } },
         FormData,
         fetch(url, options) { calls.push({ url, options }); return fetch(url, options); },
         window: { location: { reload() { reloads++; } } }
     });
     return {
-        form, link, error, progress, buttons, calls, attributes,
+        form, link, error, progress, buttons, calls, attributes, generator, row,
+        generate() { return generationHandlers.click(); },
         submit() { return handlers.submit({ preventDefault() {} }); },
         hide() { let prevented = false; modalHandlers['hide.bs.modal']({ preventDefault() { prevented = true; } }); return prevented; },
         show() { modalHandlers['show.bs.modal'](); },
@@ -122,4 +128,28 @@ test('invalid manual URL is not submitted and reopening clears a previous error'
     state.show();
     assert.equal(state.error.hidden, true);
     assert.equal(state.error.textContent, '');
+});
+
+test('generation fills and locks the link, hides its button, and caches it without confirming', async () => {
+    const state = setup(async () => response({ success: true, link: 'https://teams.microsoft.com/generated' }), { generate: true });
+    await state.generate();
+    assert.match(state.calls[0].url, /handler=GenerateTeamsLink/);
+    assert.equal(state.link.value, 'https://teams.microsoft.com/generated');
+    assert.equal(state.link.readOnly, true);
+    assert.equal(state.generator.hidden, true);
+    assert.equal(state.reloads, 0);
+    assert.equal(state.row.dataset.meetingLink, state.link.value);
+    state.show();
+    assert.equal(state.generator.hidden, true);
+    await state.generate();
+    assert.equal(state.calls.length, 1);
+});
+
+test('failed generation retains its button and permits manual fallback', async () => {
+    const state = setup(async () => response({ success: false, message: 'Microsoft is unavailable.' }), { generate: true });
+    await state.generate();
+    assert.equal(state.generator.hidden, false);
+    assert.equal(state.link.readOnly, false);
+    assert.equal(state.error.hidden, false);
+    assert.equal(state.reloads, 0);
 });

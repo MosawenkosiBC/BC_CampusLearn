@@ -24,4 +24,6 @@ public class TutorSessionListItemViewModel
     public BookingStatus Status { get; set; }
 
     public bool TutorReviewSubmitted { get; set; }
+    public string? MeetingLinkUrl { get; set; }
+    public bool HasGeneratedTeamsLink { get; set; }
 }

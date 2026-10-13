@@ -291,6 +291,175 @@ public sealed class TeamsMeetingTests
         Assert.Single(competingCalendar.Requests);
     }
 
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    public async Task TutorAndStudentCancellation_CancelTheOrganizerEvent(bool student, bool confirm)
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        Booking booking = await fixture.Context.Bookings.SingleAsync();
+        var studentUser = new BcUser { BcUserId = 21, DisplayName = "Student", Email = "student@institution.example" };
+        fixture.Context.BcUsers.Add(studentUser);
+        booking.StudentBcUser = studentUser;
+        await fixture.Context.SaveChangesAsync();
+        var lifecycle = new SessionLifecycleService(fixture.Context, new FixedTimeProvider(fixture.Now), fixture.Service);
+        Assert.True((confirm ? await lifecycle.ConfirmAsync(12, 8, 1, null) : await fixture.Service.CreateAsync(8, 1)).Succeeded);
+        SessionLifecycleResult result = student
+            ? await lifecycle.CancelByStudentAsync(21, 1, "Schedule conflict")
+            : await lifecycle.DeclineAsync(12, 8, 1, "Schedule conflict", false);
+        Assert.True(result.Succeeded);
+        Assert.Null(result.WarningMessage);
+        Assert.Equal(student || confirm ? BookingStatus.Cancelled : BookingStatus.Declined, booking.Status);
+        Assert.NotNull(booking.MeetingLink!.TeamsCancellationRequestedAt);
+        Assert.NotNull(booking.MeetingLink.TeamsCancelledAt);
+        Assert.Equal(1, fixture.Calendar.CancelCalls);
+        Assert.True((await fixture.Service.CancelAsync(1)).Succeeded);
+        Assert.Equal(1, fixture.Calendar.CancelCalls);
+    }
+
+    [Fact]
+    public async Task CancellationFailure_IsPersistedAndRetriedByWorkerProcessing()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var lifecycle = new SessionLifecycleService(fixture.Context, new FixedTimeProvider(fixture.Now), fixture.Service);
+        Assert.True((await lifecycle.ConfirmAsync(12, 8, 1, null)).Succeeded);
+        fixture.Calendar.FailCancel = true;
+        SessionLifecycleResult result = await lifecycle.DeclineAsync(12, 8, 1, "Schedule conflict", false);
+        Assert.True(result.Succeeded);
+        Assert.Contains("pending", result.WarningMessage);
+        fixture.Context.ChangeTracker.Clear();
+        MeetingLink pending = await fixture.Context.MeetingLinks.SingleAsync();
+        Assert.NotNull(pending.TeamsCancellationRequestedAt);
+        Assert.Null(pending.TeamsCancelledAt);
+        fixture.Calendar.FailCancel = false;
+        var retry = new BookingTeamsMeetingService(fixture.Context, fixture.Calendar, fixture.Identities,
+            Options.Create(fixture.Options), fixture.Configuration, fixture.Environment,
+            new FixedTimeProvider(fixture.Now.AddMinutes(2)), NullLogger<BookingTeamsMeetingService>.Instance);
+        await retry.ProcessPendingCancellationsAsync();
+        Assert.NotNull((await fixture.Context.MeetingLinks.SingleAsync()).TeamsCancelledAt);
+        Assert.Equal(2, fixture.Calendar.CancelCalls);
+        await retry.ProcessPendingCancellationsAsync();
+        Assert.Equal(2, fixture.Calendar.CancelCalls);
+    }
+
+    [Fact]
+    public async Task CancellationCannotBeTriggeredForAnActiveBookingOrAnotherStudentsBooking()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var lifecycle = new SessionLifecycleService(fixture.Context, new FixedTimeProvider(fixture.Now), fixture.Service);
+        Assert.True((await lifecycle.ConfirmAsync(12, 8, 1, null)).Succeeded);
+        Assert.False((await fixture.Service.CancelAsync(1)).Succeeded);
+        Assert.False((await lifecycle.CancelByStudentAsync(999, 1, "Schedule conflict")).Succeeded);
+        Assert.False((await lifecycle.DeclineAsync(999, 8, 1, "Schedule conflict", false)).Succeeded);
+        Assert.Equal(0, fixture.Calendar.CancelCalls);
+    }
+
+    [Fact]
+    public async Task AutomaticBookingCancellation_QueuesItsGeneratedMeetingForCleanup()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var lifecycle = new SessionLifecycleService(fixture.Context, new FixedTimeProvider(fixture.Now), fixture.Service);
+        Assert.True((await lifecycle.ConfirmAsync(12, 8, 1, null)).Succeeded);
+        var due = new SessionLifecycleService(fixture.Context, new FixedTimeProvider(fixture.Now.AddHours(3)), fixture.Service);
+        await due.ProcessDueTransitionsAsync();
+        Assert.Equal(BookingStatus.Cancelled, (await fixture.Context.Bookings.SingleAsync()).Status);
+        Assert.NotNull((await fixture.Context.MeetingLinks.SingleAsync()).TeamsCancellationRequestedAt);
+        await fixture.Service.ProcessPendingCancellationsAsync();
+        Assert.NotNull((await fixture.Context.MeetingLinks.SingleAsync()).TeamsCancelledAt);
+        Assert.Equal(1, fixture.Calendar.CancelCalls);
+    }
+
+    [Fact]
+    public async Task ManualMeetingCancellation_ReportsOrganizerActionWithoutCallingMicrosoft()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var lifecycle = new SessionLifecycleService(fixture.Context, new FixedTimeProvider(fixture.Now), fixture.Service);
+        Assert.True((await lifecycle.ConfirmAsync(12, 8, 1, "https://example.com/manual")).Succeeded);
+        SessionLifecycleResult cancellation = await lifecycle.DeclineAsync(12, 8, 1, "Schedule conflict", false);
+        Assert.True(cancellation.Succeeded);
+        Assert.Contains("manually supplied meeting", cancellation.WarningMessage);
+        Assert.Equal(0, fixture.Calendar.CancelCalls);
+    }
+
+    [Fact]
+    public async Task CancellationRecoversEventIdAfterAnAmbiguousCreateFailure()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        fixture.Calendar.FailCreate = true;
+        Assert.False((await fixture.Service.CreateAsync(8, 1)).Succeeded);
+        var lifecycle = new SessionLifecycleService(fixture.Context, new FixedTimeProvider(fixture.Now), fixture.Service);
+        Assert.True((await lifecycle.DeclineAsync(12, 8, 1, null, false)).Succeeded);
+        Assert.Equal("event-1", (await fixture.Context.MeetingLinks.SingleAsync()).TeamsEventId);
+        Assert.NotNull((await fixture.Context.MeetingLinks.SingleAsync()).TeamsCancelledAt);
+        Assert.Single(fixture.Calendar.Requests);
+        Assert.Equal(1, fixture.Calendar.CancelCalls);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GenerateLinkPages_SaveLinkWithoutConfirmingBooking(bool detailsPage)
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var time = new FixedTimeProvider(fixture.Now);
+        var lifecycle = new SessionLifecycleService(fixture.Context, time, fixture.Service);
+        PageModel page = detailsPage
+            ? new BC_CampusLearn.Pages.Tutors.SessionDetailsModel(fixture.Context, new TutorUser(), fixture.Environment, lifecycle, time,
+                teamsOptions: Options.Create(fixture.Options), teamsMeetings: fixture.Service)
+            : new BC_CampusLearn.Pages.Tutors.SessionsModel(fixture.Context, new TutorUser(), lifecycle, Options.Create(fixture.Options), fixture.Service);
+        page.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
+        IActionResult result = detailsPage
+            ? await ((BC_CampusLearn.Pages.Tutors.SessionDetailsModel)page).OnPostGenerateTeamsLinkAsync(1, default)
+            : await ((BC_CampusLearn.Pages.Tutors.SessionsModel)page).OnPostGenerateTeamsLinkAsync(1, default);
+        JsonElement json = JsonSerializer.SerializeToElement(Assert.IsType<JsonResult>(result).Value);
+        Assert.True(json.GetProperty("success").GetBoolean());
+        Assert.Equal(JoinUrl, json.GetProperty("link").GetString());
+        Assert.Equal(BookingStatus.Pending, (await fixture.Context.Bookings.SingleAsync()).Status);
+        Assert.Single(fixture.Calendar.Requests);
+    }
+
+    [Theory]
+    [InlineData(202)]
+    [InlineData(404)]
+    public async Task CalendarCancellation_UsesOrganizerAndAcceptsEmptyOrAlreadyRemovedResponses(int status)
+    {
+        using var http = new HttpClient(new FakeHandler(async request =>
+        {
+            Assert.Equal(HttpMethod.Post, request.Method);
+            Assert.Equal($"/v1.0/users/{ObjectId}/events/event-1/cancel", request.RequestUri!.AbsolutePath);
+            using JsonDocument body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
+            Assert.Contains("Mzala Connect", body.RootElement.GetProperty("comment").GetString());
+            return new HttpResponseMessage((HttpStatusCode)status);
+        })) { BaseAddress = new Uri("https://graph.microsoft.com/v1.0/") };
+        await new TeamsCalendarClient(http, new FakeTokens()).CancelAsync(ObjectId, "event-1", default);
+    }
+
+    [Fact]
+    public async Task CalendarCancellation_RecognizesAnAlreadyCancelledEvent()
+    {
+        using var http = new HttpClient(new FakeHandler(request => Task.FromResult(request.Method == HttpMethod.Post
+            ? new HttpResponseMessage(HttpStatusCode.BadRequest)
+            : JsonResponse(HttpStatusCode.OK, "{\"isCancelled\":true}")))) { BaseAddress = new Uri("https://graph.microsoft.com/v1.0/") };
+        await new TeamsCalendarClient(http, new FakeTokens()).CancelAsync(ObjectId, "event-1", default);
+    }
+
+    [Fact]
+    public async Task CalendarSearch_OnlyMatchesTheSavedTransaction_AndRejectsUnsafePagination()
+    {
+        Guid transaction = Guid.NewGuid();
+        string body = JsonSerializer.Serialize(new { value = new[] {
+            new { id = "unrelated-event", transactionId = Guid.NewGuid().ToString() },
+            new { id = "event-1", transactionId = transaction.ToString() } } });
+        using var http = new HttpClient(new FakeHandler(_ => Task.FromResult(JsonResponse(HttpStatusCode.OK, body))))
+            { BaseAddress = new Uri("https://graph.microsoft.com/v1.0/") };
+        var calendar = new TeamsCalendarClient(http, new FakeTokens());
+        Assert.Equal("event-1", await calendar.FindByTransactionAsync(ObjectId, transaction, DateTimeOffset.UtcNow, default));
+        body = "{\"value\":[],\"@odata.nextLink\":\"https://untrusted.example/events\"}";
+        await Assert.ThrowsAsync<TeamsMeetingException>(() => calendar.FindByTransactionAsync(ObjectId, transaction, DateTimeOffset.UtcNow, default));
+    }
+
     [Fact]
     public async Task CalendarRequest_UsesTutorCalendar_ApplicationToken_AndUtcTimes()
     {
@@ -465,6 +634,17 @@ public sealed class TeamsMeetingTests
         public bool SupportsTeams { get; set; } = true;
         public int SupportCalls { get; private set; }
         public int GetCalls { get; private set; }
+        public int CancelCalls { get; private set; }
+        public bool FailCancel { get; set; }
+        public Task<string?> FindByTransactionAsync(string organizerObjectId, Guid transactionId, DateTimeOffset start, CancellationToken cancellationToken) => Task.FromResult<string?>("event-1");
+        public Task CancelAsync(string organizerObjectId, string eventId, CancellationToken cancellationToken)
+        {
+            Assert.Equal(ObjectId, organizerObjectId);
+            Assert.Equal("event-1", eventId);
+            CancelCalls++;
+            if (FailCancel) throw new TeamsMeetingException("Microsoft could not be reached.");
+            return Task.CompletedTask;
+        }
         public Func<Task>? BeforeSupport { get; set; }
         public async Task<bool> SupportsTeamsAsync(string organizerObjectId, CancellationToken cancellationToken)
         {
