@@ -22,8 +22,18 @@ using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDataProtection()
+var dataProtection = builder.Services.AddDataProtection()
     .SetApplicationName("BC_CampusLearn");
+string? dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    if (!Path.IsPathFullyQualified(dataProtectionKeysPath))
+    {
+        throw new InvalidOperationException("DataProtection:KeysPath must be an absolute directory path.");
+    }
+
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+}
 builder.Services.AddOptions<IdentityProtectionOptions>()
     .Bind(builder.Configuration.GetSection(
         IdentityProtectionOptions.SectionName))

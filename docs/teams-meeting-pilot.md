@@ -12,6 +12,32 @@ This milestone adds an explicit **Create Teams meeting** action to the assigned 
 
 The integration uses the global Microsoft cloud at `login.microsoftonline.com` and `graph.microsoft.com`; it does not support sovereign cloud endpoints in this milestone. It uses application credentials and `/users/{tutor-object-id}/calendar/events`, not a delegated `/me` token. No `OnlineMeetings.ReadWrite.All` permission is required for this calendar approach.
 
+## Preserve encryption keys across Docker deployments
+
+CampusLearn's stored Microsoft identifiers use ASP.NET Core Data Protection. `IdentityProtection__LookupKey` is a separate stable identity-fingerprint key; it does **not** decrypt those identifiers. Keep its existing value unchanged.
+
+Merge the following into your existing Compose configuration, retaining all existing environment settings and volume mounts:
+
+```yaml
+services:
+  app:
+    environment:
+      DataProtection__KeysPath: "/var/lib/campuslearn/data-protection"
+    volumes:
+      - campuslearn_keys:/var/lib/campuslearn/data-protection
+
+volumes:
+  campuslearn_keys:
+```
+
+The `volumes:` inside `app` is alongside `environment:`, not inside it. The final `volumes:` is at the root of the Compose file; add `campuslearn_keys` to your existing root volume declarations. Ensure the application's container user can write to this directory. Keep the named volume across rebuilds and restrict access to its encryption keys.
+
+If the current key files are still available, preserve them in the mounted directory before switching locations. Keys protect sign-in cookies and other encrypted application data as well as Microsoft identifiers. Existing sign-in cookies may stop working if the key ring changes. If the old keys have already been lost, users must sign in through Microsoft again: CampusLearn can repair their encrypted Microsoft identifiers only after the verified tenant/object fingerprint matches the existing account. This preserves their BC user ID and tutor profile; it does not recover other encrypted secrets whose keys were lost.
+
+After deploying this fix with persistent key storage, have the pilot tutor sign out, sign back in through Microsoft, and retry **Create Teams meeting**. No additional database migration is needed for this identity recovery fix.
+
+Reference: [Microsoft's Docker key-persistence guidance](https://learn.microsoft.com/en-us/aspnet/core/security/data-protection/configuration/overview?view=aspnetcore-10.0#persisting-keys-when-hosting-in-a-docker-container).
+
 ## Live test
 
 1. Arrange an upcoming **Online** test booking assigned to the allowlisted tutor, with a valid student email. Use willing test participants: creating the event sends a real invitation immediately, even if the booking is still pending.
@@ -26,6 +52,7 @@ The integration uses the global Microsoft cloud at `login.microsoftonline.com` a
 
 - Missing action: check the feature switch, pilot **BcUserId**, active tutor status, future booking time, online location and absence of an existing meeting link.
 - Missing Microsoft identity: sign out and sign in through the institutional provider. Existing identifiers stay encrypted in the database.
+- Stored Microsoft sign-in details cannot be read: deploy the recovery fix, configure persistent key storage above, and sign in again. Do not delete the BC user record or change the identity lookup key to resolve this error.
 - Calendar access denied: have the administrator verify application consent, app credentials and Exchange mailbox access restrictions.
 - Teams unsupported: the pilot tutor's default Outlook calendar must support `teamsForBusiness`. A manual Outlook test with a different account does not verify that tutor's access.
 - A timeout or persistence error: reload and retry. The reservation is saved before calling Graph, so the same transaction is reused. Microsoft event IDs are retained once returned so links can be retrieved later. Do not manually replace a reserved/generated link.

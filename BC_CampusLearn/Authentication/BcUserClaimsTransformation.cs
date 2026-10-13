@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using Microsoft.AspNetCore.Authentication;
@@ -131,7 +132,12 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
         }
         else
         {
-            if (user.EntraIdentityLookupHash is null)
+            // The existing account was found by the authenticated identity's
+            // fingerprint (or the established one-time linking rules above).
+            // Recover unreadable identifiers after a lost/replaced key ring without
+            // changing the account, its roles, or the identity to which it is linked.
+            if (user.EntraIdentityLookupHash is null ||
+                NeedsIdentityRefresh(user, identityLookupHash))
             {
                 ProtectedEntraIdentity protectedIdentity =
                     _identityProtector.Protect(tenantId, objectId);
@@ -214,6 +220,35 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
             user.PersonnelNumber);
 
         return principal;
+    }
+
+    private bool NeedsIdentityRefresh(BcUser user, string authenticatedIdentityHash)
+    {
+        if (!string.Equals(user.EntraIdentityLookupHash, authenticatedIdentityHash, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "The stored BC user is linked to another Entra identity.");
+        }
+
+        if (string.IsNullOrWhiteSpace(user.EncryptedEntraTenantId) ||
+            string.IsNullOrWhiteSpace(user.EncryptedEntraObjectId))
+        {
+            return true;
+        }
+
+        try
+        {
+            EntraIdentity storedIdentity = _identityProtector.Unprotect(
+                user.EncryptedEntraTenantId, user.EncryptedEntraObjectId);
+            return !string.Equals(
+                _identityProtector.CreateLookupHash(storedIdentity.TenantId, storedIdentity.ObjectId),
+                authenticatedIdentityHash,
+                StringComparison.Ordinal);
+        }
+        catch (Exception exception) when (exception is CryptographicException or InvalidOperationException or FormatException)
+        {
+            return true;
+        }
     }
 
     private async Task EnsureDevelopmentTutorHeadProfileAsync(BcUser user)

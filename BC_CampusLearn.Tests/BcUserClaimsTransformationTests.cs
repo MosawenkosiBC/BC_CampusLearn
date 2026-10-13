@@ -295,6 +295,122 @@ public class BcUserClaimsTransformationTests
         Assert.Equal(next, (await context.BcUsers.SingleAsync()).Role);
     }
 
+    [Fact]
+    public async Task SignInAfterLostEncryptionKeysRepairsIdentityAndPreservesTutorAccount()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        IEntraIdentityProtector oldProtector = CreateIdentityProtector();
+        var oldTransformation = new BcUserClaimsTransformation(context,
+            new TestWebHostEnvironment(Environments.Production), oldProtector);
+        await oldTransformation.TransformAsync(CreatePrincipal());
+        BcUser user = await context.BcUsers.SingleAsync();
+        user.Role = BcUserRole.Tutor;
+        var tutor = new Tutor
+        {
+            BcUser = user, ProgrammeId = 1, CampusOfStudy = "Pretoria",
+            ReasonForTutoring = "", TeachingStyle = "", PreviousTutoringExperience = "",
+            DemonstrationVideoUrl = "", Status = TutorStatus.Approved,
+            ApplicationStage = TutorApplicationStage.Placement, IsActive = true
+        };
+        context.Tutors.Add(tutor);
+        await context.SaveChangesAsync();
+        int userId = user.BcUserId;
+        int tutorId = tutor.TutorId;
+        string? originalHash = user.EntraIdentityLookupHash;
+        string originalTenant = user.EncryptedEntraTenantId!;
+        string originalObject = user.EncryptedEntraObjectId!;
+
+        // A recreated container has a different key ring but the same lookup key.
+        IEntraIdentityProtector currentProtector = CreateIdentityProtector();
+        Assert.Throws<System.Security.Cryptography.CryptographicException>(() =>
+            currentProtector.Unprotect(originalTenant, originalObject));
+        var transformation = new BcUserClaimsTransformation(context,
+            new TestWebHostEnvironment(Environments.Production), currentProtector);
+        ClaimsPrincipal newSignIn = CreatePrincipal();
+        await transformation.TransformAsync(newSignIn);
+        context.ChangeTracker.Clear();
+
+        BcUser repaired = await context.BcUsers.SingleAsync();
+        Assert.Equal(userId, repaired.BcUserId);
+        Assert.Equal(originalHash, repaired.EntraIdentityLookupHash);
+        Assert.Equal(BcUserRole.Tutor, repaired.Role);
+        Assert.True(newSignIn.IsInRole(nameof(BcUserRole.Tutor)));
+        Assert.Equal(tutorId, (await context.Tutors.SingleAsync()).TutorId);
+        Assert.Equal(new EntraIdentity("22222222-2222-2222-2222-222222222222",
+            "11111111-1111-1111-1111-111111111111"), currentProtector.Unprotect(
+                repaired.EncryptedEntraTenantId!, repaired.EncryptedEntraObjectId!));
+    }
+
+    [Theory]
+    [InlineData("missing-tenant")]
+    [InlineData("missing-object")]
+    [InlineData("corrupt")]
+    [InlineData("different-encrypted-identity")]
+    public async Task VerifiedMatchingSignInRepairsUnusableStoredIdentity(string scenario)
+    {
+        await using ApplicationDbContext context = CreateContext();
+        IEntraIdentityProtector protector = CreateIdentityProtector();
+        var transformation = new BcUserClaimsTransformation(context,
+            new TestWebHostEnvironment(Environments.Production), protector);
+        await transformation.TransformAsync(CreatePrincipal());
+        BcUser user = await context.BcUsers.SingleAsync();
+        string hash = user.EntraIdentityLookupHash!;
+        switch (scenario)
+        {
+            case "missing-tenant": user.EncryptedEntraTenantId = null; break;
+            case "missing-object": user.EncryptedEntraObjectId = null; break;
+            case "corrupt": user.EncryptedEntraObjectId = "unreadable"; break;
+            case "different-encrypted-identity":
+                user.EncryptedEntraObjectId = protector.Protect(
+                    "22222222-2222-2222-2222-222222222222", "33333333-3333-3333-3333-333333333333").ObjectId;
+                break;
+        }
+        await context.SaveChangesAsync();
+        await transformation.TransformAsync(CreatePrincipal());
+
+        EntraIdentity repaired = protector.Unprotect(user.EncryptedEntraTenantId!, user.EncryptedEntraObjectId!);
+        Assert.Equal(hash, protector.CreateLookupHash(repaired.TenantId, repaired.ObjectId));
+        Assert.Single(context.BcUsers);
+    }
+
+    [Fact]
+    public async Task HealthyIdentityIsNotReencryptedOnEveryRequest()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        var transformation = new BcUserClaimsTransformation(context,
+            new TestWebHostEnvironment(Environments.Production), CreateIdentityProtector());
+        await transformation.TransformAsync(CreatePrincipal());
+        BcUser user = await context.BcUsers.SingleAsync();
+        string? encryptedTenant = user.EncryptedEntraTenantId;
+        string? encryptedObject = user.EncryptedEntraObjectId;
+        await transformation.TransformAsync(CreatePrincipal());
+        Assert.Equal(encryptedTenant, user.EncryptedEntraTenantId);
+        Assert.Equal(encryptedObject, user.EncryptedEntraObjectId);
+    }
+
+    [Fact]
+    public async Task DifferentMicrosoftIdentityCannotRepairAnAccountUsingItsPersonnelNumberOrEmail()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        var originalTransformation = new BcUserClaimsTransformation(context,
+            new TestWebHostEnvironment(Environments.Production), CreateIdentityProtector());
+        await originalTransformation.TransformAsync(CreatePrincipal());
+        BcUser user = await context.BcUsers.SingleAsync();
+        string? encryptedObject = user.EncryptedEntraObjectId;
+        string? hash = user.EntraIdentityLookupHash;
+
+        ClaimsPrincipal otherIdentity = CreatePrincipal();
+        var claims = (ClaimsIdentity)otherIdentity.Identity!;
+        claims.RemoveClaim(claims.FindFirst(EntraClaimTypes.ObjectId)!);
+        claims.AddClaim(new Claim(EntraClaimTypes.ObjectId, "33333333-3333-3333-3333-333333333333"));
+        var recoveryTransformation = new BcUserClaimsTransformation(context,
+            new TestWebHostEnvironment(Environments.Production), CreateIdentityProtector());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => recoveryTransformation.TransformAsync(otherIdentity));
+        Assert.Equal(encryptedObject, user.EncryptedEntraObjectId);
+        Assert.Equal(hash, user.EntraIdentityLookupHash);
+        Assert.Single(context.BcUsers);
+    }
+
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

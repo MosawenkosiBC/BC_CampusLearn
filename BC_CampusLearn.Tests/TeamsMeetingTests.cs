@@ -249,6 +249,29 @@ public sealed class TeamsMeetingTests
         Assert.Equal(new EntraIdentity(TenantId, ObjectId), protector.Unprotect(stored.TenantId, stored.ObjectId));
     }
 
+    [Fact]
+    public void PersistentKeyDirectoryKeepsIdentityReadableAfterProviderRecreation()
+    {
+        string temporaryRoot = Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar);
+        var directory = new DirectoryInfo(Path.Combine(temporaryRoot, "CampusLearn-KeyPersistence-" + Guid.NewGuid().ToString("N")));
+        var options = Options.Create(new IdentityProtectionOptions { LookupKey = Convert.ToBase64String(new byte[32]) });
+        try
+        {
+            var original = new EntraIdentityProtector(
+                DataProtectionProvider.Create(directory, builder => builder.SetApplicationName("BC_CampusLearn")), options);
+            ProtectedEntraIdentity stored = original.Protect(TenantId, ObjectId);
+            var recreated = new EntraIdentityProtector(
+                DataProtectionProvider.Create(directory, builder => builder.SetApplicationName("BC_CampusLearn")), options);
+            Assert.Equal(new EntraIdentity(TenantId, ObjectId), recreated.Unprotect(stored.TenantId, stored.ObjectId));
+        }
+        finally
+        {
+            // Only clean up the explicitly created temporary directory.
+            if (directory.Exists && string.Equals(directory.Parent?.FullName.TrimEnd(Path.DirectorySeparatorChar), temporaryRoot, StringComparison.OrdinalIgnoreCase))
+                directory.Delete(recursive: true);
+        }
+    }
+
     private static IEntraIdentityProtector CreateProtector() => new EntraIdentityProtector(
         new EphemeralDataProtectionProvider(), Options.Create(new IdentityProtectionOptions { LookupKey = Convert.ToBase64String(new byte[32]) }));
     private static HttpResponseMessage JsonResponse(HttpStatusCode status, string json) =>

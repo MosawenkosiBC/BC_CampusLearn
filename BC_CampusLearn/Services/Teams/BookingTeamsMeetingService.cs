@@ -69,7 +69,9 @@ public sealed class BookingTeamsMeetingService(
         }
         catch (Exception exception) when (exception is CryptographicException or InvalidOperationException or FormatException)
         {
-            return SessionLifecycleResult.Failure("Your Microsoft account could not be verified. Please contact the administrator.");
+            logger.LogWarning("Stored Microsoft identity could not be read for BC user {BcUserId}. Failure type: {FailureType}.",
+                tutorBcUserId, exception.GetType().Name);
+            return SessionLifecycleResult.Failure("Your stored Microsoft sign-in details could not be read. Sign out and sign in with your institutional account, then retry. If this continues, ask the administrator to check persistent Data Protection key storage.");
         }
 
         if (!Guid.TryParse(configuration["AzureAd:TenantId"], out Guid tenantId) ||
