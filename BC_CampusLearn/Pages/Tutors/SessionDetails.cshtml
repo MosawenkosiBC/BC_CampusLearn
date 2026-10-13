@@ -93,6 +93,24 @@
         }
     </header>
 
+    @if (Model.CanCreateTeamsMeeting)
+    {
+        <section class="manage-session-card p-3 mb-3" aria-label="Create Teams meeting">
+            <p>Create a Teams meeting in your Outlook calendar for this session. The student will receive an invitation.</p>
+            @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending)
+            {
+                <p>Confirm the booking separately after the link is saved.</p>
+            }
+            <form method="post" asp-page-handler="CreateTeamsMeeting">
+                <input type="hidden" name="bookingId" value="@Model.Session.BookingId" />
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-microsoft-teams" aria-hidden="true"></i>
+                    @(Model.Session.MeetingLink?.TeamsCreationRequestId is null ? "Create Teams meeting" : "Retry Teams meeting")
+                </button>
+            </form>
+        </section>
+    }
+
     @if (!string.IsNullOrWhiteSpace(Model.SessionActionMessage))
     {
         @await Html.PartialAsync("_CampusAlert",
@@ -634,6 +652,7 @@
                         <input asp-for="MeetingLink"
                                type="url"
                                maxlength="2048"
+                               readonly="@(Model.Session.MeetingLink?.TeamsCreationRequestId is not null)"
                                placeholder="https://teams.microsoft.com/..."
                                autocomplete="url" />
                     </div>

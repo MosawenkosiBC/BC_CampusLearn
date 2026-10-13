@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using BC_CampusLearn.Services.Sessions;
 using BC_CampusLearn.Services.Notifications;
+using BC_CampusLearn.Services.Teams;
+using Microsoft.Extensions.Options;
 
 namespace BC_CampusLearn.Pages.Tutors;
 
@@ -25,6 +27,8 @@ public class SessionDetailsModel : PageModel
     private readonly ISessionLifecycleService _lifecycleService;
     private readonly TimeProvider _timeProvider;
     private readonly ITutorHeadSessionReviewNotifier? _reviewNotifier;
+    private readonly IBookingTeamsMeetingService? _teamsMeetings;
+    private readonly TeamsMeetingOptions _teamsOptions;
 
     public SessionDetailsModel(
         ApplicationDbContext context,
@@ -32,7 +36,9 @@ public class SessionDetailsModel : PageModel
         IWebHostEnvironment environment,
         ISessionLifecycleService lifecycleService,
         TimeProvider timeProvider,
-        ITutorHeadSessionReviewNotifier? reviewNotifier = null)
+        ITutorHeadSessionReviewNotifier? reviewNotifier = null,
+        IBookingTeamsMeetingService? teamsMeetings = null,
+        IOptions<TeamsMeetingOptions>? teamsOptions = null)
     {
         _context = context;
         _currentUserService = currentUserService;
@@ -40,6 +46,8 @@ public class SessionDetailsModel : PageModel
         _lifecycleService = lifecycleService;
         _timeProvider = timeProvider;
         _reviewNotifier = reviewNotifier;
+        _teamsMeetings = teamsMeetings;
+        _teamsOptions = teamsOptions?.Value ?? new TeamsMeetingOptions();
     }
 
     public Booking Session { get; private set; } = null!;
@@ -93,6 +101,28 @@ public class SessionDetailsModel : PageModel
     public bool SessionActionError { get; set; }
 
     public bool IsDeregistered { get; private set; }
+
+    public bool CanCreateTeamsMeeting => !IsDeregistered &&
+        _teamsOptions.AllowsTutor(CurrentBcUserId) &&
+        Session.Status is BookingStatus.Pending or BookingStatus.Confirmed &&
+        Session.ScheduledStartTime > _timeProvider.GetUtcNow() &&
+        BookingTeamsMeetingService.IsOnline(Session) &&
+        string.IsNullOrWhiteSpace(Session.MeetingLink?.Url);
+
+    public async Task<IActionResult> OnPostCreateTeamsMeetingAsync(int bookingId, CancellationToken cancellationToken)
+    {
+        if (!(await GetCurrentTutorIdAsync(cancellationToken)).HasValue)
+            return Forbid();
+
+        SessionLifecycleResult result = _teamsMeetings is null
+            ? SessionLifecycleResult.Failure("Teams meeting creation is not configured.")
+            : await _teamsMeetings.CreateAsync(_currentUserService.GetRequiredUser().BcUserId, bookingId, cancellationToken);
+        SessionActionError = !result.Succeeded;
+        SessionActionMessage = result.Succeeded
+            ? "Teams meeting created. The student has been invited and the meeting link saved."
+            : result.ErrorMessage;
+        return RedirectToPage(new { bookingId });
+    }
 
     public async Task<IActionResult> OnGetAsync(
         int bookingId,
@@ -580,6 +610,12 @@ public class SessionDetailsModel : PageModel
         }
 
         string link = MeetingLink?.Trim() ?? string.Empty;
+        if (booking.MeetingLink?.TeamsCreationRequestId is not null)
+        {
+            MeetingLinkError = true;
+            MeetingLinkMessage = "This meeting link is managed by CampusLearn and cannot be replaced manually.";
+            return RedirectToPage(new { bookingId });
+        }
         if (link.Length == 0 ||
             link.Length > 2048 ||
             !Uri.TryCreate(link, UriKind.Absolute, out Uri? meetingUri) ||

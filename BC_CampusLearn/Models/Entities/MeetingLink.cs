@@ -6,5 +6,11 @@ public class MeetingLink
 
     public string Url { get; set; } = string.Empty;
 
+    public Guid? TeamsCreationRequestId { get; set; }
+
+    public string? TeamsEventId { get; set; }
+
+    public string? TeamsOrganizerIdentityHash { get; set; }
+
     public Booking Booking { get; set; } = null!;
 }

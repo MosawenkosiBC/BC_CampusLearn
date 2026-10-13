@@ -180,6 +180,13 @@ public class SessionLifecycleService : ISessionLifecycleService
                 "Only an upcoming pending booking can be confirmed.");
         }
 
+        if (booking.MeetingLink?.TeamsCreationRequestId is not null &&
+            (string.IsNullOrWhiteSpace(booking.MeetingLink.Url) ||
+             !string.Equals(link, booking.MeetingLink.Url, StringComparison.Ordinal)))
+        {
+            return SessionLifecycleResult.Failure("Use the Teams meeting link created by CampusLearn. If it is not ready, retry meeting creation first.");
+        }
+
         booking.MeetingLink ??= new MeetingLink
         {
             BookingId = booking.BookingId

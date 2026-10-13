@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
+using BC_CampusLearn.Services.Teams;
 using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -136,6 +137,17 @@ builder.Services.AddHttpClient<
         client.MaxResponseContentBufferSize = 256 * 1024;
     });
 builder.Services.AddScoped<IClaimsTransformation, BcUserClaimsTransformation>();
+builder.Services.Configure<TeamsMeetingOptions>(
+    builder.Configuration.GetSection(TeamsMeetingOptions.SectionName));
+builder.Services.AddSingleton<ITeamsGraphTokenProvider, TeamsGraphTokenProvider>();
+builder.Services.AddHttpClient<ITeamsCalendarClient, TeamsCalendarClient>(client =>
+    {
+        client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
+        client.Timeout = TimeSpan.FromSeconds(30);
+        client.MaxResponseContentBufferSize = 256 * 1024;
+    })
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddScoped<IBookingTeamsMeetingService, BookingTeamsMeetingService>();
 
 builder.Services.AddScoped<
     ICurrentUserService,

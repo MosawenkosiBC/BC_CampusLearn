@@ -36,6 +36,11 @@ public sealed class EntraIdentityProtector : IEntraIdentityProtector
             CreateLookupHash(normalizedTenantId, normalizedObjectId));
     }
 
+    public EntraIdentity Unprotect(string encryptedTenantId, string encryptedObjectId) =>
+        new(
+            NormalizeGuid(_protector.Unprotect(encryptedTenantId), "tenant ID"),
+            NormalizeGuid(_protector.Unprotect(encryptedObjectId), "object ID"));
+
     public string CreateLookupHash(string tenantId, string objectId)
     {
         string normalizedTenantId = NormalizeGuid(tenantId, "tenant ID");

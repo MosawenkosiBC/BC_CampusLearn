@@ -619,6 +619,18 @@ namespace BC_CampusLearn.Migrations
                     b.Property<int>("BookingId")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("TeamsCreationRequestId")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TeamsEventId")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<string>("TeamsOrganizerIdentityHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<string>("Url")
                         .IsRequired()
                         .HasMaxLength(2048)
