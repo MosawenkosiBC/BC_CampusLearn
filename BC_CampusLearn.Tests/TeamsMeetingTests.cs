@@ -13,6 +13,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.Identity.Client;
 using Xunit;
 
 namespace BC_CampusLearn.Tests;
@@ -223,6 +224,45 @@ public sealed class TeamsMeetingTests
         var provider = new TeamsGraphTokenProvider(new ConfigurationBuilder().AddInMemoryCollection().Build());
         TeamsMeetingException exception = await Assert.ThrowsAsync<TeamsMeetingException>(() => provider.GetTokenAsync(default));
         Assert.Contains("not configured", exception.Message);
+    }
+
+    [Theory]
+    [InlineData("AADSTS7000215", "secret value")]
+    [InlineData("AADSTS7000222", "expired")]
+    [InlineData("AADSTS700016", "ClientId")]
+    [InlineData("AADSTS90002", "TenantId")]
+    [InlineData("AADSTS7000112", "disabled")]
+    public void AuthenticationDiagnostics_ReportsSafeCodeAndAction_WithoutRawDetails(string code, string action)
+    {
+        var exception = new MsalServiceException("invalid_client", $"{code}: sensitive-account-details and test-sensitive-secret");
+        TeamsAuthenticationDiagnostics failure = TeamsAuthenticationDiagnostics.FromException(exception);
+        Assert.Equal(code, failure.EntraErrorCode);
+        Assert.Equal("invalid_client", failure.ErrorCode);
+        Assert.Contains(action, failure.UserMessage);
+        Assert.Contains(code, failure.UserMessage);
+        Assert.DoesNotContain("sensitive-account-details", failure.ToString());
+        Assert.DoesNotContain("test-sensitive-secret", failure.ToString());
+    }
+
+    [Fact]
+    public void AuthenticationDiagnostics_NetworkFailureDoesNotMisidentifyCredentials()
+    {
+        var exception = new MsalClientException("http_request_failed", "raw-network-details");
+        TeamsAuthenticationDiagnostics failure = TeamsAuthenticationDiagnostics.FromException(exception);
+        Assert.Contains("network access", failure.UserMessage);
+        Assert.Equal("http_request_failed", failure.ErrorCode);
+        Assert.Null(failure.EntraErrorCode);
+        Assert.DoesNotContain("raw-network-details", failure.ToString());
+    }
+
+    [Fact]
+    public void AuthenticationDiagnostics_DoesNotEchoMalformedErrorCode()
+    {
+        var exception = new MsalClientException("error-with-sensitive-content!", "raw-secret-value");
+        TeamsAuthenticationDiagnostics failure = TeamsAuthenticationDiagnostics.FromException(exception);
+        Assert.Equal("unknown", failure.ErrorCode);
+        Assert.DoesNotContain("sensitive-content", failure.ToString());
+        Assert.DoesNotContain("raw-secret-value", failure.ToString());
     }
 
     [Theory]

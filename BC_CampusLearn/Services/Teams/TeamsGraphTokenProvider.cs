@@ -7,7 +7,9 @@ public interface ITeamsGraphTokenProvider
     Task<string> GetTokenAsync(CancellationToken cancellationToken);
 }
 
-public sealed class TeamsGraphTokenProvider(IConfiguration configuration)
+public sealed class TeamsGraphTokenProvider(
+    IConfiguration configuration,
+    ILogger<TeamsGraphTokenProvider>? logger = null)
     : ITeamsGraphTokenProvider
 {
     private readonly object _sync = new();
@@ -48,10 +50,13 @@ public sealed class TeamsGraphTokenProvider(IConfiguration configuration)
                 .ExecuteAsync(cancellationToken);
             return result.AccessToken;
         }
-        catch (MsalException)
+        catch (MsalException exception)
         {
-            throw new TeamsMeetingException(
-                "CampusLearn could not authenticate with Microsoft. Please ask the administrator to check the application credentials.");
+            TeamsAuthenticationDiagnostics failure = TeamsAuthenticationDiagnostics.FromException(exception);
+            logger?.LogWarning(
+                "Microsoft Graph application authentication failed. MSAL error {ErrorCode}; Entra error {EntraErrorCode}; HTTP status {StatusCode}; correlation {CorrelationId}.",
+                failure.ErrorCode, failure.EntraErrorCode, failure.StatusCode, failure.CorrelationId);
+            throw new TeamsMeetingException(failure.UserMessage);
         }
     }
 }
