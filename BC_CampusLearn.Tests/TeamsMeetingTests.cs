@@ -7,6 +7,11 @@ using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Sessions;
 using BC_CampusLearn.Services.Teams;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
@@ -42,7 +47,8 @@ public sealed class TeamsMeetingTests
         Assert.Equal("student@institution.example", request.StudentEmail);
         Assert.Equal(fixture.Now.AddHours(2), request.Start);
         Assert.Equal(request.Start.AddHours(1), request.End);
-        Assert.Contains("MOD101", request.Subject);
+        Assert.Equal("Mzala Connect tutoring session: Module", request.Subject);
+        Assert.DoesNotContain("MOD101", request.Subject);
         Assert.True((await fixture.Service.CreateAsync(8, 1)).Succeeded);
         Assert.Single(fixture.Calendar.Requests);
     }
@@ -83,7 +89,6 @@ public sealed class TeamsMeetingTests
     [InlineData("not-approved")]
     [InlineData("past")]
     [InlineData("cancelled")]
-    [InlineData("in-person")]
     [InlineData("missing-identity")]
     [InlineData("corrupt-identity")]
     [InlineData("other-tenant")]
@@ -105,7 +110,6 @@ public sealed class TeamsMeetingTests
             case "not-approved": tutor.Status = TutorStatus.Deregistered; break;
             case "past": booking.ScheduledStartTime = fixture.Now; break;
             case "cancelled": booking.Status = BookingStatus.Cancelled; break;
-            case "in-person": booking.StudyArea!.Name = "Library"; break;
             case "missing-identity": tutor.BcUser.EncryptedEntraObjectId = null; break;
             case "corrupt-identity": tutor.BcUser.EncryptedEntraObjectId = "invalid"; break;
             case "other-tenant": fixture.Configuration["AzureAd:TenantId"] = Guid.NewGuid().ToString(); break;
@@ -138,6 +142,135 @@ public sealed class TeamsMeetingTests
         Assert.False((await lifecycle.ConfirmAsync(12, 8, 1, "https://example.com/replacement")).Succeeded);
         Assert.Equal(JoinUrl, (await fixture.Context.MeetingLinks.SingleAsync()).Url);
         Assert.True((await lifecycle.ConfirmAsync(12, 8, 1, JoinUrl)).Succeeded);
+    }
+
+    [Theory]
+    [InlineData("Online")]
+    [InlineData("Library")]
+    public async Task Confirm_AutomaticallyCreatesTeamsMeeting_ForOnlineAndPhysicalSessions(string location)
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        Booking booking = await fixture.Context.Bookings.Include(item => item.ProgrammeModule).Include(item => item.StudyArea).SingleAsync();
+        booking.StudyArea!.Name = location;
+        booking.Location = location;
+        booking.ProgrammeModule.ModuleName = "Linear Programming 281";
+        await fixture.Context.SaveChangesAsync();
+        var lifecycle = new SessionLifecycleService(fixture.Context, new FixedTimeProvider(fixture.Now), fixture.Service);
+
+        Assert.True((await lifecycle.ConfirmAsync(12, 8, 1, null)).Succeeded);
+        Assert.Equal(BookingStatus.Confirmed, booking.Status);
+        Assert.Equal(JoinUrl, booking.MeetingLink!.Url);
+        Assert.False(booking.MeetingLink.TeamsManualFallbackAllowed);
+        Assert.Equal(location, booking.Location);
+        Assert.Equal("Mzala Connect tutoring session: Linear Programming 281", Assert.Single(fixture.Calendar.Requests).Subject);
+        Assert.Single(fixture.Context.BookingStatusHistory);
+        Assert.False((await lifecycle.ConfirmAsync(12, 8, 1, null)).Succeeded);
+        Assert.Single(fixture.Calendar.Requests);
+    }
+
+    [Fact]
+    public async Task Confirm_FailedAutomaticCreation_AllowsManualFallback_AndRetainsRequestMetadata()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        fixture.Calendar.FailCreate = true;
+        var lifecycle = new SessionLifecycleService(fixture.Context, new FixedTimeProvider(fixture.Now), fixture.Service);
+        SessionLifecycleResult failed = await lifecycle.ConfirmAsync(12, 8, 1, null);
+        Assert.False(failed.Succeeded);
+        Assert.Contains("manual meeting link", failed.ErrorMessage);
+        Assert.Equal(BookingStatus.Pending, (await fixture.Context.Bookings.SingleAsync()).Status);
+        Assert.Empty(fixture.Context.BookingStatusHistory);
+        MeetingLink reserved = await fixture.Context.MeetingLinks.SingleAsync();
+        Guid? transactionId = reserved.TeamsCreationRequestId;
+        Assert.True(reserved.TeamsManualFallbackAllowed);
+        fixture.Context.ChangeTracker.Clear();
+
+        Assert.True((await lifecycle.ConfirmAsync(12, 8, 1, "https://example.com/manual")).Succeeded);
+        MeetingLink saved = await fixture.Context.MeetingLinks.SingleAsync();
+        Assert.Equal("https://example.com/manual", saved.Url);
+        Assert.Equal(transactionId, saved.TeamsCreationRequestId);
+        Assert.Single(fixture.Calendar.Requests);
+        Assert.Equal(BookingStatus.Confirmed, (await fixture.Context.Bookings.SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task Confirm_ManualLinkDoesNotContactMicrosoft()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var lifecycle = new SessionLifecycleService(fixture.Context, new FixedTimeProvider(fixture.Now), fixture.Service);
+        Assert.True((await lifecycle.ConfirmAsync(12, 8, 1, "https://example.com/manual")).Succeeded);
+        Assert.Empty(fixture.Calendar.Requests);
+        Assert.Equal(0, fixture.Calendar.SupportCalls);
+    }
+
+    [Fact]
+    public async Task Confirm_PendingLink_CanRetryAndConfirmTheSameTeamsEvent()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        fixture.Calendar.Result = new("event-1", null);
+        var lifecycle = new SessionLifecycleService(fixture.Context, new FixedTimeProvider(fixture.Now), fixture.Service);
+        Assert.False((await lifecycle.ConfirmAsync(12, 8, 1, null)).Succeeded);
+        fixture.Context.ChangeTracker.Clear();
+        fixture.Calendar.Result = new("event-1", JoinUrl);
+        Assert.True((await lifecycle.ConfirmAsync(12, 8, 1, null)).Succeeded);
+        Assert.Single(fixture.Calendar.Requests);
+        Assert.Equal(1, fixture.Calendar.GetCalls);
+        Assert.False((await fixture.Context.MeetingLinks.SingleAsync()).TeamsManualFallbackAllowed);
+    }
+
+    [Fact]
+    public async Task Confirm_DoesNotAllowManualReplacementWhileCreationIsStillInProgress()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        fixture.Context.MeetingLinks.Add(new MeetingLink { BookingId = 1, TeamsCreationRequestId = Guid.NewGuid() });
+        await fixture.Context.SaveChangesAsync();
+        var lifecycle = new SessionLifecycleService(fixture.Context, new FixedTimeProvider(fixture.Now), fixture.Service);
+        Assert.False((await lifecycle.ConfirmAsync(12, 8, 1, "https://example.com/manual")).Succeeded);
+        Assert.Empty(fixture.Calendar.Requests);
+        Assert.Equal(BookingStatus.Pending, (await fixture.Context.Bookings.SingleAsync()).Status);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    public async Task ConfirmationPages_ReturnJson_AndAllowManualFallbackAfterFailure(bool detailsPage, bool fail)
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        fixture.Calendar.FailCreate = fail;
+        var time = new FixedTimeProvider(fixture.Now);
+        var lifecycle = new SessionLifecycleService(fixture.Context, time, fixture.Service);
+        PageModel page = detailsPage
+            ? new BC_CampusLearn.Pages.Tutors.SessionDetailsModel(fixture.Context, new TutorUser(), fixture.Environment, lifecycle, time,
+                teamsOptions: Options.Create(fixture.Options))
+            : new BC_CampusLearn.Pages.Tutors.SessionsModel(fixture.Context, new TutorUser(), lifecycle, Options.Create(fixture.Options));
+        var http = new DefaultHttpContext();
+        http.Request.Headers.Accept = "application/json";
+        page.PageContext = new PageContext { HttpContext = http };
+        page.TempData = new TempDataDictionary(http, new EmptyTempData());
+
+        async Task<IActionResult> Submit(string? link)
+        {
+            if (page is BC_CampusLearn.Pages.Tutors.SessionDetailsModel details)
+            {
+                details.MeetingLink = link;
+                return await details.OnPostConfirmAsync(1, default);
+            }
+            return await ((BC_CampusLearn.Pages.Tutors.SessionsModel)page).OnPostConfirmAsync(1, link, default);
+        }
+
+        JsonResult response = Assert.IsType<JsonResult>(await Submit(null));
+        JsonElement payload = JsonSerializer.SerializeToElement(response.Value);
+        Assert.Equal(!fail, payload.GetProperty("success").GetBoolean());
+        if (fail)
+        {
+            Assert.Contains("manual meeting link", payload.GetProperty("message").GetString());
+            Assert.Equal(BookingStatus.Pending, (await fixture.Context.Bookings.SingleAsync()).Status);
+            JsonResult retry = Assert.IsType<JsonResult>(await Submit("https://example.com/manual"));
+            Assert.True(JsonSerializer.SerializeToElement(retry.Value).GetProperty("success").GetBoolean());
+        }
+        Assert.Equal(BookingStatus.Confirmed, (await fixture.Context.Bookings.SingleAsync()).Status);
+        Assert.Single(fixture.Calendar.Requests);
     }
 
     [Fact]
@@ -357,12 +490,24 @@ public sealed class TeamsMeetingTests
     {
         public override DateTimeOffset GetUtcNow() => now;
     }
-    private sealed class TestEnvironment : IHostEnvironment
+    private sealed class TutorUser : ICurrentUserService
+    {
+        public bool IsAuthenticated => true;
+        public CurrentUser GetRequiredUser() => new(8, null, "Tutor", "tutor@institution.example", BcUserRole.Tutor);
+    }
+    private sealed class EmptyTempData : ITempDataProvider
+    {
+        public IDictionary<string, object> LoadTempData(HttpContext context) => new Dictionary<string, object>();
+        public void SaveTempData(HttpContext context, IDictionary<string, object> values) { }
+    }
+    private sealed class TestEnvironment : IWebHostEnvironment
     {
         public string EnvironmentName { get; set; } = "Production";
         public string ApplicationName { get; set; } = "Tests";
         public string ContentRootPath { get; set; } = string.Empty;
         public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+        public IFileProvider WebRootFileProvider { get; set; } = new NullFileProvider();
+        public string WebRootPath { get; set; } = string.Empty;
     }
     private sealed class Fixture : IAsyncDisposable
     {
@@ -384,7 +529,7 @@ public sealed class TeamsMeetingTests
             ProtectedEntraIdentity stored = fixture.Identities.Protect(TenantId, ObjectId);
             var tutor = new Tutor
             {
-                TutorId = 12, BcUserId = 8, Status = TutorStatus.Approved, IsActive = true,
+                TutorId = 12, BcUserId = 8, Status = TutorStatus.Approved, ApplicationStage = TutorApplicationStage.Placement, IsActive = true,
                 ReasonForTutoring = "Help", TeachingStyle = "Practical", PreviousTutoringExperience = "Peer", CampusOfStudy = "Pretoria", DemonstrationVideoUrl = "",
                 BcUser = new BcUser { BcUserId = 8, DisplayName = "Tutor", Email = "tutor@institution.example", EncryptedEntraTenantId = stored.TenantId, EncryptedEntraObjectId = stored.ObjectId, EntraIdentityLookupHash = stored.LookupHash }
             };

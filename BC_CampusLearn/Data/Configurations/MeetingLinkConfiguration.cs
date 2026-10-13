@@ -20,6 +20,8 @@ public class MeetingLinkConfiguration
         builder.Property(link => link.TeamsEventId).HasMaxLength(1024);
         builder.Property(link => link.TeamsOrganizerIdentityHash).HasMaxLength(64);
         builder.Property(link => link.TeamsCreationRequestId).IsConcurrencyToken();
+        builder.Property(link => link.TeamsManualFallbackAllowed).IsConcurrencyToken();
+        builder.Property(link => link.Url).IsConcurrencyToken();
 
         builder.HasOne(link => link.Booking)
             .WithOne(booking => booking.MeetingLink)

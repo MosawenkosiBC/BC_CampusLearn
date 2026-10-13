@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using BC_CampusLearn.Services.Sessions;
+using BC_CampusLearn.Services.Teams;
+using Microsoft.Extensions.Options;
 
 namespace BC_CampusLearn.Pages.Tutors;
 
@@ -20,16 +22,21 @@ public class SessionsModel : PageModel
     private readonly ApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly ISessionLifecycleService _lifecycleService;
+    private readonly TeamsMeetingOptions _teamsOptions;
 
     public SessionsModel(
         ApplicationDbContext context,
         ICurrentUserService currentUserService,
-        ISessionLifecycleService lifecycleService)
+        ISessionLifecycleService lifecycleService,
+        IOptions<TeamsMeetingOptions>? teamsOptions = null)
     {
         _context = context;
         _currentUserService = currentUserService;
         _lifecycleService = lifecycleService;
+        _teamsOptions = teamsOptions?.Value ?? new TeamsMeetingOptions();
     }
+
+    public bool TeamsMeetingCreationEnabled => _teamsOptions.AllowsTutor(_currentUserService.GetRequiredUser().BcUserId);
 
     [BindProperty(SupportsGet = true)]
     public string? StudentFilter { get; set; }
@@ -264,6 +271,9 @@ public class SessionsModel : PageModel
         {
             ErrorMessage = result.ErrorMessage;
         }
+
+        if (Request.Headers.Accept.Any(value => value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true))
+            return new JsonResult(new { success = result.Succeeded, message = result.ErrorMessage });
 
         return RedirectToPage();
     }

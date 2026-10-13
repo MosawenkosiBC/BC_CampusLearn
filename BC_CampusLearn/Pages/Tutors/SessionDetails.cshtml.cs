@@ -27,7 +27,6 @@ public class SessionDetailsModel : PageModel
     private readonly ISessionLifecycleService _lifecycleService;
     private readonly TimeProvider _timeProvider;
     private readonly ITutorHeadSessionReviewNotifier? _reviewNotifier;
-    private readonly IBookingTeamsMeetingService? _teamsMeetings;
     private readonly TeamsMeetingOptions _teamsOptions;
 
     public SessionDetailsModel(
@@ -37,7 +36,6 @@ public class SessionDetailsModel : PageModel
         ISessionLifecycleService lifecycleService,
         TimeProvider timeProvider,
         ITutorHeadSessionReviewNotifier? reviewNotifier = null,
-        IBookingTeamsMeetingService? teamsMeetings = null,
         IOptions<TeamsMeetingOptions>? teamsOptions = null)
     {
         _context = context;
@@ -46,7 +44,6 @@ public class SessionDetailsModel : PageModel
         _lifecycleService = lifecycleService;
         _timeProvider = timeProvider;
         _reviewNotifier = reviewNotifier;
-        _teamsMeetings = teamsMeetings;
         _teamsOptions = teamsOptions?.Value ?? new TeamsMeetingOptions();
     }
 
@@ -102,27 +99,7 @@ public class SessionDetailsModel : PageModel
 
     public bool IsDeregistered { get; private set; }
 
-    public bool CanCreateTeamsMeeting => !IsDeregistered &&
-        _teamsOptions.AllowsTutor(CurrentBcUserId) &&
-        Session.Status is BookingStatus.Pending or BookingStatus.Confirmed &&
-        Session.ScheduledStartTime > _timeProvider.GetUtcNow() &&
-        BookingTeamsMeetingService.IsOnline(Session) &&
-        string.IsNullOrWhiteSpace(Session.MeetingLink?.Url);
-
-    public async Task<IActionResult> OnPostCreateTeamsMeetingAsync(int bookingId, CancellationToken cancellationToken)
-    {
-        if (!(await GetCurrentTutorIdAsync(cancellationToken)).HasValue)
-            return Forbid();
-
-        SessionLifecycleResult result = _teamsMeetings is null
-            ? SessionLifecycleResult.Failure("Teams meeting creation is not configured.")
-            : await _teamsMeetings.CreateAsync(_currentUserService.GetRequiredUser().BcUserId, bookingId, cancellationToken);
-        SessionActionError = !result.Succeeded;
-        SessionActionMessage = result.Succeeded
-            ? "Teams meeting created. The student has been invited and the meeting link saved."
-            : result.ErrorMessage;
-        return RedirectToPage(new { bookingId });
-    }
+    public bool TeamsMeetingCreationEnabled => _teamsOptions.AllowsTutor(CurrentBcUserId);
 
     public async Task<IActionResult> OnGetAsync(
         int bookingId,
@@ -266,6 +243,13 @@ public class SessionDetailsModel : PageModel
         SessionActionMessage = result.Succeeded
             ? "Session confirmed and meeting link saved."
             : result.ErrorMessage;
+        if (Request.Headers.Accept.Any(value => value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true))
+            return new JsonResult(new { success = result.Succeeded, message = result.ErrorMessage });
+        if (!result.Succeeded)
+        {
+            MeetingLinkError = true;
+            MeetingLinkMessage = result.ErrorMessage;
+        }
         return RedirectToPage(new { bookingId });
     }
 
@@ -610,7 +594,7 @@ public class SessionDetailsModel : PageModel
         }
 
         string link = MeetingLink?.Trim() ?? string.Empty;
-        if (booking.MeetingLink?.TeamsCreationRequestId is not null)
+        if (booking.MeetingLink?.TeamsCreationRequestId is not null && !booking.MeetingLink.TeamsManualFallbackAllowed)
         {
             MeetingLinkError = true;
             MeetingLinkMessage = "This meeting link is managed by CampusLearn and cannot be replaced manually.";

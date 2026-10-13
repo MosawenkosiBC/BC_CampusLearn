@@ -627,11 +627,16 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(1024)
                         .HasColumnType("nvarchar(1024)");
 
+                    b.Property<bool>("TeamsManualFallbackAllowed")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bit");
+
                     b.Property<string>("TeamsOrganizerIdentityHash")
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
                     b.Property<string>("Url")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");

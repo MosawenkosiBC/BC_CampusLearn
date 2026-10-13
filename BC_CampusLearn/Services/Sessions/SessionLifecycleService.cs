@@ -1,6 +1,7 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Notifications;
+using BC_CampusLearn.Services.Teams;
 using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Services.Sessions;
@@ -23,13 +24,16 @@ public class SessionLifecycleService : ISessionLifecycleService
 
     private readonly ApplicationDbContext _context;
     private readonly TimeProvider _timeProvider;
+    private readonly IBookingTeamsMeetingService? _teamsMeetings;
 
     public SessionLifecycleService(
         ApplicationDbContext context,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IBookingTeamsMeetingService? teamsMeetings = null)
     {
         _context = context;
         _timeProvider = timeProvider;
+        _teamsMeetings = teamsMeetings;
     }
 
     public async Task ProcessDueTransitionsAsync(
@@ -156,7 +160,7 @@ public class SessionLifecycleService : ISessionLifecycleService
         CancellationToken cancellationToken = default)
     {
         string link = meetingLink?.Trim() ?? string.Empty;
-        if (!IsValidMeetingLink(link))
+        if (link.Length > 0 && !IsValidMeetingLink(link))
         {
             return SessionLifecycleResult.Failure(
                 "Enter a valid HTTP or HTTPS meeting link.");
@@ -180,11 +184,35 @@ public class SessionLifecycleService : ISessionLifecycleService
                 "Only an upcoming pending booking can be confirmed.");
         }
 
+        if (link.Length == 0)
+        {
+            link = booking.MeetingLink?.Url ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(link) && _teamsMeetings is not null)
+            {
+                SessionLifecycleResult creation = await _teamsMeetings.CreateAsync(
+                    changedByBcUserId, bookingId, cancellationToken);
+                if (!creation.Succeeded)
+                    return SessionLifecycleResult.Failure($"{creation.ErrorMessage} You can retry automatic creation or enter a manual meeting link.");
+
+                link = await _context.MeetingLinks.AsNoTracking()
+                    .Where(item => item.BookingId == bookingId)
+                    .Select(item => item.Url).SingleOrDefaultAsync(cancellationToken) ?? string.Empty;
+                await _context.Entry(booking).ReloadAsync(cancellationToken);
+                now = _timeProvider.GetUtcNow();
+                if (booking.Status != BookingStatus.Pending || booking.ScheduledStartTime <= now)
+                    return SessionLifecycleResult.Failure("The booking changed while its meeting was being created. Reload the page to see its current status.");
+            }
+        }
+
+        if (!IsValidMeetingLink(link))
+            return SessionLifecycleResult.Failure("Enter a valid HTTP or HTTPS meeting link.");
+
         if (booking.MeetingLink?.TeamsCreationRequestId is not null &&
+            !booking.MeetingLink.TeamsManualFallbackAllowed &&
             (string.IsNullOrWhiteSpace(booking.MeetingLink.Url) ||
              !string.Equals(link, booking.MeetingLink.Url, StringComparison.Ordinal)))
         {
-            return SessionLifecycleResult.Failure("Use the Teams meeting link created by CampusLearn. If it is not ready, retry meeting creation first.");
+            return SessionLifecycleResult.Failure("Use the Teams meeting link created by Mzala Connect. If creation is still in progress, reload the page before retrying.");
         }
 
         booking.MeetingLink ??= new MeetingLink
@@ -202,7 +230,14 @@ public class SessionLifecycleService : ISessionLifecycleService
             BookingStatus.Confirmed,
             now,
             cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return SessionLifecycleResult.Failure("The booking or meeting changed while it was being confirmed. Reload the page before retrying.");
+        }
         return SessionLifecycleResult.Success();
     }
 

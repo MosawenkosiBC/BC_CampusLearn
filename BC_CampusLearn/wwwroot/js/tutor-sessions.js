@@ -20,7 +20,9 @@
             const studentName = button.dataset.studentName || "the student";
             if (description) {
                 description.textContent =
-                    `Add the meeting link ${studentName} will use to join.`;
+                    form.dataset.teamsEnabled === "true"
+                        ? `Create a Teams meeting and confirm the session with ${studentName}.`
+                        : `Add the meeting link ${studentName} will use to join.`;
             }
 
             bootstrap.Modal.getOrCreateInstance(modalElement).show();

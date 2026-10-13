@@ -381,24 +381,31 @@
      tabindex="-1" aria-labelledby="tutor-confirm-session-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form method="post" asp-page-handler="Confirm" data-tutor-confirm-form>
+            <form method="post" asp-page-handler="Confirm" data-tutor-confirm-form data-session-confirm-form="true"
+                  data-teams-enabled="@(Model.TeamsMeetingCreationEnabled ? "true" : "false")">
                 <input type="hidden" name="bookingId" data-tutor-confirm-booking-id />
                 <div class="modal-header">
                     <div>
                         <h2 id="tutor-confirm-session-title">Confirm session</h2>
                         <p data-tutor-confirm-description>
-                            Add the meeting link the student will use to join.
+                            @(Model.TeamsMeetingCreationEnabled ? "Create a Teams meeting and confirm this session." : "Add the meeting link the student will use to join.")
                         </p>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <label for="tutor-confirm-meeting-link">Meeting link</label>
+                    @if (Model.TeamsMeetingCreationEnabled)
+                    {
+                        <p>Confirm to create a Teams meeting and invite the student, for online or face-to-face tutoring. If creation fails, retry or paste a manual meeting link.</p>
+                    }
+                    <div class="alert alert-danger" data-confirm-error role="alert" hidden></div>
+                    <p data-confirm-progress role="status" hidden>Creating your Teams meeting and confirming the session…</p>
+                    <label for="tutor-confirm-meeting-link">@(Model.TeamsMeetingCreationEnabled ? "Manual meeting link (optional)" : "Meeting link")</label>
                     <input id="tutor-confirm-meeting-link" name="meetingLink"
                            type="url" maxlength="2048"
                            placeholder="https://teams.microsoft.com/..."
-                           autocomplete="url" required />
+                           autocomplete="url" required="@(!Model.TeamsMeetingCreationEnabled)" />
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light"
@@ -481,4 +488,5 @@
             asp-append-version="true"></script>
     <script src="~/js/tutor-sessions.js"
             asp-append-version="true"></script>
+    <script src="~/js/session-confirmation.js" asp-append-version="true"></script>
 }

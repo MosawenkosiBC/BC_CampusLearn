@@ -50,13 +50,10 @@ public sealed class BookingTeamsMeetingService(
         if (booking.Status is not (BookingStatus.Pending or BookingStatus.Confirmed) ||
             booking.ScheduledStartTime <= timeProvider.GetUtcNow())
             return SessionLifecycleResult.Failure("Only an upcoming pending or confirmed booking can have a meeting created.");
-        if (!IsOnline(booking))
-            return SessionLifecycleResult.Failure("Teams meetings can only be created for online bookings.");
-
         if (!string.IsNullOrWhiteSpace(booking.MeetingLink?.Url))
-            return booking.MeetingLink.TeamsEventId is not null
+            return booking.MeetingLink.TeamsEventId is not null && !booking.MeetingLink.TeamsManualFallbackAllowed
                 ? SessionLifecycleResult.Success()
-                : SessionLifecycleResult.Failure("This booking already has a meeting link. CampusLearn will not replace it.");
+                : SessionLifecycleResult.Failure("This booking already has a manual meeting link. Mzala Connect will not replace it.");
 
         BcUser user = tutor.BcUser;
         if (string.IsNullOrWhiteSpace(user.EncryptedEntraTenantId) || string.IsNullOrWhiteSpace(user.EncryptedEntraObjectId))
@@ -97,10 +94,11 @@ public sealed class BookingTeamsMeetingService(
             // Persist the request ID before contacting Graph. Retries reuse its transactionId,
             // including when Microsoft succeeds but the response or subsequent database write fails.
             MeetingLink link = booking.MeetingLink ??= new MeetingLink { BookingId = bookingId };
-            if (link.TeamsCreationRequestId is null)
+            if (link.TeamsCreationRequestId is null || link.TeamsManualFallbackAllowed)
             {
-                link.TeamsCreationRequestId = Guid.NewGuid();
+                link.TeamsCreationRequestId ??= Guid.NewGuid();
                 link.TeamsOrganizerIdentityHash = identityHash;
+                link.TeamsManualFallbackAllowed = false;
                 try
                 {
                     await context.SaveChangesAsync(cancellationToken);
@@ -119,7 +117,7 @@ public sealed class BookingTeamsMeetingService(
                 : await calendar.CreateAsync(new TeamsCalendarRequest(
                     identity.ObjectId,
                     link.TeamsCreationRequestId.Value,
-                    $"CampusLearn tutoring: {booking.ProgrammeModule.ModuleCode} — {booking.ProgrammeModule.ModuleName}",
+                    $"Mzala Connect tutoring session: {booking.ProgrammeModule.ModuleName}",
                     booking.ScheduledStartTime,
                     booking.ScheduledStartTime.AddHours((int)booking.Duration),
                     email,
@@ -129,6 +127,7 @@ public sealed class BookingTeamsMeetingService(
             link.TeamsEventId = meeting.Id;
             if (!string.IsNullOrWhiteSpace(meeting.JoinUrl))
                 link.Url = meeting.JoinUrl;
+            link.TeamsManualFallbackAllowed = string.IsNullOrWhiteSpace(link.Url);
             await context.SaveChangesAsync(cancellationToken);
 
             return string.IsNullOrWhiteSpace(link.Url)
@@ -138,6 +137,18 @@ public sealed class BookingTeamsMeetingService(
         catch (TeamsMeetingException exception)
         {
             logger.LogWarning("Microsoft could not complete Teams creation for booking {BookingId}.", bookingId);
+            if (booking.MeetingLink is { TeamsCreationRequestId: not null } failedLink)
+            {
+                failedLink.TeamsManualFallbackAllowed = true;
+                try
+                {
+                    await context.SaveChangesAsync(cancellationToken);
+                }
+                catch (DbUpdateException)
+                {
+                    return SessionLifecycleResult.Failure("The meeting request changed while it was being processed. Reload the page before retrying or entering a manual link.");
+                }
+            }
             return SessionLifecycleResult.Failure(exception.Message);
         }
         catch (DbUpdateException)
@@ -147,6 +158,4 @@ public sealed class BookingTeamsMeetingService(
         }
     }
 
-    public static bool IsOnline(Booking booking) => string.Equals(
-        (booking.StudyArea?.Name ?? booking.Location).Trim(), "Online", StringComparison.OrdinalIgnoreCase);
 }

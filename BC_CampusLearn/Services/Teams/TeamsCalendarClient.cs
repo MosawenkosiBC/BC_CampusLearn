@@ -47,7 +47,7 @@ public sealed class TeamsCalendarClient(HttpClient client, ITeamsGraphTokenProvi
         request.Content = JsonContent.Create(new
         {
             subject = meeting.Subject,
-            body = new { contentType = "text", content = "Tutoring session scheduled through CampusLearn." },
+            body = new { contentType = "text", content = "Tutoring session scheduled through Mzala Connect." },
             start = new { dateTime = FormatUtc(meeting.Start), timeZone = "UTC" },
             end = new { dateTime = FormatUtc(meeting.End), timeZone = "UTC" },
             attendees = new[]

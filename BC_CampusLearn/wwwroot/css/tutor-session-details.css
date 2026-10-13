@@ -265,6 +265,10 @@
     margin: 0;
 }
 
+.meeting-link-modal-error[hidden] {
+    display: none !important;
+}
+
 .meeting-link-modal-error {
     align-items: flex-start;
     background: #fff0f0;

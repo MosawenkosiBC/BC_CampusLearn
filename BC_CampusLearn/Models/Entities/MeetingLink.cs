@@ -12,5 +12,7 @@ public class MeetingLink
 
     public string? TeamsOrganizerIdentityHash { get; set; }
 
+    public bool TeamsManualFallbackAllowed { get; set; }
+
     public Booking Booking { get; set; } = null!;
 }
