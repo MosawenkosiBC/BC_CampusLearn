@@ -247,9 +247,11 @@
                                         @foreach (var session in Model.Sessions)
                                         {
                                             DateTimeOffset localStart =
-                                                session.ScheduledStartTime.ToLocalTime();
+                                                session.ScheduledStartTime.ToOffset(
+                                                    TimeSpan.FromHours(2));
                                             DateTimeOffset localEnd =
-                                                session.SessionEnd.ToLocalTime();
+                                                session.SessionEnd.ToOffset(
+                                                    TimeSpan.FromHours(2));
                                             string statusClass = session.Status
                                                 .ToString()
                                                 .ToLowerInvariant();

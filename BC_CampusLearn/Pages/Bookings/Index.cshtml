@@ -280,9 +280,11 @@
                                 @foreach (var booking in Model.Bookings)
                                 {
                                     DateTimeOffset localStart =
-                                        booking.AvailableTime.ToLocalTime();
+                                        booking.AvailableTime.ToOffset(
+                                            TimeSpan.FromHours(2));
                                     DateTimeOffset localEnd =
-                                        booking.SessionEnd.ToLocalTime();
+                                        booking.SessionEnd.ToOffset(
+                                            TimeSpan.FromHours(2));
                                     string statusClass = booking.Status
                                         .ToString()
                                         .ToLowerInvariant();
