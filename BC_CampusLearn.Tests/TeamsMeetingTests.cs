@@ -234,7 +234,7 @@ public sealed class TeamsMeetingTests
     [InlineData(false, false)]
     [InlineData(true, true)]
     [InlineData(false, true)]
-    public async Task ConfirmationPages_ReturnJson_AndAllowManualFallbackAfterFailure(bool detailsPage, bool fail)
+    public async Task ConfirmationPages_RequireManualLink_AndAllowManualFallbackAfterFailure(bool detailsPage, bool fail)
     {
         await using var fixture = await Fixture.CreateAsync();
         fixture.Calendar.FailCreate = fail;
@@ -261,13 +261,27 @@ public sealed class TeamsMeetingTests
 
         JsonResult response = Assert.IsType<JsonResult>(await Submit(null));
         JsonElement payload = JsonSerializer.SerializeToElement(response.Value);
-        Assert.Equal(!fail, payload.GetProperty("success").GetBoolean());
+        Assert.False(payload.GetProperty("success").GetBoolean());
+        Assert.Contains("Enter a meeting link", payload.GetProperty("message").GetString());
+        Assert.Equal(BookingStatus.Pending, (await fixture.Context.Bookings.SingleAsync()).Status);
+        Assert.Empty(fixture.Calendar.Requests);
+
+        JsonResult invalid = Assert.IsType<JsonResult>(await Submit("not a meeting link"));
+        Assert.False(JsonSerializer.SerializeToElement(invalid.Value).GetProperty("success").GetBoolean());
+        Assert.Equal(BookingStatus.Pending, (await fixture.Context.Bookings.SingleAsync()).Status);
+        Assert.Empty(fixture.Calendar.Requests);
+
+        Assert.Equal(!fail, (await fixture.Service.CreateAsync(8, 1)).Succeeded);
         if (fail)
         {
-            Assert.Contains("manual meeting link", payload.GetProperty("message").GetString());
             Assert.Equal(BookingStatus.Pending, (await fixture.Context.Bookings.SingleAsync()).Status);
             JsonResult retry = Assert.IsType<JsonResult>(await Submit("https://example.com/manual"));
             Assert.True(JsonSerializer.SerializeToElement(retry.Value).GetProperty("success").GetBoolean());
+        }
+        else
+        {
+            JsonResult confirmation = Assert.IsType<JsonResult>(await Submit(JoinUrl));
+            Assert.True(JsonSerializer.SerializeToElement(confirmation.Value).GetProperty("success").GetBoolean());
         }
         Assert.Equal(BookingStatus.Confirmed, (await fixture.Context.Bookings.SingleAsync()).Status);
         Assert.Single(fixture.Calendar.Requests);
@@ -400,24 +414,52 @@ public sealed class TeamsMeetingTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task GenerateLinkPages_SaveLinkWithoutConfirmingBooking(bool detailsPage)
+    public async Task GenerateLinkPages_ConfirmBookingAndShowSuccess_OnlyAfterCreationSucceeds(bool detailsPage)
     {
         await using var fixture = await Fixture.CreateAsync();
+        var student = new BcUser
+        {
+            BcUserId = 9, DisplayName = "Student", Email = "student@institution.example"
+        };
+        fixture.Context.BcUsers.Add(student);
+        (await fixture.Context.Bookings.SingleAsync()).StudentBcUser = student;
+        await fixture.Context.SaveChangesAsync();
         var time = new FixedTimeProvider(fixture.Now);
         var lifecycle = new SessionLifecycleService(fixture.Context, time, fixture.Service);
         PageModel page = detailsPage
             ? new BC_CampusLearn.Pages.Tutors.SessionDetailsModel(fixture.Context, new TutorUser(), fixture.Environment, lifecycle, time,
                 teamsOptions: Options.Create(fixture.Options), teamsMeetings: fixture.Service)
             : new BC_CampusLearn.Pages.Tutors.SessionsModel(fixture.Context, new TutorUser(), lifecycle, Options.Create(fixture.Options), fixture.Service);
-        page.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
-        IActionResult result = detailsPage
-            ? await ((BC_CampusLearn.Pages.Tutors.SessionDetailsModel)page).OnPostGenerateTeamsLinkAsync(1, default)
-            : await ((BC_CampusLearn.Pages.Tutors.SessionsModel)page).OnPostGenerateTeamsLinkAsync(1, default);
+        var http = new DefaultHttpContext();
+        page.PageContext = new PageContext { HttpContext = http };
+        page.TempData = new TempDataDictionary(http, new EmptyTempData());
+
+        Task<IActionResult> Generate() => detailsPage
+            ? ((BC_CampusLearn.Pages.Tutors.SessionDetailsModel)page).OnPostGenerateTeamsLinkAsync(1, default)
+            : ((BC_CampusLearn.Pages.Tutors.SessionsModel)page).OnPostGenerateTeamsLinkAsync(1, default);
+        bool ShowSuccess() => detailsPage
+            ? ((BC_CampusLearn.Pages.Tutors.SessionDetailsModel)page).TeamsMeetingCreated
+            : ((BC_CampusLearn.Pages.Tutors.SessionsModel)page).TeamsMeetingCreated;
+
+        fixture.Calendar.Result = new("event-1", null);
+        JsonElement pending = JsonSerializer.SerializeToElement(Assert.IsType<JsonResult>(await Generate()).Value);
+        Assert.False(pending.GetProperty("success").GetBoolean());
+        Assert.False(ShowSuccess());
+        Assert.Equal(BookingStatus.Pending, (await fixture.Context.Bookings.SingleAsync()).Status);
+        Assert.Empty(fixture.Context.BookingStatusHistory);
+        Assert.Empty(fixture.Context.UserNotifications);
+
+        fixture.Calendar.Result = new("event-1", JoinUrl);
+        IActionResult result = await Generate();
         JsonElement json = JsonSerializer.SerializeToElement(Assert.IsType<JsonResult>(result).Value);
         Assert.True(json.GetProperty("success").GetBoolean());
         Assert.Equal(JoinUrl, json.GetProperty("link").GetString());
-        Assert.Equal(BookingStatus.Pending, (await fixture.Context.Bookings.SingleAsync()).Status);
+        Assert.Equal(BookingStatus.Confirmed, (await fixture.Context.Bookings.SingleAsync()).Status);
+        Assert.True(ShowSuccess());
+        Assert.Single(fixture.Context.BookingStatusHistory);
+        Assert.Single(fixture.Context.UserNotifications);
         Assert.Single(fixture.Calendar.Requests);
+        Assert.Equal(1, fixture.Calendar.GetCalls);
     }
 
     [Theory]

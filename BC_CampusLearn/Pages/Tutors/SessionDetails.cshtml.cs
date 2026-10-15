@@ -104,12 +104,20 @@ public class SessionDetailsModel : PageModel
 
     public bool TeamsMeetingCreationEnabled => _teamsOptions.AllowsTutor(CurrentBcUserId);
 
+    [TempData]
+    public bool TeamsMeetingCreated { get; set; }
+
     public async Task<IActionResult> OnPostGenerateTeamsLinkAsync(int bookingId, CancellationToken cancellationToken)
     {
-        if (!(await GetCurrentTutorIdAsync(cancellationToken)).HasValue) return Forbid();
+        int? tutorId = await GetCurrentTutorIdAsync(cancellationToken);
+        if (!tutorId.HasValue) return Forbid();
         SessionLifecycleResult result = _teamsMeetings is null
             ? SessionLifecycleResult.Failure("Teams meeting creation is not configured.")
             : await _teamsMeetings.CreateAsync(_currentUserService.GetRequiredUser().BcUserId, bookingId, cancellationToken);
+        if (result.Succeeded)
+            result = await _lifecycleService.ConfirmAsync(tutorId.Value,
+                _currentUserService.GetRequiredUser().BcUserId, bookingId, null, cancellationToken);
+        TeamsMeetingCreated = result.Succeeded;
         string? link = result.Succeeded
             ? await _context.MeetingLinks.Where(item => item.BookingId == bookingId).Select(item => item.Url).SingleOrDefaultAsync(cancellationToken)
             : null;
@@ -248,11 +256,16 @@ public class SessionDetailsModel : PageModel
             return Forbid();
         }
 
-        SessionLifecycleResult result = await _lifecycleService.ConfirmAsync(
+        SessionLifecycleResult result = string.IsNullOrWhiteSpace(MeetingLink)
+            ? SessionLifecycleResult.Failure("Enter a meeting link to confirm the session.")
+            : await _lifecycleService.ConfirmAsync(
             tutorId.Value,
             currentUser.BcUserId,
             bookingId,
             MeetingLink,
+            cancellationToken);
+        TeamsMeetingCreated = result.Succeeded && await _context.MeetingLinks.AnyAsync(
+            item => item.BookingId == bookingId && item.TeamsEventId != null && !item.TeamsManualFallbackAllowed,
             cancellationToken);
         SessionActionError = !result.Succeeded;
         SessionActionMessage = result.Succeeded

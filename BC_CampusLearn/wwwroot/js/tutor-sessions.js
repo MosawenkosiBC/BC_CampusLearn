@@ -19,7 +19,9 @@
             bootstrap.Modal.getOrCreateInstance(modalElement).show();
             modalElement.addEventListener(
                 "shown.bs.modal",
-                () => meetingLinkInput.focus(),
+                () => {
+                    if (!form.querySelector("[data-manual-link-section]")?.hidden) meetingLinkInput.focus();
+                },
                 { once: true });
         }));
 

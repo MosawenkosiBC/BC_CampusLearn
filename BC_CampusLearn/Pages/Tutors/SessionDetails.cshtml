@@ -613,7 +613,10 @@
                                 ? "Confirm session"
                                 : "Edit meeting link")
                         </h2>
-                        <p>Paste the link students will use to join this session.</p>
+                        @if (Model.Session.Status != BC_CampusLearn.Models.Entities.BookingStatus.Pending)
+                        {
+                            <p>Paste the link students will use to join this session.</p>
+                        }
                     </div>
                     <button type="button"
                             class="btn-close"
@@ -631,15 +634,15 @@
                     }
                     @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending && Model.TeamsMeetingCreationEnabled)
                     {
-                        <p>Confirm to create a Teams meeting and invite the student.</p>
-                        <p>If automatic creation fails, retry or paste a manual meeting link below.</p>
-                        <button type="button" class="btn btn-teams mb-3 @(string.IsNullOrWhiteSpace(Model.MeetingLink) ? null : "d-none")"
-                                data-generate-teams-link data-generate-url="@Url.Page("/Tutors/SessionDetails", "GenerateTeamsLink", new { bookingId = Model.Session.BookingId })"
-                                hidden="@(!string.IsNullOrWhiteSpace(Model.MeetingLink))"><i class="bi bi-microsoft-teams me-2" aria-hidden="true"></i>Create Teams meeting</button>
+                        <p>Create a Teams meeting and invite the student.</p>
+                        <button type="button" class="btn btn-secondary mb-3" data-toggle-manual-link
+                                aria-expanded="false" aria-controls="session-manual-meeting-link" aria-label="Add a manual meeting link">+</button>
                     }
                     <div class="meeting-link-modal-error" data-confirm-error role="alert" hidden></div>
                     <p data-confirm-progress role="status" hidden>Creating your Teams meeting and confirming the session…</p>
-                    <label asp-for="MeetingLink">@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending && Model.TeamsMeetingCreationEnabled ? "Manual meeting link (optional)" : "Meeting link")</label>
+                    <div id="session-manual-meeting-link" data-manual-link-section
+                         hidden="@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending && Model.TeamsMeetingCreationEnabled)">
+                    <label asp-for="MeetingLink">@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending ? "Manual meeting link" : "Meeting link")</label>
                     <div class="meeting-link-entry">
                         <i class="bi bi-link-45deg" aria-hidden="true"></i>
                         <input asp-for="MeetingLink"
@@ -647,7 +650,12 @@
                                maxlength="2048"
                                readonly="@(Model.Session.MeetingLink?.TeamsCreationRequestId is not null && !Model.Session.MeetingLink.TeamsManualFallbackAllowed)"
                                placeholder="https://teams.microsoft.com/..."
-                               autocomplete="url" />
+                               autocomplete="url" required />
+                    </div>
+                    @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending)
+                    {
+                        <button type="submit" class="meeting-link-modal-save mt-3">Confirm session</button>
+                    }
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -656,11 +664,15 @@
                             data-bs-dismiss="modal">
                         Cancel
                     </button>
-                    <button type="submit" class="meeting-link-modal-save">
-                        @(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending
-                            ? "Confirm session"
-                            : "Save meeting link")
-                    </button>
+                    @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending && Model.TeamsMeetingCreationEnabled)
+                    {
+                        <button type="button" class="btn btn-teams" data-generate-teams-link
+                                data-generate-url="@Url.Page("/Tutors/SessionDetails", "GenerateTeamsLink", new { bookingId = Model.Session.BookingId })"><i class="bi bi-microsoft-teams me-2" aria-hidden="true"></i>Create Teams meeting</button>
+                    }
+                    else if (Model.Session.Status != BC_CampusLearn.Models.Entities.BookingStatus.Pending)
+                    {
+                        <button type="submit" class="meeting-link-modal-save">Save meeting link</button>
+                    }
                 </div>
             </form>
         </div>
@@ -802,6 +814,11 @@
         </div>
     </div>
 </div>
+
+@if (Model.TeamsMeetingCreated)
+{
+    <partial name="_TeamsMeetingSuccessModal" />
+}
 
 @section Scripts {
     <script src="~/js/components/navigation-drawer.js" asp-append-version="true"></script>
