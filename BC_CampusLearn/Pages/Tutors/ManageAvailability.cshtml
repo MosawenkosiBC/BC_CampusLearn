@@ -771,6 +771,9 @@
                                 <input type="checkbox"
                                        data-availability-select-all
                                        aria-label="Select all availability rows on this page" />
+                                <span class="availability-select-all-label">
+                                    Select all
+                                </span>
                             </th>
                             <th scope="col">Date</th>
                             <th scope="col" class="availability-table-day">Day</th>
@@ -826,11 +829,18 @@
                                            data-availability-select-row
                                            aria-label="Select @availabilityLabel" />
                                 </td>
-                                <td>@availability.LocalTime.ToString("dd MMM yyyy")</td>
+                                <td class="availability-table-date">
+                                    <span class="availability-date-desktop">
+                                        @availability.LocalTime.ToString("dd MMM yyyy")
+                                    </span>
+                                    <strong class="availability-date-mobile">
+                                        @availability.LocalTime.ToString("ddd, dd MMM")
+                                    </strong>
+                                </td>
                                 <td class="availability-table-day">
                                     @availability.LocalTime.ToString("dddd")
                                 </td>
-                                <td>
+                                <td class="availability-table-time">
                                     <div class="availability-time-cell">
                                         <span>
                                             @availability.LocalTime.ToString("HH:mm")

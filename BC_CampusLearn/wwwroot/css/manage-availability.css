@@ -1741,6 +1741,11 @@
     width: 1rem;
 }
 
+.availability-select-all-label,
+.availability-date-mobile {
+    display: none;
+}
+
 .availability-time-cell {
     align-items: center;
     display: inline-flex;
@@ -2401,8 +2406,210 @@
         min-width: 0;
     }
 
+    .availability-table-wrap {
+        max-height: none;
+        overflow: visible;
+        padding: 0 0.75rem 0.75rem;
+    }
+
     .availability-table {
-        min-width: 36rem;
+        display: block;
+        min-width: 0;
+    }
+
+    .availability-table colgroup {
+        display: none;
+    }
+
+    .availability-table thead,
+    .availability-table tbody {
+        display: block;
+    }
+
+    .availability-table thead tr {
+        align-items: center;
+        display: flex;
+        justify-content: flex-end;
+        min-height: 44px;
+    }
+
+    .availability-table thead th:not(.availability-table-select) {
+        display: none;
+    }
+
+    .availability-table thead .availability-table-select {
+        align-items: center;
+        background: transparent;
+        border: 0;
+        color: #656b74;
+        display: inline-flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+        min-height: 44px;
+        padding: 0.35rem 0.25rem;
+        position: static;
+        text-transform: none;
+        width: auto;
+    }
+
+    .availability-select-all-label {
+        display: inline;
+        font-size: max(12px, 0.76rem);
+        letter-spacing: 0;
+    }
+
+    .availability-table tbody > tr:not(.availability-bulk-actions) {
+        align-items: center;
+        background: #ffffff;
+        border: 1px solid #e2e4e8;
+        border-radius: 0.7rem;
+        display: grid;
+        gap: 0;
+        grid-template-columns: 2rem minmax(0, 1fr) 44px 44px;
+        grid-template-rows: auto auto;
+        margin-bottom: 0.6rem;
+        min-height: 4.5rem;
+        padding: 0.55rem 0.45rem;
+        position: relative;
+    }
+
+    .availability-table tbody > tr:not(.availability-bulk-actions):hover {
+        background: #f8f8fa;
+    }
+
+    .availability-table tbody > tr:not(.availability-bulk-actions) > td {
+        border: 0;
+        min-width: 0;
+        padding: 0;
+    }
+
+    .availability-table tbody > tr:not(.availability-bulk-actions)
+        > .availability-table-select {
+        align-items: center;
+        display: flex;
+        grid-column: 1;
+        grid-row: 1 / span 2;
+        justify-content: center;
+        padding: 0;
+        width: 2rem;
+    }
+
+    .availability-table-select input {
+        height: 1.15rem;
+        width: 1.15rem;
+    }
+
+    .availability-table-date {
+        grid-column: 2 / span 2;
+        grid-row: 1;
+    }
+
+    .availability-date-desktop {
+        display: none;
+    }
+
+    .availability-date-mobile {
+        color: #292d33;
+        display: block;
+        font-size: 15px;
+        font-weight: 500;
+        line-height: 1.2;
+        margin-bottom: -0.1rem;
+        margin-inline-start: 0.4rem;
+    }
+
+    .availability-table tbody > tr:not(.availability-bulk-actions)
+        > .availability-table-day {
+        display: none;
+    }
+
+    .availability-table tbody > tr:not(.availability-bulk-actions)
+        > .availability-table-time {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    .availability-time-cell {
+        display: block;
+        width: 100%;
+    }
+
+    .availability-time-cell > span {
+        align-self: center;
+        color: #656b74;
+        display: inline-block;
+        font-size: 14px;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.25;
+        margin-inline-start: 0.4rem;
+    }
+
+    .availability-time-edit,
+    .availability-delete-button {
+        border-radius: 0.5rem;
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .availability-time-edit {
+        inset-inline-end: calc(0.45rem + 44px);
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .availability-time-edit svg,
+    .availability-delete-button svg {
+        font-size: 17px;
+        height: 17px;
+        width: 17px;
+    }
+
+    .availability-table tbody > tr:not(.availability-bulk-actions)
+        > .availability-table-action {
+        align-items: center;
+        display: flex;
+        grid-column: 4;
+        grid-row: 1 / span 2;
+        justify-content: center;
+        padding: 0;
+    }
+
+    .availability-delete-button {
+        padding: 0;
+    }
+
+    .availability-bulk-actions {
+        background: #fafafb;
+        border-radius: 0.7rem;
+        color: #59616d;
+        display: block;
+        margin-bottom: 0.6rem;
+    }
+
+    .availability-bulk-actions > td {
+        border: 0;
+        display: block;
+        padding: 0.45rem 0.7rem;
+    }
+
+    .availability-bulk-actions-content {
+        min-height: 44px;
+    }
+
+    .availability-bulk-actions span {
+        color: #59616d;
+        font-weight: 500;
+    }
+
+    .availability-bulk-actions a,
+    .availability-bulk-actions a:visited {
+        color: #df3347;
+        font-weight: 500;
+    }
+
+    .availability-bulk-actions a {
+        min-height: 44px;
     }
 
     .availability-list-heading {
