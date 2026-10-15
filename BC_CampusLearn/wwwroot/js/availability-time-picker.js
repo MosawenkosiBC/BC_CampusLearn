@@ -17,7 +17,7 @@
     if (typeof document === "undefined") return;
 
     let closeActive = null;
-    document.querySelectorAll(".manage-availability-page input[type='time'], #specific-availability-modal input[type='time'], .specific-availability-modal input[type='time'], .availability-edit-modal input[type='time']")
+    document.querySelectorAll(".manage-availability-page input[type='time'], #specific-availability-modal input[type='time'], .specific-availability-modal input[type='time'], .availability-edit-modal input[type='time'], [data-availability-time-filter]")
         .forEach((input, number) => {
             const field = document.createElement("span");
             field.className = "availability-wheel-field";

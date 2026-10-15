@@ -1011,6 +1011,8 @@
 
     const selectAllAvailability = document.querySelector(
         "[data-availability-select-all]");
+    const availabilityTable = document.querySelector(
+        "[data-availability-all-ids]");
     const availabilityRowSelections = Array.from(
         document.querySelectorAll("[data-availability-select-row]"));
     const bulkAvailabilityActions = document.querySelector(
@@ -1023,18 +1025,26 @@
         "[data-availability-bulk-delete-count]");
     const bulkDeleteInputs = document.querySelector(
         "[data-availability-bulk-delete-inputs]");
+    const allAvailabilityIds = (availabilityTable?.dataset
+        .availabilityAllIds ?? "")
+        .split(",")
+        .map(Number)
+        .filter((id) => Number.isInteger(id) && id > 0);
+    let allAvailabilitySelected = false;
 
     const getSelectedAvailabilityRows = () =>
         availabilityRowSelections.filter((checkbox) => checkbox.checked);
 
     const updateAvailabilitySelection = () => {
-        const selectedCount = getSelectedAvailabilityRows().length;
-        const allRowsSelected = availabilityRowSelections.length > 0 &&
-            selectedCount === availabilityRowSelections.length;
+        const selectedRows = getSelectedAvailabilityRows();
+        const selectedCount = allAvailabilitySelected
+            ? allAvailabilityIds.length
+            : selectedRows.length;
 
         if (selectAllAvailability) {
-            selectAllAvailability.checked = allRowsSelected;
-            selectAllAvailability.indeterminate = false;
+            selectAllAvailability.checked = allAvailabilitySelected;
+            selectAllAvailability.indeterminate =
+                !allAvailabilitySelected && selectedCount > 0;
         }
 
         if (bulkAvailabilityActions) {
@@ -1048,31 +1058,41 @@
     };
 
     selectAllAvailability?.addEventListener("change", () => {
+        allAvailabilitySelected = selectAllAvailability.checked;
         availabilityRowSelections.forEach((checkbox) => {
-            checkbox.checked = selectAllAvailability.checked;
+            checkbox.checked = allAvailabilitySelected;
         });
         updateAvailabilitySelection();
     });
 
     availabilityRowSelections.forEach((checkbox) => {
-        checkbox.addEventListener("change", updateAvailabilitySelection);
+        checkbox.addEventListener("change", () => {
+            allAvailabilitySelected =
+                allAvailabilityIds.length === availabilityRowSelections.length &&
+                availabilityRowSelections.length > 0 &&
+                availabilityRowSelections.every((row) => row.checked);
+            updateAvailabilitySelection();
+        });
     });
 
     bulkDeleteTrigger?.addEventListener("click", () => {
         const selectedRows = getSelectedAvailabilityRows();
+        const selectedIds = allAvailabilitySelected
+            ? allAvailabilityIds
+            : selectedRows.map((checkbox) => Number(checkbox.value));
 
         if (bulkDeleteCount) {
-            bulkDeleteCount.textContent = selectedRows.length === 1
+            bulkDeleteCount.textContent = selectedIds.length === 1
                 ? "1 availability slot"
-                : `${selectedRows.length} availability slots`;
+                : `${selectedIds.length} availability slots`;
         }
 
         if (bulkDeleteInputs) {
-            bulkDeleteInputs.replaceChildren(...selectedRows.map((checkbox) => {
+            bulkDeleteInputs.replaceChildren(...selectedIds.map((id) => {
                 const input = document.createElement("input");
                 input.type = "hidden";
                 input.name = "availabilityIds";
-                input.value = checkbox.value;
+                input.value = String(id);
                 return input;
             }));
         }

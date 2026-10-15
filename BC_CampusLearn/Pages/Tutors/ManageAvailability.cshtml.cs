@@ -133,6 +133,9 @@ public class ManageAvailabilityModel : PageModel
     public IReadOnlyList<AvailabilityListItem> AvailabilityRows
     { get; private set; } = new List<AvailabilityListItem>();
 
+    public IReadOnlyList<int> FilteredAvailabilityIds
+    { get; private set; } = Array.Empty<int>();
+
     public IReadOnlyList<string> OccupiedScheduleTimes { get; private set; } =
         Array.Empty<string>();
 
@@ -764,6 +767,9 @@ public class ManageAvailabilityModel : PageModel
             filteredAvailability.ToList();
 
         TotalAvailabilityCount = filteredAvailabilityList.Count;
+        FilteredAvailabilityIds = filteredAvailabilityList
+            .Select(slot => slot.TutorAvailabilityId)
+            .ToArray();
         TotalAvailabilityPages = (int)Math.Ceiling(
             TotalAvailabilityCount / (double)AvailabilityPageSize);
         AvailabilityPage = TotalAvailabilityPages == 0

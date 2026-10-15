@@ -1663,7 +1663,7 @@
 .availability-bulk-actions span {
     color: #59616d;
     font-size: 12px;
-    font-weight: 650;
+    font-weight: 500;
 }
 
 .availability-bulk-actions a,
@@ -1674,7 +1674,7 @@
     color: #df3347;
     display: inline-flex;
     font-size: 12px;
-    font-weight: 650;
+    font-weight: 500;
     gap: 0.35rem;
     padding: 0.35rem 0;
     text-decoration: none;
@@ -1820,7 +1820,7 @@
     color: #df3347;
     display: inline-flex;
     font-size: max(12px, 0.74rem);
-    font-weight: 600;
+    font-weight: 500;
     gap: 0.35rem;
     padding: 0.35rem;
 }
@@ -1855,6 +1855,23 @@
 .availability-table-empty p {
     font-size: max(12px, 0.8rem);
     margin: 0;
+}
+
+.availability-filters .availability-wheel-trigger {
+    background-color: #f3f5f7;
+    border-radius: 0.5rem;
+    color: #333333;
+    font-size: 16px;
+    min-height: 44px;
+    padding: 0.55rem 0.75rem;
+}
+
+.availability-filters .availability-wheel-trigger:focus-visible {
+    background-color: #ffffff;
+    box-shadow:
+        0 0 0 3px rgba(191, 0, 80, 0.1),
+        0 0.35rem 0.85rem rgba(30, 32, 38, 0.06);
+    outline: 0;
 }
 
 .availability-delete-modal .modal-dialog {
@@ -2455,6 +2472,7 @@
     .availability-select-all-label {
         display: inline;
         font-size: max(12px, 0.76rem);
+        font-weight: 400;
         letter-spacing: 0;
     }
 

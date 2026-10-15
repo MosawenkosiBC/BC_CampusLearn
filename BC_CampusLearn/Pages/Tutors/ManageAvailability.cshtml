@@ -714,7 +714,8 @@
                     <div class="filter-search bookings-date-filter">
                         <input asp-for="AvailabilityTimeFilter"
                                type="time"
-                               step="60" />
+                               step="60"
+                               data-availability-time-filter />
                     </div>
                 </div>
 
@@ -757,7 +758,8 @@
         @if (Model.AvailabilityRows.Count > 0)
         {
             <div class="availability-table-wrap">
-                <table class="availability-table">
+                <table class="availability-table"
+                       data-availability-all-ids="@string.Join(",", Model.FilteredAvailabilityIds)">
                     <colgroup>
                         <col class="availability-table-select-column" />
                         <col class="availability-table-data-column" />
@@ -770,7 +772,7 @@
                             <th scope="col" class="availability-table-select">
                                 <input type="checkbox"
                                        data-availability-select-all
-                                       aria-label="Select all availability rows on this page" />
+                                       aria-label="Select all filtered availability rows" />
                                 <span class="availability-select-all-label">
                                     Select all
                                 </span>
