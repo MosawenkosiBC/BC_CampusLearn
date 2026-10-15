@@ -1200,7 +1200,7 @@
 .recurring-editor-time-title {
     color: #171717;
     font-size: 1rem;
-    font-weight: 650;
+    font-weight: 500;
     margin: 0;
 }
 
@@ -1358,6 +1358,7 @@
 }
 
 .recurring-editor-create {
+    font-weight: 500;
     min-width: 9rem;
 }
 
@@ -1511,7 +1512,7 @@
     border-radius: 0.32rem;
     color: #687181;
     font-size: 12px;
-    font-weight: 650;
+    font-weight: 500;
     min-height: 2rem;
     padding: 0.35rem 0.7rem;
 }
