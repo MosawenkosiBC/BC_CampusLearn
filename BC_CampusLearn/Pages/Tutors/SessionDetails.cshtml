@@ -633,7 +633,7 @@
                     {
                         <p>Confirm to create a Teams meeting and invite the student.</p>
                         <p>If automatic creation fails, retry or paste a manual meeting link below.</p>
-                        <button type="button" class="btn btn-primary mb-3 @(string.IsNullOrWhiteSpace(Model.MeetingLink) ? null : "d-none")"
+                        <button type="button" class="btn btn-teams mb-3 @(string.IsNullOrWhiteSpace(Model.MeetingLink) ? null : "d-none")"
                                 data-generate-teams-link data-generate-url="@Url.Page("/Tutors/SessionDetails", "GenerateTeamsLink", new { bookingId = Model.Session.BookingId })"
                                 hidden="@(!string.IsNullOrWhiteSpace(Model.MeetingLink))"><i class="bi bi-microsoft-teams me-2" aria-hidden="true"></i>Create Teams meeting</button>
                     }
