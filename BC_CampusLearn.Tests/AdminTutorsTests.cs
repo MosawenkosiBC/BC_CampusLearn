@@ -62,6 +62,56 @@ public class AdminTutorsTests
         Assert.Equal(BcUserRole.Tutor, student.Role);
         Assert.True(student.Tutor!.IsActive);
         Assert.Equal(19, await context.Tutors.CountAsync());
+        var notification = Assert.Single(await context.UserNotifications.ToListAsync());
+        Assert.Equal(student.BcUserId, notification.RecipientBcUserId);
+        Assert.Equal("Tutor application approved", notification.Title);
+        Assert.False(string.IsNullOrWhiteSpace(notification.Message));
+        Assert.Equal("/Tutors/TutorDashboard", notification.LinkUrl);
+        Assert.Null(notification.ReadAt);
+
+        await page.OnPostAddTutorAsync(CancellationToken.None);
+        Assert.Single(await context.UserNotifications.ToListAsync());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ManualTutorAllowsOtherProgrammesButRejectsInvalidOrHigherYearModules(bool placementPage)
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var student = new BcUser { BcUserId = 100, PersonnelNumber = "S100", DisplayName = "New Student" };
+        context.BcUsers.Add(student);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy { Id = 2, Name = "Diploma" });
+        context.ProgrammeModules.AddRange(
+            new ProgrammeModule { ProgrammeModuleId = 2, ProgrammeId = 2, YearOfStudy = 1,
+                ModuleCode = "DIP101", ModuleName = "Diploma programming" },
+            new ProgrammeModule { ProgrammeModuleId = 3, ProgrammeId = 2, YearOfStudy = 4,
+                ModuleCode = "DIP401", ModuleName = "Advanced programming" });
+        await context.SaveChangesAsync();
+        var service = new TestStudentDetailsService();
+        BC_CampusLearn.Pages.Administrator.ManualTutorPageModel page = placementPage
+            ? new BC_CampusLearn.Pages.Administrator.Admin.ApplicationsModel(context, studentDetailsService: service)
+            : new IndexModel(context, service);
+        SetPageContext(page);
+        page.ManualTutor = new() { BcUserId = 100, OverallAverage = 75 };
+
+        foreach (int invalidModuleId in new[] { 3, 999 })
+        {
+            page.ManualTutor.ProgrammeModuleIds = [2, invalidModuleId];
+            await page.OnPostAddTutorAsync(CancellationToken.None);
+            Assert.NotNull(page.PageError);
+            Assert.Null(student.Tutor);
+            Assert.Empty(await context.UserNotifications.ToListAsync());
+        }
+
+        page.PageError = null;
+        page.ManualTutor.ProgrammeModuleIds = [1, 2];
+        await page.OnPostAddTutorAsync(CancellationToken.None);
+        Assert.Null(page.PageError);
+        Assert.Equal(1, student.Tutor!.ProgrammeId);
+        Assert.Equal([1, 2], student.Tutor.TutorCourseModules.Select(item => item.ProgrammeModuleId).Order());
+        Assert.Single(await context.UserNotifications.ToListAsync());
     }
 
     [Theory]

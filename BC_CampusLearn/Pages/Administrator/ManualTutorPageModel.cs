@@ -1,6 +1,7 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Students;
+using BC_CampusLearn.Services.Notifications;
 using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 using Microsoft.AspNetCore.Mvc;
@@ -215,12 +216,11 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
             .AsNoTracking()
             .CountAsync(
                 module => moduleIds.Contains(module.ProgrammeModuleId) &&
-                    module.ProgrammeId == ManualTutor.ProgrammeId &&
                     module.YearOfStudy <= ManualTutor.YearOfStudy,
                 cancellationToken);
         if (eligibleModuleCount != moduleIds.Count)
         {
-            return ManualTutorFailure("Select modules from the chosen programme that are eligible for the tutor's year of study.",
+            return ManualTutorFailure("Select valid modules that are eligible for the tutor's year of study.",
                 nameof(ManualTutorInput.ProgrammeModuleIds));
         }
 
@@ -266,6 +266,16 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
         }
         student.Tutor = tutor;
 
+        _context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = student.BcUserId,
+            Title = "Tutor application approved",
+            Message = await AdminNotificationCatalog.GetMessageAsync(
+                _context, AdminNotificationCatalog.Approval, cancellationToken),
+            LinkUrl = "/Tutors/TutorDashboard",
+            CreatedAt = addedAt
+        });
+
         await _context.SaveChangesAsync(cancellationToken);
         PageMessage = $"{student.DisplayName} was added as a tutor.";
         if (IsManualTutorJsonRequest)
@@ -306,6 +316,7 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
             {
                 ProgrammeModuleId = module.ProgrammeModuleId,
                 ProgrammeId = module.ProgrammeId,
+                ProgrammeName = module.Programme.Name,
                 YearOfStudy = module.YearOfStudy,
                 Code = module.ModuleCode,
                 Name = module.ModuleName
@@ -362,6 +373,7 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
     {
         public int ProgrammeModuleId { get; init; }
         public int ProgrammeId { get; init; }
+        public string ProgrammeName { get; init; } = string.Empty;
         public int YearOfStudy { get; init; }
         public string Code { get; init; } = string.Empty;
         public string Name { get; init; } = string.Empty;
