@@ -3,6 +3,7 @@
     var pageTitle = ViewData["Title"]?.ToString();
     var breadcrumbs = new List<(string Label, string? Page)>();
     var compensationReturnUrl = ViewData["CompensationReturnUrl"] as string;
+    var modulesReturnUrl = ViewData["ModulesReturnUrl"] as string;
     var hasAdminRole = User.IsInRole(nameof(BcUserRole.Admin)) ||
         User.IsInRole(nameof(BcUserRole.SuperAdmin)) ||
         User.IsInRole(nameof(BcUserRole.Dev));
@@ -245,6 +246,12 @@
                         if (breadcrumb.Page == "/Administrator/Admin/Compensation" && compensationReturnUrl is not null)
                         {
                             <a href="@compensationReturnUrl" title="@breadcrumb.Label">@breadcrumb.Label</a>
+                        }
+                        else if (breadcrumb.Page == "/Administrator/Modules/Index" &&
+                            pagePath == "/Administrator/Modules/Details" &&
+                            modulesReturnUrl is not null)
+                        {
+                            <a href="@modulesReturnUrl" title="@breadcrumb.Label">@breadcrumb.Label</a>
                         }
                         else if (breadcrumb.Page == "/Administrator/Tutors/Profile" &&
                             ViewData["AdminTutorProfileId"] is int tutorId)

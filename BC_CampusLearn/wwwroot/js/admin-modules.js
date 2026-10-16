@@ -346,6 +346,254 @@
         });
     }
 
+    const bulkAssignModal = document.querySelector("[data-bulk-assign-modal]");
+    const bulkAssignmentForm = bulkAssignModal?.querySelector(
+        "[data-bulk-assignment-form]");
+    const bulkModuleSearch = bulkAssignModal?.querySelector(
+        "[data-bulk-module-search]");
+    const bulkModuleOptions = Array.from(bulkAssignModal?.querySelectorAll(
+        "[data-bulk-module-option]") || []);
+    const bulkModuleCheckboxes = bulkModuleOptions.map((option) =>
+        option.querySelector("[data-bulk-module-checkbox]"));
+    const bulkModuleSelectAll = bulkAssignModal?.querySelector(
+        "[data-bulk-module-select-all]");
+    const bulkModuleCount = bulkAssignModal?.querySelector(
+        "[data-bulk-module-count]");
+    const bulkModuleEmpty = bulkAssignModal?.querySelector(
+        "[data-bulk-module-empty]");
+    const bulkModuleError = bulkAssignModal?.querySelector(
+        "[data-bulk-module-error]");
+    const bulkAction = bulkAssignModal?.querySelector("[data-bulk-action]");
+    const bulkModalTitle = bulkAssignModal?.querySelector(
+        "[data-bulk-modal-title]");
+    const bulkModalDescription = bulkAssignModal?.querySelector(
+        "[data-bulk-modal-description]");
+    const bulkModuleLegend = bulkAssignModal?.querySelector(
+        "[data-bulk-module-legend]");
+    const bulkSubmit = bulkAssignModal?.querySelector("[data-bulk-submit]");
+    const bulkRemoveConfirmModal = document.querySelector(
+        "[data-bulk-remove-confirm-modal]");
+    const bulkRemoveConfirmCount = bulkRemoveConfirmModal?.querySelector(
+        "[data-bulk-remove-confirm-count]");
+    const bulkRemoveConfirmTutor = bulkRemoveConfirmModal?.querySelector(
+        "[data-bulk-remove-confirm-tutor]");
+    const bulkRemoveConfirmList = bulkRemoveConfirmModal?.querySelector(
+        "[data-bulk-remove-confirm-list]");
+    const bulkRemoveConfirmSubmit = bulkRemoveConfirmModal?.querySelector(
+        "[data-bulk-remove-confirm-submit]");
+
+    if (bulkAssignModal && bulkAssignmentForm && bulkModuleSearch &&
+        tutorSelect && bulkAction) {
+        const isRemoving = () => bulkAction.value === "remove";
+        const selectedModuleCount = () => bulkModuleCheckboxes.filter(
+            (checkbox) => checkbox?.checked).length;
+
+        const updateBulkActionCopy = () => {
+            const removing = isRemoving();
+            if (bulkModalTitle) {
+                bulkModalTitle.textContent = removing
+                    ? "Remove modules from tutor"
+                    : "Assign modules to tutor";
+            }
+            if (bulkModalDescription) {
+                bulkModalDescription.textContent = removing
+                    ? "Choose one tutor, then select the modules you want to remove."
+                    : "Choose one tutor, then select every module you want to assign.";
+            }
+            if (bulkModuleLegend) {
+                bulkModuleLegend.textContent = removing
+                    ? "Currently assigned modules"
+                    : "Modules available to assign";
+            }
+            if (bulkSubmit) {
+                bulkSubmit.textContent = removing
+                    ? "Remove selected modules"
+                    : "Assign selected modules";
+                bulkSubmit.classList.toggle("module-modal-danger", removing);
+            }
+        };
+
+        const clearBulkSelection = () => {
+            bulkModuleCheckboxes.forEach((checkbox) => {
+                if (checkbox) checkbox.checked = false;
+            });
+        };
+
+        const updateBulkSelection = () => {
+            const selectableVisible = bulkModuleOptions
+                .filter((option) => !option.hidden)
+                .map((option) => option.querySelector(
+                    "[data-bulk-module-checkbox]"))
+                .filter((checkbox) => checkbox && !checkbox.disabled);
+            const selectedVisible = selectableVisible.filter(
+                (checkbox) => checkbox.checked).length;
+            const selectedCount = selectedModuleCount();
+            if (bulkModuleCount) {
+                bulkModuleCount.textContent = selectedCount === 1
+                    ? "1 module selected"
+                    : `${selectedCount} modules selected`;
+            }
+            if (bulkModuleSelectAll) {
+                bulkModuleSelectAll.checked = selectableVisible.length > 0 &&
+                    selectedVisible === selectableVisible.length;
+                bulkModuleSelectAll.indeterminate = selectedVisible > 0 &&
+                    selectedVisible < selectableVisible.length;
+            }
+            if (selectedCount > 0 && bulkModuleError) {
+                bulkModuleError.textContent = "";
+                bulkModuleError.hidden = true;
+            }
+        };
+
+        const filterBulkModules = () => {
+            const term = bulkModuleSearch.value.trim().toLowerCase();
+            const removing = isRemoving();
+            let visibleCount = 0;
+            bulkModuleOptions.forEach((option) => {
+                const matchesSearch = !term ||
+                    (option.dataset.searchText || "")
+                        .toLowerCase()
+                        .includes(term);
+                const matchesAction = !removing ||
+                    option.dataset.isAssigned === "true";
+                const matches = matchesSearch && matchesAction;
+                option.hidden = !matches;
+                if (matches) visibleCount += 1;
+            });
+            if (bulkModuleEmpty) {
+                bulkModuleEmpty.hidden = visibleCount > 0;
+                bulkModuleEmpty.textContent = removing && !tutorSelect.value
+                    ? "Choose a tutor to see their assigned modules."
+                    : removing
+                        ? "This tutor has no assigned modules matching your search."
+                    : "No modules match your search.";
+            }
+            updateBulkSelection();
+        };
+
+        const updateAssignedModules = () => {
+            const selectedTutorOption = tutorOptions.find((option) =>
+                option.dataset.value === tutorSelect.value);
+            const assignedIds = new Set(
+                (selectedTutorOption?.dataset.assignedModuleIds || "")
+                    .split(",")
+                    .filter(Boolean));
+            bulkModuleOptions.forEach((option) => {
+                const checkbox = option.querySelector(
+                    "[data-bulk-module-checkbox]");
+                const isAssigned = assignedIds.has(option.dataset.moduleId || "");
+                option.dataset.isAssigned = String(isAssigned);
+                if (checkbox) {
+                    checkbox.disabled = isRemoving() ? !isAssigned : isAssigned;
+                    if (checkbox.disabled) checkbox.checked = false;
+                }
+                option.classList.toggle(
+                    "is-assigned",
+                    isAssigned && !isRemoving());
+                const badge = option.querySelector(
+                    "[data-bulk-module-assigned]");
+                if (badge) badge.hidden = isRemoving() || !isAssigned;
+            });
+            filterBulkModules();
+        };
+
+        bulkModuleSearch.addEventListener("input", filterBulkModules);
+        tutorSelect.addEventListener("change", () => {
+            clearBulkSelection();
+            updateAssignedModules();
+        });
+        bulkAction.addEventListener("change", () => {
+            clearBulkSelection();
+            updateBulkActionCopy();
+            updateAssignedModules();
+        });
+        bulkModuleCheckboxes.forEach((checkbox) => {
+            checkbox?.addEventListener("change", updateBulkSelection);
+        });
+        bulkModuleSelectAll?.addEventListener("change", () => {
+            bulkModuleOptions
+                .filter((option) => !option.hidden)
+                .map((option) => option.querySelector(
+                    "[data-bulk-module-checkbox]"))
+                .filter((checkbox) => checkbox && !checkbox.disabled)
+                .forEach((checkbox) => {
+                    checkbox.checked = bulkModuleSelectAll.checked;
+                });
+            updateBulkSelection();
+        });
+        bulkAssignmentForm.addEventListener("submit", (event) => {
+            if (event.defaultPrevented) {
+                return;
+            }
+            if (selectedModuleCount() === 0) {
+                event.preventDefault();
+                if (bulkModuleError) {
+                    bulkModuleError.textContent =
+                        isRemoving()
+                            ? "Select at least one module to remove."
+                            : "Select at least one module to assign.";
+                    bulkModuleError.hidden = false;
+                }
+                bulkModuleSearch.focus();
+                return;
+            }
+            if (!isRemoving() ||
+                bulkAssignmentForm.dataset.removalConfirmed === "true") {
+                delete bulkAssignmentForm.dataset.removalConfirmed;
+                return;
+            }
+
+            if (!bulkRemoveConfirmModal || !bulkRemoveConfirmSubmit ||
+                !window.bootstrap?.Modal) {
+                event.preventDefault();
+                return;
+            }
+
+            event.preventDefault();
+            const selectedOptions = bulkModuleOptions.filter((option) =>
+                option.querySelector("[data-bulk-module-checkbox]")?.checked);
+            const selectedTutorOption = tutorOptions.find((option) =>
+                option.dataset.value === tutorSelect.value);
+            const selectedCount = selectedOptions.length;
+            if (bulkRemoveConfirmCount) {
+                bulkRemoveConfirmCount.textContent = selectedCount === 1
+                    ? "1 module"
+                    : `${selectedCount} modules`;
+            }
+            if (bulkRemoveConfirmTutor) {
+                bulkRemoveConfirmTutor.textContent = selectedTutorOption
+                    ?.querySelector("strong")?.textContent?.trim() || "this tutor";
+            }
+            if (bulkRemoveConfirmList) {
+                bulkRemoveConfirmList.replaceChildren(...selectedOptions.map((option) => {
+                    const item = document.createElement("li");
+                    item.textContent = option.querySelector("strong")
+                        ?.textContent?.trim() || "Selected module";
+                    return item;
+                }));
+            }
+
+            const showConfirmation = () => window.bootstrap.Modal
+                .getOrCreateInstance(bulkRemoveConfirmModal).show();
+            bulkAssignModal.addEventListener(
+                "hidden.bs.modal",
+                showConfirmation,
+                { once: true });
+            window.bootstrap.Modal.getOrCreateInstance(bulkAssignModal).hide();
+        });
+        bulkRemoveConfirmModal?.addEventListener("hidden.bs.modal", () => {
+            if (bulkAssignmentForm.dataset.removalConfirmed !== "true") {
+                window.bootstrap?.Modal.getOrCreateInstance(bulkAssignModal).show();
+            }
+        });
+        bulkRemoveConfirmSubmit?.addEventListener("click", () => {
+            bulkAssignmentForm.dataset.removalConfirmed = "true";
+            bulkAssignmentForm.requestSubmit(bulkSubmit || undefined);
+        });
+        updateBulkActionCopy();
+        updateAssignedModules();
+    }
+
     const removeTutorModal = document.querySelector("[data-remove-tutor-modal]");
     removeTutorModal?.addEventListener("show.bs.modal", (event) => {
         const trigger = event.relatedTarget;

@@ -1,7 +1,20 @@
 @page
 @model BC_CampusLearn.Pages.Administrator.Modules.IndexModel
 @using BC_CampusLearn.Models.Entities
-@{ ViewData["Title"] = "Modules"; }
+@{
+    ViewData["Title"] = "Modules";
+    string catalogueReturnUrl = Url.Page("Index", new
+    {
+        Model.Search,
+        Model.ProgrammeId,
+        Model.Year,
+        Model.Unassigned,
+        Model.Sort,
+        Model.SortDirection,
+        Model.ModulePage
+    }) ?? "/Administrator/Modules/Index";
+    catalogueReturnUrl = $"{catalogueReturnUrl}#module-catalogue";
+}
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin-modules.css" asp-append-version="true" />
@@ -37,6 +50,10 @@
     @if (Model.Tab == "catalogue")
     {
         <div class="module-catalogue-toolbar">
+            <button type="button" class="module-add-button module-assign-many-button"
+                    data-bs-toggle="modal" data-bs-target="#bulk-assign-modules-modal">
+                Assign modules to tutor
+            </button>
             <button type="button" class="module-add-button" data-bs-toggle="modal" data-bs-target="#module-create-modal">
                 <span aria-hidden="true">+</span> Add a module
             </button>
@@ -125,7 +142,7 @@
                     </tr></thead><tbody>
                     @foreach (var module in Model.Modules)
                     {
-                        <tr><th scope="row"><strong>@module.Code</strong><span>@module.Name</span></th><td>@module.Programme</td><td>@module.Year</td><td><span class="module-badge @(module.TutorCount == 0 ? "uncovered" : "")">@(module.TutorCount == 0 ? "No tutors" : module.TutorCount == 1 ? "1 tutor" : $"{module.TutorCount} tutors")</span></td><td><a asp-page="Details" asp-route-id="@module.Id" class="module-manage-link" aria-label="Manage @module.Code">Manage</a></td></tr>
+                        <tr><th scope="row"><strong>@module.Code</strong><span>@module.Name</span></th><td>@module.Programme</td><td>@module.Year</td><td><span class="module-badge @(module.TutorCount == 0 ? "uncovered" : "")">@(module.TutorCount == 0 ? "No tutors" : module.TutorCount == 1 ? "1 tutor" : $"{module.TutorCount} tutors")</span></td><td><a asp-page="Details" asp-route-id="@module.Id" asp-route-returnUrl="@catalogueReturnUrl" class="module-manage-link" aria-label="Manage @module.Code">Manage</a></td></tr>
                     }
                     @if (Model.Modules.Count == 0) { <tr><td colspan="5" class="module-empty">No modules match these filters. Clear the filters or add a module.</td></tr> }
                     </tbody></table>
@@ -240,6 +257,187 @@
                         <button type="submit" class="module-modal-submit">Create module</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade module-create-modal module-assign-modal"
+         id="bulk-assign-modules-modal"
+         tabindex="-1"
+         aria-labelledby="bulk-assign-modules-title"
+         aria-hidden="true"
+         data-assign-tutor-modal
+         data-bulk-assign-modal
+         data-open="@Model.ShowBulkAssign.ToString().ToLowerInvariant()">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form method="post"
+                      asp-page-handler="BulkAssign"
+                      data-module-validation
+                      data-bulk-assignment-form
+                      novalidate>
+                    <input type="hidden" name="Search" value="@Model.Search" />
+                    <input type="hidden" name="ProgrammeId" value="@Model.ProgrammeId" />
+                    <input type="hidden" name="Year" value="@Model.Year" />
+                    <input type="hidden" name="Unassigned" value="@Model.Unassigned" />
+                    <input type="hidden" name="Sort" value="@Model.Sort" />
+                    <input type="hidden" name="SortDirection" value="@Model.SortDirection" />
+                    <input type="hidden" name="ModulePage" value="@Model.ModulePage" />
+                    <div class="modal-header">
+                        <div>
+                            <h2 id="bulk-assign-modules-title" data-bulk-modal-title>Assign modules to tutor</h2>
+                            <p data-bulk-modal-description>Choose one tutor, then select every module you want to assign.</p>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body module-bulk-assign-body">
+                        <div class="module-tutor-select">
+                            <label for="bulk-assignment-tutor-toggle">Tutor</label>
+                            <select id="bulk-assignment-tutor-id"
+                                    name="BulkTutorId"
+                                    class="visually-hidden"
+                                    data-module-required
+                                    data-module-label="tutor"
+                                    data-module-validation-target="#bulk-assignment-tutor-toggle"
+                                    data-module-focus-target="#bulk-assignment-tutor-toggle"
+                                    data-tutor-native-select>
+                                <option value="">Select a tutor</option>
+                                @foreach (var tutor in Model.AssignmentTutors)
+                                {
+                                    <option value="@tutor.TutorId" selected="@(Model.BulkTutorId == tutor.TutorId)">
+                                        @tutor.BcUser.DisplayName (@tutor.BcUser.PersonnelNumber) · @tutor.Programme.Name
+                                    </option>
+                                }
+                            </select>
+                            <div class="module-searchable-select" data-tutor-combobox>
+                                <button id="bulk-assignment-tutor-toggle"
+                                        type="button"
+                                        class="module-searchable-select-toggle"
+                                        role="combobox"
+                                        aria-haspopup="listbox"
+                                        aria-expanded="false"
+                                        aria-controls="bulk-assignment-tutor-options"
+                                        data-tutor-combobox-toggle>
+                                    <span data-tutor-selected-label>
+                                        @(Model.AssignmentTutors.FirstOrDefault(tutor => tutor.TutorId == Model.BulkTutorId)?.BcUser.DisplayName ?? "Select a tutor")
+                                    </span>
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
+                                </button>
+                                <div class="module-searchable-select-menu" data-tutor-combobox-menu hidden>
+                                    <div class="module-searchable-select-search">
+                                        <input type="search"
+                                               placeholder="Search by name, personnel number or programme"
+                                               autocomplete="off"
+                                               aria-label="Search tutors"
+                                               data-tutor-search />
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                                    </div>
+                                    <div id="bulk-assignment-tutor-options"
+                                         class="module-searchable-select-options"
+                                         role="listbox">
+                                        @foreach (var tutor in Model.AssignmentTutors)
+                                        {
+                                            string assignedModuleIds = string.Join(",", tutor.TutorCourseModules
+                                                .Where(assignment => assignment.IsActive)
+                                                .Select(assignment => assignment.ProgrammeModuleId));
+                                            <button type="button"
+                                                    role="option"
+                                                    aria-selected="@(Model.BulkTutorId == tutor.TutorId ? "true" : "false")"
+                                                    data-tutor-option
+                                                    data-value="@tutor.TutorId"
+                                                    data-assigned-module-ids="@assignedModuleIds">
+                                                <strong>@tutor.BcUser.DisplayName</strong>
+                                                <span>@tutor.BcUser.PersonnelNumber · @tutor.Programme.Name</span>
+                                                <span>Year @tutor.YearOfStudy · @tutor.CampusOfStudy</span>
+                                            </button>
+                                        }
+                                    </div>
+                                    <p class="module-tutor-search-empty" data-tutor-search-empty hidden>No tutors match your search.</p>
+                                </div>
+                            </div>
+                            <span asp-validation-for="BulkTutorId" class="module-field-error"></span>
+                        </div>
+
+                        <div class="module-bulk-action-select">
+                            <label for="bulk-assignment-action">Action</label>
+                            <select id="bulk-assignment-action"
+                                    name="BulkAction"
+                                    data-bulk-action>
+                                <option value="assign" selected="@(Model.BulkAction != "remove")">Assign modules</option>
+                                <option value="remove" selected="@(Model.BulkAction == "remove")">Remove modules</option>
+                            </select>
+                        </div>
+
+                        <fieldset class="module-bulk-module-picker">
+                            <legend data-bulk-module-legend>Modules available to assign</legend>
+                            <div class="module-searchable-select-search module-bulk-module-search">
+                                <input type="search"
+                                       placeholder="Search by module code, name or programme"
+                                       autocomplete="off"
+                                       aria-label="Search modules"
+                                       data-bulk-module-search />
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
+                            </div>
+                            <div class="module-bulk-selection-toolbar">
+                                <label><input type="checkbox" data-bulk-module-select-all /> Select visible modules</label>
+                                <strong data-bulk-module-count>0 modules selected</strong>
+                            </div>
+                            <div class="module-bulk-module-options" data-bulk-module-options>
+                                @foreach (var module in Model.AssignmentModules)
+                                {
+                                    <label class="module-bulk-module-option"
+                                           data-bulk-module-option
+                                           data-module-id="@module.ProgrammeModuleId"
+                                           data-search-text="@module.ModuleCode @module.ModuleName @module.Programme.Name">
+                                        <input type="checkbox"
+                                               name="BulkModuleIds"
+                                               value="@module.ProgrammeModuleId"
+                                               checked="@Model.BulkModuleIds.Contains(module.ProgrammeModuleId)"
+                                               data-bulk-module-checkbox />
+                                        <span>
+                                            <strong>@module.ModuleCode — @module.ModuleName</strong>
+                                            <small>@module.Programme.Name · Year @module.YearOfStudy</small>
+                                        </span>
+                                        <em data-bulk-module-assigned hidden>Already assigned</em>
+                                    </label>
+                                }
+                            </div>
+                            <p class="module-tutor-search-empty" data-bulk-module-empty hidden>No modules match your search.</p>
+                            <span asp-validation-for="BulkModuleIds" class="module-field-error" data-bulk-module-error></span>
+                        </fieldset>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="module-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="module-modal-submit" data-bulk-submit>Assign selected modules</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade module-review-confirm-modal"
+         id="bulk-remove-confirm-modal"
+         tabindex="-1"
+         aria-labelledby="bulk-remove-confirm-title"
+         aria-hidden="true"
+         data-bulk-remove-confirm-modal>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 id="bulk-remove-confirm-title">Remove selected modules?</h2>
+                        <p>Remove <strong data-bulk-remove-confirm-count>0 modules</strong> from <strong data-bulk-remove-confirm-tutor>this tutor</strong>?</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="module-review-confirm-label">Modules to remove</p>
+                    <ul data-bulk-remove-confirm-list></ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="module-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="module-modal-submit is-decline" data-bulk-remove-confirm-submit>Remove modules</button>
+                </div>
             </div>
         </div>
     </div>

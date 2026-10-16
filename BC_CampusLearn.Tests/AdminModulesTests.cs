@@ -367,6 +367,157 @@ public class AdminModulesTests
     }
 
     [Fact]
+    public async Task BulkAssignmentAssignsEverySelectedModuleAndPreservesCatalogueState()
+    {
+        await using var db = await Seed();
+        db.ProgrammeModules.Add(new()
+        {
+            ProgrammeModuleId = 2,
+            ProgrammeId = 1,
+            ModuleCode = "DBS201",
+            ModuleName = "Databases",
+            YearOfStudy = 2
+        });
+        var addRequest = new TutorModuleChangeRequest
+        {
+            TutorId = 1,
+            ProgrammeModuleId = 1,
+            RequestType = TutorModuleChangeRequestType.Add
+        };
+        var removeRequest = new TutorModuleChangeRequest
+        {
+            TutorId = 1,
+            ProgrammeModuleId = 2,
+            RequestType = TutorModuleChangeRequestType.Remove
+        };
+        db.TutorModuleChangeRequests.AddRange(addRequest, removeRequest);
+        await db.SaveChangesAsync();
+        var page = Setup(new IndexModel(db)
+        {
+            BulkTutorId = 1,
+            BulkModuleIds = [1, 2],
+            Search = "PRG",
+            ProgrammeId = 1,
+            Year = 2,
+            Unassigned = true,
+            Sort = "module",
+            SortDirection = "asc",
+            ModulePage = 2
+        });
+        page.ModelState.AddModelError(
+            "Input.ModuleCode",
+            "The ModuleCode field is required.");
+
+        var redirect = Assert.IsType<RedirectToPageResult>(
+            await page.OnPostBulkAssignAsync(default));
+
+        Assert.Equal(2, await db.TutorCourseModules.CountAsync(a => a.IsActive));
+        UserNotification notification = await db.UserNotifications.SingleAsync();
+        Assert.Equal("Module assignment update", notification.Title);
+        Assert.Contains("assigned you to 2 modules", notification.Message);
+        Assert.Contains("PRG101", notification.Message);
+        Assert.Contains("DBS201", notification.Message);
+        Assert.Equal(TutorAccountRequestStatus.Approved, addRequest.Status);
+        Assert.Equal(TutorAccountRequestStatus.Declined, removeRequest.Status);
+        Assert.Equal("module-catalogue", redirect.Fragment);
+        Assert.Equal("PRG", redirect.RouteValues!["Search"]);
+        Assert.Equal(2, redirect.RouteValues["ModulePage"]);
+    }
+
+    [Fact]
+    public async Task BulkAssignmentRequiresTutorAndAtLeastOneModule()
+    {
+        await using var db = await Seed();
+        var page = Setup(new IndexModel(db));
+
+        Assert.IsType<PageResult>(await page.OnPostBulkAssignAsync(default));
+
+        Assert.True(page.ShowBulkAssign);
+        Assert.False(page.ModelState.IsValid);
+        Assert.Empty(db.TutorCourseModules);
+    }
+
+    [Fact]
+    public async Task BulkRemovalDeactivatesSelectedModulesAndSendsOneSummary()
+    {
+        await using var db = await Seed();
+        db.ProgrammeModules.Add(new()
+        {
+            ProgrammeModuleId = 2,
+            ProgrammeId = 1,
+            ModuleCode = "DBS201",
+            ModuleName = "Databases",
+            YearOfStudy = 2
+        });
+        db.TutorCourseModules.AddRange(
+            new TutorCourseModule { TutorId = 1, ProgrammeModuleId = 1 },
+            new TutorCourseModule { TutorId = 1, ProgrammeModuleId = 2 });
+        await db.SaveChangesAsync();
+        var page = Setup(new IndexModel(db)
+        {
+            BulkTutorId = 1,
+            BulkAction = "remove",
+            BulkModuleIds = [1, 2]
+        });
+
+        Assert.IsType<RedirectToPageResult>(
+            await page.OnPostBulkAssignAsync(default));
+
+        Assert.Empty(await db.TutorCourseModules
+            .Where(assignment => assignment.IsActive)
+            .ToListAsync());
+        UserNotification notification = await db.UserNotifications.SingleAsync();
+        Assert.Contains("removed your assignment from 2 modules", notification.Message);
+        Assert.Contains("PRG101", notification.Message);
+        Assert.Contains("DBS201", notification.Message);
+    }
+
+    [Fact]
+    public async Task AssignmentSummaryStaysWithinNotificationMessageLimit()
+    {
+        await using var db = await Seed();
+        Tutor tutor = await db.Tutors.SingleAsync();
+        List<ProgrammeModule> modules = Enumerable.Range(1, 500)
+            .Select(number => new ProgrammeModule
+            {
+                ProgrammeId = 1,
+                ModuleCode = $"M{number:000000000}",
+                ModuleName = $"Module {number}",
+                YearOfStudy = 1
+            })
+            .ToList();
+        var management = new AdminModuleManagement(db);
+
+        management.NotifyAssignmentChanges(tutor, modules, assigned: true);
+
+        UserNotification notification = Assert.Single(
+            db.ChangeTracker.Entries<UserNotification>()
+                .Select(entry => entry.Entity));
+        Assert.True(notification.Message.Length <= 4000);
+        Assert.Contains("assigned you to 500 modules", notification.Message);
+        Assert.Contains("and", notification.Message);
+        Assert.Contains("more", notification.Message);
+    }
+
+    [Theory]
+    [InlineData("/Administrator/Modules?Search=PRG&ModulePage=2#module-catalogue", true)]
+    [InlineData("/Administrator/Modules/Index?Search=PRG&ModulePage=2#module-catalogue", true)]
+    [InlineData("/Administrator/Modules/Index#module-catalogue", true)]
+    [InlineData("https://example.com/Administrator/Modules/Index", false)]
+    [InlineData("//example.com/Administrator/Modules/Index", false)]
+    public async Task ModuleDetailsOnlyAcceptsLocalCatalogueReturnUrls(
+        string returnUrl,
+        bool accepted)
+    {
+        await using var db = await Seed();
+        var page = Setup(new DetailsModel(db) { ReturnUrl = returnUrl });
+
+        Assert.IsType<PageResult>(await page.OnGetAsync(1, default));
+
+        Assert.Equal(accepted ? returnUrl : null, page.CatalogueReturnUrl);
+    }
+
+    [Fact]
     public async Task CatalogueFiltersByProgrammeYearAndCoverage()
     {
         await using var db = await Seed();

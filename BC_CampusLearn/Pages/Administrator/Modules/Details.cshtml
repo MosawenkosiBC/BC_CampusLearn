@@ -9,6 +9,7 @@
     var firstVisibleTutor = Model.FilteredAssignedTutorCount == 0 ? 0 : ((Model.TutorPage - 1) * 12) + 1;
     var lastVisibleTutor = Math.Min(Model.TutorPage * 12, Model.FilteredAssignedTutorCount);
     var visibleTutorRange = Model.FilteredAssignedTutorCount == 0 ? "0" : $"{firstVisibleTutor}–{lastVisibleTutor}";
+    ViewData["ModulesReturnUrl"] = Model.CatalogueReturnUrl;
 }
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
@@ -34,8 +35,9 @@
     <section class="module-assigned-section" aria-label="Assigned tutors">
         <div class="module-management-workspace module-assigned-workspace">
             <aside class="module-filter-panel" aria-labelledby="assigned-filter-title">
-                <div class="module-filter-heading"><h2 id="assigned-filter-title">Filters</h2><a asp-page="Details" asp-route-id="@Model.Module.ProgrammeModuleId">Clear All</a></div>
+                <div class="module-filter-heading"><h2 id="assigned-filter-title">Filters</h2><a asp-page="Details" asp-route-id="@Model.Module.ProgrammeModuleId" asp-route-returnUrl="@Model.CatalogueReturnUrl">Clear All</a></div>
                 <form method="get" asp-page="Details" asp-route-id="@Model.Module.ProgrammeModuleId" class="module-filters">
+                    <input type="hidden" name="ReturnUrl" value="@Model.CatalogueReturnUrl" />
                     <div class="module-filter-group"><label asp-for="TutorSearch">Search tutors</label><div class="module-filter-search"><input asp-for="TutorSearch" type="search" placeholder="Name, personnel number or email" /><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg></div></div>
                     <div class="module-filter-group"><label asp-for="TutorProgrammeId">Programme</label><select asp-for="TutorProgrammeId"><option value="">All programmes</option>@foreach (var programme in Model.AssignedTutorProgrammes) { <option value="@programme.Id">@programme.Name</option> }</select></div>
                     <button type="submit" class="module-apply-filters">Apply Filters</button>
@@ -48,11 +50,11 @@
                         <span class="module-active-filters-label">Active filters</span>
                         @if (!string.IsNullOrWhiteSpace(Model.TutorSearch))
                         {
-                            <a asp-page="Details" asp-route-id="@Model.Module.ProgrammeModuleId" asp-route-TutorProgrammeId="@Model.TutorProgrammeId" asp-route-TutorPage="1" asp-fragment="assigned-tutors-results" aria-label="Remove search filter @Model.TutorSearch">Search: @Model.TutorSearch <span aria-hidden="true">×</span></a>
+                            <a asp-page="Details" asp-route-id="@Model.Module.ProgrammeModuleId" asp-route-returnUrl="@Model.CatalogueReturnUrl" asp-route-TutorProgrammeId="@Model.TutorProgrammeId" asp-route-TutorPage="1" asp-fragment="assigned-tutors-results" aria-label="Remove search filter @Model.TutorSearch">Search: @Model.TutorSearch <span aria-hidden="true">×</span></a>
                         }
                         @if (selectedTutorProgramme is not null)
                         {
-                            <a asp-page="Details" asp-route-id="@Model.Module.ProgrammeModuleId" asp-route-TutorSearch="@Model.TutorSearch" asp-route-TutorPage="1" asp-fragment="assigned-tutors-results" aria-label="Remove programme filter @selectedTutorProgramme.Name">Programme: @selectedTutorProgramme.Name <span aria-hidden="true">×</span></a>
+                            <a asp-page="Details" asp-route-id="@Model.Module.ProgrammeModuleId" asp-route-returnUrl="@Model.CatalogueReturnUrl" asp-route-TutorSearch="@Model.TutorSearch" asp-route-TutorPage="1" asp-fragment="assigned-tutors-results" aria-label="Remove programme filter @selectedTutorProgramme.Name">Programme: @selectedTutorProgramme.Name <span aria-hidden="true">×</span></a>
                         }
                     </div>
                 }
@@ -93,6 +95,7 @@
         <div class="modal-content">
             <form method="post" asp-page-handler="Assignment" data-module-validation novalidate>
                 <input type="hidden" name="add" value="true" />
+                <input type="hidden" name="ReturnUrl" value="@Model.CatalogueReturnUrl" />
                 <div class="modal-header">
                     <div><h2 id="assign-tutor-title">Assign a tutor</h2><p>Select any active, approved tutor.</p></div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -148,6 +151,7 @@
         <div class="modal-content">
             <form method="post" asp-page-handler="Save" data-module-validation novalidate>
                 <input type="hidden" name="Input.ProgrammeId" value="@Model.Input.ProgrammeId" />
+                <input type="hidden" name="ReturnUrl" value="@Model.CatalogueReturnUrl" />
                 <div class="modal-header">
                     <div><h2 id="module-edit-title">Edit module details</h2><p>Update the module code, name, or year of study.</p></div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -172,6 +176,7 @@
             <form method="post" asp-page-handler="Assignment">
                 <input type="hidden" name="tutorId" value="" data-remove-tutor-input />
                 <input type="hidden" name="add" value="false" />
+                <input type="hidden" name="ReturnUrl" value="@Model.CatalogueReturnUrl" />
                 <div class="modal-header">
                     <div><h2 id="remove-tutor-title">Remove tutor</h2></div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

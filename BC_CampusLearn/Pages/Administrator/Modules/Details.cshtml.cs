@@ -22,6 +22,10 @@ public class DetailsModel(ApplicationDbContext context) : PageModel
     [BindProperty(SupportsGet = true)] public string? TutorSearch { get; set; }
     [BindProperty(SupportsGet = true)] public int? TutorProgrammeId { get; set; }
     [BindProperty(SupportsGet = true)] public int TutorPage { get; set; } = 1;
+    [BindProperty(SupportsGet = true)] public string? ReturnUrl { get; set; }
+    public string? CatalogueReturnUrl => IsCatalogueReturnUrl(ReturnUrl)
+        ? ReturnUrl
+        : null;
     public bool ShowEdit { get; private set; }
     public bool ShowAssign { get; private set; }
     [BindProperty] public IndexModel.ModuleInput Input { get; set; } = new();
@@ -58,7 +62,7 @@ public class DetailsModel(ApplicationDbContext context) : PageModel
         await context.SaveChangesAsync(cancellationToken);
         if (transaction is not null) await transaction.CommitAsync(cancellationToken);
         TempData["ModuleSuccess"] = "Module details saved.";
-        return RedirectToPage(new { id });
+        return RedirectToPage(new { id, returnUrl = CatalogueReturnUrl });
     }
 
     public async Task<IActionResult> OnPostAssignmentAsync(int id, int tutorId, bool add, CancellationToken cancellationToken)
@@ -103,7 +107,27 @@ public class DetailsModel(ApplicationDbContext context) : PageModel
         }
         if (transaction is not null) await transaction.CommitAsync(cancellationToken);
         TempData["ModuleSuccess"] = add ? "Tutor assigned and notified." : "Tutor removed and notified. Session history has been preserved.";
-        return RedirectToPage(new { id });
+        return RedirectToPage(new { id, returnUrl = CatalogueReturnUrl });
+    }
+
+    private static bool IsCatalogueReturnUrl(string? returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl) ||
+            returnUrl.Any(char.IsControl) ||
+            returnUrl.Contains('\\'))
+        {
+            return false;
+        }
+
+        string[] modulePaths =
+        [
+            "/Administrator/Modules",
+            "/Administrator/Modules/Index"
+        ];
+        return modulePaths.Any(path =>
+            returnUrl.Equals(path, StringComparison.OrdinalIgnoreCase) ||
+            returnUrl.StartsWith($"{path}?", StringComparison.OrdinalIgnoreCase) ||
+            returnUrl.StartsWith($"{path}#", StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<bool> LoadAsync(int id, CancellationToken ct)

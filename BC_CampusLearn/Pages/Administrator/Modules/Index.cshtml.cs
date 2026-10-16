@@ -23,8 +23,13 @@ public class IndexModel(ApplicationDbContext context) : PageModel
     [BindProperty(SupportsGet = true)] public int RequestPage { get; set; } = 1;
     [BindProperty] public ModuleInput Input { get; set; } = new();
     [BindProperty] public List<int> SelectedRequestIds { get; set; } = [];
+    [BindProperty] public int BulkTutorId { get; set; }
+    [BindProperty] public string BulkAction { get; set; } = "assign";
+    [BindProperty] public List<int> BulkModuleIds { get; set; } = [];
     public IReadOnlyList<ProgrammeOfStudy> Programmes { get; private set; } = [];
     public IReadOnlyList<ModuleRow> Modules { get; private set; } = [];
+    public IReadOnlyList<Tutor> AssignmentTutors { get; private set; } = [];
+    public IReadOnlyList<ProgrammeModule> AssignmentModules { get; private set; } = [];
     public IReadOnlyList<TutorModuleChangeRequest> Requests { get; private set; } = [];
     public IReadOnlyList<TutorRequestGroup> RequestGroups { get; private set; } = [];
     public int TotalModules { get; private set; }
@@ -35,6 +40,7 @@ public class IndexModel(ApplicationDbContext context) : PageModel
     public int TotalPages { get; private set; }
     public int RequestPages { get; private set; }
     public bool ShowCreate { get; private set; }
+    public bool ShowBulkAssign { get; private set; }
     public sealed record ModuleRow(int Id, string Code, string Name, string Programme, int Year, int TutorCount);
     public sealed record RequestModuleRow(int RequestId, int ModuleId, string Code, string Name, string Programme);
     public sealed record RequestSubmission(
@@ -192,6 +198,182 @@ public class IndexModel(ApplicationDbContext context) : PageModel
         return RedirectToPage(new { Tab = "requests", RequestStatus });
     }
 
+    public async Task<IActionResult> OnPostBulkAssignAsync(
+        CancellationToken cancellationToken)
+        => await context.Database.CreateExecutionStrategy().ExecuteAsync(
+            () => BulkAssignCoreAsync(cancellationToken));
+
+    private async Task<IActionResult> BulkAssignCoreAsync(
+        CancellationToken cancellationToken)
+    {
+        Tab = "catalogue";
+        ShowBulkAssign = true;
+        // This page contains multiple forms. Ignore binding errors produced by
+        // fields that belong to the create-module form and validate only the
+        // bulk module-management inputs below.
+        ModelState.Clear();
+        bool addAssignments = !string.Equals(
+            BulkAction,
+            "remove",
+            StringComparison.OrdinalIgnoreCase);
+        BulkAction = addAssignments ? "assign" : "remove";
+        BulkModuleIds = BulkModuleIds
+            .Where(id => id > 0)
+            .Distinct()
+            .ToList();
+
+        Tutor? tutor = await context.Tutors
+            .Include(item => item.BcUser)
+            .SingleOrDefaultAsync(item => item.TutorId == BulkTutorId,
+                cancellationToken);
+        if (tutor is null || !tutor.IsActive ||
+            tutor.Status != TutorStatus.Approved ||
+            tutor.ApplicationStage != TutorApplicationStage.Placement)
+        {
+            ModelState.AddModelError(nameof(BulkTutorId),
+                "Choose an active, approved tutor in placement.");
+        }
+        if (BulkModuleIds.Count == 0)
+        {
+            ModelState.AddModelError(nameof(BulkModuleIds),
+                addAssignments
+                    ? "Select at least one module to assign."
+                    : "Select at least one module to remove.");
+        }
+
+        List<ProgrammeModule> selectedModules = BulkModuleIds.Count == 0
+            ? []
+            : await context.ProgrammeModules
+                .Where(module => BulkModuleIds.Contains(module.ProgrammeModuleId))
+                .OrderBy(module => module.ModuleCode)
+                .ToListAsync(cancellationToken);
+        if (selectedModules.Count != BulkModuleIds.Count)
+        {
+            ModelState.AddModelError(nameof(BulkModuleIds),
+                "One or more selected modules no longer exist.");
+        }
+        if (!ModelState.IsValid)
+        {
+            await LoadAsync(cancellationToken);
+            return Page();
+        }
+
+        HashSet<int> assignedModuleIds = await context.TutorCourseModules
+            .Where(assignment => assignment.TutorId == BulkTutorId &&
+                assignment.IsActive &&
+                BulkModuleIds.Contains(assignment.ProgrammeModuleId))
+            .Select(assignment => assignment.ProgrammeModuleId)
+            .ToHashSetAsync(cancellationToken);
+        List<ProgrammeModule> modulesToChange = selectedModules
+            .Where(module => addAssignments !=
+                assignedModuleIds.Contains(module.ProgrammeModuleId))
+            .ToList();
+        if (modulesToChange.Count == 0)
+        {
+            ModelState.AddModelError(nameof(BulkModuleIds),
+                addAssignments
+                    ? "This tutor is already assigned to every selected module."
+                    : "This tutor is not assigned to any selected module.");
+            await LoadAsync(cancellationToken);
+            return Page();
+        }
+
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync(
+                IsolationLevel.Serializable,
+                cancellationToken)
+            : null;
+        var management = new AdminModuleManagement(context);
+        string? error = null;
+        foreach (ProgrammeModule module in modulesToChange)
+        {
+            error = await management.ChangeAssignmentAsync(
+                BulkTutorId,
+                module.ProgrammeModuleId,
+                add: addAssignments,
+                cancellationToken: cancellationToken);
+            if (error is not null)
+            {
+                break;
+            }
+        }
+
+        if (error is null)
+        {
+            int[] moduleIds = modulesToChange
+                .Select(module => module.ProgrammeModuleId)
+                .ToArray();
+            List<TutorModuleChangeRequest> pendingRequests =
+                await context.TutorModuleChangeRequests
+                    .Where(request => request.TutorId == BulkTutorId &&
+                        moduleIds.Contains(request.ProgrammeModuleId) &&
+                        request.Status == TutorAccountRequestStatus.Pending)
+                    .ToListAsync(cancellationToken);
+            foreach (TutorModuleChangeRequest request in pendingRequests)
+            {
+                request.Status = request.RequestType == (addAssignments
+                    ? TutorModuleChangeRequestType.Add
+                    : TutorModuleChangeRequestType.Remove)
+                        ? TutorAccountRequestStatus.Approved
+                        : TutorAccountRequestStatus.Declined;
+                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedBy = User.Identity?.Name ?? "Administrator";
+                request.ReviewNote =
+                    "Resolved when an administrator updated the module assignment.";
+            }
+            management.NotifyAssignmentChanges(
+                tutor!,
+                modulesToChange,
+                addAssignments);
+            try
+            {
+                await context.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                error = "One or more assignments changed. Refresh and try again.";
+            }
+            catch (DbUpdateException)
+            {
+                error = "The module changes could not be saved. Refresh and try again.";
+            }
+        }
+
+        if (error is not null)
+        {
+            if (transaction is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+            }
+            context.ChangeTracker.Clear();
+            ModelState.AddModelError("", error);
+            await LoadAsync(cancellationToken);
+            return Page();
+        }
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+        TempData["ModuleSuccess"] = addAssignments
+            ? modulesToChange.Count == 1
+                ? $"{tutor!.BcUser.DisplayName} was assigned to 1 module."
+                : $"{tutor!.BcUser.DisplayName} was assigned to {modulesToChange.Count} modules."
+            : modulesToChange.Count == 1
+                ? $"{tutor!.BcUser.DisplayName} was removed from 1 module."
+                : $"{tutor!.BcUser.DisplayName} was removed from {modulesToChange.Count} modules.";
+        return RedirectToPage(pageName: null, pageHandler: null, routeValues: new
+        {
+            Search,
+            ProgrammeId,
+            Year,
+            Unassigned,
+            Sort,
+            SortDirection,
+            ModulePage
+        }, fragment: "module-catalogue");
+    }
+
     private async Task LoadAsync(CancellationToken ct)
     {
         Tab = Tab == "requests" ? "requests" : "catalogue";
@@ -199,6 +381,22 @@ public class IndexModel(ApplicationDbContext context) : PageModel
         SortDirection = SortDirection == "asc" ? "asc" : "desc";
         if (!Enum.IsDefined(RequestStatus)) RequestStatus = TutorAccountRequestStatus.Pending;
         Programmes = await context.ProgrammesOfStudy.AsNoTracking().OrderBy(p => p.Name).ToListAsync(ct);
+        AssignmentTutors = await context.Tutors
+            .AsNoTracking()
+            .Include(tutor => tutor.BcUser)
+            .Include(tutor => tutor.Programme)
+            .Include(tutor => tutor.TutorCourseModules.Where(assignment => assignment.IsActive))
+            .Where(tutor => tutor.IsActive &&
+                tutor.Status == TutorStatus.Approved &&
+                tutor.ApplicationStage == TutorApplicationStage.Placement)
+            .OrderBy(tutor => tutor.BcUser.DisplayName)
+            .ToListAsync(ct);
+        AssignmentModules = await context.ProgrammeModules
+            .AsNoTracking()
+            .Include(module => module.Programme)
+            .OrderBy(module => module.ModuleCode)
+            .ThenBy(module => module.ModuleName)
+            .ToListAsync(ct);
         var query = context.ProgrammeModules.AsNoTracking();
         TotalModules = await query.CountAsync(ct);
         UncoveredModules = await query.CountAsync(m => !m.TutorCourseModules.Any(a =>

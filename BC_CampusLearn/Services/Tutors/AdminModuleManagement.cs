@@ -1,6 +1,7 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 
 namespace BC_CampusLearn.Services.Tutors;
 
@@ -37,6 +38,48 @@ public class AdminModuleManagement(ApplicationDbContext context)
             RecipientBcUserId = tutor.BcUserId,
             Title = "Module assignment update",
             Message = $"{module.ModuleCode} — {module.ModuleName}: {message}",
+            LinkUrl = "/Tutors/Profile",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+    }
+
+    public void NotifyAssignmentChanges(Tutor tutor,
+        IReadOnlyCollection<ProgrammeModule> modules,
+        bool assigned)
+    {
+        const int maximumMessageLength = 4000;
+        List<string> moduleCodes = modules
+            .OrderBy(module => module.ModuleCode)
+            .ThenBy(module => module.ModuleName)
+            .Select(module => module.ModuleCode)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        string moduleLabel = modules.Count == 1 ? "module" : "modules";
+        string summary = assigned
+            ? $"An administrator assigned you to {modules.Count} {moduleLabel}:"
+            : $"An administrator removed your assignment from {modules.Count} {moduleLabel}:";
+        var message = new StringBuilder(summary).AppendLine();
+        for (int index = 0; index < moduleCodes.Count; index++)
+        {
+            string separator = index == 0 ? string.Empty : ", ";
+            int omittedCount = moduleCodes.Count - index;
+            string omittedSuffix = $" … and {omittedCount} more.";
+            if (message.Length + separator.Length + moduleCodes[index].Length +
+                (index < moduleCodes.Count - 1 ? omittedSuffix.Length : 0) >
+                maximumMessageLength)
+            {
+                message.Append(omittedSuffix);
+                break;
+            }
+
+            message.Append(separator).Append(moduleCodes[index]);
+        }
+
+        context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = tutor.BcUserId,
+            Title = "Module assignment update",
+            Message = message.ToString(),
             LinkUrl = "/Tutors/Profile",
             CreatedAt = DateTimeOffset.UtcNow
         });
