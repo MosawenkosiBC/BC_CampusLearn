@@ -230,20 +230,24 @@ public sealed class TeamsMeetingTests
     }
 
     [Theory]
-    [InlineData(true, false)]
-    [InlineData(false, false)]
-    [InlineData(true, true)]
-    [InlineData(false, true)]
-    public async Task ConfirmationPages_RequireManualLink_AndAllowManualFallbackAfterFailure(bool detailsPage, bool fail)
+    [InlineData("details", false)]
+    [InlineData("sessions", false)]
+    [InlineData("dashboard", false)]
+    [InlineData("details", true)]
+    [InlineData("sessions", true)]
+    [InlineData("dashboard", true)]
+    public async Task ConfirmationPages_RequireManualLink_AndAllowManualFallbackAfterFailure(string pageName, bool fail)
     {
         await using var fixture = await Fixture.CreateAsync();
         fixture.Calendar.FailCreate = fail;
         var time = new FixedTimeProvider(fixture.Now);
         var lifecycle = new SessionLifecycleService(fixture.Context, time, fixture.Service);
-        PageModel page = detailsPage
+        PageModel page = pageName == "details"
             ? new BC_CampusLearn.Pages.Tutors.SessionDetailsModel(fixture.Context, new TutorUser(), fixture.Environment, lifecycle, time,
                 teamsOptions: Options.Create(fixture.Options))
-            : new BC_CampusLearn.Pages.Tutors.SessionsModel(fixture.Context, new TutorUser(), lifecycle, Options.Create(fixture.Options));
+            : pageName == "dashboard"
+                ? new BC_CampusLearn.Pages.Tutors.TutorDashboardModel(fixture.Context, new TutorUser(), lifecycle, Options.Create(fixture.Options))
+                : new BC_CampusLearn.Pages.Tutors.SessionsModel(fixture.Context, new TutorUser(), lifecycle, Options.Create(fixture.Options));
         var http = new DefaultHttpContext();
         http.Request.Headers.Accept = "application/json";
         page.PageContext = new PageContext { HttpContext = http };
@@ -256,6 +260,8 @@ public sealed class TeamsMeetingTests
                 details.MeetingLink = link;
                 return await details.OnPostConfirmAsync(1, default);
             }
+            if (page is BC_CampusLearn.Pages.Tutors.TutorDashboardModel dashboard)
+                return await dashboard.OnPostConfirmAsync(1, link, default);
             return await ((BC_CampusLearn.Pages.Tutors.SessionsModel)page).OnPostConfirmAsync(1, link, default);
         }
 
@@ -412,9 +418,10 @@ public sealed class TeamsMeetingTests
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task GenerateLinkPages_ConfirmBooking_OnlyAfterCreationSucceeds(bool detailsPage)
+    [InlineData("details")]
+    [InlineData("sessions")]
+    [InlineData("dashboard")]
+    public async Task GenerateLinkPages_ConfirmBooking_OnlyAfterCreationSucceeds(string pageName)
     {
         await using var fixture = await Fixture.CreateAsync();
         var student = new BcUser
@@ -426,17 +433,22 @@ public sealed class TeamsMeetingTests
         await fixture.Context.SaveChangesAsync();
         var time = new FixedTimeProvider(fixture.Now);
         var lifecycle = new SessionLifecycleService(fixture.Context, time, fixture.Service);
-        PageModel page = detailsPage
+        PageModel page = pageName == "details"
             ? new BC_CampusLearn.Pages.Tutors.SessionDetailsModel(fixture.Context, new TutorUser(), fixture.Environment, lifecycle, time,
                 teamsOptions: Options.Create(fixture.Options), teamsMeetings: fixture.Service)
-            : new BC_CampusLearn.Pages.Tutors.SessionsModel(fixture.Context, new TutorUser(), lifecycle, Options.Create(fixture.Options), fixture.Service);
+            : pageName == "dashboard"
+                ? new BC_CampusLearn.Pages.Tutors.TutorDashboardModel(fixture.Context, new TutorUser(), lifecycle, Options.Create(fixture.Options), fixture.Service)
+                : new BC_CampusLearn.Pages.Tutors.SessionsModel(fixture.Context, new TutorUser(), lifecycle, Options.Create(fixture.Options), fixture.Service);
         var http = new DefaultHttpContext();
         page.PageContext = new PageContext { HttpContext = http };
         page.TempData = new TempDataDictionary(http, new EmptyTempData());
 
-        Task<IActionResult> Generate() => detailsPage
-            ? ((BC_CampusLearn.Pages.Tutors.SessionDetailsModel)page).OnPostGenerateTeamsLinkAsync(1, default)
-            : ((BC_CampusLearn.Pages.Tutors.SessionsModel)page).OnPostGenerateTeamsLinkAsync(1, default);
+        Task<IActionResult> Generate() => page switch
+        {
+            BC_CampusLearn.Pages.Tutors.SessionDetailsModel details => details.OnPostGenerateTeamsLinkAsync(1, default),
+            BC_CampusLearn.Pages.Tutors.TutorDashboardModel dashboard => dashboard.OnPostGenerateTeamsLinkAsync(1, default),
+            _ => ((BC_CampusLearn.Pages.Tutors.SessionsModel)page).OnPostGenerateTeamsLinkAsync(1, default)
+        };
 
         fixture.Calendar.Result = new("event-1", null);
         JsonElement pending = JsonSerializer.SerializeToElement(Assert.IsType<JsonResult>(await Generate()).Value);

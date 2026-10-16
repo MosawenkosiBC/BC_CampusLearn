@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using BC_CampusLearn.Services.Sessions;
+using BC_CampusLearn.Services.Teams;
+using Microsoft.Extensions.Options;
 
 namespace BC_CampusLearn.Pages.Tutors;
 
@@ -14,15 +16,39 @@ public class TutorDashboardModel : PageModel
     private readonly ApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly ISessionLifecycleService _lifecycleService;
+    private readonly TeamsMeetingOptions _teamsOptions;
+    private readonly IBookingTeamsMeetingService? _teamsMeetings;
 
     public TutorDashboardModel(
         ApplicationDbContext context,
         ICurrentUserService currentUserService,
-        ISessionLifecycleService lifecycleService)
+        ISessionLifecycleService lifecycleService,
+        IOptions<TeamsMeetingOptions>? teamsOptions = null,
+        IBookingTeamsMeetingService? teamsMeetings = null)
     {
         _context = context;
         _currentUserService = currentUserService;
         _lifecycleService = lifecycleService;
+        _teamsOptions = teamsOptions?.Value ?? new TeamsMeetingOptions();
+        _teamsMeetings = teamsMeetings;
+    }
+
+    public bool TeamsMeetingCreationEnabled => _teamsOptions.AllowsTutor(_currentUserService.GetRequiredUser().BcUserId);
+
+    public async Task<IActionResult> OnPostGenerateTeamsLinkAsync(int bookingId, CancellationToken cancellationToken)
+    {
+        int? tutorId = await GetCurrentTutorIdAsync(cancellationToken);
+        if (!tutorId.HasValue) return Forbid();
+        int userId = _currentUserService.GetRequiredUser().BcUserId;
+        SessionLifecycleResult result = _teamsMeetings is null
+            ? SessionLifecycleResult.Failure("Teams meeting creation is not configured.")
+            : await _teamsMeetings.CreateAsync(userId, bookingId, cancellationToken);
+        if (result.Succeeded)
+            result = await _lifecycleService.ConfirmAsync(tutorId.Value, userId, bookingId, null, cancellationToken);
+        string? link = result.Succeeded
+            ? await _context.MeetingLinks.Where(item => item.BookingId == bookingId).Select(item => item.Url).SingleOrDefaultAsync(cancellationToken)
+            : null;
+        return new JsonResult(new { success = result.Succeeded, message = result.ErrorMessage, link });
     }
 
     public int PendingSessionCount { get; private set; }
@@ -211,6 +237,8 @@ public class TutorDashboardModel : PageModel
                         booking.ScheduledStartTime,
                     Duration = booking.Duration,
                     Status = booking.Status,
+                    MeetingLinkUrl = booking.MeetingLink != null ? booking.MeetingLink.Url : null,
+                    HasGeneratedTeamsLink = booking.MeetingLink != null && booking.MeetingLink.TeamsEventId != null && !booking.MeetingLink.TeamsManualFallbackAllowed,
                     TutorReviewSubmitted =
                         booking.TutorEvaluation != null
                 })
@@ -286,8 +314,9 @@ public class TutorDashboardModel : PageModel
             return Forbid();
         }
 
-        SessionLifecycleResult result =
-            await _lifecycleService.ConfirmAsync(
+        SessionLifecycleResult result = string.IsNullOrWhiteSpace(meetingLink)
+            ? SessionLifecycleResult.Failure("Enter a meeting link to confirm the session.")
+            : await _lifecycleService.ConfirmAsync(
                 tutorId.Value,
                 currentUser.BcUserId,
                 bookingId,
@@ -304,6 +333,8 @@ public class TutorDashboardModel : PageModel
             TempData["ErrorMessage"] = result.ErrorMessage;
         }
 
+        if (Request.Headers.Accept.Any(value => value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true))
+            return new JsonResult(new { success = result.Succeeded, message = result.ErrorMessage });
         return RedirectToPage();
     }
 
