@@ -1,7 +1,4 @@
 (() => {
-    const successModal = document.getElementById("teams-meeting-success-modal");
-    if (successModal) bootstrap.Modal.getOrCreateInstance(successModal).show();
-
     document.querySelectorAll("form[data-session-confirm-form='true']").forEach((form) => {
         const modal = form.closest(".modal");
         const error = form.querySelector("[data-confirm-error]");
@@ -16,6 +13,7 @@
 
         const setManualVisible = (visible) => {
             if (manualSection) manualSection.hidden = !visible;
+            if (generator) generator.hidden = visible;
             manualToggle?.setAttribute("aria-expanded", String(visible));
             if (manualToggle) {
                 manualToggle.textContent = visible ? "−" : "+";

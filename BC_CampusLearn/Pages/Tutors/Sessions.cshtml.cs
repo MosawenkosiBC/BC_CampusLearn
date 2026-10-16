@@ -41,9 +41,6 @@ public class SessionsModel : PageModel
 
     public bool TeamsMeetingCreationEnabled => _teamsOptions.AllowsTutor(_currentUserService.GetRequiredUser().BcUserId);
 
-    [TempData]
-    public bool TeamsMeetingCreated { get; set; }
-
     public async Task<IActionResult> OnPostGenerateTeamsLinkAsync(int bookingId, CancellationToken cancellationToken)
     {
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
@@ -59,7 +56,6 @@ public class SessionsModel : PageModel
         if (result.Succeeded)
             result = await _lifecycleService.ConfirmAsync(tutorId.Value,
                 currentUser.BcUserId, bookingId, null, cancellationToken);
-        TeamsMeetingCreated = result.Succeeded;
         string? link = result.Succeeded
             ? await _context.MeetingLinks.Where(item => item.BookingId == bookingId).Select(item => item.Url).SingleOrDefaultAsync(cancellationToken)
             : null;
@@ -295,9 +291,6 @@ public class SessionsModel : PageModel
             meetingLink,
             cancellationToken);
 
-        TeamsMeetingCreated = result.Succeeded && await _context.MeetingLinks.AnyAsync(
-            item => item.BookingId == bookingId && item.TeamsEventId != null && !item.TeamsManualFallbackAllowed,
-            cancellationToken);
         if (result.Succeeded)
         {
             SuccessMessage = "Session confirmed and meeting link saved.";

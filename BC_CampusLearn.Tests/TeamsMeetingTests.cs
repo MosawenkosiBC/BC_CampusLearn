@@ -414,7 +414,7 @@ public sealed class TeamsMeetingTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task GenerateLinkPages_ConfirmBookingAndShowSuccess_OnlyAfterCreationSucceeds(bool detailsPage)
+    public async Task GenerateLinkPages_ConfirmBooking_OnlyAfterCreationSucceeds(bool detailsPage)
     {
         await using var fixture = await Fixture.CreateAsync();
         var student = new BcUser
@@ -437,14 +437,10 @@ public sealed class TeamsMeetingTests
         Task<IActionResult> Generate() => detailsPage
             ? ((BC_CampusLearn.Pages.Tutors.SessionDetailsModel)page).OnPostGenerateTeamsLinkAsync(1, default)
             : ((BC_CampusLearn.Pages.Tutors.SessionsModel)page).OnPostGenerateTeamsLinkAsync(1, default);
-        bool ShowSuccess() => detailsPage
-            ? ((BC_CampusLearn.Pages.Tutors.SessionDetailsModel)page).TeamsMeetingCreated
-            : ((BC_CampusLearn.Pages.Tutors.SessionsModel)page).TeamsMeetingCreated;
 
         fixture.Calendar.Result = new("event-1", null);
         JsonElement pending = JsonSerializer.SerializeToElement(Assert.IsType<JsonResult>(await Generate()).Value);
         Assert.False(pending.GetProperty("success").GetBoolean());
-        Assert.False(ShowSuccess());
         Assert.Equal(BookingStatus.Pending, (await fixture.Context.Bookings.SingleAsync()).Status);
         Assert.Empty(fixture.Context.BookingStatusHistory);
         Assert.Empty(fixture.Context.UserNotifications);
@@ -455,7 +451,6 @@ public sealed class TeamsMeetingTests
         Assert.True(json.GetProperty("success").GetBoolean());
         Assert.Equal(JoinUrl, json.GetProperty("link").GetString());
         Assert.Equal(BookingStatus.Confirmed, (await fixture.Context.Bookings.SingleAsync()).Status);
-        Assert.True(ShowSuccess());
         Assert.Single(fixture.Context.BookingStatusHistory);
         Assert.Single(fixture.Context.UserNotifications);
         Assert.Single(fixture.Calendar.Requests);
