@@ -470,6 +470,10 @@ body {
     color: #fff;
 }
 
+form[data-session-confirm-form] [hidden] {
+    display: none !important;
+}
+
 body.administrator-area > .platform-announcement {
     left: var(--admin-sidebar-width);
     position: fixed;
