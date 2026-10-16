@@ -10,7 +10,9 @@
         const generator = form.querySelector("[data-generate-teams-link]");
         const manualSection = form.querySelector("[data-manual-link-section]");
         const manualToggle = form.querySelector("[data-toggle-manual-link]");
+        const success = form.querySelector("[data-confirm-success]");
         let submitting = false;
+        let completed = false;
 
         const setManualVisible = (visible) => {
             if (manualSection) manualSection.hidden = !visible;
@@ -30,11 +32,15 @@
             setManualVisible(!manualToggle);
         });
         modal?.addEventListener("hide.bs.modal", (event) => {
-            if (submitting) event.preventDefault();
+            if (submitting && !completed) event.preventDefault();
         });
+        modal?.addEventListener("hidden.bs.modal", () => {
+            if (completed) window.location.reload();
+        });
+        success?.querySelector("button")?.addEventListener("click", () => window.location.reload());
 
         const send = async (generating) => {
-            if (submitting) return;
+            if (submitting || completed) return;
             if (!generating) {
                 setManualVisible(true);
                 if (link) link.value = link.value.trim();
@@ -50,7 +56,10 @@
             const data = new FormData(form);
             const buttons = [...form.querySelectorAll("button")];
             const disabledStates = buttons.map((button) => button.disabled);
+            const wasReadOnly = link?.readOnly ?? false;
+            let confirmed = false;
             submitting = true;
+            if (link) link.readOnly = true;
             form.setAttribute("aria-busy", "true");
             buttons.forEach((button) => { button.disabled = true; });
             if (error) { error.textContent = ""; error.hidden = true; }
@@ -74,8 +83,28 @@
                     if (generating) {
                         if (!link || typeof result.link !== "string" || !result.link.trim())
                             throw new Error("The meeting link could not be retrieved. Please retry.");
+                        link.value = result.link;
+                        if (manualToggle) manualToggle.hidden = true;
+                        setManualVisible(false);
                     }
-                    window.location.reload();
+                    confirmed = true;
+                    completed = true;
+                    form.removeAttribute("aria-busy");
+                    if (success) {
+                        success.querySelector("button").disabled = false;
+                        success.querySelector("p").textContent = generating
+                            ? "Your Teams meeting link has been generated, the invitation sent to the student, and the session confirmed."
+                            : "Your meeting link has been saved and the session confirmed.";
+                        const body = success.parentElement;
+                        Array.from(body.children).forEach(child => { child.hidden = child !== success; });
+                        const footer = form.querySelector(".modal-footer");
+                        if (footer) footer.hidden = true;
+                        const title = form.querySelector(".modal-header h2");
+                        if (title) title.textContent = "Session confirmed";
+                        form.querySelectorAll("[data-bs-dismiss='modal']").forEach(button => { button.disabled = false; });
+                    } else {
+                        window.location.reload();
+                    }
                     return;
                 }
                 if (error) {
@@ -89,10 +118,13 @@
                     error.hidden = false;
                 }
             } finally {
-                submitting = false;
-                form.removeAttribute("aria-busy");
-                buttons.forEach((button, index) => { button.disabled = disabledStates[index]; });
-                if (progress) progress.hidden = true;
+                if (!confirmed) {
+                    submitting = false;
+                    if (link) link.readOnly = wasReadOnly;
+                    form.removeAttribute("aria-busy");
+                    buttons.forEach((button, index) => { button.disabled = disabledStates[index]; });
+                    if (progress) progress.hidden = true;
+                }
             }
         };
         form.addEventListener("submit", (event) => {

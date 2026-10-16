@@ -403,6 +403,10 @@
                                 aria-expanded="false" aria-controls="tutor-manual-meeting-link" aria-label="Add a manual meeting link">+</button>
                     }
                     <div class="alert alert-danger" data-confirm-error role="alert" hidden></div>
+                    <div data-confirm-success role="status" hidden>
+                        <p>Your Teams meeting link has been generated, the invitation sent to the student, and the session confirmed.</p>
+                        <button type="button" class="btn bookings-modal-primary">Done</button>
+                    </div>
                     <p data-confirm-progress role="status" hidden>Creating your Teams meeting and confirming the session…</p>
                     <div id="tutor-manual-meeting-link" data-manual-link-section hidden="@Model.TeamsMeetingCreationEnabled">
                     <label for="tutor-confirm-meeting-link">Manual meeting link</label>
