@@ -75,6 +75,8 @@
         "[data-manual-module]") ?? []);
     const manualModuleEmpty = manualTutorForm?.querySelector(
         "[data-manual-module-empty]");
+    const manualModuleCount = manualTutorForm?.querySelector(
+        "[data-manual-module-count]");
     const studentPicker = document.querySelector("[data-student-picker]");
     const studentSearch = studentPicker?.querySelector(
         "[data-student-search]");
@@ -166,17 +168,22 @@
         }
     });
 
+    const syncManualModuleCount = () => {
+        const count = manualModules.filter(module =>
+            module.querySelector("input[type='checkbox']")?.checked).length;
+        if (manualModuleCount) {
+            manualModuleCount.textContent = `${count} ${count === 1 ? "module" : "modules"} selected`;
+        }
+    };
+
     const syncManualModules = () => {
-        const programmeId = manualProgramme?.value ?? "";
         const yearOfStudy = Number(manualYear?.value ?? 0);
         const query = manualModuleSearch?.value.trim().toLowerCase() ?? "";
         let eligibleModuleCount = 0;
         let visibleModuleCount = 0;
 
         manualModules.forEach(module => {
-            const isEligible = Boolean(programmeId) &&
-                yearOfStudy >= 1 && yearOfStudy <= 4 &&
-                module.dataset.programmeId === programmeId &&
+            const isEligible = yearOfStudy >= 1 && yearOfStudy <= 4 &&
                 Number(module.dataset.moduleYear) <= yearOfStudy;
             const matchesSearch = !query ||
                 module.dataset.moduleSearch?.includes(query);
@@ -195,11 +202,13 @@
             }
         });
 
+        syncManualModuleCount();
+
         if (manualModuleEmpty) {
             manualModuleEmpty.hidden = visibleModuleCount > 0;
-            if (!programmeId || yearOfStudy < 1 || yearOfStudy > 4) {
+            if (yearOfStudy < 1 || yearOfStudy > 4) {
                 manualModuleEmpty.textContent =
-                    "Choose a programme and year first.";
+                    "Select a student to see modules eligible for their year of study.";
             } else if (eligibleModuleCount > 0 && query) {
                 manualModuleEmpty.textContent =
                     "No modules match your search.";
@@ -213,6 +222,9 @@
     manualProgramme?.addEventListener("change", syncManualModules);
     manualYear?.addEventListener("input", syncManualModules);
     manualModuleSearch?.addEventListener("input", syncManualModules);
+    manualModules.forEach(module => {
+        module.querySelector("input[type='checkbox']")?.addEventListener("change", syncManualModuleCount);
+    });
     syncManualModules();
 
     const studentDetailsUrl = manualTutorForm?.dataset.studentDetailsUrl;

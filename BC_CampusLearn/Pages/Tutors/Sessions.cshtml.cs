@@ -41,11 +41,25 @@ public class SessionsModel : PageModel
 
     public bool TeamsMeetingCreationEnabled => _teamsOptions.AllowsTutor(_currentUserService.GetRequiredUser().BcUserId);
 
+    [TempData]
+    public bool TeamsMeetingCreated { get; set; }
+
     public async Task<IActionResult> OnPostGenerateTeamsLinkAsync(int bookingId, CancellationToken cancellationToken)
     {
+        CurrentUser currentUser = _currentUserService.GetRequiredUser();
+        int? tutorId = await _context.Tutors.AsNoTracking()
+            .Where(tutor => tutor.BcUserId == currentUser.BcUserId &&
+                tutor.Status == TutorStatus.Approved && tutor.IsActive)
+            .Select(tutor => (int?)tutor.TutorId)
+            .SingleOrDefaultAsync(cancellationToken);
+        if (!tutorId.HasValue) return Forbid();
         SessionLifecycleResult result = _teamsMeetings is null
             ? SessionLifecycleResult.Failure("Teams meeting creation is not configured.")
             : await _teamsMeetings.CreateAsync(_currentUserService.GetRequiredUser().BcUserId, bookingId, cancellationToken);
+        if (result.Succeeded)
+            result = await _lifecycleService.ConfirmAsync(tutorId.Value,
+                currentUser.BcUserId, bookingId, null, cancellationToken);
+        TeamsMeetingCreated = result.Succeeded;
         string? link = result.Succeeded
             ? await _context.MeetingLinks.Where(item => item.BookingId == bookingId).Select(item => item.Url).SingleOrDefaultAsync(cancellationToken)
             : null;
@@ -272,13 +286,18 @@ public class SessionsModel : PageModel
             return Forbid();
         }
 
-        SessionLifecycleResult result = await _lifecycleService.ConfirmAsync(
+        SessionLifecycleResult result = string.IsNullOrWhiteSpace(meetingLink)
+            ? SessionLifecycleResult.Failure("Enter a meeting link to confirm the session.")
+            : await _lifecycleService.ConfirmAsync(
             tutorId.Value,
             currentUser.BcUserId,
             bookingId,
             meetingLink,
             cancellationToken);
 
+        TeamsMeetingCreated = result.Succeeded && await _context.MeetingLinks.AnyAsync(
+            item => item.BookingId == bookingId && item.TeamsEventId != null && !item.TeamsManualFallbackAllowed,
+            cancellationToken);
         if (result.Succeeded)
         {
             SuccessMessage = "Session confirmed and meeting link saved.";

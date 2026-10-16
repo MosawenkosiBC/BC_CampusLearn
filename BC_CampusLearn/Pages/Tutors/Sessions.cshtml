@@ -386,7 +386,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form method="post" asp-page-handler="Confirm" data-tutor-confirm-form data-session-confirm-form="true"
-                  data-teams-enabled="@(Model.TeamsMeetingCreationEnabled ? "true" : "false")">
+                  data-teams-enabled="@(Model.TeamsMeetingCreationEnabled ? "true" : "false")" novalidate>
                 <input type="hidden" name="bookingId" data-tutor-confirm-booking-id />
                 <div class="modal-header">
                     <div>
@@ -398,24 +398,29 @@
                 <div class="modal-body">
                     @if (Model.TeamsMeetingCreationEnabled)
                     {
-                        <p>Confirm to create a Teams meeting and invite the student, for online or face-to-face tutoring. If creation fails, retry or paste a manual meeting link.</p>
-                        <button type="button" class="btn bookings-modal-primary mb-3"
-                                data-generate-teams-link data-generate-url="@Url.Page("/Tutors/Sessions", "GenerateTeamsLink")"><i class="bi bi-microsoft-teams me-2" aria-hidden="true"></i>Create Teams meeting</button>
+                        <p>Create a Teams meeting and invite the student.</p>
+                        <button type="button" class="btn btn-secondary mb-3" data-toggle-manual-link
+                                aria-expanded="false" aria-controls="tutor-manual-meeting-link" aria-label="Add a manual meeting link">+</button>
                     }
                     <div class="alert alert-danger" data-confirm-error role="alert" hidden></div>
                     <p data-confirm-progress role="status" hidden>Creating your Teams meeting and confirming the session…</p>
-                    <label for="tutor-confirm-meeting-link">@(Model.TeamsMeetingCreationEnabled ? "Manual meeting link (optional)" : "Meeting link")</label>
+                    <div id="tutor-manual-meeting-link" data-manual-link-section hidden="@Model.TeamsMeetingCreationEnabled">
+                    <label for="tutor-confirm-meeting-link">Manual meeting link</label>
                     <input id="tutor-confirm-meeting-link" name="meetingLink"
                            type="url" maxlength="2048"
                            placeholder="https://teams.microsoft.com/..."
-                           autocomplete="url" required="@(!Model.TeamsMeetingCreationEnabled)" />
+                           autocomplete="url" required />
+                    <button type="submit" class="btn bookings-modal-primary mt-3">Confirm session</button>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light"
                             data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn bookings-modal-primary">
-                        Confirm session
-                    </button>
+                    @if (Model.TeamsMeetingCreationEnabled)
+                    {
+                        <button type="button" class="btn btn-teams" data-generate-teams-link
+                                data-generate-url="@Url.Page("/Tutors/Sessions", "GenerateTeamsLink")"><i class="bi bi-microsoft-teams me-2" aria-hidden="true"></i>Create Teams meeting</button>
+                    }
                 </div>
             </form>
         </div>
@@ -480,6 +485,11 @@
         </div>
     </div>
 </div>
+}
+
+@if (Model.TeamsMeetingCreated)
+{
+    <partial name="_TeamsMeetingSuccessModal" />
 }
 
 @section Scripts {

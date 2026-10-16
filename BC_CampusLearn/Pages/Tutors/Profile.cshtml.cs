@@ -160,8 +160,7 @@ public class ProfileModel : PageModel
 
         TutorModuleChangeRequestType requestType = ModuleRequestInput.RequestType!.Value;
         List<int> programmeModuleIds = await _context.ProgrammeModules
-            .Where(module => moduleIds.Contains(module.ProgrammeModuleId) &&
-                module.ProgrammeId == tutor.ProgrammeId)
+            .Where(module => moduleIds.Contains(module.ProgrammeModuleId))
             .Select(module => module.ProgrammeModuleId)
             .ToListAsync(cancellationToken);
         List<int> assignedModuleIds = await _context.TutorCourseModules
@@ -175,7 +174,7 @@ public class ProfileModel : PageModel
         {
             ModelState.AddModelError(
                 "ModuleRequestInput.ProgrammeModuleIds",
-                "Select modules from your programme.");
+                "Select valid modules.");
         }
         else if (requestType == TutorModuleChangeRequestType.Add && assignedModuleIds.Count > 0)
         {
@@ -488,8 +487,7 @@ public class ProfileModel : PageModel
             .ToArray();
         ModulesAvailableToAdd = await _context.ProgrammeModules
             .AsNoTracking()
-            .Where(module => module.ProgrammeId == tutor.ProgrammeId &&
-                !assignedModuleIds.Contains(module.ProgrammeModuleId))
+            .Where(module => !assignedModuleIds.Contains(module.ProgrammeModuleId))
             .OrderBy(module => module.ModuleName)
             .Select(module => new TutorModuleOptionViewModel
             {

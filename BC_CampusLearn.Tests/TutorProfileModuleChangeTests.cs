@@ -43,8 +43,10 @@ public class TutorProfileModuleChangeTests
         });
     }
 
-    [Fact]
-    public async Task RequestModuleChangeRejectsEntireSelectionWhenAnyModuleIsOutsideProgramme()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RequestModuleChangeAllowsOtherProgrammesButRejectsUnknownModules(bool unknownModule)
     {
         await using ApplicationDbContext context = await CreateContextAsync();
         context.ProgrammesOfStudy.Add(new ProgrammeOfStudy { Id = 2, Name = "Business" });
@@ -61,15 +63,27 @@ public class TutorProfileModuleChangeTests
         page.ModuleRequestInput = new TutorModuleChangeRequestInput
         {
             RequestType = TutorModuleChangeRequestType.Add,
-            ProgrammeModuleIds = [1, 3],
+            ProgrammeModuleIds = [1, unknownModule ? 999 : 3],
             Reason = "I would like to tutor these modules."
         };
 
         IActionResult result = await page.OnPostRequestModuleChangeAsync(default);
 
-        Assert.IsType<PageResult>(result);
-        Assert.False(page.ModelState.IsValid);
-        Assert.Empty(await context.TutorModuleChangeRequests.ToListAsync());
+        if (unknownModule)
+        {
+            Assert.IsType<PageResult>(result);
+            Assert.False(page.ModelState.IsValid);
+            Assert.Empty(await context.TutorModuleChangeRequests.ToListAsync());
+        }
+        else
+        {
+            Assert.IsType<RedirectToPageResult>(result);
+            Assert.True(page.ModelState.IsValid);
+            var requestedModuleIds = await context.TutorModuleChangeRequests
+                .OrderBy(request => request.ProgrammeModuleId)
+                .Select(request => request.ProgrammeModuleId).ToArrayAsync();
+            Assert.Equal([1, 3], requestedModuleIds);
+        }
     }
 
     private static ProfileModel SetupPage(ApplicationDbContext context)

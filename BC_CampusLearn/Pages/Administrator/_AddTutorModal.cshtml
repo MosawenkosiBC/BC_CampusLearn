@@ -114,7 +114,7 @@
                     <fieldset class="admin-manual-modules admin-add-tutor-field--full">
                         <legend>Modules to teach</legend>
                         <span class="admin-manual-field-error" role="alert" data-manual-error-for="ManualTutor.ProgrammeModuleIds"></span>
-                        <p>Select the programme and year of study to see eligible modules.</p>
+                        <p>Select modules from any programme, up to the tutor's year of study.</p>
                         <label class="admin-manual-module-search">
                             <span class="visually-hidden">Search modules</span>
                             <input type="search"
@@ -122,13 +122,14 @@
                                    autocomplete="off"
                                    data-manual-module-search />
                         </label>
+                        <p role="status" aria-live="polite" aria-atomic="true" data-manual-module-count>0 modules selected</p>
                         <div class="admin-manual-module-list" data-manual-module-list>
                             @foreach (var module in Model.ManualTutorModuleOptions)
                             {
                                 <label data-manual-module
                                        data-programme-id="@module.ProgrammeId"
                                        data-module-year="@module.YearOfStudy"
-                                       data-module-search="@($"{module.Code} {module.Name}".ToLowerInvariant())"
+                                       data-module-search="@($"{module.Code} {module.Name} {module.ProgrammeName}".ToLowerInvariant())"
                                        hidden>
                                     <input type="checkbox"
                                            name="ManualTutor.ProgrammeModuleIds"
@@ -136,13 +137,13 @@
                                     <span>
                                         <strong>@module.Code</strong>
                                         @module.Name
-                                        <small>Year @module.YearOfStudy</small>
+                                        <small>@module.ProgrammeName · Year @module.YearOfStudy</small>
                                     </span>
                                 </label>
                             }
                         </div>
                         <p class="admin-manual-module-empty" data-manual-module-empty>
-                            Choose a programme and year first.
+                            Select a student to see modules eligible for their year of study.
                         </p>
                     </fieldset>
                 </div>
