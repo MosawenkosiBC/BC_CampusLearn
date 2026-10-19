@@ -757,16 +757,13 @@
                                     TimeSpan.FromHours(2));
                             string status = slot.Status switch
                             {
-                                BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Booked =>
-                                    "booked",
-                                BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Active =>
-                                    "active",
+                                BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Pending =>
+                                    "pending",
+                                BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Confirmed =>
+                                    "confirmed",
                                 _ => "available"
                             };
-                            string statusLabel = slot.Status ==
-                                BC_CampusLearn.Models.ViewModels.TutorWeeklySlotStatus.Active
-                                    ? "Accepted/Active"
-                                    : slot.Status.ToString();
+                            string statusLabel = slot.Status.ToString();
 
                             return new
                             {
@@ -803,16 +800,16 @@
 
                 <div class="tutor-weekly-legend">
                     <span>
-                        <i class="is-booked"></i>
-                        Booked Slots
+                        <i class="is-pending"></i>
+                        Pending Slots
                     </span>
                     <span>
                         <i class="is-available"></i>
                         Available Slots
                     </span>
                     <span>
-                        <i class="is-active"></i>
-                        Accepted/Active Slots
+                        <i class="is-confirmed"></i>
+                        Confirmed Slots
                     </span>
                 </div>
             </section>
@@ -838,7 +835,7 @@
 
         <header class="tutor-booking-popover-heading">
             <div>
-                <span>Pending booking</span>
+                <span data-booking-status>Pending session</span>
                 <h2 id="booking-popover-student"
                     data-booking-student></h2>
             </div>
@@ -882,7 +879,7 @@
                    data-booking-id-input />
 
             <button type="submit" class="is-accept">
-                Manage session
+                Session details
             </button>
         </form>
     </div>

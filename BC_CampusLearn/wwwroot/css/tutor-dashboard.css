@@ -1180,33 +1180,33 @@
     transform: scale(1.06);
 }
 
-.tutor-slot-tab:is(button).is-booked {
+.tutor-slot-tab:is(button) {
     cursor: pointer;
     transition:
         box-shadow 150ms ease,
         transform 150ms ease;
 }
 
-.tutor-slot-tab:is(button).is-booked:hover,
-.tutor-slot-tab:is(button).is-booked:focus-visible {
+.tutor-slot-tab:is(button):hover,
+.tutor-slot-tab:is(button):focus-visible {
     box-shadow: 0 0 0 3px rgba(173, 1, 81, 0.14);
     outline: none;
     transform: scale(1.08);
 }
 
-.tutor-slot-tab.is-booked,
-.tutor-weekly-legend i.is-booked {
-    background-color: #f4dce8;
+.tutor-slot-tab.is-pending,
+.tutor-weekly-legend i.is-pending {
+    background-color: rgba(74, 193, 193, 0.17);
 }
 
 .tutor-slot-tab.is-available,
 .tutor-weekly-legend i.is-available {
-    background-color: #bce8e9;
+    background-color: #d9f1dc;
 }
 
-.tutor-slot-tab.is-active,
-.tutor-weekly-legend i.is-active {
-    background-color: #ccebcf;
+.tutor-slot-tab.is-confirmed,
+.tutor-weekly-legend i.is-confirmed {
+    background-color: rgba(173, 1, 81, 0.12);
 }
 
 .tutor-weekly-legend {
@@ -1394,22 +1394,22 @@
     width: 100%;
 }
 
-.tutor-monthly-indicator.is-booked {
-    background-color: #f2cfe0;
-    border-color: #eabbd2;
-    box-shadow: 0 1px 2px rgba(173, 1, 81, 0.12);
+.tutor-monthly-indicator.is-pending {
+    background-color: rgba(74, 193, 193, 0.17);
+    border-color: rgba(74, 193, 193, 0.3);
+    box-shadow: 0 1px 2px rgba(40, 127, 127, 0.12);
 }
 
 .tutor-monthly-indicator.is-available {
-    background-color: #aee4e6;
-    border-color: #90d7da;
-    box-shadow: 0 1px 2px rgba(33, 174, 179, 0.12);
+    background-color: #d9f1dc;
+    border-color: #b8dfbd;
+    box-shadow: 0 1px 2px rgba(36, 107, 45, 0.12);
 }
 
-.tutor-monthly-indicator.is-active {
-    background-color: #bde5c1;
-    border-color: #a4d8aa;
-    box-shadow: 0 1px 2px rgba(36, 107, 45, 0.12);
+.tutor-monthly-indicator.is-confirmed {
+    background-color: rgba(173, 1, 81, 0.12);
+    border-color: rgba(173, 1, 81, 0.22);
+    box-shadow: 0 1px 2px rgba(173, 1, 81, 0.12);
 }
 
 /* FullCalendar availability view */

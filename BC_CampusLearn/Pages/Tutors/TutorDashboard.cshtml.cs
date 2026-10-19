@@ -286,8 +286,8 @@ public class TutorDashboardModel : PageModel
                         Status =
                             booking.Status == BookingStatus.Confirmed ||
                             booking.Status == BookingStatus.InProgress
-                                ? TutorWeeklySlotStatus.Active
-                                : TutorWeeklySlotStatus.Booked
+                                ? TutorWeeklySlotStatus.Confirmed
+                                : TutorWeeklySlotStatus.Pending
                     })
                 .ToListAsync(cancellationToken);
 
