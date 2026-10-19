@@ -655,21 +655,33 @@
                         <button type="button" class="meeting-link-modal-save">Done</button>
                     </div>
                     <p data-confirm-progress role="status" hidden>Creating your Teams meeting and confirming the session…</p>
-                    <div id="session-manual-meeting-link" data-manual-link-section
+                    <div id="session-manual-meeting-link"
+                         class="@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending ? "session-manual-link-section" : null)"
+                         data-manual-link-section
                          hidden="@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending && Model.TeamsMeetingCreationEnabled)">
-                    <label asp-for="MeetingLink">@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending ? "Manual meeting link" : "Meeting link")</label>
-                    <div class="meeting-link-entry">
-                        <i class="bi bi-link-45deg" aria-hidden="true"></i>
+                    <label asp-for="MeetingLink"
+                           class="@(Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending ? "visually-hidden" : null)">Meeting link</label>
+                    @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending)
+                    {
                         <input asp-for="MeetingLink"
                                type="url"
                                maxlength="2048"
                                readonly="@(Model.Session.MeetingLink?.TeamsCreationRequestId is not null && !Model.Session.MeetingLink.TeamsManualFallbackAllowed)"
                                placeholder="https://teams.microsoft.com/..."
                                autocomplete="url" required />
-                    </div>
-                    @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending)
-                    {
                         <button type="submit" class="meeting-link-modal-save mt-3">Confirm session</button>
+                    }
+                    else
+                    {
+                        <div class="meeting-link-entry">
+                            <i class="bi bi-link-45deg" aria-hidden="true"></i>
+                            <input asp-for="MeetingLink"
+                                   type="url"
+                                   maxlength="2048"
+                                   readonly="@(Model.Session.MeetingLink?.TeamsCreationRequestId is not null && !Model.Session.MeetingLink.TeamsManualFallbackAllowed)"
+                                   placeholder="https://teams.microsoft.com/..."
+                                   autocomplete="url" required />
+                        </div>
                     }
                     </div>
                 </div>

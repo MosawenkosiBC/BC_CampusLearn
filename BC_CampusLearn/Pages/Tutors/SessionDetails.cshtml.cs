@@ -102,7 +102,7 @@ public class SessionDetailsModel : PageModel
 
     public bool IsDeregistered { get; private set; }
 
-    public bool TeamsMeetingCreationEnabled => _teamsOptions.AllowsTutor(CurrentBcUserId);
+    public bool TeamsMeetingCreationEnabled => _teamsOptions.Enabled;
 
     public async Task<IActionResult> OnPostGenerateTeamsLinkAsync(int bookingId, CancellationToken cancellationToken)
     {
