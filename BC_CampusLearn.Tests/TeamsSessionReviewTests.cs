@@ -45,6 +45,8 @@ public class TeamsSessionReviewTests
     [InlineData("manual")]
     [InlineData("incomplete")]
     [InlineData("organizer-mismatch")]
+    [InlineData("older-link")]
+    [InlineData("missing-organizer")]
     public async Task IneligibleBookingsCannotReadOrStreamTeamsArtifacts(string scenario)
     {
         await using var db = await CreateContextAsync();
@@ -53,12 +55,24 @@ public class TeamsSessionReviewTests
         if (scenario == "manual") booking.MeetingLink!.TeamsManualFallbackAllowed = true;
         if (scenario == "incomplete") booking.Status = BookingStatus.Confirmed;
         if (scenario == "organizer-mismatch") booking.MeetingLink!.TeamsOrganizerIdentityHash = "different";
+        if (scenario == "older-link") booking.MeetingLink!.TeamsEventId = null;
+        if (scenario == "missing-organizer") booking.MeetingLink!.TeamsOrganizerIdentityHash = null;
         await db.SaveChangesAsync();
         var handler = new Handler(_ => throw new Exception("Must not contact Graph"));
         var service = CreateService(db, handler, options);
         var result = await service.GetAsync(1, default);
         Assert.Empty(result.Recordings);
         Assert.NotEmpty(result.Notices);
+        string expectedReason = scenario switch
+        {
+            "disabled" => "disabled on this server",
+            "not-pilot" => "not included in the Teams pilot",
+            "manual" or "older-link" => "manually supplied or older meeting link",
+            "missing-organizer" => "missing its organizer verification details",
+            "incomplete" => "completed session",
+            _ => "organizer could not be verified"
+        };
+        Assert.Contains(expectedReason, Assert.Single(result.Notices));
         await Assert.ThrowsAsync<TeamsMeetingException>(() => service.OpenRecordingAsync(1, "recording-1", null, default));
         Assert.Equal(0, handler.Calls);
     }

@@ -93,7 +93,6 @@
                     CampusAlertVariant.Danger))
         }
 
-        <div class="tutor-head-evidence-layout">
         <section class="admin-session-reviews" aria-labelledby="session-reviews-title">
             <h2 id="session-reviews-title" class="visually-hidden">Session reviews</h2>
             <div class="admin-session-review-tabs tutor-head-review-tabs" role="tablist" aria-label="Session reviews">
@@ -119,6 +118,8 @@
                 </button>
             </div>
 
+            <div class="tutor-head-evidence-layout">
+            <div class="tutor-head-review-panels">
             <section class="admin-session-review-panel-card" id="tutor-head-review-panel"
                      role="tabpanel" aria-labelledby="tutor-head-review-tab" tabindex="0" hidden
                      data-review-panel data-review-pager>
@@ -255,9 +256,21 @@
                     </nav>
                 </div>
             </section>
-        </section>
+        </div>
         <aside class="tutor-head-video-card" aria-labelledby="session-video-title">
-            <h2 id="session-video-title">Session recording</h2>
+            <header class="tutor-head-video-heading">
+                <h2 id="session-video-title">Session recording</h2>
+                @if (Model.CanWatchRecording)
+                {
+                    <a class="tutor-head-recording-link" href="@Model.RecordingUrl" target="_blank" rel="noopener noreferrer">
+                        Open submitted recording
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path fill="currentColor" d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
+                        </svg>
+                    </a>
+                }
+            </header>
+            <div class="tutor-head-recordings">
             @if (Model.TeamsEvidence.Recordings.Count > 0)
             {
                 @foreach (var recording in Model.TeamsEvidence.Recordings)
@@ -280,12 +293,19 @@
             }
             else
             {
-                <div class="tutor-head-video-empty">No Teams recording is available to preview yet.</div>
+                <div class="tutor-head-video-empty">Teams video preview is unavailable for this session. See the details below.</div>
             }
-            @if (Model.CanWatchRecording)
-            {
-                <a class="tutor-head-recording-button" href="@Model.RecordingUrl" target="_blank" rel="noopener noreferrer">Open submitted recording</a>
-            }
+            </div>
+            <div class="tutor-head-evidence-actions">
+                @if (Model.HasTranscript)
+                {
+                    <a class="tutor-head-recording-button" href="@Url.Page("/TutorHead/SessionDetails", "Transcript", new { id = session.BookingId })" target="_blank" rel="noopener noreferrer">Transcript</a>
+                }
+                @foreach (var transcript in Model.TeamsEvidence.Transcripts)
+                {
+                    <a class="tutor-head-recording-button" href="@Url.Page("/TutorHead/SessionDetails", "TeamsTranscript", new { id = session.BookingId, transcriptId = transcript.Id })" target="_blank" rel="noopener noreferrer">Teams transcript @(Model.TeamsEvidence.Transcripts.Count > 1 ? (Model.TeamsEvidence.Transcripts.IndexOf(transcript) + 1).ToString() : "")</a>
+                }
+            </div>
             <section class="tutor-head-attendance" aria-labelledby="session-attendance-title">
                 <h3 id="session-attendance-title">Teams session details</h3>
                 @if (Model.TeamsEvidence.Duration is { } measuredDuration)
@@ -294,6 +314,7 @@
                     <p>@Model.TeamsEvidence.Start?.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm:ss") – @Model.TeamsEvidence.End?.ToOffset(TimeSpan.FromHours(2)).ToString("HH:mm:ss") SAST</p>
                 }
                 else { <p>Meeting duration unavailable.</p> }
+                <div class="tutor-head-attendance-grid">
                 @foreach (var participant in new[] { Model.TeamsEvidence.Tutor, Model.TeamsEvidence.Student })
                 {
                     <div class="tutor-head-attendance-person">
@@ -305,7 +326,7 @@
                         else
                         {
                             <p>Total attendance: <strong>@participant.Duration.ToString(@"hh\:mm\:ss")</strong></p>
-                            <ul>
+                            <ul class="tutor-head-attendance-intervals" tabindex="0" aria-label="@($"{participant.Label} join and leave times")">
                                 @foreach (var interval in participant.Intervals)
                                 {
                                     <li>Joined @interval.Join.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM, HH:mm:ss") · Left @interval.Leave.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM, HH:mm:ss") SAST</li>
@@ -314,23 +335,17 @@
                         }
                     </div>
                 }
+                </div>
             </section>
-            <div class="tutor-head-evidence-actions">
-                @if (Model.HasTranscript)
-                {
-                    <a class="tutor-head-recording-button" href="@Url.Page("/TutorHead/SessionDetails", "Transcript", new { id = session.BookingId })" target="_blank" rel="noopener noreferrer">View submitted transcript</a>
-                }
-                @foreach (var transcript in Model.TeamsEvidence.Transcripts)
-                {
-                    <a class="tutor-head-recording-button" href="@Url.Page("/TutorHead/SessionDetails", "TeamsTranscript", new { id = session.BookingId, transcriptId = transcript.Id })">Download Teams transcript @(Model.TeamsEvidence.Transcripts.IndexOf(transcript) + 1)</a>
-                }
-            </div>
+            <div class="tutor-head-evidence-notices">
             @foreach (string notice in Model.TeamsEvidence.Notices)
             {
                 <p class="tutor-head-evidence-notice">@notice</p>
             }
+            </div>
         </aside>
         </div>
+        </section>
     </div>
 </main>
 

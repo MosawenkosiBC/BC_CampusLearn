@@ -44,16 +44,26 @@ public sealed class TeamsSessionReviewService(
 {
     private sealed record MeetingContext(Booking Booking, string Root);
 
-    private async Task<MeetingContext?> ResolveAsync(int bookingId, CancellationToken ct)
+    private async Task<MeetingContext> ResolveAsync(int bookingId, CancellationToken ct)
     {
         Booking? booking = await context.Bookings.AsNoTracking()
             .Include(b => b.MeetingLink).Include(b => b.StudentBcUser)
             .Include(b => b.TutorCourseModule).ThenInclude(a => a.Tutor).ThenInclude(t => t.BcUser)
             .SingleOrDefaultAsync(b => b.BookingId == bookingId && b.Status == BookingStatus.Completed &&
                 b.TutorEvaluation != null && b.StudentEvaluation != null, ct);
-        if (booking is null || !options.Value.AllowsTutor(booking.TutorCourseModule.Tutor.BcUserId) ||
-            booking.MeetingLink is not { TeamsEventId: not null, TeamsOrganizerIdentityHash: not null, TeamsManualFallbackAllowed: false } link ||
-            string.IsNullOrWhiteSpace(link.Url)) return null;
+        if (booking is null)
+            throw new TeamsMeetingException("Teams evidence requires a completed session with both the student and tutor reviews submitted.");
+        if (!options.Value.Enabled)
+            throw new TeamsMeetingException("Automatic Teams evidence is disabled on this server. Ask the administrator to check the Teams integration setting.");
+        if (!options.Value.AllowsTutor(booking.TutorCourseModule.Tutor.BcUserId))
+            throw new TeamsMeetingException("This session's tutor is not included in the Teams pilot. Ask the administrator to check the pilot tutor configuration.");
+        MeetingLink? link = booking.MeetingLink;
+        if (link is null || string.IsNullOrWhiteSpace(link.TeamsEventId) || link.TeamsManualFallbackAllowed)
+            throw new TeamsMeetingException("This session uses a manually supplied or older meeting link. Automatic video preview and attendance are available only for meetings created with CampusLearn's Create Teams meeting button. Use Open submitted recording to view this session's recording.");
+        if (string.IsNullOrWhiteSpace(link.TeamsOrganizerIdentityHash))
+            throw new TeamsMeetingException("The saved Teams meeting is missing its organizer verification details. Ask the administrator to investigate this session's meeting metadata.");
+        if (string.IsNullOrWhiteSpace(link.Url))
+            throw new TeamsMeetingException("This session has no saved Teams joining link. Ask the administrator to investigate this session's meeting metadata.");
         if (environment.IsDevelopment() && configuration.GetValue<bool>("Authentication:UseDevelopmentAuthentication"))
             throw new TeamsMeetingException("Use institutional Microsoft sign-in to access Teams session evidence.");
         BcUser tutor = booking.TutorCourseModule.Tutor.BcUser;
@@ -85,12 +95,7 @@ public sealed class TeamsSessionReviewService(
         var result = new TeamsSessionReview();
         try
         {
-            MeetingContext? meeting = await ResolveAsync(bookingId, cancellationToken);
-            if (meeting is null)
-            {
-                result.Notices.Add("Automatic Teams evidence is available only for meetings created through the enabled pilot tutor integration.");
-                return result;
-            }
+            MeetingContext meeting = await ResolveAsync(bookingId, cancellationToken);
             // Independent permissions: an attendance failure must not hide an available recording.
             try
             {
@@ -161,8 +166,8 @@ public sealed class TeamsSessionReviewService(
 
     private async Task<string> ArtifactRootAsync(int bookingId, string kind, string id, CancellationToken ct)
     {
-        MeetingContext? meeting = await ResolveAsync(bookingId, ct);
-        if (meeting is null || string.IsNullOrWhiteSpace(id)) throw new TeamsMeetingException("Teams evidence is unavailable for this booking.");
+        MeetingContext meeting = await ResolveAsync(bookingId, ct);
+        if (string.IsNullOrWhiteSpace(id)) throw new TeamsMeetingException("Teams evidence is unavailable for this booking.");
         var artifacts = await ListAsync($"{meeting.Root}/{kind}", ct);
         if (!artifacts.Any(a => Text(a, "id") == id)) throw new TeamsMeetingException("This artifact does not belong to the saved meeting.");
         return $"{meeting.Root}/{kind}/{Uri.EscapeDataString(id)}";

@@ -24,7 +24,8 @@ public class SessionDetailsModel(
     TimeProvider timeProvider,
     IGeminiApiKeyProtector? apiKeyProtector = null,
     IGeminiSessionAssessmentService? assessmentService = null,
-    ITeamsSessionReviewService? teamsReviewService = null) : PageModel
+    ITeamsSessionReviewService? teamsReviewService = null,
+    ILogger<SessionDetailsModel>? logger = null) : PageModel
 {
     private static readonly JsonSerializerOptions AssessmentJsonOptions = new(
         JsonSerializerDefaults.Web);
@@ -451,6 +452,9 @@ public class SessionDetailsModel(
         int id,
         CancellationToken cancellationToken)
     {
+        // A missing-file response must not be reused after an upload is restored.
+        if (PageContext.HttpContext is { } httpContext)
+            httpContext.Response.Headers.CacheControl = "private, no-store";
         TutorStudentEvaluation? evaluation = await context
             .TutorStudentEvaluations
             .AsNoTracking()
@@ -469,7 +473,14 @@ public class SessionDetailsModel(
 
         if (!TryResolveTranscriptPath(evaluation, out string fullPath))
         {
-            return NotFound();
+            logger?.LogWarning("Submitted transcript file is unavailable for booking {BookingId}.", id);
+            return new ContentResult
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                ContentType = "text/html; charset=utf-8",
+                Content = BuildTranscriptPreview(evaluation.TranscriptOriginalFileName,
+                    "This session's transcript is recorded in CampusLearn, but its uploaded file cannot be found on this server. Ask the administrator to restore the file or check persistent transcript storage. Opening a transcript does not delete it.")
+            };
         }
 
         string extension = Path.GetExtension(
@@ -507,7 +518,7 @@ public class SessionDetailsModel(
                 "text/html; charset=utf-8");
         }
 
-        return new PhysicalFileResult(fullPath, "application/pdf");
+        return new PhysicalFileResult(fullPath, "application/pdf") { EnableRangeProcessing = true };
     }
 
     private static string BuildTranscriptPreview(
@@ -553,7 +564,8 @@ public class SessionDetailsModel(
             "tutor-review-transcripts"));
         fullPath = Path.GetFullPath(Path.Combine(
             environment.ContentRootPath,
-            evaluation.TranscriptStoragePath!));
+            evaluation.TranscriptStoragePath!.Replace('\\', Path.DirectorySeparatorChar)
+                .Replace('/', Path.DirectorySeparatorChar)));
         string allowedPrefix = transcriptRoot.TrimEnd(
             Path.DirectorySeparatorChar,
             Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;

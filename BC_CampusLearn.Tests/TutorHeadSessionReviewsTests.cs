@@ -997,11 +997,57 @@ public class TutorHeadSessionReviewsTests
                 new TestWebHostEnvironment(contentRoot),
                 new FixedTimeProvider(DateTimeOffset.UtcNow));
 
-            PhysicalFileResult result = Assert.IsType<PhysicalFileResult>(
-                await page.OnGetTranscriptAsync(1, CancellationToken.None));
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                PhysicalFileResult result = Assert.IsType<PhysicalFileResult>(
+                    await page.OnGetTranscriptAsync(1, CancellationToken.None));
+                Assert.Equal("application/pdf", result.ContentType);
+                Assert.True(string.IsNullOrEmpty(result.FileDownloadName));
+                Assert.True(result.EnableRangeProcessing);
+                Assert.True(File.Exists(fullPath));
+                Assert.Equal("%PDF transcript evidence", await File.ReadAllTextAsync(fullPath));
+            }
+        }
+        finally
+        {
+            Directory.Delete(contentRoot, recursive: true);
+        }
+    }
 
-            Assert.Equal("application/pdf", result.ContentType);
-            Assert.True(string.IsNullOrEmpty(result.FileDownloadName));
+    [Fact]
+    public async Task MissingTranscriptExplainsStorageFailureAndCanBeOpenedAfterFileRestoration()
+    {
+        string contentRoot = Directory.CreateTempSubdirectory("campus-learn-transcript-restoration-").FullName;
+        try
+        {
+            await using ApplicationDbContext context = CreateContext();
+            TutorCourseModule assignment = CreateAssignment();
+            const string relativePath = "App_Data/tutor-review-transcripts/1/transcript.pdf";
+            Booking booking = CreateBooking(1, assignment, "Reviewed Student", BookingStatus.Completed,
+                new StudentEvaluation(), new TutorStudentEvaluation
+                {
+                    TranscriptOriginalFileName = "transcript.pdf",
+                    TranscriptStoragePath = relativePath.Replace('/', '\\'),
+                    TranscriptContentType = "application/pdf"
+                });
+            context.TutorCourseModules.Add(assignment);
+            context.Bookings.Add(booking);
+            await context.SaveChangesAsync();
+            var page = new SessionDetailsModel(context,
+                new TestCurrentUserService(new CurrentUser(2, "TH001", "Tutor Head", "tutorhead@example.com", BcUserRole.HeadOfTutors)),
+                new TestWebHostEnvironment(contentRoot), new FixedTimeProvider(DateTimeOffset.UtcNow))
+            {
+                PageContext = new PageContext { HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext() }
+            };
+            ContentResult missing = Assert.IsType<ContentResult>(await page.OnGetTranscriptAsync(1, default));
+            Assert.Equal(404, missing.StatusCode);
+            Assert.Contains("persistent transcript storage", missing.Content);
+            Assert.Equal("private, no-store", page.Response.Headers.CacheControl.ToString());
+            string fullPath = Path.Combine(contentRoot, relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            await File.WriteAllTextAsync(fullPath, "%PDF restored transcript");
+            for (int attempt = 0; attempt < 3; attempt++)
+                Assert.IsType<PhysicalFileResult>(await page.OnGetTranscriptAsync(1, default));
         }
         finally
         {
