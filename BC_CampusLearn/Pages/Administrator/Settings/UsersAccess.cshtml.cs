@@ -113,6 +113,7 @@ public class UsersAccessModel(
         EnsureAdminProfile(target);
         RecordAccessAudit(target, "Administrative role", previous,
             target.Role.ToString(), currentUser, Input.Reason);
+        AddHeadOfTutorsPromotionNotification(target, previous);
         await context.SaveChangesAsync(cancellationToken);
         SuccessMessage = $"{target.DisplayName} now has {RoleLabel(target.Role)} access.";
         return RedirectToPage();
@@ -149,6 +150,7 @@ public class UsersAccessModel(
         EnsureAdminProfile(target);
         RecordAccessAudit(target, "Administrative role", previous,
             role.ToString(), currentUser, reason);
+        AddHeadOfTutorsPromotionNotification(target, previous);
         await context.SaveChangesAsync(cancellationToken);
         SuccessMessage = $"{target.DisplayName}'s role was updated.";
         return RedirectToPage();
@@ -177,6 +179,7 @@ public class UsersAccessModel(
         target.IsAdministrativeAccessActive = true;
         EnsureAdminProfile(target);
         RecordAccessAudit(target, "Administrative role", previous, role.ToString(), currentUser, reason);
+        AddHeadOfTutorsPromotionNotification(target, previous);
         await context.SaveChangesAsync(cancellationToken);
         SuccessMessage = $"{target.DisplayName} was promoted to {RoleLabel(role)}.";
         return RedirectToPage();
@@ -421,6 +424,27 @@ public class UsersAccessModel(
                 CreatedAt = timeProvider.GetUtcNow().UtcDateTime
             };
         }
+    }
+
+    private void AddHeadOfTutorsPromotionNotification(
+        BcUser target,
+        string previousRole)
+    {
+        if (target.Role != BcUserRole.HeadOfTutors ||
+            previousRole == nameof(BcUserRole.HeadOfTutors))
+        {
+            return;
+        }
+
+        context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = target.BcUserId,
+            Title = "Promoted to Head of Tutors",
+            Message = "You have been promoted to Head of Tutors. " +
+                "You can now access your Head of Tutors pages from the navigation drawer.",
+            LinkUrl = "/TutorHead/SessionReviews",
+            CreatedAt = timeProvider.GetUtcNow()
+        });
     }
 
     private void RecordAccessAudit(

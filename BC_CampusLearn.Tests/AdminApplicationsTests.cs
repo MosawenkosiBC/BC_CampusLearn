@@ -1264,6 +1264,67 @@ public class AdminApplicationsTests
     }
 
     [Fact]
+    public async Task FutureApplicationOpeningWaitsUntilStartDateAndNotifiesOnce()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        await using var context = new ApplicationDbContext(options);
+        context.BcUsers.AddRange(
+            CreateUser(1, "First Student", "ST5111"),
+            CreateUser(2, "Second Student", "ST5112"));
+        await context.SaveChangesAsync();
+
+        var page = new ApplicationsModel(context);
+        DateTime openDate = DateTime.UtcNow.Date.AddDays(2);
+        DateTime closeDate = openDate.AddDays(14);
+
+        await page.OnPostSettingsAsync(
+            true,
+            false,
+            null,
+            openDate,
+            closeDate,
+            null,
+            null,
+            CancellationToken.None);
+
+        TutorApplicationSettings settings = await context
+            .TutorApplicationSettings.SingleAsync();
+        Assert.Empty(await context.UserNotifications.ToListAsync());
+        Assert.Null(settings.TutorApplicationsNotificationSentAt);
+
+        int beforeStart = await TutorApplicationNotificationDispatcher
+            .AddDueNotificationsAsync(
+                context,
+                settings,
+                new DateTimeOffset(openDate.AddDays(-1), TimeSpan.Zero),
+                CancellationToken.None);
+        Assert.Equal(0, beforeStart);
+
+        int onStart = await TutorApplicationNotificationDispatcher
+            .AddDueNotificationsAsync(
+                context,
+                settings,
+                new DateTimeOffset(openDate, TimeSpan.Zero),
+                CancellationToken.None);
+        await context.SaveChangesAsync();
+        int repeated = await TutorApplicationNotificationDispatcher
+            .AddDueNotificationsAsync(
+                context,
+                settings,
+                new DateTimeOffset(openDate.AddMinutes(1), TimeSpan.Zero),
+                CancellationToken.None);
+
+        Assert.Equal(2, onStart);
+        Assert.Equal(0, repeated);
+        Assert.Equal(2, await context.UserNotifications.CountAsync());
+        Assert.Equal(
+            new DateTimeOffset(openDate, TimeSpan.Zero),
+            settings.TutorApplicationsNotificationSentAt);
+    }
+
+    [Fact]
     public async Task OpeningSeniorApplicationsNotifiesOnlyActiveApprovedTutors()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -1343,6 +1404,59 @@ public class AdminApplicationsTests
             .TutorApplicationSettings.SingleAsync();
         Assert.Equal(seniorOpenDate, settings.SeniorTutorOpenDate);
         Assert.Equal(seniorCloseDate, settings.SeniorTutorCloseDate);
+    }
+
+    [Fact]
+    public async Task FutureSeniorTutorOpeningWaitsUntilStartDate()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        await using var context = new ApplicationDbContext(options);
+        context.ProgrammesOfStudy.Add(new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        });
+        context.BcUsers.Add(CreateUser(1, "Eligible Tutor", "ST5211"));
+        Tutor tutor = CreateTutor(1, TutorStatus.Approved);
+        tutor.ApplicationStage = TutorApplicationStage.Placement;
+        tutor.IsActive = true;
+        context.Tutors.Add(tutor);
+        await context.SaveChangesAsync();
+
+        var page = new ApplicationsModel(context);
+        DateTime openDate = DateTime.UtcNow.Date.AddDays(3);
+        DateTime closeDate = openDate.AddDays(14);
+        await page.OnPostSettingsAsync(
+            false,
+            true,
+            null,
+            null,
+            null,
+            openDate,
+            closeDate,
+            CancellationToken.None);
+
+        TutorApplicationSettings settings = await context
+            .TutorApplicationSettings.SingleAsync();
+        Assert.Empty(await context.UserNotifications.ToListAsync());
+
+        int sent = await TutorApplicationNotificationDispatcher
+            .AddDueNotificationsAsync(
+                context,
+                settings,
+                new DateTimeOffset(openDate, TimeSpan.Zero),
+                CancellationToken.None);
+        await context.SaveChangesAsync();
+
+        UserNotification notification = Assert.Single(
+            await context.UserNotifications.ToListAsync());
+        Assert.Equal(1, sent);
+        Assert.Equal(1, notification.RecipientBcUserId);
+        Assert.Equal(
+            new DateTimeOffset(openDate, TimeSpan.Zero),
+            settings.SeniorTutorApplicationsNotificationSentAt);
     }
 
     [Fact]

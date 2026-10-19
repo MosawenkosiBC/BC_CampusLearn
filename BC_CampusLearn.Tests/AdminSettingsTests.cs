@@ -942,6 +942,36 @@ public class AdminSettingsTests
     }
 
     [Fact]
+    public async Task PromotingTutorToHeadOfTutorsCreatesDrawerNotification()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.SuperAdmin);
+        context.BcUsers.Add(new BcUser
+        {
+            BcUserId = 2,
+            DisplayName = "Tutor",
+            Role = BcUserRole.Tutor,
+            Tutor = AccessTutor(2)
+        });
+        await context.SaveChangesAsync();
+        var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
+
+        await page.OnPostPromoteAsync(
+            2,
+            BcUserRole.HeadOfTutors,
+            null,
+            CancellationToken.None);
+
+        UserNotification notification = Assert.Single(
+            await context.UserNotifications.ToListAsync());
+        Assert.Equal(2, notification.RecipientBcUserId);
+        Assert.Equal("Promoted to Head of Tutors", notification.Title);
+        Assert.Contains("promoted to Head of Tutors", notification.Message);
+        Assert.Contains("navigation drawer", notification.Message);
+        Assert.Equal("/TutorHead/SessionReviews", notification.LinkUrl);
+    }
+
+    [Fact]
     public async Task PromotionAndDemotionProtectOwnDeveloperAndLastSuperAdminAccounts()
     {
         await using ApplicationDbContext context = CreateContext();

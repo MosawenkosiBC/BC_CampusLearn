@@ -9,6 +9,8 @@ public class TutorApplicationSettings
     public bool SeniorTutorApplicationsOpen { get; set; }
     public DateTime? SeniorTutorOpenDate { get; set; }
     public DateTime? SeniorTutorCloseDate { get; set; }
+    public DateTimeOffset? TutorApplicationsNotificationSentAt { get; set; }
+    public DateTimeOffset? SeniorTutorApplicationsNotificationSentAt { get; set; }
     public bool NotifyStudents { get; set; }
     public int? ShortlistLimit { get; set; }
     public DateTime? OpenDate { get; set; }

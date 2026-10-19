@@ -35,11 +35,35 @@ public sealed class TutorApplicationAvailabilityService(
                 .TutorApplicationSettings
                 .SingleOrDefaultAsync(cancellationToken);
 
-            if (settings?.CloseExpiredApplications(DateTime.UtcNow) == true)
+            if (settings is null)
+            {
+                return;
+            }
+
+            DateTimeOffset utcNow = DateTimeOffset.UtcNow;
+            bool availabilityChanged = settings.CloseExpiredApplications(
+                utcNow.UtcDateTime);
+            int notificationCount = await TutorApplicationNotificationDispatcher
+                .AddDueNotificationsAsync(
+                    context,
+                    settings,
+                    utcNow,
+                    cancellationToken);
+
+            if (availabilityChanged || context.ChangeTracker.HasChanges())
             {
                 await context.SaveChangesAsync(cancellationToken);
-                logger.LogInformation(
-                    "Closed tutor application windows whose closing dates have passed.");
+                if (availabilityChanged)
+                {
+                    logger.LogInformation(
+                        "Closed tutor application windows whose closing dates have passed.");
+                }
+                if (notificationCount > 0)
+                {
+                    logger.LogInformation(
+                        "Sent {NotificationCount} application opening notifications.",
+                        notificationCount);
+                }
             }
         }
         catch (OperationCanceledException)

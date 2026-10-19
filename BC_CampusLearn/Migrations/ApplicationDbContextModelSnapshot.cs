@@ -1748,6 +1748,9 @@ namespace BC_CampusLearn.Migrations
                     b.Property<DateTime?>("OpenDate")
                         .HasColumnType("date");
 
+                    b.Property<DateTimeOffset?>("SeniorTutorApplicationsNotificationSentAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<bool>("SeniorTutorApplicationsOpen")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -1761,6 +1764,9 @@ namespace BC_CampusLearn.Migrations
 
                     b.Property<int?>("ShortlistLimit")
                         .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("TutorApplicationsNotificationSentAt")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()

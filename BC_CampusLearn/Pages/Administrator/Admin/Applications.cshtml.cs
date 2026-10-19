@@ -331,6 +331,10 @@ public class ApplicationsModel : ManualTutorPageModel
         settings.SeniorTutorApplicationsOpen = seniorTutorApplicationsOpen;
         if (isOpen)
         {
+            if (!applicationsWereOpen)
+            {
+                settings.TutorApplicationsNotificationSentAt = null;
+            }
             settings.ShortlistLimit = shortlistLimit;
             settings.OpenDate = openDate!.Value.Date;
             settings.CloseDate = closeDate!.Value.Date;
@@ -338,69 +342,21 @@ public class ApplicationsModel : ManualTutorPageModel
         }
         if (seniorTutorApplicationsOpen)
         {
+            if (!seniorTutorApplicationsWereOpen)
+            {
+                settings.SeniorTutorApplicationsNotificationSentAt = null;
+            }
             settings.SeniorTutorOpenDate = seniorOpenDate!.Value.Date;
             settings.SeniorTutorCloseDate = seniorCloseDate!.Value.Date;
         }
         settings.NotifyStudents = isOpen;
         settings.UpdatedAt = DateTime.UtcNow;
 
-        if (isOpen && !applicationsWereOpen)
-        {
-            List<int> studentIds = await _context.BcUsers
-                .AsNoTracking()
-                .Where(user => user.Role == BcUserRole.Student)
-                .Select(user => user.BcUserId)
-                .ToListAsync(cancellationToken);
-            DateTimeOffset createdAt = DateTimeOffset.UtcNow;
-
-            _context.UserNotifications.AddRange(studentIds.Select(studentId =>
-                new UserNotification
-                {
-                    RecipientBcUserId = studentId,
-                    Title = "🥳 Tutor applications are open",
-                    Message = "Interested in helping fellow students? Apply " +
-                        "to become a peer tutor.\n\nWhat you'll need:\n" +
-                        "• 65%+ overall average or 75%+ in a subject\n" +
-                        "• No failed subjects\n" +
-                        "• 8-15 hours per month to tutor\n" +
-                        $"Applications close: {closeDate:dd MMMM yyyy}",
-                    LinkUrl = "/Tutors/TutorApplication",
-                    CreatedAt = createdAt
-                }));
-        }
-
-        if (seniorTutorApplicationsOpen &&
-            !seniorTutorApplicationsWereOpen)
-        {
-            List<int> tutorUserIds = await _context.BcUsers
-                .AsNoTracking()
-                .Where(user =>
-                    user.Role == BcUserRole.Tutor &&
-                    user.Tutor != null &&
-                    user.Tutor.IsActive &&
-                    user.Tutor.Status == TutorStatus.Approved)
-                .Select(user => user.BcUserId)
-                .ToListAsync(cancellationToken);
-            DateTimeOffset createdAt = DateTimeOffset.UtcNow;
-            AdminNotificationDefinition notificationDefinition =
-                AdminNotificationCatalog.Find(
-                    AdminNotificationCatalog.SeniorApplicationsOpen)!;
-            string notificationMessage = notificationDefinition.DefaultMessage
-                .Replace(
-                    "{closing date}",
-                    $"{seniorCloseDate:dd MMMM yyyy}",
-                    StringComparison.Ordinal);
-
-            _context.UserNotifications.AddRange(tutorUserIds.Select(userId =>
-                new UserNotification
-                {
-                    RecipientBcUserId = userId,
-                    Title = notificationDefinition.Title,
-                    Message = notificationMessage,
-                    LinkUrl = "/Tutors/SeniorTutorApplications",
-                    CreatedAt = createdAt
-                }));
-        }
+        await TutorApplicationNotificationDispatcher.AddDueNotificationsAsync(
+            _context,
+            settings,
+            DateTimeOffset.UtcNow,
+            cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
 
