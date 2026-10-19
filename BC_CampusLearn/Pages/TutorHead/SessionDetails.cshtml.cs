@@ -3,6 +3,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Gemini;
+using BC_CampusLearn.Services.Teams;
 using System.Security.Cryptography;
 using System.IO.Compression;
 using System.Text.Json;
@@ -22,7 +23,8 @@ public class SessionDetailsModel(
     IWebHostEnvironment environment,
     TimeProvider timeProvider,
     IGeminiApiKeyProtector? apiKeyProtector = null,
-    IGeminiSessionAssessmentService? assessmentService = null) : PageModel
+    IGeminiSessionAssessmentService? assessmentService = null,
+    ITeamsSessionReviewService? teamsReviewService = null) : PageModel
 {
     private static readonly JsonSerializerOptions AssessmentJsonOptions = new(
         JsonSerializerDefaults.Web);
@@ -44,6 +46,8 @@ public class SessionDetailsModel(
     public string? TutorHeadReviewMessage { get; set; }
 
     public string? RecordingUrl { get; private set; }
+
+    public TeamsSessionReview TeamsEvidence { get; private set; } = new();
 
     public bool CanWatchRecording => RecordingUrl is not null;
 
@@ -256,6 +260,8 @@ public class SessionDetailsModel(
             };
         }
         RecordingUrl = ValidHttpUrl(session.TutorEvaluation!.RecordingLink);
+        if (teamsReviewService is not null)
+            TeamsEvidence = await teamsReviewService.GetAsync(id, cancellationToken);
         int currentUserId = currentUserService.GetRequiredUser().BcUserId;
         HasGeminiApiKey = await context.BcUsers
             .AsNoTracking()
@@ -289,8 +295,23 @@ public class SessionDetailsModel(
     private async Task<GeminiSessionEvidence> BuildEvidenceAsync(
         CancellationToken cancellationToken)
     {
-        GeminiTranscriptDocument? uploadedTranscript =
-            await ReadUploadedTranscriptAsync(cancellationToken);
+        GeminiTranscriptDocument? uploadedTranscript = null;
+        // Prefer the timestamped Teams transcript when there is exactly one.
+        // Multiple transcript parts need explicit alignment, so retain the uploaded evidence then.
+        if (teamsReviewService is not null && TeamsEvidence.Transcripts.Count == 1)
+        {
+            try
+            {
+                string text = await teamsReviewService.GetTranscriptAsync(Session.BookingId,
+                    TeamsEvidence.Transcripts[0].Id, cancellationToken);
+                uploadedTranscript = new GeminiTranscriptDocument("Teams transcript.vtt", "text/vtt", text, null);
+            }
+            catch (TeamsMeetingException exception)
+            {
+                TeamsEvidence.Notices.Add($"Teams transcript: {exception.Message} The uploaded transcript will be used if available.");
+            }
+        }
+        uploadedTranscript ??= await ReadUploadedTranscriptAsync(cancellationToken);
 
         return new GeminiSessionEvidence(
             Answer(Session.Summary),
@@ -301,7 +322,13 @@ public class SessionDetailsModel(
             TutorReviewAnswers.ToDictionary(
                 answer => answer.Question,
                 answer => answer.Value),
-            uploadedTranscript);
+            uploadedTranscript,
+            TeamsEvidence.Start is null ? null : JsonSerializer.Serialize(new
+            {
+                TeamsEvidence.Start, TeamsEvidence.End,
+                MeetingDurationSeconds = TeamsEvidence.Duration?.TotalSeconds,
+                TeamsEvidence.Tutor, TeamsEvidence.Student
+            }, AssessmentJsonOptions));
     }
 
     private async Task<GeminiTranscriptDocument?> ReadUploadedTranscriptAsync(
@@ -364,6 +391,38 @@ public class SessionDetailsModel(
 
         throw new GeminiAssessmentException(
             "Legacy .doc transcripts cannot be read by the AI helper. Upload the transcript as a PDF or .docx file.");
+    }
+
+    public async Task<IActionResult> OnGetTeamsTranscriptAsync(int id, string transcriptId, CancellationToken cancellationToken)
+    {
+        if (teamsReviewService is null) return NotFound();
+        try
+        {
+            string text = await teamsReviewService.GetTranscriptAsync(id, transcriptId, cancellationToken);
+            Response.Headers.CacheControl = "private, no-store";
+            return File(System.Text.Encoding.UTF8.GetBytes(text), "text/vtt", $"session-{id}-transcript.vtt");
+        }
+        catch (TeamsMeetingException exception) { return StatusCode(503, exception.Message); }
+    }
+
+    public async Task<IActionResult> OnGetTeamsRecordingAsync(int id, string recordingId, CancellationToken cancellationToken)
+    {
+        if (teamsReviewService is null) return NotFound();
+        try
+        {
+            using HttpResponseMessage upstream = await teamsReviewService.OpenRecordingAsync(
+                id, recordingId, Request.Headers.Range.ToString(), cancellationToken);
+            Response.StatusCode = (int)upstream.StatusCode;
+            Response.ContentType = "video/mp4";
+            Response.Headers.CacheControl = "private, no-store";
+            Response.Headers.XContentTypeOptions = "nosniff";
+            if (upstream.Content.Headers.ContentLength is long length) Response.ContentLength = length;
+            if (upstream.Content.Headers.ContentRange is { } range) Response.Headers.ContentRange = range.ToString();
+            if (upstream.Headers.AcceptRanges.Count > 0) Response.Headers.AcceptRanges = string.Join(", ", upstream.Headers.AcceptRanges);
+            await upstream.Content.CopyToAsync(Response.Body, cancellationToken);
+            return new EmptyResult();
+        }
+        catch (TeamsMeetingException exception) { return StatusCode(503, exception.Message); }
     }
 
     private static string ExtractDocxText(string fullPath)

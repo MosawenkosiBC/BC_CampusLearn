@@ -13,7 +13,8 @@ public sealed record GeminiSessionEvidence(
     string Module,
     IReadOnlyDictionary<string, string> StudentReview,
     IReadOnlyDictionary<string, string> TutorReview,
-    GeminiTranscriptDocument? UploadedTranscript);
+    GeminiTranscriptDocument? UploadedTranscript,
+    string? TeamsAttendanceEvidence = null);
 
 public sealed record GeminiTranscriptDocument(
     string FileName,
@@ -28,7 +29,14 @@ public sealed record GeminiSessionAssessment(
     IReadOnlyList<string> Evidence,
     IReadOnlyList<string> Concerns,
     string Recommendation,
-    string TranscriptDuration = "Could not determine from transcript");
+    string TranscriptDuration = "Could not determine from transcript",
+    IReadOnlyList<GeminiWatchRange>? SuggestedWatchRanges = null);
+
+public sealed record GeminiWatchRange(int StartSeconds, int EndSeconds, string Reason)
+{
+    public string DisplayRange => $"{Format(StartSeconds)} – {Format(EndSeconds)}";
+    private static string Format(int seconds) => TimeSpan.FromSeconds(seconds).ToString(seconds >= 3600 ? @"hh\:mm\:ss" : @"mm\:ss");
+}
 
 public sealed class GeminiAssessmentException(
     string message,

@@ -57,8 +57,6 @@
                     </button>
                 }
             </div>
-            @if (Model.AiAssessment is null)
-            {
                 <form method="post" asp-page-handler="GenerateAiAssessment"
                       asp-route-id="@session.BookingId"
                       data-ai-assessment-form>
@@ -72,10 +70,9 @@
                         <span class="tutor-head-ai-button-spinner"
                               data-ai-assessment-spinner aria-hidden="true"
                               hidden></span>
-                        <span data-ai-assessment-label>Generate AI assessment</span>
+                        <span data-ai-assessment-label>@(Model.AiAssessment is null ? "Generate AI assessment" : "Regenerate AI assessment")</span>
                     </button>
                 </form>
-            }
         </div>
 
         @if (!Model.HasGeminiApiKey && Model.AiAssessment is null)
@@ -96,6 +93,7 @@
                     CampusAlertVariant.Danger))
         }
 
+        <div class="tutor-head-evidence-layout">
         <section class="admin-session-reviews" aria-labelledby="session-reviews-title">
             <h2 id="session-reviews-title" class="visually-hidden">Session reviews</h2>
             <div class="admin-session-review-tabs tutor-head-review-tabs" role="tablist" aria-label="Session reviews">
@@ -219,31 +217,6 @@
                     <div>
                         <h2>Tutor Review</h2>
                     </div>
-                    <div class="tutor-head-evidence-actions">
-                        @if (Model.CanWatchRecording)
-                        {
-                            <a class="tutor-head-recording-button"
-                               href="@Model.RecordingUrl" target="_blank" rel="noopener noreferrer">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" fill="currentColor" /></svg>
-                                Watch recording
-                            </a>
-                        }
-                        else
-                        {
-                            <span class="tutor-head-recording-unavailable">Recording unavailable</span>
-                        }
-                        @if (Model.HasTranscript)
-                        {
-                            <a class="tutor-head-recording-button"
-                               href="@Url.Page(
-                                   "/TutorHead/SessionDetails",
-                                   "Transcript",
-                                   new { id = session.BookingId })"
-                               target="_blank" rel="noopener noreferrer">
-                                Download transcript
-                            </a>
-                        }
-                    </div>
                 </header>
                 <div class="admin-session-review-body">
                     <dl class="admin-session-answers" id="tutor-review-answers">
@@ -283,6 +256,81 @@
                 </div>
             </section>
         </section>
+        <aside class="tutor-head-video-card" aria-labelledby="session-video-title">
+            <h2 id="session-video-title">Session recording</h2>
+            @if (Model.TeamsEvidence.Recordings.Count > 0)
+            {
+                @foreach (var recording in Model.TeamsEvidence.Recordings)
+                {
+                    <div class="tutor-head-recording-part">
+                        <h3>Recording @(Model.TeamsEvidence.Recordings.IndexOf(recording) + 1)</h3>
+                        @if (recording.Start is { } recordingStart)
+                        {
+                            <p>@recordingStart.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm:ss") SAST</p>
+                        }
+                        <video controls preload="none" playsinline aria-label="Session recording"
+                               data-session-recording
+                               src="@Url.Page("/TutorHead/SessionDetails", "TeamsRecording", new { id = session.BookingId, recordingId = recording.Id })">
+                            Your browser does not support video playback.
+                        </video>
+                        <p>Video duration: <span data-recording-duration>Load the video to see its duration</span></p>
+                        <p data-recording-error role="status" hidden>Playback is unavailable. The recording may still be processing, have expired, or require administrator access settings to be updated.</p>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="tutor-head-video-empty">No Teams recording is available to preview yet.</div>
+            }
+            @if (Model.CanWatchRecording)
+            {
+                <a class="tutor-head-recording-button" href="@Model.RecordingUrl" target="_blank" rel="noopener noreferrer">Open submitted recording</a>
+            }
+            <section class="tutor-head-attendance" aria-labelledby="session-attendance-title">
+                <h3 id="session-attendance-title">Teams session details</h3>
+                @if (Model.TeamsEvidence.Duration is { } measuredDuration)
+                {
+                    <p>Meeting duration: <strong>@measuredDuration.ToString(@"hh\:mm\:ss")</strong></p>
+                    <p>@Model.TeamsEvidence.Start?.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm:ss") – @Model.TeamsEvidence.End?.ToOffset(TimeSpan.FromHours(2)).ToString("HH:mm:ss") SAST</p>
+                }
+                else { <p>Meeting duration unavailable.</p> }
+                @foreach (var participant in new[] { Model.TeamsEvidence.Tutor, Model.TeamsEvidence.Student })
+                {
+                    <div class="tutor-head-attendance-person">
+                        <h4>@participant.Label</h4>
+                        @if (participant.Intervals.Count == 0)
+                        {
+                            <p>No matched attendance record available.</p>
+                        }
+                        else
+                        {
+                            <p>Total attendance: <strong>@participant.Duration.ToString(@"hh\:mm\:ss")</strong></p>
+                            <ul>
+                                @foreach (var interval in participant.Intervals)
+                                {
+                                    <li>Joined @interval.Join.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM, HH:mm:ss") · Left @interval.Leave.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM, HH:mm:ss") SAST</li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+            </section>
+            <div class="tutor-head-evidence-actions">
+                @if (Model.HasTranscript)
+                {
+                    <a class="tutor-head-recording-button" href="@Url.Page("/TutorHead/SessionDetails", "Transcript", new { id = session.BookingId })" target="_blank" rel="noopener noreferrer">View submitted transcript</a>
+                }
+                @foreach (var transcript in Model.TeamsEvidence.Transcripts)
+                {
+                    <a class="tutor-head-recording-button" href="@Url.Page("/TutorHead/SessionDetails", "TeamsTranscript", new { id = session.BookingId, transcriptId = transcript.Id })">Download Teams transcript @(Model.TeamsEvidence.Transcripts.IndexOf(transcript) + 1)</a>
+                }
+            </div>
+            @foreach (string notice in Model.TeamsEvidence.Notices)
+            {
+                <p class="tutor-head-evidence-notice">@notice</p>
+            }
+        </aside>
+        </div>
     </div>
 </main>
 
@@ -321,8 +369,26 @@
                                 <div><strong>Session validity</strong><span>@assessment.Validity</span></div>
                                 <div><strong>Topic coverage</strong><span>@assessment.TopicCoverage</span></div>
                                 <div><strong>Transcript duration</strong><span>@assessment.TranscriptDuration</span></div>
+                                @if (Model.TeamsEvidence.Duration is { } actualDuration)
+                                {
+                                    <div><strong>Teams meeting duration</strong><span>@actualDuration.ToString(@"hh\:mm\:ss")</span></div>
+                                }
                             </div>
                             <p>@assessment.Summary</p>
+                            <section class="tutor-head-ai-watch-ranges" aria-labelledby="ai-watch-ranges-title">
+                                <h3 id="ai-watch-ranges-title">Suggested moments to watch</h3>
+                                @if (assessment.SuggestedWatchRanges is { Count: > 0 } ranges)
+                                {
+                                    <p>Times refer to the transcript. Video timing may differ if recording started later or was restarted.</p>
+                                    <ul>
+                                        @foreach (var range in ranges)
+                                        {
+                                            <li><strong>@range.DisplayRange</strong><p>@range.Reason</p></li>
+                                        }
+                                    </ul>
+                                }
+                                else { <p>No timestamped watch suggestions are available. Generate a new assessment with a timestamped transcript.</p> }
+                            </section>
                             <div class="tutor-head-ai-lists">
                                 <div class="tutor-head-ai-list tutor-head-ai-list--winning">
                                     <h3>Winning points</h3>

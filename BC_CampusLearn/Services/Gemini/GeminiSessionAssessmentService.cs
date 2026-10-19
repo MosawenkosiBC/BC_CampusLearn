@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace BC_CampusLearn.Services.Gemini;
 
@@ -96,7 +97,23 @@ public sealed class GeminiSessionAssessmentService(
                                 "Discrepancies: contradictions, mismatches, missing evidence, or concerns that require attention.",
                             items = new { type = "STRING" }
                         },
-                        recommendation = new { type = "STRING" }
+                        recommendation = new { type = "STRING" },
+                        suggestedWatchRanges = new
+                        {
+                            type = "ARRAY",
+                            description = "Up to five moments supported by explicit transcript timestamps. Empty when timestamps are unavailable. Seconds are transcript-relative, not assumed video positions.",
+                            items = new
+                            {
+                                type = "OBJECT",
+                                properties = new
+                                {
+                                    startSeconds = new { type = "INTEGER" },
+                                    endSeconds = new { type = "INTEGER" },
+                                    reason = new { type = "STRING" }
+                                },
+                                required = new[] { "startSeconds", "endSeconds", "reason" }
+                            }
+                        }
                     },
                     required = new[]
                     {
@@ -106,7 +123,8 @@ public sealed class GeminiSessionAssessmentService(
                         "summary",
                         "evidence",
                         "concerns",
-                        "recommendation"
+                        "recommendation",
+                        "suggestedWatchRanges"
                     }
                 }
             }
@@ -136,7 +154,7 @@ public sealed class GeminiSessionAssessmentService(
                     UserMessageFor(response.StatusCode));
             }
 
-            return ParseAssessment(responseJson);
+            return ParseAssessment(responseJson, evidence.UploadedTranscript);
         }
         catch (GeminiAssessmentException)
         {
@@ -164,6 +182,7 @@ public sealed class GeminiSessionAssessmentService(
             evidence.Module,
             evidence.StudentReview,
             evidence.TutorReview,
+            evidence.TeamsAttendanceEvidence,
             UploadedTranscript = evidence.UploadedTranscript is null
                 ? null
                 : new
@@ -202,12 +221,23 @@ public sealed class GeminiSessionAssessmentService(
             the evidence array as winning points. Put contradictions, mismatches,
             missing evidence, and concerns in the concerns array as discrepancies.
             This is advisory; do not claim to make a final administrative decision.
+            TeamsAttendanceEvidence, when supplied, is measured attendance from
+            Microsoft, separate from transcript duration. Use it to report actual
+            session timing and discrepancies; never substitute booked duration.
+            Suggest up to five watch ranges with startSeconds, endSeconds, and a
+            concise reason, using explicit timestamps in the supplied transcript.
+            Use integer seconds from that transcript's time origin. Never invent
+            timestamps or assume transcription and recording start together.
+            If no reliable timestamps exist, return an empty suggestedWatchRanges.
+            Each range must have 0 <= startSeconds < endSeconds and be within
+            the transcript's timestamp coverage. Treat missing attendance as
+            unavailable evidence, never as proof of absence.
 
             SESSION EVIDENCE JSON
             """ + evidenceJson;
     }
 
-    private static GeminiSessionAssessment ParseAssessment(string responseJson)
+    private static GeminiSessionAssessment ParseAssessment(string responseJson, GeminiTranscriptDocument? transcript)
     {
         try
         {
@@ -219,8 +249,25 @@ public sealed class GeminiSessionAssessmentService(
                 ?? throw new JsonException("Gemini returned an empty assessment.");
             GeminiSessionAssessment? assessment = JsonSerializer.Deserialize<
                 GeminiSessionAssessment>(assessmentJson, JsonOptions);
-            return assessment ?? throw new JsonException(
-                "Gemini returned an empty assessment.");
+            if (assessment is null) throw new JsonException("Gemini returned an empty assessment.");
+            int minTimestamp = 0, maxTimestamp = 86400;
+            bool hasTranscript = transcript is not null;
+            if (transcript?.ExtractedText is { } text)
+            {
+                var timestamps = Regex.Matches(text, @"(?<!\d)(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:[.,]\d{1,3})?(?!\d)")
+                    .Where(m => int.Parse(m.Groups[2].Value) < 60 && int.Parse(m.Groups[3].Value) < 60)
+                    .Select(m => (m.Groups[1].Success ? int.Parse(m.Groups[1].Value) * 3600 : 0) +
+                        int.Parse(m.Groups[2].Value) * 60 + int.Parse(m.Groups[3].Value)).ToArray();
+                hasTranscript = timestamps.Length >= 2;
+                if (hasTranscript) { minTimestamp = timestamps.Min(); maxTimestamp = timestamps.Max(); }
+            }
+            return assessment with
+            {
+                SuggestedWatchRanges = (assessment.SuggestedWatchRanges ?? [])
+                    .Where(r => hasTranscript && r is not null && r.StartSeconds >= minTimestamp && r.EndSeconds > r.StartSeconds &&
+                        r.EndSeconds <= maxTimestamp && !string.IsNullOrWhiteSpace(r.Reason))
+                    .Take(5).ToArray()
+            };
         }
         catch (Exception exception) when (exception is JsonException or
             KeyNotFoundException or IndexOutOfRangeException or
