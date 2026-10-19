@@ -29,8 +29,8 @@ public sealed class BookingTeamsMeetingService(
     public async Task<SessionLifecycleResult> CreateAsync(
         int tutorBcUserId, int bookingId, CancellationToken cancellationToken = default)
     {
-        if (!options.Value.AllowsTutor(tutorBcUserId))
-            return SessionLifecycleResult.Failure("Teams meeting creation is not enabled for your account.");
+        if (!options.Value.Enabled)
+            return SessionLifecycleResult.Failure("Teams meeting creation is not enabled.");
 
         if (environment.IsDevelopment() && configuration.GetValue<bool>("Authentication:UseDevelopmentAuthentication"))
             return SessionLifecycleResult.Failure("Sign in with your institutional Microsoft account to create a Teams meeting. Development sign-in cannot create meetings.");

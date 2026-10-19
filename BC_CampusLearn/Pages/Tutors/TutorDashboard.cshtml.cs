@@ -33,7 +33,7 @@ public class TutorDashboardModel : PageModel
         _teamsMeetings = teamsMeetings;
     }
 
-    public bool TeamsMeetingCreationEnabled => _teamsOptions.AllowsTutor(_currentUserService.GetRequiredUser().BcUserId);
+    public bool TeamsMeetingCreationEnabled => _teamsOptions.Enabled;
 
     public async Task<IActionResult> OnPostGenerateTeamsLinkAsync(int bookingId, CancellationToken cancellationToken)
     {
@@ -286,8 +286,8 @@ public class TutorDashboardModel : PageModel
                         Status =
                             booking.Status == BookingStatus.Confirmed ||
                             booking.Status == BookingStatus.InProgress
-                                ? TutorWeeklySlotStatus.Active
-                                : TutorWeeklySlotStatus.Booked
+                                ? TutorWeeklySlotStatus.Confirmed
+                                : TutorWeeklySlotStatus.Pending
                     })
                 .ToListAsync(cancellationToken);
 

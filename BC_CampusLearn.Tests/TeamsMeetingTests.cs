@@ -83,7 +83,6 @@ public sealed class TeamsMeetingTests
 
     [Theory]
     [InlineData("disabled")]
-    [InlineData("not-allowlisted")]
     [InlineData("other-tutor")]
     [InlineData("inactive")]
     [InlineData("not-approved")]
@@ -104,8 +103,7 @@ public sealed class TeamsMeetingTests
         switch (scenario)
         {
             case "disabled": fixture.Options.Enabled = false; break;
-            case "not-allowlisted": fixture.Options.PilotTutorBcUserIds = []; break;
-            case "other-tutor": actor = 9; fixture.Options.PilotTutorBcUserIds = [9]; break;
+            case "other-tutor": actor = 9; break;
             case "inactive": tutor.IsActive = false; break;
             case "not-approved": tutor.Status = TutorStatus.Deregistered; break;
             case "past": booking.ScheduledStartTime = fixture.Now; break;
@@ -744,7 +742,7 @@ public sealed class TeamsMeetingTests
         public ApplicationDbContext Context { get; }
         public IEntraIdentityProtector Identities { get; } = CreateProtector();
         public FakeCalendar Calendar { get; } = new();
-        public TeamsMeetingOptions Options { get; } = new() { Enabled = true, PilotTutorBcUserIds = [8] };
+        public TeamsMeetingOptions Options { get; } = new() { Enabled = true };
         public IConfiguration Configuration { get; } = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["AzureAd:TenantId"] = TenantId }).Build();
         public TestEnvironment Environment { get; } = new();
         public DateTimeOffset Now { get; } = new(2026, 10, 14, 8, 0, 0, TimeSpan.Zero);

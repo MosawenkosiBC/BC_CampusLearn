@@ -20,6 +20,6 @@ public class TutorWeeklySlotViewModel
 public enum TutorWeeklySlotStatus
 {
     Available,
-    Booked,
-    Active
+    Pending,
+    Confirmed
 }

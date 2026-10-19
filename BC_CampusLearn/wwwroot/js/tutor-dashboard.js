@@ -98,6 +98,8 @@
             "[data-booking-id-input]");
         const studentName = popover.querySelector(
             "[data-booking-student]");
+        const bookingStatus = popover.querySelector(
+            "[data-booking-status]");
         const module = popover.querySelector(
             "[data-booking-module]");
         const time = popover.querySelector(
@@ -194,6 +196,10 @@
 
             bookingIdInput.value =
                 trigger.dataset.bookingId || "";
+            if (bookingStatus) {
+                bookingStatus.textContent =
+                    `${trigger.dataset.bookingStatus || "Booked"} session`;
+            }
             studentName.textContent = name;
             module.textContent =
                 trigger.dataset.bookingModule || "Not provided";
@@ -382,21 +388,22 @@
 
         const buildEventContent = (argument) => {
             const properties = argument.event.extendedProps;
-            const isBooked = properties.status === "booked" &&
-                properties.bookingId;
+            const hasBooking = Boolean(properties.bookingId);
+            const statusLabel = properties.statusLabel || "Booked";
+            const statusDescription = statusLabel.toLowerCase();
             const slot = document.createElement(
-                isBooked ? "button" : "span");
+                hasBooking ? "button" : "span");
             slot.className =
                 `tutor-slot-tab is-${properties.status}`;
-            slot.title = isBooked
-                ? "Manage pending booking"
-                : properties.statusLabel;
+            slot.title = hasBooking
+                ? `View ${statusDescription} session details`
+                : statusLabel;
 
-            if (isBooked) {
+            if (hasBooking) {
                 slot.type = "button";
                 slot.setAttribute(
                     "aria-label",
-                    `Manage ${properties.studentName || "student"}'s pending booking`);
+                    `View ${properties.studentName || "student"}'s ${statusDescription} session details`);
                 slot.setAttribute("aria-haspopup", "dialog");
                 slot.setAttribute("aria-expanded", "false");
                 slot.setAttribute(
@@ -404,6 +411,7 @@
                     "booking-status-popover");
                 slot.dataset.bookingPopoverTrigger = "";
                 slot.dataset.bookingId = properties.bookingId;
+                slot.dataset.bookingStatus = statusLabel;
                 slot.dataset.bookingStudent =
                     properties.studentName || "Student";
                 slot.dataset.bookingModule =

@@ -559,6 +559,28 @@ body {
     font-size: 0.8rem !important;
 }
 
+.session-manual-link-section {
+    margin: 0 auto;
+    max-width: 25rem;
+}
+
+.bookings-action-modal .session-manual-link-section input[type="url"],
+.meeting-link-modal .session-manual-link-section input[type="url"] {
+    background-color: #fff;
+    border: 1px solid #b8bec6;
+    border-radius: 0.45rem;
+    min-height: 3rem;
+    padding: 0.7rem;
+    width: 100%;
+}
+
+.bookings-action-modal .session-manual-link-section input[type="url"]:focus,
+.meeting-link-modal .session-manual-link-section input[type="url"]:focus {
+    border-color: #9299a3;
+    box-shadow: 0 0 0 0.2rem rgba(146, 153, 163, 0.16);
+    outline: 0;
+}
+
 form[data-session-confirm-form] [hidden] {
     display: none !important;
 }
