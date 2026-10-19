@@ -75,7 +75,7 @@ public class CompensationModel(
         CurrencyCode = settings.CurrencyCode;
         DateOnly today = DateOnly.FromDateTime(timeProvider.GetUtcNow().ToOffset(CampusOffset).DateTime);
         var configured = settings.IsAdminSessionReviewDeadlineRecurring
-            ? MonthlyReviewPeriod.ResolveByCalendarMonth(settings.AdminSessionReviewPeriodStartDate,
+            ? MonthlyReviewPeriod.Resolve(settings.AdminSessionReviewPeriodStartDate,
                 settings.AdminSessionReviewDeadline, settings.UseLastDayOfMonthForAdminSessionReviewDeadline, today)
             : new ReviewPeriodWindow(settings.AdminSessionReviewPeriodStartDate,
                 settings.AdminSessionReviewDeadline, settings.AdminSessionReviewDeadline);

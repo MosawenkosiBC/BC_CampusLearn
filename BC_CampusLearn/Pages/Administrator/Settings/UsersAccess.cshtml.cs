@@ -43,6 +43,20 @@ public class UsersAccessModel(
     public int FilteredAccessUsers { get; private set; }
     public AccessUserMatch? SelectedAccessUser { get; private set; }
 
+    public static DateTimeOffset? ToSouthAfricaTime(DateTime? utcDateTime)
+    {
+        if (!utcDateTime.HasValue)
+        {
+            return null;
+        }
+
+        DateTime utc = DateTime.SpecifyKind(
+            utcDateTime.Value,
+            DateTimeKind.Utc);
+
+        return new DateTimeOffset(utc).ToOffset(TimeSpan.FromHours(2));
+    }
+
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
         if (currentUserService.GetRequiredUser().Role != BcUserRole.SuperAdmin)

@@ -217,6 +217,36 @@ public class AdminSettingsTests
     }
 
     [Fact]
+    public async Task RecurringReviewDatesDisplayTheirCurrentMonthlyOccurrence()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        AddBaseData(context, BcUserRole.Admin);
+        await context.SaveChangesAsync();
+        PlatformSettings settings = await context.PlatformSettings.SingleAsync();
+        settings.TutorHeadReviewDeadline = new DateOnly(2026, 10, 5);
+        settings.IsTutorHeadReviewDeadlineRecurring = true;
+        settings.UseLastDayOfMonthForTutorHeadReviewDeadline = false;
+        settings.AdminSessionReviewPeriodStartDate = new DateOnly(2026, 9, 11);
+        settings.AdminSessionReviewDeadline = new DateOnly(2026, 10, 10);
+        settings.IsAdminSessionReviewDeadlineRecurring = true;
+        settings.UseLastDayOfMonthForAdminSessionReviewDeadline = false;
+        await context.SaveChangesAsync();
+        BookingsModel page = CreateBookingsPage(
+            context,
+            BcUserRole.Admin,
+            new FixedTimeProvider(new DateTimeOffset(
+                2026, 10, 19, 11, 0, 0, TimeSpan.Zero)));
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(new DateOnly(2026, 11, 5), page.Input.ReviewDeadline);
+        Assert.Equal(new DateOnly(2026, 10, 11),
+            page.Input.AdminReviewPeriodStartDate);
+        Assert.Equal(new DateOnly(2026, 11, 10),
+            page.Input.AdminReviewDeadline);
+    }
+
+    [Fact]
     public async Task AdministratorCanMakeReviewDeadlineOneTime()
     {
         await using ApplicationDbContext context = CreateContext();
@@ -856,6 +886,21 @@ public class AdminSettingsTests
     }
 
     [Fact]
+    public void UsersAccessLastLoginIsDisplayedInSouthAfricanTime()
+    {
+        DateTime storedUtc = new(2026, 10, 19, 11, 7, 0,
+            DateTimeKind.Unspecified);
+
+        DateTimeOffset? displayed =
+            UsersAccessModel.ToSouthAfricaTime(storedUtc);
+
+        Assert.NotNull(displayed);
+        Assert.Equal(TimeSpan.FromHours(2), displayed.Value.Offset);
+        Assert.Equal("19 Oct 2026, 13:07",
+            displayed.Value.ToString("dd MMM yyyy, HH:mm"));
+    }
+
+    [Fact]
     public async Task DemotingSeniorTutorDeletesTheirApplicationHistory()
     {
         await using ApplicationDbContext context = CreateContext();
@@ -1063,11 +1108,14 @@ public class AdminSettingsTests
 
     private static BookingsModel CreateBookingsPage(
         ApplicationDbContext context,
-        BcUserRole role) => new(
+        BcUserRole role,
+        TimeProvider? timeProvider = null) => new(
             context,
             CurrentUserService(role),
-            TimeProvider.System,
-            new SettingsAuditService(context, TimeProvider.System));
+            timeProvider ?? TimeProvider.System,
+            new SettingsAuditService(
+                context,
+                timeProvider ?? TimeProvider.System));
 
     private static StudyAreasModel CreateStudyAreasPage(
         ApplicationDbContext context,
@@ -1099,5 +1147,10 @@ public class AdminSettingsTests
     {
         public bool IsAuthenticated => true;
         public CurrentUser GetRequiredUser() => currentUser;
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
     }
 }

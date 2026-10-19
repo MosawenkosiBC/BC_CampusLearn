@@ -46,25 +46,6 @@ public static class MonthlyReviewPeriod
             activeDeadline);
     }
 
-    public static ReviewPeriodWindow ResolveByCalendarMonth(
-        DateOnly configuredStart,
-        DateOnly configuredDeadline,
-        bool useLastDayOfMonth,
-        DateOnly today)
-    {
-        int elapsedMonths = ((today.Year - configuredDeadline.Year) * 12) +
-            today.Month - configuredDeadline.Month;
-        DateOnly activeStart = configuredStart.AddMonths(elapsedMonths);
-        DateOnly activeDeadline = Occurrence(
-            configuredDeadline,
-            elapsedMonths,
-            useLastDayOfMonth);
-        return new ReviewPeriodWindow(
-            activeStart,
-            activeDeadline,
-            activeDeadline);
-    }
-
     public static DateOnly NormalizeDeadline(
         DateOnly selectedDeadline,
         bool useLastDayOfMonth) => useLastDayOfMonth

@@ -56,8 +56,6 @@ public sealed class TeamsSessionReviewService(
             throw new TeamsMeetingException("Teams evidence requires a completed session with both the student and tutor reviews submitted.");
         if (!options.Value.Enabled)
             throw new TeamsMeetingException("Automatic Teams evidence is disabled on this server. Ask the administrator to check the Teams integration setting.");
-        if (!options.Value.AllowsTutor(booking.TutorCourseModule.Tutor.BcUserId))
-            throw new TeamsMeetingException("This session's tutor is not included in the Teams pilot. Ask the administrator to check the pilot tutor configuration.");
         MeetingLink? link = booking.MeetingLink;
         if (link is null || string.IsNullOrWhiteSpace(link.TeamsEventId) || link.TeamsManualFallbackAllowed)
             throw new TeamsMeetingException("This session uses a manually supplied or older meeting link. Automatic video preview and attendance are available only for meetings created with CampusLearn's Create Teams meeting button. Use Open submitted recording to view this session's recording.");
