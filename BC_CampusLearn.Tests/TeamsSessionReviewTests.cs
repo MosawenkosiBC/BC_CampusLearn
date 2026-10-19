@@ -97,6 +97,65 @@ public class TeamsSessionReviewTests
     }
 
     [Fact]
+    public async Task PilotBcUserTwoResolvesRecordingsUsingMicrosoftOrganizerIdRatherThanTutorId()
+    {
+        await using var db = await CreateContextAsync(tutorBcUserId: 2);
+        var service = CreateService(db, new Handler(request =>
+        {
+            string path = request.RequestUri!.AbsolutePath;
+            Assert.StartsWith($"/v1.0/users/{Organizer}/onlineMeetings", path);
+            Assert.Equal("Bearer", request.Headers.Authorization?.Scheme);
+            if (path.EndsWith("/onlineMeetings")) return Json("""{"value":[{"id":"meeting-1"}]}""");
+            if (path.EndsWith("/recordings")) return Json("""{"value":[{"id":"recording-1"}]}""");
+            return Json("""{"value":[]}""");
+        }), new() { Enabled = true, PilotTutorBcUserIds = [2] });
+        var result = await service.GetAsync(1, default);
+        Assert.Equal("recording-1", Assert.Single(result.Recordings).Id);
+        Assert.DoesNotContain(result.Notices, n => n.Contains("not included"));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GraphDenialsIdentifyOperationAndMissingPolicyWithoutExposingRawMessage(bool missingPolicy)
+    {
+        await using var db = await CreateContextAsync();
+        const string requestId = "33333333-3333-3333-3333-333333333333";
+        var service = CreateService(db, new Handler(request =>
+        {
+            string path = request.RequestUri!.AbsolutePath;
+            if (!missingPolicy && path.EndsWith("/onlineMeetings")) return Json("""{"value":[{"id":"meeting-1"}]}""");
+            if (!missingPolicy && !path.EndsWith("/recordings")) return Json("""{"value":[]}""");
+            var denied = Json(JsonSerializer.Serialize(new
+            {
+                error = new { code = "Forbidden", message = missingPolicy
+                    ? "No application access policy found for this app. private-user-data"
+                    : "Access denied for private-user-data" }
+            }));
+            denied.StatusCode = HttpStatusCode.Forbidden;
+            denied.Headers.Add("request-id", requestId);
+            return denied;
+        }));
+        var result = await service.GetAsync(1, default);
+        string notice = Assert.Single(result.Notices.Where(n => n.Contains("HTTP 403")));
+        Assert.Contains(missingPolicy ? "Teams meeting lookup" : "Teams recording lookup", notice);
+        Assert.Contains(requestId, notice);
+        Assert.Equal(missingPolicy, notice.Contains("Microsoft reports that no application access policy"));
+        Assert.DoesNotContain("private-user-data", notice);
+    }
+
+    [Fact]
+    public async Task GraphDiagnosticParserRejectsRawErrorsAndNonGuidReferences()
+    {
+        using var response = Json("""{"error":{"code":"Bearer secret token","message":"private recording content"}}""");
+        response.Headers.Add("request-id", "private-reference");
+        var failure = await TeamsGraphFailureDiagnostics.ReadAsync(response, default);
+        Assert.Equal("unknown", failure.Code);
+        Assert.Null(failure.RequestId);
+        Assert.False(failure.MissingAccessPolicy);
+    }
+
+    [Fact]
     public async Task RecordingMustBelongToMeetingAndByteRangesAreForwarded()
     {
         await using var db = await CreateContextAsync();
@@ -198,15 +257,15 @@ public class TeamsSessionReviewTests
             Options.Create(options ?? new() { Enabled = true, PilotTutorBcUserIds = [8] }),
             new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["AzureAd:TenantId"] = Tenant }).Build(), new Environment());
 
-    private static async Task<ApplicationDbContext> CreateContextAsync()
+    private static async Task<ApplicationDbContext> CreateContextAsync(int tutorBcUserId = 8)
     {
         var db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
         var stored = Identities.Protect(Tenant, Organizer);
         var tutor = new Tutor
         {
-            TutorId = 12, BcUserId = 8, Status = TutorStatus.Approved, IsActive = true,
+            TutorId = 12, BcUserId = tutorBcUserId, Status = TutorStatus.Approved, IsActive = true,
             ReasonForTutoring = "Help", TeachingStyle = "Practical", PreviousTutoringExperience = "Peer", CampusOfStudy = "Pretoria", DemonstrationVideoUrl = "",
-            BcUser = new() { BcUserId = 8, Email = "tutor@example.com", EncryptedEntraTenantId = stored.TenantId, EncryptedEntraObjectId = stored.ObjectId }
+            BcUser = new() { BcUserId = tutorBcUserId, Email = "tutor@example.com", EncryptedEntraTenantId = stored.TenantId, EncryptedEntraObjectId = stored.ObjectId }
         };
         var module = new ProgrammeModule { ProgrammeModuleId = 3, ModuleCode = "MOD101", ModuleName = "Module" };
         db.Bookings.Add(new()

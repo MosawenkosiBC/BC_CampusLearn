@@ -40,7 +40,8 @@ public interface ITeamsSessionReviewService
 public sealed class TeamsSessionReviewService(
     HttpClient client, ITeamsGraphTokenProvider tokens, ApplicationDbContext context,
     IEntraIdentityProtector identities, IOptions<TeamsMeetingOptions> options,
-    IConfiguration configuration, IHostEnvironment environment) : ITeamsSessionReviewService
+    IConfiguration configuration, IHostEnvironment environment,
+    ILogger<TeamsSessionReviewService>? logger = null) : ITeamsSessionReviewService
 {
     private sealed record MeetingContext(Booking Booking, string Root);
 
@@ -226,10 +227,20 @@ public sealed class TeamsSessionReviewService(
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
             if (response.IsSuccessStatusCode || (range is not null && response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)) return response;
             var status = response.StatusCode;
-            response.Dispose();
+            TeamsGraphFailureDiagnostics failure;
+            try { failure = await TeamsGraphFailureDiagnostics.ReadAsync(response, ct); }
+            finally { response.Dispose(); }
+            string operation = Operation(uri);
+            logger?.LogWarning("Teams evidence request failed. Operation {Operation}; HTTP status {StatusCode}; Graph code {GraphCode}; request {RequestId}; missing application access policy {MissingAccessPolicy}.",
+                operation, (int)status, failure.Code, failure.RequestId, failure.MissingAccessPolicy);
+            string reference = $"HTTP {(int)status}, {failure.Code}" +
+                (failure.RequestId is null ? "." : $"; request {failure.RequestId}.");
+            string denied = failure.MissingAccessPolicy
+                ? "Microsoft reports that no application access policy was found for this app and organiser. Ask the administrator to assign a Teams application access policy containing the deployed app's client ID to the tutor's Microsoft account."
+                : "Access denied. Ask the administrator to verify the deployed app's Graph consent, the organiser's Teams application access policy, and artifact access settings. Your personal ability to open the recording does not grant the application access.";
             throw new TeamsMeetingException(status switch
             {
-                HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized => "Access denied. Ask the administrator to check Graph consent, the pilot tutor's Teams application access policy, and artifact access settings.",
+                HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized => $"Teams {operation}: {denied} Reference: {reference}",
                 HttpStatusCode.NotFound => "The Teams artifact is not available yet or has expired.",
                 HttpStatusCode.TooManyRequests => "Microsoft is limiting requests. Try again later.",
                 _ => "Microsoft could not supply the Teams evidence. Try again later."
@@ -237,6 +248,17 @@ public sealed class TeamsSessionReviewService(
         }
         catch (HttpRequestException) { throw new TeamsMeetingException("Microsoft Teams could not be reached. Try again later."); }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { throw new TeamsMeetingException("Microsoft Teams took too long to respond. Try again later."); }
+    }
+
+    private static string Operation(Uri uri)
+    {
+        string path = uri.AbsolutePath;
+        if (path.Contains("/recordings/", StringComparison.Ordinal) && path.EndsWith("/content", StringComparison.Ordinal)) return "recording playback";
+        if (path.Contains("/transcripts/", StringComparison.Ordinal) && path.EndsWith("/content", StringComparison.Ordinal)) return "transcript download";
+        if (path.EndsWith("/recordings", StringComparison.Ordinal)) return "recording lookup";
+        if (path.EndsWith("/transcripts", StringComparison.Ordinal)) return "transcript lookup";
+        if (path.Contains("/attendanceReports", StringComparison.Ordinal)) return "attendance lookup";
+        return "meeting lookup";
     }
 
     private static string? Text(JsonElement item, string name) => item.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
