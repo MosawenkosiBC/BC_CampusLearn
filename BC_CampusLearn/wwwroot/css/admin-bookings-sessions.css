@@ -569,3 +569,12 @@
         padding: 0.85rem;
     }
 }
+.teams-organizer-settings { background: #fff; border: 1px solid #e3e6e8; border-radius: .6rem; margin: 1rem 0 1.5rem; padding: 1rem 1.25rem; }
+.teams-organizer-settings summary { cursor: pointer; font-weight: 650; }
+.teams-organizer-settings p { color: #56616b; margin: .85rem 0; }
+.teams-organizer-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.teams-organizer-fields label { display: block; margin-bottom: .4rem; font-weight: 600; }
+.teams-organizer-fields input { width: 100%; min-height: 2.6rem; padding: .5rem .7rem; border: 1px solid #bfc7ce; border-radius: .35rem; }
+.teams-organizer-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+.teams-organizer-actions button { background: #363c3d; color: #fff; border: 0; border-radius: .4rem; padding: .65rem 1rem; }
+@media (max-width: 767.98px) { .teams-organizer-fields { grid-template-columns: 1fr; } }

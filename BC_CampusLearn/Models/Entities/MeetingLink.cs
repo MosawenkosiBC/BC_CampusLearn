@@ -11,6 +11,11 @@ public class MeetingLink
     public string? TeamsEventId { get; set; }
 
     public string? TeamsOrganizerIdentityHash { get; set; }
+    public string? EncryptedTeamsOrganizerTenantId { get; set; }
+    public string? EncryptedTeamsOrganizerObjectId { get; set; }
+    public bool UsesSharedTeamsOrganizer { get; set; }
+    public string? EncryptedTeamsCoOrganizerObjectId { get; set; }
+    public DateTimeOffset? TeamsCoOrganizerAssignedAt { get; set; }
 
     public bool TeamsManualFallbackAllowed { get; set; }
 

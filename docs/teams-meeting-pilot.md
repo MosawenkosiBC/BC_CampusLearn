@@ -1,5 +1,7 @@
 # Teams calendar meeting pilot
 
+For the shared Mzala Connect organiser, current pilot scopes, and deployment settings, follow [the shared organiser guide](teams-shared-organizer.md). Its shared-account retry rules take precedence over the original tutor-owned flow described below.
+
 Tutors confirm bookings through the **Confirm session** modal on **Session Details** or **Tutors / Sessions**. **Create Teams meeting** in the footer creates the calendar-backed Teams meeting, sends the student a calendar invitation, and confirms the booking. The page refreshes to show the confirmed status and a success modal. A grey **+** button reveals the manual meeting link input and its **Confirm session** button. Manual confirmation requires a valid, non-empty HTTP or HTTPS link; validation errors keep the modal open. Both paths apply to **online and face-to-face** sessions.
 
 If automatic creation fails, the modal stays open with the error. The tutor can retry or enter a valid manual link and confirm. A saved creation request/event is retained for retries; a successful generated link cannot be replaced manually. After a reported failure, manual fallback is allowed, and the request metadata is retained for investigation. A timeout may mean Microsoft created an invitation even though the response was lost; retrying automatic creation reuses the same transaction. Using a manual fallback does not cancel any remote event that may already exist.

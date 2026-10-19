@@ -15,7 +15,9 @@ public sealed record TeamsCalendarRequest(
     DateTimeOffset Start,
     DateTimeOffset End,
     string StudentEmail,
-    string StudentName);
+    string StudentName,
+    string? TutorEmail = null,
+    string? TutorName = null);
 
 public sealed record TeamsCalendarEvent(string Id, string? JoinUrl);
 
@@ -26,6 +28,8 @@ public interface ITeamsCalendarClient
     Task<TeamsCalendarEvent> GetAsync(string organizerObjectId, string eventId, CancellationToken cancellationToken);
     Task CancelAsync(string organizerObjectId, string eventId, CancellationToken cancellationToken);
     Task<string?> FindByTransactionAsync(string organizerObjectId, Guid transactionId, DateTimeOffset start, CancellationToken cancellationToken);
+    Task EnsureCoOrganizerAsync(string organizerObjectId, string joinUrl, string tutorObjectId, CancellationToken cancellationToken) =>
+        throw new TeamsMeetingException("Automatic co-organiser assignment is not available.");
 }
 
 public sealed class TeamsCalendarClient(HttpClient client, ITeamsGraphTokenProvider tokens)
@@ -44,6 +48,12 @@ public sealed class TeamsCalendarClient(HttpClient client, ITeamsGraphTokenProvi
 
     public async Task<TeamsCalendarEvent> CreateAsync(TeamsCalendarRequest meeting, CancellationToken cancellationToken)
     {
+        var attendees = new List<object>
+        {
+            new { emailAddress = new { address = meeting.StudentEmail, name = meeting.StudentName }, type = "required" }
+        };
+        if (!string.IsNullOrWhiteSpace(meeting.TutorEmail))
+            attendees.Add(new { emailAddress = new { address = meeting.TutorEmail, name = meeting.TutorName }, type = "required" });
         using HttpRequestMessage request = new(HttpMethod.Post,
             $"users/{Uri.EscapeDataString(meeting.OrganizerObjectId)}/calendar/events");
         request.Content = JsonContent.Create(new
@@ -52,10 +62,7 @@ public sealed class TeamsCalendarClient(HttpClient client, ITeamsGraphTokenProvi
             body = new { contentType = "text", content = "Tutoring session scheduled through Mzala Connect." },
             start = new { dateTime = FormatUtc(meeting.Start), timeZone = "UTC" },
             end = new { dateTime = FormatUtc(meeting.End), timeZone = "UTC" },
-            attendees = new[]
-            {
-                new { emailAddress = new { address = meeting.StudentEmail, name = meeting.StudentName }, type = "required" }
-            },
+            attendees,
             isOnlineMeeting = true,
             onlineMeetingProvider = "teamsForBusiness",
             allowNewTimeProposals = false,
@@ -63,6 +70,61 @@ public sealed class TeamsCalendarClient(HttpClient client, ITeamsGraphTokenProvi
         });
         using JsonDocument document = await SendAsync(request, cancellationToken);
         return ReadEvent(document.RootElement);
+    }
+
+    public async Task EnsureCoOrganizerAsync(string organizerObjectId, string joinUrl, string tutorObjectId, CancellationToken cancellationToken)
+    {
+        try
+        {
+        if (!Guid.TryParse(organizerObjectId, out _) || !Guid.TryParse(tutorObjectId, out _))
+            throw new TeamsMeetingException("The meeting organiser or tutor Microsoft identity is invalid.");
+        if (organizerObjectId.Equals(tutorObjectId, StringComparison.OrdinalIgnoreCase)) return;
+        string root = $"users/{Uri.EscapeDataString(organizerObjectId)}/onlineMeetings";
+        string filter = Uri.EscapeDataString($"JoinWebUrl eq '{joinUrl.Replace("'", "''")}'");
+        using var lookup = new HttpRequestMessage(HttpMethod.Get, $"{root}?$filter={filter}");
+        lookup.Headers.TryAddWithoutValidation("Prefer", "include-unknown-enum-members");
+        using var found = await SendAsync(lookup, cancellationToken);
+        JsonElement[] meetings = found.RootElement.GetProperty("value").EnumerateArray().ToArray();
+        if (meetings.Length != 1)
+            throw new TeamsMeetingException("The calendar meeting exists, but Teams is still preparing co-organiser settings. Retry to finish the same meeting.");
+        JsonElement meeting = meetings[0];
+        string id = meeting.GetProperty("id").GetString()!;
+        var participants = meeting.GetProperty("participants");
+        var attendees = participants.TryGetProperty("attendees", out var list) && list.ValueKind == JsonValueKind.Array
+            ? list.EnumerateArray().Select(a => a.Clone()).ToList() : [];
+        bool assigned = false;
+        var updated = new List<JsonElement>();
+        foreach (var attendee in attendees)
+        {
+            var node = System.Text.Json.Nodes.JsonNode.Parse(attendee.GetRawText())!.AsObject();
+            string? userId = node["identity"]?["user"]?["id"]?.GetValue<string>();
+            if (string.Equals(userId, tutorObjectId, StringComparison.OrdinalIgnoreCase))
+            {
+                if (node["role"]?.GetValue<string>() == "coorganizer") return;
+                node["role"] = "coorganizer";
+                assigned = true;
+            }
+            updated.Add(JsonSerializer.SerializeToElement(node));
+        }
+        if (!assigned)
+            updated.Add(JsonSerializer.SerializeToElement(new { identity = new { user = new { id = tutorObjectId } }, role = "coorganizer" }));
+        using var patch = new HttpRequestMessage(HttpMethod.Patch, $"{root}/{Uri.EscapeDataString(id)}");
+        patch.Headers.TryAddWithoutValidation("Prefer", "include-unknown-enum-members");
+        // Graph requires the full attendee list. Retain students and other roles.
+        patch.Content = JsonContent.Create(new { participants = new { attendees = updated } });
+        using var response = await SendAsync(patch, cancellationToken);
+        bool confirmed = response.RootElement.TryGetProperty("participants", out var returned) &&
+            returned.TryGetProperty("attendees", out var confirmedAttendees) && confirmedAttendees.EnumerateArray().Any(a =>
+                a.TryGetProperty("role", out var role) && role.GetString() == "coorganizer" &&
+                a.TryGetProperty("identity", out var identity) && identity.TryGetProperty("user", out var user) &&
+                user.TryGetProperty("id", out var userId) && string.Equals(userId.GetString(), tutorObjectId, StringComparison.OrdinalIgnoreCase));
+        if (!confirmed)
+            throw new TeamsMeetingException("The meeting exists, but Microsoft has not confirmed the tutor as co-organiser. Retry to finish setup.");
+        }
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException)
+        {
+            throw new TeamsMeetingException("Microsoft returned unreadable co-organiser settings. The meeting is saved; retry to finish setup.");
+        }
     }
 
     public async Task<TeamsCalendarEvent> GetAsync(string organizerObjectId, string eventId, CancellationToken cancellationToken)
@@ -162,7 +224,9 @@ public sealed class TeamsCalendarClient(HttpClient client, ITeamsGraphTokenProvi
                 // Never include Graph response bodies, tokens or account identifiers in user-facing errors.
                 throw new TeamsMeetingException(response.StatusCode switch
                 {
-                    HttpStatusCode.Forbidden => "Microsoft denied calendar access. Ask the administrator to check Calendars.ReadWrite application consent and access to the tutor's mailbox.",
+                    HttpStatusCode.Forbidden => request.RequestUri?.ToString().Contains("onlineMeetings", StringComparison.Ordinal) == true
+                        ? "Microsoft denied co-organiser setup. Check OnlineMeetings.ReadWrite.All application consent and the Teams application access policy assigned to the meeting organiser. The existing meeting will be reused on retry."
+                        : "Microsoft denied calendar access. Ask the administrator to check Calendars.ReadWrite application consent and access to the organiser's mailbox.",
                     HttpStatusCode.Unauthorized => "Microsoft could not authorize CampusLearn. Please contact the administrator.",
                     HttpStatusCode.NotFound => "The tutor's Microsoft calendar or meeting could not be found. Please contact the administrator.",
                     HttpStatusCode.TooManyRequests => "Microsoft is busy. Please wait a moment before retrying.",

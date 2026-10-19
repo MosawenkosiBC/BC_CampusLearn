@@ -207,6 +207,9 @@ public class SessionLifecycleService : ISessionLifecycleService
             }
         }
 
+        if (booking.MeetingLink is { UsesSharedTeamsOrganizer: true, TeamsManualFallbackAllowed: false, TeamsCoOrganizerAssignedAt: null })
+            return SessionLifecycleResult.Failure("The shared Teams meeting exists, but tutor co-organiser setup is incomplete. Use Create Teams meeting again to finish the same meeting before confirming.");
+
         if (!IsValidMeetingLink(link))
             return SessionLifecycleResult.Failure("Enter a valid HTTP or HTTPS meeting link.");
 
