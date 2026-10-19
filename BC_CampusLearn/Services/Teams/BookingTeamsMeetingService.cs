@@ -24,13 +24,14 @@ public sealed class BookingTeamsMeetingService(
     IConfiguration configuration,
     IHostEnvironment environment,
     TimeProvider timeProvider,
-    ILogger<BookingTeamsMeetingService> logger) : IBookingTeamsMeetingService
+    ILogger<BookingTeamsMeetingService> logger,
+    TeamsOrganizerSettingsStore? organizerSettings = null) : IBookingTeamsMeetingService
 {
     public async Task<SessionLifecycleResult> CreateAsync(
         int tutorBcUserId, int bookingId, CancellationToken cancellationToken = default)
     {
-        if (!options.Value.AllowsTutor(tutorBcUserId))
-            return SessionLifecycleResult.Failure("Teams meeting creation is not enabled for your account.");
+        if (!options.Value.Enabled)
+            return SessionLifecycleResult.Failure("Teams meeting creation is not enabled.");
 
         if (environment.IsDevelopment() && configuration.GetValue<bool>("Authentication:UseDevelopmentAuthentication"))
             return SessionLifecycleResult.Failure("Sign in with your institutional Microsoft account to create a Teams meeting. Development sign-in cannot create meetings.");
@@ -53,9 +54,12 @@ public sealed class BookingTeamsMeetingService(
             booking.ScheduledStartTime <= timeProvider.GetUtcNow())
             return SessionLifecycleResult.Failure("Only an upcoming pending or confirmed booking can have a meeting created.");
         if (!string.IsNullOrWhiteSpace(booking.MeetingLink?.Url))
-            return booking.MeetingLink.TeamsEventId is not null && !booking.MeetingLink.TeamsManualFallbackAllowed
-                ? SessionLifecycleResult.Success()
-                : SessionLifecycleResult.Failure("This booking already has a manual meeting link. Mzala Connect will not replace it.");
+        {
+            if (booking.MeetingLink.TeamsEventId is null || booking.MeetingLink.TeamsManualFallbackAllowed)
+                return SessionLifecycleResult.Failure("This booking already has a manual meeting link. Mzala Connect will not replace it.");
+            if (!booking.MeetingLink.UsesSharedTeamsOrganizer || booking.MeetingLink.TeamsCoOrganizerAssignedAt is not null)
+                return SessionLifecycleResult.Success();
+        }
 
         BcUser user = tutor.BcUser;
         if (string.IsNullOrWhiteSpace(user.EncryptedEntraTenantId) || string.IsNullOrWhiteSpace(user.EncryptedEntraObjectId))
@@ -77,6 +81,25 @@ public sealed class BookingTeamsMeetingService(
             tenantId != Guid.Parse(identity.TenantId))
             return SessionLifecycleResult.Failure("Your Microsoft account does not belong to the configured institution.");
 
+        EntraIdentity tutorIdentity = identity;
+        bool useShared = booking.MeetingLink?.TeamsCreationRequestId is not null
+            ? booking.MeetingLink.UsesSharedTeamsOrganizer
+            : options.Value.SharedOrganizerEnabled && options.Value.SharedOrganizerPilotTutorBcUserIds.Contains(tutorBcUserId);
+        try
+        {
+            if (booking.MeetingLink?.EncryptedTeamsOrganizerObjectId is not null)
+                identity = identities.Unprotect(booking.MeetingLink.EncryptedTeamsOrganizerTenantId!, booking.MeetingLink.EncryptedTeamsOrganizerObjectId);
+            else if (useShared)
+            {
+                var account = await (organizerSettings ?? new TeamsOrganizerSettingsStore(context, options)).GetAsync(cancellationToken);
+                identity = new EntraIdentity(tutorIdentity.TenantId, account.ValidatedObjectId());
+            }
+        }
+        catch (TeamsMeetingException ex) { return SessionLifecycleResult.Failure(ex.Message); }
+        catch (Exception ex) when (ex is CryptographicException or InvalidOperationException or FormatException)
+        { return SessionLifecycleResult.Failure("The saved meeting organiser identity cannot be read. Check persistent encryption keys."); }
+        if (!Guid.TryParse(identity.TenantId, out var organizerTenant) || organizerTenant != tenantId)
+            return SessionLifecycleResult.Failure("The saved meeting organiser does not belong to the configured institution.");
         string identityHash = identities.CreateLookupHash(identity.TenantId, identity.ObjectId);
         if (booking.MeetingLink?.TeamsOrganizerIdentityHash is string existingHash && existingHash != identityHash)
             return SessionLifecycleResult.Failure("This meeting request belongs to a different Microsoft account. Please contact the administrator.");
@@ -86,12 +109,14 @@ public sealed class BookingTeamsMeetingService(
             return SessionLifecycleResult.Failure("The student needs a valid email address before an invitation can be sent.");
         if (booking.Duration != SessionDuration.OneHour)
             return SessionLifecycleResult.Failure("The booking duration is not supported.");
+        if (useShared && (!MailAddress.TryCreate(user.Email, out var tutorAddress) || tutorAddress.Address != user.Email))
+            return SessionLifecycleResult.Failure("The tutor needs a valid institutional email address to be invited as co-organiser.");
 
         try
         {
             if (booking.MeetingLink?.TeamsEventId is null &&
                 !await calendar.SupportsTeamsAsync(identity.ObjectId, cancellationToken))
-                return SessionLifecycleResult.Failure("Your Outlook calendar does not support Teams meetings. Please contact the administrator.");
+                return SessionLifecycleResult.Failure("The configured organiser's Outlook calendar does not support Teams meetings. Please contact the administrator.");
 
             // Persist the request ID before contacting Graph. Retries reuse its transactionId,
             // including when Microsoft succeeds but the response or subsequent database write fails.
@@ -100,6 +125,14 @@ public sealed class BookingTeamsMeetingService(
             {
                 link.TeamsCreationRequestId ??= Guid.NewGuid();
                 link.TeamsOrganizerIdentityHash = identityHash;
+                if (link.EncryptedTeamsOrganizerObjectId is null)
+                {
+                    var protectedOrganizer = identities.Protect(identity.TenantId, identity.ObjectId);
+                    link.EncryptedTeamsOrganizerTenantId = protectedOrganizer.TenantId;
+                    link.EncryptedTeamsOrganizerObjectId = protectedOrganizer.ObjectId;
+                    link.UsesSharedTeamsOrganizer = useShared;
+                    link.EncryptedTeamsCoOrganizerObjectId = useShared ? user.EncryptedEntraObjectId : null;
+                }
                 link.TeamsManualFallbackAllowed = false;
                 try
                 {
@@ -123,7 +156,9 @@ public sealed class BookingTeamsMeetingService(
                     booking.ScheduledStartTime,
                     booking.ScheduledStartTime.AddHours((int)booking.Duration),
                     email,
-                    booking.StudentName), cancellationToken);
+                    booking.StudentName,
+                    useShared ? user.Email : null,
+                    useShared ? user.DisplayName : null), cancellationToken);
 
             // Retain the event even if Microsoft is still preparing its online meeting link.
             link.TeamsEventId = meeting.Id;
@@ -142,6 +177,14 @@ public sealed class BookingTeamsMeetingService(
                 return SessionLifecycleResult.Failure("The booking was cancelled while the meeting was being created. Its Teams cancellation has been requested. Reload the page.");
             }
 
+            if (useShared && !string.IsNullOrWhiteSpace(link.Url) && link.TeamsCoOrganizerAssignedAt is null)
+            {
+                var coOrganizer = identities.Unprotect(link.EncryptedTeamsOrganizerTenantId!, link.EncryptedTeamsCoOrganizerObjectId!);
+                await calendar.EnsureCoOrganizerAsync(identity.ObjectId, link.Url, coOrganizer.ObjectId, cancellationToken);
+                link.TeamsCoOrganizerAssignedAt = timeProvider.GetUtcNow();
+                await context.SaveChangesAsync(cancellationToken);
+            }
+
             return string.IsNullOrWhiteSpace(link.Url)
                 ? SessionLifecycleResult.Failure("The calendar invitation was created, but its Teams link is still being prepared. Retry shortly to retrieve the same meeting.")
                 : SessionLifecycleResult.Success();
@@ -151,7 +194,7 @@ public sealed class BookingTeamsMeetingService(
             logger.LogWarning("Microsoft could not complete Teams creation for booking {BookingId}.", bookingId);
             if (booking.MeetingLink is { TeamsCreationRequestId: not null } failedLink)
             {
-                failedLink.TeamsManualFallbackAllowed = true;
+                failedLink.TeamsManualFallbackAllowed = string.IsNullOrWhiteSpace(failedLink.Url);
                 try
                 {
                     await context.SaveChangesAsync(cancellationToken);
@@ -207,9 +250,11 @@ public sealed class BookingTeamsMeetingService(
             .Select(item => item.BcUser).SingleOrDefaultAsync(cancellationToken);
         try
         {
-            if (string.IsNullOrWhiteSpace(organizer?.EncryptedEntraTenantId) || string.IsNullOrWhiteSpace(organizer.EncryptedEntraObjectId))
+            string? protectedTenant = link.EncryptedTeamsOrganizerTenantId ?? organizer?.EncryptedEntraTenantId;
+            string? protectedObject = link.EncryptedTeamsOrganizerObjectId ?? organizer?.EncryptedEntraObjectId;
+            if (string.IsNullOrWhiteSpace(protectedTenant) || string.IsNullOrWhiteSpace(protectedObject))
                 throw new TeamsMeetingException("The meeting organizer's Microsoft identity is unavailable.");
-            EntraIdentity identity = identities.Unprotect(organizer.EncryptedEntraTenantId, organizer.EncryptedEntraObjectId);
+            EntraIdentity identity = identities.Unprotect(protectedTenant, protectedObject);
             if (!Guid.TryParse(configuration["AzureAd:TenantId"], out Guid tenant) || tenant != Guid.Parse(identity.TenantId) ||
                 identities.CreateLookupHash(identity.TenantId, identity.ObjectId) != link.TeamsOrganizerIdentityHash)
                 throw new TeamsMeetingException("The saved meeting organizer could not be verified.");

@@ -9,6 +9,8 @@ public class PlatformSettingsConfiguration :
 {
     public void Configure(EntityTypeBuilder<PlatformSettings> builder)
     {
+        builder.Property(s => s.TeamsSharedOrganizerEmail).HasMaxLength(320);
+        builder.Property(s => s.TeamsSharedOrganizerObjectId).HasMaxLength(36);
         builder.ToTable("PlatformSettings", table =>
         {
             table.HasCheckConstraint(

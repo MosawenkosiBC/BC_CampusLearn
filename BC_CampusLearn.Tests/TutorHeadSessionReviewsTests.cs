@@ -15,6 +15,32 @@ namespace BC_CampusLearn.Tests;
 
 public class TutorHeadSessionReviewsTests
 {
+    [Theory]
+    [InlineData(2, true)]
+    [InlineData(3, false)]
+    public async Task TeamsPreviewAndHandlersAreRestrictedToConfiguredPilotTutorHead(int reviewerId, bool allowed)
+    {
+        await using var context = CreateContext();
+        var page = new SessionDetailsModel(context,
+            new TestCurrentUserService(new CurrentUser(reviewerId, "HEAD", "Tutor Head", "head@example.com", BcUserRole.HeadOfTutors)),
+            new TestWebHostEnvironment(), TimeProvider.System,
+            teamsOptions: Microsoft.Extensions.Options.Options.Create(new BC_CampusLearn.Services.Teams.TeamsMeetingOptions
+            { Enabled = true, PilotTutorHeadBcUserIds = [2] }));
+        Assert.Equal(allowed, page.CanUseTeamsReview);
+        var recording = await page.OnGetTeamsRecordingAsync(1, "recording-1", default);
+        var transcript = await page.OnGetTeamsTranscriptAsync(1, "transcript-1", default);
+        if (allowed)
+        {
+            Assert.IsType<NotFoundResult>(recording);
+            Assert.IsType<NotFoundResult>(transcript);
+        }
+        else
+        {
+            Assert.IsType<ForbidResult>(recording);
+            Assert.IsType<ForbidResult>(transcript);
+        }
+    }
+
     [Fact]
     public async Task PerformanceCountsCompletedSessionsAndLatestHeadDecisionsWithinPeriod()
     {

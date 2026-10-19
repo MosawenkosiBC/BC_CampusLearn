@@ -158,6 +158,7 @@ builder.Services.AddHttpClient<ITeamsCalendarClient, TeamsCalendarClient>(client
     })
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddScoped<IBookingTeamsMeetingService, BookingTeamsMeetingService>();
+builder.Services.AddScoped<TeamsOrganizerSettingsStore>();
 builder.Services.AddHttpClient<ITeamsSessionReviewService, TeamsSessionReviewService>(client =>
     {
         client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");

@@ -23,6 +23,31 @@ public class TeamsSessionReviewTests
     private const string Organizer = "22222222-2222-2222-2222-222222222222";
 
     [Fact]
+    public async Task SharedRecordingLookupUsesSavedAccountWithoutDependingOnTutorsCurrentIdentity()
+    {
+        await using var db = await CreateContextAsync();
+        const string sharedId = "33333333-3333-3333-3333-333333333333";
+        var snapshot = Identities.Protect(Tenant, sharedId);
+        var booking = await db.Bookings.Include(b => b.MeetingLink).SingleAsync();
+        booking.MeetingLink!.UsesSharedTeamsOrganizer = true;
+        booking.MeetingLink.EncryptedTeamsOrganizerTenantId = snapshot.TenantId;
+        booking.MeetingLink.EncryptedTeamsOrganizerObjectId = snapshot.ObjectId;
+        booking.MeetingLink.TeamsOrganizerIdentityHash = snapshot.LookupHash;
+        var tutor = await db.BcUsers.SingleAsync();
+        tutor.EncryptedEntraObjectId = null;
+        await db.SaveChangesAsync();
+        var service = CreateService(db, new Handler(request =>
+        {
+            string path = request.RequestUri!.AbsolutePath;
+            Assert.StartsWith($"/v1.0/users/{sharedId}/onlineMeetings", path);
+            if (path.EndsWith("/onlineMeetings")) return Json("""{"value":[{"id":"meeting-1"}]}""");
+            if (path.EndsWith("/recordings")) return Json("""{"value":[{"id":"recording-1"}]}""");
+            return Json("""{"value":[]}""");
+        }));
+        Assert.Single((await service.GetAsync(1, default)).Recordings);
+    }
+
+    [Fact]
     public void AttendanceMatchesEmailAndMergesMultipleDevicesButPreservesReconnects()
     {
         using var document = JsonDocument.Parse("""

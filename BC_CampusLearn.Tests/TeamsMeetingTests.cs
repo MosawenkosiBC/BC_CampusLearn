@@ -28,6 +28,135 @@ public sealed class TeamsMeetingTests
     private const string TenantId = "11111111-1111-1111-1111-111111111111";
     private const string ObjectId = "22222222-2222-2222-2222-222222222222";
     private const string JoinUrl = "https://teams.microsoft.com/l/meetup-join/test";
+    private const string SharedObjectId = "33333333-3333-3333-3333-333333333333";
+
+    private static void EnableShared(Fixture fixture)
+    {
+        fixture.Options.SharedOrganizerEnabled = true;
+        fixture.Options.SharedOrganizerObjectId = SharedObjectId;
+        fixture.Options.SharedOrganizerPilotTutorBcUserIds = [2];
+        fixture.Calendar.ExpectedOrganizerId = SharedObjectId;
+    }
+
+    [Fact]
+    public async Task SharedPilotInvitesTutorAndRetainsOrganizerForCancellationAfterSettingsChange()
+    {
+        await using var fixture = await Fixture.CreateAsync(2);
+        EnableShared(fixture);
+        Assert.True((await fixture.Service.CreateAsync(2, 1)).Succeeded);
+        var request = Assert.Single(fixture.Calendar.Requests);
+        Assert.Equal(SharedObjectId, request.OrganizerObjectId);
+        Assert.Equal("tutor@institution.example", request.TutorEmail);
+        Assert.Equal("student@institution.example", request.StudentEmail);
+        Assert.Equal((SharedObjectId, ObjectId), Assert.Single(fixture.Calendar.CoOrganizerRequests));
+        var link = await fixture.Context.MeetingLinks.SingleAsync();
+        Assert.True(link.UsesSharedTeamsOrganizer);
+        Assert.NotNull(link.TeamsCoOrganizerAssignedAt);
+        Assert.Equal(SharedObjectId, fixture.Identities.Unprotect(link.EncryptedTeamsOrganizerTenantId!, link.EncryptedTeamsOrganizerObjectId!).ObjectId);
+        fixture.Options.SharedOrganizerObjectId = Guid.NewGuid().ToString();
+        fixture.Options.SharedOrganizerEnabled = false;
+        Assert.True((await fixture.Service.CreateAsync(2, 1)).Succeeded);
+        Assert.Single(fixture.Calendar.Requests);
+        var booking = await fixture.Context.Bookings.SingleAsync();
+        booking.Status = BookingStatus.Cancelled;
+        var tutor = await fixture.Context.BcUsers.SingleAsync();
+        tutor.EncryptedEntraObjectId = null;
+        await fixture.Context.SaveChangesAsync();
+        Assert.True((await fixture.Service.CancelAsync(1)).Succeeded);
+        Assert.Equal(1, fixture.Calendar.CancelCalls);
+    }
+
+    [Fact]
+    public async Task CoOrganizerFailureRetainsEventAndRetryUsesOriginalSharedAccount()
+    {
+        await using var fixture = await Fixture.CreateAsync(2);
+        EnableShared(fixture);
+        fixture.Calendar.FailCoOrganizer = true;
+        Assert.False((await fixture.Service.CreateAsync(2, 1)).Succeeded);
+        var link = await fixture.Context.MeetingLinks.SingleAsync();
+        Assert.Equal("event-1", link.TeamsEventId);
+        Assert.Equal(JoinUrl, link.Url);
+        Assert.Null(link.TeamsCoOrganizerAssignedAt);
+        Assert.False(link.TeamsManualFallbackAllowed);
+        var lifecycle = new SessionLifecycleService(fixture.Context, new FixedTimeProvider(fixture.Now));
+        Assert.False((await lifecycle.ConfirmAsync(12, 2, 1, link.Url)).Succeeded);
+        Assert.Equal(BookingStatus.Pending, (await fixture.Context.Bookings.SingleAsync()).Status);
+        fixture.Options.SharedOrganizerObjectId = Guid.NewGuid().ToString();
+        fixture.Calendar.FailCoOrganizer = false;
+        Assert.True((await fixture.Service.CreateAsync(2, 1)).Succeeded);
+        Assert.Single(fixture.Calendar.Requests);
+        Assert.Equal(2, fixture.Calendar.CoOrganizerRequests.Count);
+        Assert.All(fixture.Calendar.CoOrganizerRequests, request => Assert.Equal(SharedObjectId, request.Organizer));
+        Assert.NotNull(link.TeamsCoOrganizerAssignedAt);
+    }
+
+    [Fact]
+    public async Task MissingSharedAccountFailsPilotWithoutFallingBackToTutorCalendar()
+    {
+        await using var fixture = await Fixture.CreateAsync(2);
+        EnableShared(fixture);
+        fixture.Options.SharedOrganizerObjectId = null;
+        var result = await fixture.Service.CreateAsync(2, 1);
+        Assert.False(result.Succeeded);
+        Assert.Empty(fixture.Calendar.Requests);
+        Assert.Empty(fixture.Context.MeetingLinks);
+    }
+
+    [Fact]
+    public async Task NonPilotTutorsKeepAutomaticCreationEvenWithSharedPilotEnabled()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        EnableShared(fixture);
+        fixture.Calendar.ExpectedOrganizerId = ObjectId;
+        fixture.Options.PilotTutorBcUserIds = [2];
+        fixture.Options.SharedOrganizerObjectId = null;
+        Assert.True((await fixture.Service.CreateAsync(8, 1)).Succeeded);
+        Assert.Equal(ObjectId, Assert.Single(fixture.Calendar.Requests).OrganizerObjectId);
+        Assert.Empty(fixture.Calendar.CoOrganizerRequests);
+        Assert.False((await fixture.Context.MeetingLinks.SingleAsync()).UsesSharedTeamsOrganizer);
+    }
+
+    [Fact]
+    public async Task SavedSuperAdminAccountOverridesEnvironmentForNewRequests()
+    {
+        await using var fixture = await Fixture.CreateAsync(2);
+        EnableShared(fixture);
+        string savedId = Guid.NewGuid().ToString();
+        fixture.Context.PlatformSettings.Add(new PlatformSettings
+        {
+            TeamsSharedOrganizerEmail = "updated@institution.example", TeamsSharedOrganizerObjectId = savedId
+        });
+        await fixture.Context.SaveChangesAsync();
+        Assert.True((await fixture.Service.CreateAsync(2, 1)).Succeeded);
+        Assert.Equal(savedId, Assert.Single(fixture.Calendar.Requests).OrganizerObjectId);
+    }
+
+    [Fact]
+    public async Task CalendarCoOrganizerPatchPreservesStudentAndConfirmsTutorRole()
+    {
+        int patchCount = 0;
+        using var http = new HttpClient(new FakeHandler(async request =>
+        {
+            if (request.Method == HttpMethod.Get)
+                return JsonResponse(HttpStatusCode.OK, """
+                    {"value":[{"id":"meeting-1","participants":{"attendees":[
+                    {"identity":{"user":{"id":"student-id"}},"role":"attendee"},
+                    {"identity":{"user":{"id":"TUTOR_ID"}},"role":"attendee"}]}}]}
+                    """.Replace("TUTOR_ID", ObjectId));
+            patchCount++;
+            Assert.Equal(HttpMethod.Patch, request.Method);
+            Assert.Contains($"users/{SharedObjectId}/onlineMeetings/meeting-1", request.RequestUri!.AbsolutePath);
+            using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
+            var attendees = body.RootElement.GetProperty("participants").GetProperty("attendees").EnumerateArray().ToArray();
+            Assert.Equal(2, attendees.Length);
+            Assert.Equal("attendee", attendees[0].GetProperty("role").GetString());
+            Assert.Equal("coorganizer", attendees[1].GetProperty("role").GetString());
+            return JsonResponse(HttpStatusCode.OK, body.RootElement.GetRawText());
+        })) { BaseAddress = new Uri("https://graph.microsoft.com/v1.0/") };
+        var client = new TeamsCalendarClient(http, new FakeTokens());
+        await client.EnsureCoOrganizerAsync(SharedObjectId, JoinUrl, ObjectId, default);
+        Assert.Equal(1, patchCount);
+    }
 
     [Fact]
     public async Task Create_SavesTutorEventAndLink_WithoutConfirmingBooking_AndReusesSavedMeeting()
@@ -83,7 +212,6 @@ public sealed class TeamsMeetingTests
 
     [Theory]
     [InlineData("disabled")]
-    [InlineData("not-allowlisted")]
     [InlineData("other-tutor")]
     [InlineData("inactive")]
     [InlineData("not-approved")]
@@ -104,7 +232,6 @@ public sealed class TeamsMeetingTests
         switch (scenario)
         {
             case "disabled": fixture.Options.Enabled = false; break;
-            case "not-allowlisted": fixture.Options.PilotTutorBcUserIds = []; break;
             case "other-tutor": actor = 9; fixture.Options.PilotTutorBcUserIds = [9]; break;
             case "inactive": tutor.IsActive = false; break;
             case "not-approved": tutor.Status = TutorStatus.Deregistered; break;
@@ -670,6 +797,15 @@ public sealed class TeamsMeetingTests
     }
     private sealed class FakeCalendar : ITeamsCalendarClient
     {
+        public string ExpectedOrganizerId { get; set; } = ObjectId;
+        public bool FailCoOrganizer { get; set; }
+        public List<(string Organizer, string Tutor)> CoOrganizerRequests { get; } = [];
+        public Task EnsureCoOrganizerAsync(string organizerObjectId, string joinUrl, string tutorObjectId, CancellationToken cancellationToken)
+        {
+            CoOrganizerRequests.Add((organizerObjectId, tutorObjectId));
+            if (FailCoOrganizer) throw new TeamsMeetingException("Co-organiser setup failed.");
+            return Task.CompletedTask;
+        }
         public List<TeamsCalendarRequest> Requests { get; } = [];
         public TeamsCalendarEvent Result { get; set; } = new("event-1", JoinUrl);
         public bool FailCreate { get; set; }
@@ -681,7 +817,7 @@ public sealed class TeamsMeetingTests
         public Task<string?> FindByTransactionAsync(string organizerObjectId, Guid transactionId, DateTimeOffset start, CancellationToken cancellationToken) => Task.FromResult<string?>("event-1");
         public Task CancelAsync(string organizerObjectId, string eventId, CancellationToken cancellationToken)
         {
-            Assert.Equal(ObjectId, organizerObjectId);
+            Assert.Equal(ExpectedOrganizerId, organizerObjectId);
             Assert.Equal("event-1", eventId);
             CancelCalls++;
             if (FailCancel) throw new TeamsMeetingException("Microsoft could not be reached.");
@@ -703,7 +839,7 @@ public sealed class TeamsMeetingTests
         public Task<TeamsCalendarEvent> GetAsync(string organizerObjectId, string eventId, CancellationToken cancellationToken)
         {
             GetCalls++;
-            Assert.Equal(ObjectId, organizerObjectId);
+            Assert.Equal(ExpectedOrganizerId, organizerObjectId);
             Assert.Equal("event-1", eventId);
             return Task.FromResult(Result);
         }
@@ -745,15 +881,15 @@ public sealed class TeamsMeetingTests
 
         public Fixture() => Context = new(ContextOptions);
 
-        public static async Task<Fixture> CreateAsync()
+        public static async Task<Fixture> CreateAsync(int tutorBcUserId = 8)
         {
             var fixture = new Fixture();
             ProtectedEntraIdentity stored = fixture.Identities.Protect(TenantId, ObjectId);
             var tutor = new Tutor
             {
-                TutorId = 12, BcUserId = 8, Status = TutorStatus.Approved, ApplicationStage = TutorApplicationStage.Placement, IsActive = true,
+                TutorId = 12, BcUserId = tutorBcUserId, Status = TutorStatus.Approved, ApplicationStage = TutorApplicationStage.Placement, IsActive = true,
                 ReasonForTutoring = "Help", TeachingStyle = "Practical", PreviousTutoringExperience = "Peer", CampusOfStudy = "Pretoria", DemonstrationVideoUrl = "",
-                BcUser = new BcUser { BcUserId = 8, DisplayName = "Tutor", Email = "tutor@institution.example", EncryptedEntraTenantId = stored.TenantId, EncryptedEntraObjectId = stored.ObjectId, EntraIdentityLookupHash = stored.LookupHash }
+                BcUser = new BcUser { BcUserId = tutorBcUserId, DisplayName = "Tutor", Email = "tutor@institution.example", EncryptedEntraTenantId = stored.TenantId, EncryptedEntraObjectId = stored.ObjectId, EntraIdentityLookupHash = stored.LookupHash }
             };
             var module = new ProgrammeModule { ProgrammeModuleId = 3, ModuleCode = "MOD101", ModuleName = "Module" };
             var assignment = new TutorCourseModule { TutorId = 12, Tutor = tutor, ProgrammeModuleId = 3, ProgrammeModule = module, IsActive = true };

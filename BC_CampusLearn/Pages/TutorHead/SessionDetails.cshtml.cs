@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace BC_CampusLearn.Pages.TutorHead;
 
@@ -24,7 +25,8 @@ public class SessionDetailsModel(
     TimeProvider timeProvider,
     IGeminiApiKeyProtector? apiKeyProtector = null,
     IGeminiSessionAssessmentService? assessmentService = null,
-    ITeamsSessionReviewService? teamsReviewService = null) : PageModel
+    ITeamsSessionReviewService? teamsReviewService = null,
+    IOptions<TeamsMeetingOptions>? teamsOptions = null) : PageModel
 {
     private static readonly JsonSerializerOptions AssessmentJsonOptions = new(
         JsonSerializerDefaults.Web);
@@ -48,6 +50,9 @@ public class SessionDetailsModel(
     public string? RecordingUrl { get; private set; }
 
     public TeamsSessionReview TeamsEvidence { get; private set; } = new();
+    public bool CanUseTeamsReview => currentUserService.IsAuthenticated &&
+        currentUserService.GetRequiredUser().Role == BcUserRole.HeadOfTutors &&
+        teamsOptions?.Value.AllowsTutorHead(currentUserService.GetRequiredUser().BcUserId) == true;
 
     public bool CanWatchRecording => RecordingUrl is not null;
 
@@ -260,7 +265,7 @@ public class SessionDetailsModel(
             };
         }
         RecordingUrl = ValidHttpUrl(session.TutorEvaluation!.RecordingLink);
-        if (teamsReviewService is not null)
+        if (CanUseTeamsReview && teamsReviewService is not null)
             TeamsEvidence = await teamsReviewService.GetAsync(id, cancellationToken);
         int currentUserId = currentUserService.GetRequiredUser().BcUserId;
         HasGeminiApiKey = await context.BcUsers
@@ -295,23 +300,7 @@ public class SessionDetailsModel(
     private async Task<GeminiSessionEvidence> BuildEvidenceAsync(
         CancellationToken cancellationToken)
     {
-        GeminiTranscriptDocument? uploadedTranscript = null;
-        // Prefer the timestamped Teams transcript when there is exactly one.
-        // Multiple transcript parts need explicit alignment, so retain the uploaded evidence then.
-        if (teamsReviewService is not null && TeamsEvidence.Transcripts.Count == 1)
-        {
-            try
-            {
-                string text = await teamsReviewService.GetTranscriptAsync(Session.BookingId,
-                    TeamsEvidence.Transcripts[0].Id, cancellationToken);
-                uploadedTranscript = new GeminiTranscriptDocument("Teams transcript.vtt", "text/vtt", text, null);
-            }
-            catch (TeamsMeetingException exception)
-            {
-                TeamsEvidence.Notices.Add($"Teams transcript: {exception.Message} The uploaded transcript will be used if available.");
-            }
-        }
-        uploadedTranscript ??= await ReadUploadedTranscriptAsync(cancellationToken);
+        GeminiTranscriptDocument? uploadedTranscript = await ReadUploadedTranscriptAsync(cancellationToken);
 
         return new GeminiSessionEvidence(
             Answer(Session.Summary),
@@ -395,6 +384,7 @@ public class SessionDetailsModel(
 
     public async Task<IActionResult> OnGetTeamsTranscriptAsync(int id, string transcriptId, CancellationToken cancellationToken)
     {
+        if (!CanUseTeamsReview) return Forbid();
         if (teamsReviewService is null) return NotFound();
         try
         {
@@ -407,6 +397,7 @@ public class SessionDetailsModel(
 
     public async Task<IActionResult> OnGetTeamsRecordingAsync(int id, string recordingId, CancellationToken cancellationToken)
     {
+        if (!CanUseTeamsReview) return Forbid();
         if (teamsReviewService is null) return NotFound();
         try
         {

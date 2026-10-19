@@ -39,7 +39,7 @@ public class SessionsModel : PageModel
         _teamsMeetings = teamsMeetings;
     }
 
-    public bool TeamsMeetingCreationEnabled => _teamsOptions.AllowsTutor(_currentUserService.GetRequiredUser().BcUserId);
+    public bool TeamsMeetingCreationEnabled => _teamsOptions.Enabled;
 
     [TempData]
     public bool TeamsMeetingCreated { get; set; }

@@ -57,11 +57,13 @@ public sealed class TeamsSessionReviewService(
         if (environment.IsDevelopment() && configuration.GetValue<bool>("Authentication:UseDevelopmentAuthentication"))
             throw new TeamsMeetingException("Use institutional Microsoft sign-in to access Teams session evidence.");
         BcUser tutor = booking.TutorCourseModule.Tutor.BcUser;
-        if (tutor.EncryptedEntraTenantId is null || tutor.EncryptedEntraObjectId is null)
+        string? protectedTenant = link.EncryptedTeamsOrganizerTenantId ?? tutor.EncryptedEntraTenantId;
+        string? protectedObject = link.EncryptedTeamsOrganizerObjectId ?? tutor.EncryptedEntraObjectId;
+        if (protectedTenant is null || protectedObject is null)
             throw new TeamsMeetingException("The tutor needs to sign in with Microsoft again before Teams evidence can be retrieved.");
         try
         {
-            EntraIdentity identity = identities.Unprotect(tutor.EncryptedEntraTenantId, tutor.EncryptedEntraObjectId);
+            EntraIdentity identity = identities.Unprotect(protectedTenant, protectedObject);
             if (!Guid.TryParse(configuration["AzureAd:TenantId"], out Guid tenant) ||
                 !Guid.TryParse(identity.TenantId, out Guid actualTenant) || tenant != actualTenant ||
                 !Guid.TryParse(identity.ObjectId, out _) ||

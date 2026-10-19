@@ -619,6 +619,18 @@ namespace BC_CampusLearn.Migrations
                     b.Property<int>("BookingId")
                         .HasColumnType("int");
 
+                    b.Property<string>("EncryptedTeamsCoOrganizerObjectId")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("EncryptedTeamsOrganizerObjectId")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("EncryptedTeamsOrganizerTenantId")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
                     b.Property<DateTimeOffset?>("TeamsCancellationLastAttemptAt")
                         .IsConcurrencyToken()
                         .HasColumnType("datetimeoffset");
@@ -627,6 +639,9 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.Property<DateTimeOffset?>("TeamsCancelledAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("TeamsCoOrganizerAssignedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<Guid?>("TeamsCreationRequestId")
@@ -650,6 +665,9 @@ namespace BC_CampusLearn.Migrations
                         .IsRequired()
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
+
+                    b.Property<bool>("UsesSharedTeamsOrganizer")
+                        .HasColumnType("bit");
 
                     b.HasKey("BookingId");
 
@@ -753,6 +771,14 @@ namespace BC_CampusLearn.Migrations
                         .IsRequired()
                         .HasMaxLength(320)
                         .HasColumnType("nvarchar(320)");
+
+                    b.Property<string>("TeamsSharedOrganizerEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<string>("TeamsSharedOrganizerObjectId")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
 
                     b.Property<decimal?>("TutorHeadPaymentAmount")
                         .HasPrecision(18, 2)

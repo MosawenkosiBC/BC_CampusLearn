@@ -93,7 +93,7 @@
                     CampusAlertVariant.Danger))
         }
 
-        <div class="tutor-head-evidence-layout">
+        <div class="@(Model.CanUseTeamsReview ? "tutor-head-evidence-layout" : "tutor-head-standard-review-layout")">
         <section class="admin-session-reviews" aria-labelledby="session-reviews-title">
             <h2 id="session-reviews-title" class="visually-hidden">Session reviews</h2>
             <div class="admin-session-review-tabs tutor-head-review-tabs" role="tablist" aria-label="Session reviews">
@@ -217,6 +217,19 @@
                     <div>
                         <h2>Tutor Review</h2>
                     </div>
+                    @if (!Model.CanUseTeamsReview)
+                    {
+                        <div class="tutor-head-evidence-actions">
+                            @if (Model.CanWatchRecording)
+                            {
+                                <a class="tutor-head-recording-button" href="@Model.RecordingUrl" target="_blank" rel="noopener noreferrer">Watch recording</a>
+                            }
+                            @if (Model.HasTranscript)
+                            {
+                                <a class="tutor-head-recording-button" href="@Url.Page("/TutorHead/SessionDetails", "Transcript", new { id = session.BookingId })" target="_blank" rel="noopener noreferrer">Transcript</a>
+                            }
+                        </div>
+                    }
                 </header>
                 <div class="admin-session-review-body">
                     <dl class="admin-session-answers" id="tutor-review-answers">
@@ -256,6 +269,8 @@
                 </div>
             </section>
         </section>
+        @if (Model.CanUseTeamsReview)
+        {
         <aside class="tutor-head-video-card" aria-labelledby="session-video-title">
             <h2 id="session-video-title">Session recording</h2>
             @if (Model.TeamsEvidence.Recordings.Count > 0)
@@ -330,6 +345,7 @@
                 <p class="tutor-head-evidence-notice">@notice</p>
             }
         </aside>
+        }
         </div>
     </div>
 </main>
@@ -375,6 +391,8 @@
                                 }
                             </div>
                             <p>@assessment.Summary</p>
+                            @if (Model.CanUseTeamsReview)
+                            {
                             <section class="tutor-head-ai-watch-ranges" aria-labelledby="ai-watch-ranges-title">
                                 <h3 id="ai-watch-ranges-title">Suggested moments to watch</h3>
                                 @if (assessment.SuggestedWatchRanges is { Count: > 0 } ranges)
@@ -389,6 +407,7 @@
                                 }
                                 else { <p>No timestamped watch suggestions are available. Generate a new assessment with a timestamped transcript.</p> }
                             </section>
+                            }
                             <div class="tutor-head-ai-lists">
                                 <div class="tutor-head-ai-list tutor-head-ai-list--winning">
                                     <h3>Winning points</h3>

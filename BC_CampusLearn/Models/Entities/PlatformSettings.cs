@@ -6,6 +6,8 @@ public class PlatformSettings
 
     public int PlatformSettingsId { get; set; } = SingletonId;
     public string SupportEmail { get; set; } = "tutors@belgiumcampus.ac.za";
+    public string? TeamsSharedOrganizerEmail { get; set; }
+    public string? TeamsSharedOrganizerObjectId { get; set; }
     public string CampusTimeZoneId { get; set; } = "Africa/Johannesburg";
     public string CurrencyCode { get; set; } = "ZAR";
     public decimal? TutorPaymentAmount { get; set; }
