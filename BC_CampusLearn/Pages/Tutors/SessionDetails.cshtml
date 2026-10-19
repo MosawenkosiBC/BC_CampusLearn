@@ -613,6 +613,10 @@
                                 ? "Confirm session"
                                 : "Edit meeting link")
                         </h2>
+                        @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending && Model.TeamsMeetingCreationEnabled)
+                        {
+                            <p class="session-confirmation-subtext">We’ll automatically create a Teams meeting and send the invitation to the student.</p>
+                        }
                         @if (Model.Session.Status != BC_CampusLearn.Models.Entities.BookingStatus.Pending)
                         {
                             <p>Paste the link students will use to join this session.</p>
@@ -634,9 +638,16 @@
                     }
                     @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending && Model.TeamsMeetingCreationEnabled)
                     {
-                        <p>Create a Teams meeting and invite the student.</p>
-                        <button type="button" class="btn btn-secondary mb-3" data-toggle-manual-link
-                                aria-expanded="false" aria-controls="session-manual-meeting-link" aria-label="Add a manual meeting link">+</button>
+                        <div class="session-confirmation-options">
+                            <button type="button" class="btn btn-teams session-teams-action" data-generate-teams-link
+                                    data-generate-url="@Url.Page("/Tutors/SessionDetails", "GenerateTeamsLink", new { bookingId = Model.Session.BookingId })"><i class="bi bi-microsoft-teams me-2" aria-hidden="true"></i>Create Teams meeting</button>
+                            <div class="session-confirmation-divider"><span>or</span></div>
+                            <div class="session-manual-link-option">
+                                <button type="button" class="session-manual-link-button" data-toggle-manual-link
+                                        aria-expanded="false" aria-controls="session-manual-meeting-link" aria-label="Add a manual meeting link">+</button>
+                                <p>Add a meeting link manually</p>
+                            </div>
+                        </div>
                     }
                     <div class="meeting-link-modal-error" data-confirm-error role="alert" hidden></div>
                     <div data-confirm-success role="status" hidden>
@@ -662,22 +673,17 @@
                     }
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button"
-                            class="meeting-link-modal-cancel"
-                            data-bs-dismiss="modal">
-                        Cancel
-                    </button>
-                    @if (Model.Session.Status == BC_CampusLearn.Models.Entities.BookingStatus.Pending && Model.TeamsMeetingCreationEnabled)
-                    {
-                        <button type="button" class="btn btn-teams" data-generate-teams-link
-                                data-generate-url="@Url.Page("/Tutors/SessionDetails", "GenerateTeamsLink", new { bookingId = Model.Session.BookingId })"><i class="bi bi-microsoft-teams me-2" aria-hidden="true"></i>Create Teams meeting</button>
-                    }
-                    else if (Model.Session.Status != BC_CampusLearn.Models.Entities.BookingStatus.Pending)
-                    {
+                @if (Model.Session.Status != BC_CampusLearn.Models.Entities.BookingStatus.Pending)
+                {
+                    <div class="modal-footer">
+                        <button type="button"
+                                class="meeting-link-modal-cancel"
+                                data-bs-dismiss="modal">
+                            Cancel
+                        </button>
                         <button type="submit" class="meeting-link-modal-save">Save meeting link</button>
-                    }
-                </div>
+                    </div>
+                }
             </form>
         </div>
     </div>

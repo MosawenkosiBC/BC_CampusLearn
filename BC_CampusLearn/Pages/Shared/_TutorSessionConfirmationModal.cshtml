@@ -9,6 +9,10 @@
                 <div class="modal-header">
                     <div>
                         <h2 id="tutor-confirm-session-title">Confirm session</h2>
+                        @if (Model.TeamsMeetingCreationEnabled)
+                        {
+                            <p class="session-confirmation-subtext">We’ll automatically create a Teams meeting and send the invitation to the student.</p>
+                        }
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close"></button>
@@ -16,9 +20,16 @@
                 <div class="modal-body">
                     @if (Model.TeamsMeetingCreationEnabled)
                     {
-                        <p>Create a Teams meeting and invite the student.</p>
-                        <button type="button" class="btn btn-secondary mb-3" data-toggle-manual-link
-                                aria-expanded="false" aria-controls="tutor-manual-meeting-link" aria-label="Add a manual meeting link">+</button>
+                        <div class="session-confirmation-options">
+                            <button type="button" class="btn btn-teams session-teams-action" data-generate-teams-link
+                                    data-generate-url="@Model.GenerateUrl"><i class="bi bi-microsoft-teams me-2" aria-hidden="true"></i>Create Teams meeting</button>
+                            <div class="session-confirmation-divider"><span>or</span></div>
+                            <div class="session-manual-link-option">
+                                <button type="button" class="session-manual-link-button" data-toggle-manual-link
+                                        aria-expanded="false" aria-controls="tutor-manual-meeting-link" aria-label="Add a manual meeting link">+</button>
+                                <p>Add a meeting link manually</p>
+                            </div>
+                        </div>
                     }
                     <div class="alert alert-danger" data-confirm-error role="alert" hidden></div>
                     <div data-confirm-success role="status" hidden>
@@ -34,15 +45,6 @@
                            autocomplete="url" required />
                     <button type="submit" class="btn bookings-modal-primary mt-3">Confirm session</button>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light"
-                            data-bs-dismiss="modal">Cancel</button>
-                    @if (Model.TeamsMeetingCreationEnabled)
-                    {
-                        <button type="button" class="btn btn-teams" data-generate-teams-link
-                                data-generate-url="@Model.GenerateUrl"><i class="bi bi-microsoft-teams me-2" aria-hidden="true"></i>Create Teams meeting</button>
-                    }
                 </div>
             </form>
         </div>
