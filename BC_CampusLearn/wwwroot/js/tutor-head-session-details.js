@@ -1,4 +1,19 @@
 (() => {
+    document.querySelectorAll("[data-session-recording]").forEach(video => {
+        const part = video.closest(".tutor-head-recording-part");
+        video.addEventListener("loadedmetadata", () => {
+            if (!Number.isFinite(video.duration)) return;
+            const seconds = Math.floor(video.duration);
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor(seconds % 3600 / 60);
+            part.querySelector("[data-recording-duration]").textContent =
+                `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+            part.querySelector("[data-recording-error]").hidden = true;
+        });
+        video.addEventListener("error", () => {
+            part.querySelector("[data-recording-error]").hidden = false;
+        });
+    });
     const aiAssessmentModal = document.getElementById("ai-assessment-modal");
     if (aiAssessmentModal?.dataset.openOnLoad === "true" && window.bootstrap) {
         bootstrap.Modal.getOrCreateInstance(aiAssessmentModal).show();
@@ -15,6 +30,7 @@
     const aiAssessmentLabel = aiAssessmentButton?.querySelector(
         "[data-ai-assessment-label]");
     const aiAssessmentInitiallyDisabled = aiAssessmentButton?.disabled ?? false;
+    const initialAiAssessmentLabel = aiAssessmentLabel?.textContent;
     aiAssessmentForm?.addEventListener("submit", () => {
         if (aiAssessmentButton) {
             aiAssessmentButton.disabled = true;
@@ -43,7 +59,7 @@
             aiAssessmentIcon.hidden = false;
         }
         if (aiAssessmentLabel) {
-            aiAssessmentLabel.textContent = "Generate AI assessment";
+            aiAssessmentLabel.textContent = initialAiAssessmentLabel;
         }
     });
 
