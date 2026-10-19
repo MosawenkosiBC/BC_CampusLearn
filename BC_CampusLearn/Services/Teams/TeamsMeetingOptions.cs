@@ -9,6 +9,13 @@ public sealed class TeamsMeetingOptions
     // evidence remains scoped to explicitly configured pilot organisers.
     public int[] PilotTutorBcUserIds { get; set; } = [];
 
+    // The reviewing account is separate from the meeting organiser. Keep the
+    // preview hidden and its handlers closed unless explicitly allowlisted.
+    public int[] PilotTutorHeadBcUserIds { get; set; } = [];
+
     public bool AllowsTutor(int bcUserId) =>
         Enabled && PilotTutorBcUserIds.Contains(bcUserId);
+
+    public bool AllowsTutorHead(int bcUserId) =>
+        Enabled && PilotTutorHeadBcUserIds.Contains(bcUserId);
 }

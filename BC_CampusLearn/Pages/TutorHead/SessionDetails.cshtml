@@ -118,8 +118,8 @@
                 </button>
             </div>
 
-            <div class="tutor-head-evidence-layout">
-            <div class="tutor-head-review-panels">
+            <div class="@(Model.CanUseTeamsReview ? "tutor-head-evidence-layout" : "tutor-head-standard-review-layout")">
+            <div class="@(Model.CanUseTeamsReview ? "tutor-head-review-panels" : "tutor-head-standard-review-panels")">
             <section class="admin-session-review-panel-card" id="tutor-head-review-panel"
                      role="tabpanel" aria-labelledby="tutor-head-review-tab" tabindex="0" hidden
                      data-review-panel data-review-pager>
@@ -218,6 +218,22 @@
                     <div>
                         <h2>Tutor Review</h2>
                     </div>
+                    @if (!Model.CanUseTeamsReview)
+                    {
+                        <div class="tutor-head-evidence-actions">
+                            @if (Model.CanWatchRecording)
+                            {
+                                <a class="tutor-head-recording-button" href="@Model.RecordingUrl" target="_blank" rel="noopener noreferrer">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" fill="currentColor" /></svg>
+                                    Watch recording
+                                </a>
+                            }
+                            @if (Model.HasTranscript)
+                            {
+                                <a class="tutor-head-recording-button" href="@Url.Page("/TutorHead/SessionDetails", "Transcript", new { id = session.BookingId })" target="_blank" rel="noopener noreferrer">Download transcript</a>
+                            }
+                        </div>
+                    }
                 </header>
                 <div class="admin-session-review-body">
                     <dl class="admin-session-answers" id="tutor-review-answers">
@@ -257,6 +273,8 @@
                 </div>
             </section>
         </div>
+        @if (Model.CanUseTeamsReview)
+        {
         <aside class="tutor-head-video-card" aria-labelledby="session-video-title">
             <header class="tutor-head-video-heading">
                 <h2 id="session-video-title">Session recording</h2>
@@ -344,6 +362,7 @@
             }
             </div>
         </aside>
+        }
         </div>
         </section>
     </div>
@@ -384,12 +403,14 @@
                                 <div><strong>Session validity</strong><span>@assessment.Validity</span></div>
                                 <div><strong>Topic coverage</strong><span>@assessment.TopicCoverage</span></div>
                                 <div><strong>Transcript duration</strong><span>@assessment.TranscriptDuration</span></div>
-                                @if (Model.TeamsEvidence.Duration is { } actualDuration)
+                                @if (Model.CanUseTeamsReview && Model.TeamsEvidence.Duration is { } actualDuration)
                                 {
                                     <div><strong>Teams meeting duration</strong><span>@actualDuration.ToString(@"hh\:mm\:ss")</span></div>
                                 }
                             </div>
                             <p>@assessment.Summary</p>
+                            @if (Model.CanUseTeamsReview)
+                            {
                             <section class="tutor-head-ai-watch-ranges" aria-labelledby="ai-watch-ranges-title">
                                 <h3 id="ai-watch-ranges-title">Suggested moments to watch</h3>
                                 @if (assessment.SuggestedWatchRanges is { Count: > 0 } ranges)
@@ -404,6 +425,7 @@
                                 }
                                 else { <p>No timestamped watch suggestions are available. Generate a new assessment with a timestamped transcript.</p> }
                             </section>
+                            }
                             <div class="tutor-head-ai-lists">
                                 <div class="tutor-head-ai-list tutor-head-ai-list--winning">
                                     <h3>Winning points</h3>

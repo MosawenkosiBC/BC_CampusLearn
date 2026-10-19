@@ -4,17 +4,73 @@ using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Pages.TutorHead;
 using BC_CampusLearn.Services.Gemini;
+using BC_CampusLearn.Services.Teams;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace BC_CampusLearn.Tests;
 
 public class TutorHeadSessionReviewsTests
 {
+    [Theory]
+    [InlineData(2, true, true)]
+    [InlineData(3, true, false)]
+    [InlineData(2, false, false)]
+    public async Task OnlyConfiguredPilotTutorHeadLoadsTeamsEvidence(int reviewerId, bool configured, bool expected)
+    {
+        await using var context = CreateContext();
+        var assignment = CreateAssignment();
+        context.TutorCourseModules.Add(assignment);
+        context.Bookings.Add(CreateBooking(1, assignment, "Student", BookingStatus.Completed,
+            new StudentEvaluation(), new TutorStudentEvaluation { RecordingLink = "https://example.com/recording", TranscriptStoragePath = "App_Data/tutor-review-transcripts/1/transcript.pdf" }));
+        await context.SaveChangesAsync();
+        var teams = new TestTeamsReviewService();
+        var page = new SessionDetailsModel(context,
+            new TestCurrentUserService(new CurrentUser(reviewerId, "TH", "Tutor Head", "head@example.com", BcUserRole.HeadOfTutors)),
+            new TestWebHostEnvironment(), TimeProvider.System, teamsReviewService: teams,
+            teamsOptions: Options.Create(new TeamsMeetingOptions
+            {
+                Enabled = true,
+                PilotTutorBcUserIds = [assignment.Tutor.BcUserId],
+                PilotTutorHeadBcUserIds = configured ? [2] : []
+            }));
+        Assert.IsType<PageResult>(await page.OnGetAsync(1, default));
+        Assert.Equal(expected, page.CanUseTeamsReview);
+        Assert.Equal(expected ? 1 : 0, teams.LoadCalls);
+        Assert.True(page.CanWatchRecording);
+        Assert.True(page.HasTranscript);
+        Assert.NotEmpty(page.TutorReviewAnswers);
+        if (!expected)
+        {
+            Assert.IsType<ForbidResult>(await page.OnGetTeamsRecordingAsync(1, "recording-1", default));
+            Assert.IsType<ForbidResult>(await page.OnGetTeamsTranscriptAsync(1, "transcript-1", default));
+            Assert.Equal(0, teams.ContentCalls);
+        }
+    }
+
+    [Fact]
+    public async Task ReviewPilotIsDisabledByDefaultAndDoesNotDependOnOrganizerAllowlist()
+    {
+        await using var context = CreateContext();
+        var teams = new TestTeamsReviewService();
+        var user = new TestCurrentUserService(new CurrentUser(2, "TH", "Tutor Head", "head@example.com", BcUserRole.HeadOfTutors));
+        var options = new TeamsMeetingOptions { Enabled = true, PilotTutorBcUserIds = [2] };
+        var page = new SessionDetailsModel(context, user, new TestWebHostEnvironment(), TimeProvider.System,
+            teamsReviewService: teams, teamsOptions: Options.Create(options));
+        Assert.False(page.CanUseTeamsReview);
+        Assert.IsType<ForbidResult>(await page.OnGetTeamsRecordingAsync(1, "recording-1", default));
+        options.PilotTutorHeadBcUserIds = [2];
+        Assert.True(page.CanUseTeamsReview);
+        options.Enabled = false;
+        Assert.False(page.CanUseTeamsReview);
+        Assert.Equal(0, teams.ContentCalls);
+    }
+
     [Fact]
     public async Task PerformanceCountsCompletedSessionsAndLatestHeadDecisionsWithinPeriod()
     {
@@ -933,7 +989,9 @@ public class TutorHeadSessionReviewsTests
                 new TestWebHostEnvironment(contentRoot),
                 new FixedTimeProvider(DateTimeOffset.UtcNow),
                 new TestGeminiApiKeyProtector(),
-                assessmentService);
+                assessmentService,
+                teamsReviewService: new TestTeamsReviewService(),
+                teamsOptions: Options.Create(new TeamsMeetingOptions { Enabled = true, PilotTutorHeadBcUserIds = [2] }));
 
             IActionResult result = await page.OnPostGenerateAiAssessmentAsync(
                 1,
@@ -944,6 +1002,7 @@ public class TutorHeadSessionReviewsTests
                 GeminiTranscriptDocument>(
                 assessmentService.Evidence?.UploadedTranscript);
             Assert.Equal("application/pdf", transcript.ContentType);
+            Assert.Equal("transcript.pdf", transcript.FileName);
             Assert.Equal(
                 Convert.ToBase64String(transcriptBytes),
                 transcript.Base64Data);
@@ -1190,6 +1249,31 @@ public class TutorHeadSessionReviewsTests
 
         public string Unprotect(string protectedApiKey) =>
             protectedApiKey["protected:".Length..];
+    }
+
+    private sealed class TestTeamsReviewService : ITeamsSessionReviewService
+    {
+        public int LoadCalls { get; private set; }
+        public int ContentCalls { get; private set; }
+        public Task<TeamsSessionReview> GetAsync(int bookingId, CancellationToken cancellationToken)
+        {
+            LoadCalls++;
+            return Task.FromResult(new TeamsSessionReview
+            {
+                Recordings = [new("recording-1", null, null)],
+                Transcripts = [new("transcript-1", null, null)]
+            });
+        }
+        public Task<string> GetTranscriptAsync(int bookingId, string transcriptId, CancellationToken cancellationToken)
+        {
+            ContentCalls++;
+            throw new InvalidOperationException("AI generation must use the submitted transcript, not fetch a Teams transcript.");
+        }
+        public Task<HttpResponseMessage> OpenRecordingAsync(int bookingId, string recordingId, string? range, CancellationToken cancellationToken)
+        {
+            ContentCalls++;
+            throw new InvalidOperationException("A non-pilot Tutor Head must not request Teams video content.");
+        }
     }
 
     private sealed class TestGeminiAssessmentService
