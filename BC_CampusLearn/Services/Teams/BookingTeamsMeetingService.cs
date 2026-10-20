@@ -68,7 +68,7 @@ public sealed class BookingTeamsMeetingService(
         EntraIdentity identity;
         try
         {
-            identity = identities.Unprotect(user.EncryptedEntraTenantId, user.EncryptedEntraObjectId);
+            identity = identities.UnprotectForUser(user);
         }
         catch (Exception exception) when (exception is CryptographicException or InvalidOperationException or FormatException)
         {
@@ -131,7 +131,8 @@ public sealed class BookingTeamsMeetingService(
                     link.EncryptedTeamsOrganizerTenantId = protectedOrganizer.TenantId;
                     link.EncryptedTeamsOrganizerObjectId = protectedOrganizer.ObjectId;
                     link.UsesSharedTeamsOrganizer = useShared;
-                    link.EncryptedTeamsCoOrganizerObjectId = useShared ? user.EncryptedEntraObjectId : null;
+                    link.EncryptedTeamsCoOrganizerObjectId = useShared
+                        ? identities.Protect(tutorIdentity.TenantId, tutorIdentity.ObjectId).ObjectId : null;
                 }
                 link.TeamsManualFallbackAllowed = false;
                 try
@@ -254,7 +255,9 @@ public sealed class BookingTeamsMeetingService(
             string? protectedObject = link.EncryptedTeamsOrganizerObjectId ?? organizer?.EncryptedEntraObjectId;
             if (string.IsNullOrWhiteSpace(protectedTenant) || string.IsNullOrWhiteSpace(protectedObject))
                 throw new TeamsMeetingException("The meeting organizer's Microsoft identity is unavailable.");
-            EntraIdentity identity = identities.Unprotect(protectedTenant, protectedObject);
+            EntraIdentity identity = link.EncryptedTeamsOrganizerObjectId is not null
+                ? identities.Unprotect(protectedTenant, protectedObject)
+                : identities.UnprotectForUser(organizer!);
             if (!Guid.TryParse(configuration["AzureAd:TenantId"], out Guid tenant) || tenant != Guid.Parse(identity.TenantId) ||
                 identities.CreateLookupHash(identity.TenantId, identity.ObjectId) != link.TeamsOrganizerIdentityHash)
                 throw new TeamsMeetingException("The saved meeting organizer could not be verified.");

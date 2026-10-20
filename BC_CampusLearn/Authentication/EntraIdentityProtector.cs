@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
+using BC_CampusLearn.Models.Entities;
 
 namespace BC_CampusLearn.Authentication;
 
@@ -9,6 +10,11 @@ public sealed class EntraIdentityProtector : IEntraIdentityProtector
 {
     private const string Purpose =
         "BC_CampusLearn.EntraIdentity.v1";
+
+    public const string SharedAccountEmail = "mzalaconnect@belgiumcampus.ac.za";
+
+    public static bool UsesReadableIdentity(string? email) =>
+        string.Equals(email?.Trim(), SharedAccountEmail, StringComparison.OrdinalIgnoreCase);
 
     private readonly IDataProtector _protector;
     private readonly byte[] _lookupKey;
@@ -40,6 +46,21 @@ public sealed class EntraIdentityProtector : IEntraIdentityProtector
         new(
             NormalizeGuid(_protector.Unprotect(encryptedTenantId), "tenant ID"),
             NormalizeGuid(_protector.Unprotect(encryptedObjectId), "object ID"));
+
+    // Only this service account stores readable user identity identifiers.
+    // Meeting snapshots and every other user's identifiers remain encrypted.
+    public ProtectedEntraIdentity ProtectForUser(string tenantId, string objectId, string? email) =>
+        UsesReadableIdentity(email)
+            ? new(NormalizeGuid(tenantId, "tenant ID"), NormalizeGuid(objectId, "object ID"),
+                CreateLookupHash(tenantId, objectId))
+            : Protect(tenantId, objectId);
+
+    public EntraIdentity UnprotectForUser(BcUser user) =>
+        UsesReadableIdentity(user.Email) &&
+        Guid.TryParse(user.EncryptedEntraTenantId, out Guid tenant) &&
+        Guid.TryParse(user.EncryptedEntraObjectId, out Guid id)
+            ? new(tenant.ToString("D"), id.ToString("D"))
+            : Unprotect(user.EncryptedEntraTenantId!, user.EncryptedEntraObjectId!);
 
     public string CreateLookupHash(string tenantId, string objectId)
     {

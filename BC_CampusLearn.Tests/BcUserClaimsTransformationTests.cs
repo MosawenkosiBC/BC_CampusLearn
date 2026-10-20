@@ -15,6 +15,66 @@ namespace BC_CampusLearn.Tests;
 public class BcUserClaimsTransformationTests
 {
     [Theory]
+    [InlineData("mzalaconnect@belgiumcampus.ac.za", false, true)]
+    [InlineData("MZALACONNECT@BELGIUMCAMPUS.AC.ZA", true, true)]
+    [InlineData("other@belgiumcampus.ac.za", false, false)]
+    [InlineData("mzalaconnect@other.example", false, false)]
+    public async Task OnlySharedAccountStoresReadableIdentifiersAfterSignIn(string email, bool existing, bool readable)
+    {
+        await using var context = CreateContext();
+        var protector = CreateIdentityProtector();
+        var transformation = new BcUserClaimsTransformation(context,
+            new TestWebHostEnvironment(Environments.Production), protector);
+        if (existing)
+        {
+            await transformation.TransformAsync(CreatePrincipal());
+            var original = await context.BcUsers.SingleAsync();
+            original.Role = BcUserRole.SuperAdmin;
+            await context.SaveChangesAsync();
+        }
+
+        ClaimsPrincipal SignIn()
+        {
+            var principal = CreatePrincipal();
+            var identity = (ClaimsIdentity)principal.Identity!;
+            identity.RemoveClaim(identity.FindFirst(ClaimTypes.Email)!);
+            identity.AddClaim(new Claim(ClaimTypes.Email, email));
+            return principal;
+        }
+        await transformation.TransformAsync(SignIn());
+        var user = await context.BcUsers.SingleAsync();
+        Assert.Equal(readable, Guid.TryParse(user.EncryptedEntraTenantId, out _));
+        Assert.Equal(readable, Guid.TryParse(user.EncryptedEntraObjectId, out _));
+        var stored = protector.UnprotectForUser(user);
+        Assert.Equal("11111111-1111-1111-1111-111111111111", stored.ObjectId);
+        Assert.Equal("22222222-2222-2222-2222-222222222222", stored.TenantId);
+        Assert.Equal(user.EntraIdentityLookupHash, protector.CreateLookupHash(stored.TenantId, stored.ObjectId));
+        string? objectBefore = user.EncryptedEntraObjectId;
+        await transformation.TransformAsync(SignIn());
+        Assert.Equal(objectBefore, user.EncryptedEntraObjectId);
+        Assert.Single(context.BcUsers);
+        if (existing) Assert.Equal(BcUserRole.SuperAdmin, user.Role);
+    }
+
+    [Fact]
+    public void ReadableIdentifiersAreRejectedForOtherAccountsAndSnapshotsStayEncrypted()
+    {
+        var protector = CreateIdentityProtector();
+        var user = new BcUser
+        {
+            Email = EntraIdentityProtector.SharedAccountEmail,
+            EncryptedEntraTenantId = "22222222-2222-2222-2222-222222222222",
+            EncryptedEntraObjectId = "11111111-1111-1111-1111-111111111111"
+        };
+        var identity = protector.UnprotectForUser(user);
+        var snapshot = protector.Protect(identity.TenantId, identity.ObjectId);
+        Assert.False(Guid.TryParse(snapshot.ObjectId, out _));
+        Assert.Equal(identity, protector.Unprotect(snapshot.TenantId, snapshot.ObjectId));
+        user.Email = "other@belgiumcampus.ac.za";
+        Assert.Throws<System.Security.Cryptography.CryptographicException>(() => protector.UnprotectForUser(user));
+    }
+
+    [Theory]
     [InlineData("Development")]
     [InlineData("Production")]
     public async Task StudentRefreshRecognisesTutorApproval(string environment)
