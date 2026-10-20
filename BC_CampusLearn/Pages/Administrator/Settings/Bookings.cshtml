@@ -22,6 +22,37 @@
         <partial name="_SettingsNavigation" />
         <section class="settings-section" aria-labelledby="bookings-title">
             <header class="settings-section-heading"><div><h2 id="bookings-title">Bookings and sessions</h2></div><span class="settings-status settings-status--live">Live</span></header>
+            @if (Model.CanManageTeams)
+            {
+                <details class="teams-organizer-settings" open="@(ViewData.ModelState.ErrorCount > 0 || Model.TeamsOrganizerConfigurationError is not null || !string.IsNullOrWhiteSpace(Model.TeamsOrganizerMessage))">
+                    <summary>Teams meeting account</summary>
+                    <p>New pilot sessions are scheduled by this account. The tutor is invited as co-organiser and the student as attendee. Changes apply to new meeting requests only.</p>
+                    <p>Shared account routing: <strong>@(Model.SharedOrganizerEnabled ? "Enabled for configured pilot tutors" : "Disabled in server configuration")</strong></p>
+                    <p>Current account settings: <strong data-teams-organizer-source>@Model.TeamsOrganizerConfigurationSource</strong></p>
+                    <p class="text-danger" role="alert" data-teams-organizer-configuration-error hidden="@(Model.TeamsOrganizerConfigurationError is null)">@Model.TeamsOrganizerConfigurationError</p>
+                    <p role="status" aria-live="polite" data-teams-organizer-status hidden="@(string.IsNullOrWhiteSpace(Model.TeamsOrganizerMessage))">@Model.TeamsOrganizerMessage</p>
+                    <form method="post" asp-page-handler="SaveTeamsOrganizer" data-teams-organizer-form novalidate>
+                        <div asp-validation-summary="All" class="text-danger" role="alert" data-teams-organizer-validation></div>
+                        <div class="teams-organizer-fields">
+                            <div>
+                                <label asp-for="TeamsOrganizer.Email">Account email</label>
+                                <input asp-for="TeamsOrganizer.Email" type="email" autocomplete="off" />
+                                <span asp-validation-for="TeamsOrganizer.Email" class="text-danger"></span>
+                            </div>
+                            <div>
+                                <label asp-for="TeamsOrganizer.ObjectId">Microsoft Entra Object ID</label>
+                                <input asp-for="TeamsOrganizer.ObjectId" autocomplete="off" placeholder="Account Object ID from Microsoft Entra" />
+                                <span asp-validation-for="TeamsOrganizer.ObjectId" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="teams-organizer-actions">
+                            <button type="submit" asp-page-handler="TestTeamsOrganizer" data-teams-organizer-test>Test calendar connection</button>
+                            <button type="submit" asp-page-handler="SaveTeamsOrganizer">Save meeting account</button>
+                        </div>
+                    </form>
+                </details>
+            }
+
             <form method="post" class="settings-form">
                 <div asp-validation-summary="ModelOnly" class="settings-validation"></div>
                 <div class="settings-subsection-copy settings-terms-heading">
@@ -126,4 +157,8 @@
         </section>
     </div>
 </main>
-@section Scripts { <partial name="_ValidationScriptsPartial" /><script src="~/js/admin-settings.js" asp-append-version="true"></script> }
+@section Scripts {
+    <script src="~/js/teams-organizer-settings.js" asp-append-version="true"></script>
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin-settings.js" asp-append-version="true"></script>
+}

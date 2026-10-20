@@ -2,9 +2,6 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Settings;
-using BC_CampusLearn.Services.Teams;
-using System.ComponentModel.DataAnnotations;
-using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +11,7 @@ namespace BC_CampusLearn.Pages.Administrator.Admin;
 public class BookingsAndSessionsModel(
     ApplicationDbContext context,
     TimeProvider? timeProvider = null,
-    ICurrentUserService? currentUserService = null,
-    TeamsOrganizerSettingsStore? teamsOrganizerSettings = null,
-    ITeamsCalendarClient? teamsCalendar = null,
-    IOptions<TeamsMeetingOptions>? teamsOptions = null) : PageModel
+    ICurrentUserService? currentUserService = null) : PageModel
 {
     public const int PageSize = 8;
     private static readonly string[] ValidApprovalFilters =
@@ -63,77 +57,6 @@ public class BookingsAndSessionsModel(
     public IReadOnlyList<CompletedSessionItem> Sessions { get; private set; } = [];
     public bool IsSuperAdmin { get; private set; }
 
-    [BindProperty]
-    public TeamsOrganizerInput TeamsOrganizer { get; set; } = new();
-    [TempData]
-    public string? TeamsOrganizerMessage { get; set; }
-    public bool SharedOrganizerEnabled => teamsOptions?.Value.SharedOrganizerEnabled == true;
-
-    public sealed class TeamsOrganizerInput
-    {
-        [Required, EmailAddress, StringLength(320)]
-        public string Email { get; set; } = "mzalaconnect@belgiumcampus.ac.za";
-        [Required, StringLength(36)]
-        public string ObjectId { get; set; } = "";
-    }
-
-    public async Task<IActionResult> OnPostSaveTeamsOrganizerAsync(CancellationToken ct)
-    {
-        if (currentUserService?.GetRequiredUser().Role != BcUserRole.SuperAdmin) return Forbid();
-        if (!ValidateTeamsOrganizer()) return await TeamsSettingsPageAsync(ct);
-        var settings = await context.PlatformSettings.SingleOrDefaultAsync(s => s.PlatformSettingsId == PlatformSettings.SingletonId, ct);
-        if (settings is null) { settings = new PlatformSettings(); context.PlatformSettings.Add(settings); }
-        CurrentUser user = currentUserService.GetRequiredUser();
-        var audit = new SettingsAuditService(context, _timeProvider);
-        audit.Record("Bookings and sessions", "Teams organiser email", settings.TeamsSharedOrganizerEmail, TeamsOrganizer.Email, user);
-        audit.Record("Bookings and sessions", "Teams organiser Microsoft Object ID", settings.TeamsSharedOrganizerObjectId, TeamsOrganizer.ObjectId, user);
-        settings.TeamsSharedOrganizerEmail = TeamsOrganizer.Email;
-        settings.TeamsSharedOrganizerObjectId = TeamsOrganizer.ObjectId;
-        settings.UpdatedByBcUserId = user.BcUserId;
-        settings.UpdatedAt = _timeProvider.GetUtcNow();
-        try { await context.SaveChangesAsync(ct); }
-        catch (DbUpdateConcurrencyException)
-        {
-            ModelState.AddModelError("TeamsOrganizer.ObjectId", "The settings changed while saving. Reload and try again.");
-            return await TeamsSettingsPageAsync(ct);
-        }
-        TeamsOrganizerMessage = "Teams meeting account saved. New pilot meetings will use this account; existing meetings keep their saved organiser.";
-        return RedirectToPage();
-    }
-
-    public async Task<IActionResult> OnPostTestTeamsOrganizerAsync(CancellationToken ct)
-    {
-        if (currentUserService?.GetRequiredUser().Role != BcUserRole.SuperAdmin) return Forbid();
-        if (!ValidateTeamsOrganizer()) return await TeamsSettingsPageAsync(ct);
-        try
-        {
-            if (teamsCalendar is null || !await teamsCalendar.SupportsTeamsAsync(TeamsOrganizer.ObjectId, ct))
-                ModelState.AddModelError("TeamsOrganizer.ObjectId", "The account's calendar does not support Teams or the connection is unavailable.");
-            else TeamsOrganizerMessage = "Calendar connection succeeded. No meeting was created or settings saved. Verify co-organiser and recording permissions in a pilot session.";
-        }
-        catch (TeamsMeetingException ex) { ModelState.AddModelError("TeamsOrganizer.ObjectId", ex.Message); }
-        return await TeamsSettingsPageAsync(ct);
-    }
-
-    private bool ValidateTeamsOrganizer()
-    {
-        TeamsOrganizer.Email = (TeamsOrganizer.Email ?? "").Trim();
-        if (!System.Net.Mail.MailAddress.TryCreate(TeamsOrganizer.Email, out var address) || address.Address != TeamsOrganizer.Email)
-            ModelState.AddModelError("TeamsOrganizer.Email", "Enter the meeting account email address.");
-        if (!Guid.TryParse(TeamsOrganizer.ObjectId, out var id) || id == Guid.Empty)
-            ModelState.AddModelError("TeamsOrganizer.ObjectId", "Enter the Microsoft Entra Object ID (a GUID), not a password or an application client ID.");
-        else TeamsOrganizer.ObjectId = id.ToString("D");
-        return ModelState.IsValid;
-    }
-
-    private async Task<IActionResult> TeamsSettingsPageAsync(CancellationToken ct)
-    {
-        var input = TeamsOrganizer;
-        await OnGetAsync(ct);
-        TeamsOrganizer = input;
-        return Page();
-    }
-
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         IsSuperAdmin = currentUserService?.GetRequiredUser().Role ==
@@ -141,9 +64,6 @@ public class BookingsAndSessionsModel(
         if (IsSuperAdmin)
         {
             Stat = "all";
-            var account = await (teamsOrganizerSettings ?? new TeamsOrganizerSettingsStore(context,
-                Options.Create(teamsOptions?.Value ?? new TeamsMeetingOptions()))).GetAsync(cancellationToken);
-            TeamsOrganizer = new() { Email = account.Email, ObjectId = account.ObjectId ?? "" };
         }
         Approval = ValidApprovalFilters.Contains(Approval, StringComparer.OrdinalIgnoreCase)
             ? Approval.ToLowerInvariant()
