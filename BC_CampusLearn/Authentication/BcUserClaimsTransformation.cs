@@ -111,7 +111,7 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
         if (user is null)
         {
             ProtectedEntraIdentity protectedIdentity =
-                _identityProtector.Protect(tenantId, objectId);
+                _identityProtector.ProtectForUser(tenantId, objectId, email);
             user = new BcUser
             {
                 PersonnelNumber = normalizedPersonnelNumber,
@@ -137,10 +137,10 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
             // Recover unreadable identifiers after a lost/replaced key ring without
             // changing the account, its roles, or the identity to which it is linked.
             if (user.EntraIdentityLookupHash is null ||
-                NeedsIdentityRefresh(user, identityLookupHash))
+                NeedsIdentityRefresh(user, identityLookupHash, email))
             {
                 ProtectedEntraIdentity protectedIdentity =
-                    _identityProtector.Protect(tenantId, objectId);
+                    _identityProtector.ProtectForUser(tenantId, objectId, email);
                 user.EncryptedEntraTenantId = protectedIdentity.TenantId;
                 user.EncryptedEntraObjectId = protectedIdentity.ObjectId;
                 user.EntraIdentityLookupHash = protectedIdentity.LookupHash;
@@ -222,7 +222,7 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
         return principal;
     }
 
-    private bool NeedsIdentityRefresh(BcUser user, string authenticatedIdentityHash)
+    private bool NeedsIdentityRefresh(BcUser user, string authenticatedIdentityHash, string? authenticatedEmail)
     {
         if (!string.Equals(user.EntraIdentityLookupHash, authenticatedIdentityHash, StringComparison.Ordinal))
         {
@@ -238,8 +238,11 @@ public sealed class BcUserClaimsTransformation : IClaimsTransformation
 
         try
         {
-            EntraIdentity storedIdentity = _identityProtector.Unprotect(
-                user.EncryptedEntraTenantId, user.EncryptedEntraObjectId);
+            bool readable = Guid.TryParse(user.EncryptedEntraTenantId, out _) &&
+                Guid.TryParse(user.EncryptedEntraObjectId, out _);
+            if (readable != EntraIdentityProtector.UsesReadableIdentity(authenticatedEmail))
+                return true;
+            EntraIdentity storedIdentity = _identityProtector.UnprotectForUser(user);
             return !string.Equals(
                 _identityProtector.CreateLookupHash(storedIdentity.TenantId, storedIdentity.ObjectId),
                 authenticatedIdentityHash,

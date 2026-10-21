@@ -72,7 +72,9 @@ public sealed class TeamsSessionReviewService(
             throw new TeamsMeetingException("The tutor needs to sign in with Microsoft again before Teams evidence can be retrieved.");
         try
         {
-            EntraIdentity identity = identities.Unprotect(protectedTenant, protectedObject);
+            EntraIdentity identity = link.EncryptedTeamsOrganizerObjectId is not null
+                ? identities.Unprotect(protectedTenant, protectedObject)
+                : identities.UnprotectForUser(tutor);
             if (!Guid.TryParse(configuration["AzureAd:TenantId"], out Guid tenant) ||
                 !Guid.TryParse(identity.TenantId, out Guid actualTenant) || tenant != actualTenant ||
                 !Guid.TryParse(identity.ObjectId, out _) ||

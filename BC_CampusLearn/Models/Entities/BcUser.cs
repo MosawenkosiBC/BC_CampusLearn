@@ -4,6 +4,8 @@ public class BcUser
 {
     public int BcUserId { get; set; }
     public string? PersonnelNumber { get; set; }
+    // Legacy column names: the Mzala Connect service account alone stores
+    // readable GUIDs here after Microsoft sign-in. Other users stay encrypted.
     public string? EncryptedEntraTenantId { get; set; }
     public string? EncryptedEntraObjectId { get; set; }
     public string? EntraIdentityLookupHash { get; set; }

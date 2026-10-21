@@ -4,17 +4,22 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Settings;
+using BC_CampusLearn.Services.Teams;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Pages.Administrator.Settings;
 
-public class BookingsModel(
+public partial class BookingsModel(
     ApplicationDbContext context,
     ICurrentUserService currentUserService,
     TimeProvider timeProvider,
-    SettingsAuditService auditService) : PageModel
+    SettingsAuditService auditService,
+    TeamsOrganizerSettingsStore? teamsOrganizerSettings = null,
+    ITeamsCalendarClient? teamsCalendar = null,
+    IOptions<TeamsMeetingOptions>? teamsOptions = null) : PageModel
 {
     [BindProperty]
     public BookingTermsInput Input { get; set; } = new();
@@ -24,6 +29,7 @@ public class BookingsModel(
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
+        await LoadTeamsOrganizerAsync(cancellationToken);
         BookingTermsInput configured = await context.PlatformSettings.AsNoTracking()
             .Where(settings => settings.PlatformSettingsId == PlatformSettings.SingletonId)
             .Select(settings => new BookingTermsInput
@@ -43,7 +49,7 @@ public class BookingsModel(
                 UseLastDayOfMonthForAdminReview = settings
                     .UseLastDayOfMonthForAdminSessionReviewDeadline
             })
-            .SingleAsync(cancellationToken);
+            .SingleOrDefaultAsync(cancellationToken) ?? new BookingTermsInput();
 
         DateOnly today = DateOnly.FromDateTime(
             timeProvider.GetUtcNow().ToOffset(TimeSpan.FromHours(2)).DateTime);
@@ -95,7 +101,11 @@ public class BookingsModel(
                 "Input.AdminReviewPeriodStartDate",
                 "The administrator review period must start on or before its deadline.");
         }
-        if (!ModelState.IsValid) return Page();
+        if (!ModelState.IsValid)
+        {
+            await LoadTeamsOrganizerAsync(cancellationToken);
+            return Page();
+        }
 
         CurrentUser currentUser = currentUserService.GetRequiredUser();
         PlatformSettings settings = await context.PlatformSettings.SingleAsync(

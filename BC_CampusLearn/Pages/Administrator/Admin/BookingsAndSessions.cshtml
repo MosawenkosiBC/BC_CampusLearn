@@ -50,37 +50,6 @@
         <h1 id="bookings-sessions-title">Bookings and Sessions</h1>
     </header>
 
-    @if (Model.IsSuperAdmin)
-    {
-        <details class="teams-organizer-settings" open="@(ViewData.ModelState.ErrorCount > 0 || !string.IsNullOrWhiteSpace(Model.TeamsOrganizerMessage))">
-            <summary>Teams meeting account</summary>
-            <p>New pilot sessions are scheduled by this account. The tutor is invited as co-organiser and the student as attendee. Changes apply to new meeting requests only.</p>
-            <p>Shared account routing: <strong>@(Model.SharedOrganizerEnabled ? "Enabled for configured pilot tutors" : "Disabled in server configuration")</strong></p>
-            @if (!string.IsNullOrWhiteSpace(Model.TeamsOrganizerMessage))
-            {
-                <p role="status">@Model.TeamsOrganizerMessage</p>
-            }
-            <form method="post">
-                <div class="teams-organizer-fields">
-                    <div>
-                        <label asp-for="TeamsOrganizer.Email">Account email</label>
-                        <input asp-for="TeamsOrganizer.Email" type="email" autocomplete="off" />
-                        <span asp-validation-for="TeamsOrganizer.Email" class="text-danger"></span>
-                    </div>
-                    <div>
-                        <label asp-for="TeamsOrganizer.ObjectId">Microsoft Entra Object ID</label>
-                        <input asp-for="TeamsOrganizer.ObjectId" autocomplete="off" placeholder="Account Object ID from Microsoft Entra" />
-                        <span asp-validation-for="TeamsOrganizer.ObjectId" class="text-danger"></span>
-                    </div>
-                </div>
-                <div class="teams-organizer-actions">
-                    <button type="submit" asp-page-handler="TestTeamsOrganizer">Test calendar connection</button>
-                    <button type="submit" asp-page-handler="SaveTeamsOrganizer">Save meeting account</button>
-                </div>
-            </form>
-        </details>
-    }
-
     @if (!Model.IsSuperAdmin)
     {
     <section class="admin-stat-grid admin-session-stats" aria-label="Administrator session review statistics">
