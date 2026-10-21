@@ -668,6 +668,7 @@ public sealed class TeamsMeetingTests
 
     [Theory]
     [InlineData(403, "calendar access")]
+    [InlineData(404, "Organiser calendar lookup")]
     [InlineData(429, "busy")]
     [InlineData(500, "retry")]
     public async Task CalendarErrors_AreActionable_AndDoNotExposeResponseBody(int status, string message)
@@ -678,6 +679,37 @@ public sealed class TeamsMeetingTests
         TeamsMeetingException exception = await Assert.ThrowsAsync<TeamsMeetingException>(() => client.SupportsTeamsAsync(ObjectId, default));
         Assert.Contains(message, exception.Message, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("sensitive-details", exception.Message);
+    }
+
+    [Theory]
+    [InlineData("create", "Calendar invitation creation")]
+    [InlineData("existing", "Saved calendar meeting lookup")]
+    [InlineData("lookup", "Teams meeting lookup for co-organiser setup")]
+    [InlineData("update", "Teams co-organiser update")]
+    public async Task NotFoundErrorsIdentifyCreationStageWithoutExposingIdentifiers(string operation, string expected)
+    {
+        using var http = new HttpClient(new FakeHandler(request =>
+        {
+            if (operation == "update" && request.Method == HttpMethod.Get)
+                return Task.FromResult(JsonResponse(HttpStatusCode.OK,
+                    """{"value":[{"id":"meeting-1","participants":{"attendees":[]}}]}"""));
+            return Task.FromResult(JsonResponse(HttpStatusCode.NotFound, "sensitive-details"));
+        })) { BaseAddress = new Uri("https://graph.microsoft.com/v1.0/") };
+        var client = new TeamsCalendarClient(http, new FakeTokens());
+        Task Invoke() => operation switch
+        {
+            "create" => client.CreateAsync(new(SharedObjectId, Guid.NewGuid(), "Session", DateTimeOffset.UtcNow,
+                DateTimeOffset.UtcNow.AddHours(1), "student@example.com", "Student"), default),
+            "existing" => client.GetAsync(SharedObjectId, "event-1", default),
+            _ => client.EnsureCoOrganizerAsync(SharedObjectId, JoinUrl, ObjectId, default)
+        };
+        var error = await Assert.ThrowsAsync<TeamsMeetingException>(Invoke);
+        Assert.Contains(expected, error.Message);
+        Assert.Contains("HTTP 404", error.Message);
+        Assert.DoesNotContain("sensitive-details", error.Message);
+        Assert.DoesNotContain(SharedObjectId, error.Message);
+        Assert.DoesNotContain(ObjectId, error.Message);
+        Assert.DoesNotContain(JoinUrl, error.Message);
     }
 
     [Theory]

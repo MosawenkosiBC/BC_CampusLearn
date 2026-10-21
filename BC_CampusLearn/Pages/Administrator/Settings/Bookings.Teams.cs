@@ -12,7 +12,6 @@ public partial class BookingsModel
 {
     public bool CanManageTeams => currentUserService.GetRequiredUser().Role == BcUserRole.SuperAdmin;
 
-    [BindProperty, Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ValidateNever]
     public TeamsOrganizerInput TeamsOrganizer { get; set; } = new();
     [TempData]
     public string? TeamsOrganizerMessage { get; set; }
@@ -28,9 +27,11 @@ public partial class BookingsModel
         public string ObjectId { get; set; } = "";
     }
 
-    public async Task<IActionResult> OnPostSaveTeamsOrganizerAsync(CancellationToken ct)
+    public async Task<IActionResult> OnPostSaveTeamsOrganizerAsync(CancellationToken ct,
+        [Bind(Prefix = "TeamsOrganizer")] TeamsOrganizerInput? organizer = null)
     {
         if (currentUserService?.GetRequiredUser().Role != BcUserRole.SuperAdmin) return Forbid();
+        TeamsOrganizer = organizer ?? TeamsOrganizer;
         if (!ValidateTeamsOrganizer()) return await TeamsSettingsPageAsync(ct);
         var settings = await context.PlatformSettings.SingleOrDefaultAsync(s => s.PlatformSettingsId == PlatformSettings.SingletonId, ct);
         if (settings is null) { settings = new PlatformSettings(); context.PlatformSettings.Add(settings); }
@@ -55,9 +56,11 @@ public partial class BookingsModel
         return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnPostTestTeamsOrganizerAsync(CancellationToken ct)
+    public async Task<IActionResult> OnPostTestTeamsOrganizerAsync(CancellationToken ct,
+        [Bind(Prefix = "TeamsOrganizer")] TeamsOrganizerInput? organizer = null)
     {
         if (currentUserService?.GetRequiredUser().Role != BcUserRole.SuperAdmin) return Forbid();
+        TeamsOrganizer = organizer ?? TeamsOrganizer;
         if (!ValidateTeamsOrganizer()) return await TeamsSettingsPageAsync(ct);
         TeamsOrganizerMessage = null;
         try
@@ -74,9 +77,6 @@ public partial class BookingsModel
 
     private bool ValidateTeamsOrganizer()
     {
-        // Booking terms belong to a separate form on this page.
-        foreach (string key in ModelState.Keys.Where(key => key == "Input" || key.StartsWith("Input.", StringComparison.Ordinal)).ToArray())
-            ModelState.Remove(key);
         TeamsOrganizer.Email = (TeamsOrganizer.Email ?? "").Trim();
         if (TeamsOrganizer.Email.Length > 320 || !System.Net.Mail.MailAddress.TryCreate(TeamsOrganizer.Email, out var address) || address.Address != TeamsOrganizer.Email)
             ModelState.AddModelError("TeamsOrganizer.Email", "Enter the meeting account email address.");

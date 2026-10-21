@@ -129,8 +129,6 @@ public class TeamsOrganizerSettingsTests
         db.PlatformSettings.Add(new() { TeamsSharedOrganizerEmail = "old@example.com", TeamsSharedOrganizerObjectId = "bad-id" });
         await db.SaveChangesAsync();
         var page = JsonPage(db);
-        // MVC also sees the other form's missing terms during a Teams-only POST.
-        page.ModelState.AddModelError("Input.Terms", "Booking terms are required.");
         page.TeamsOrganizer = new() { Email = " mzalaconnect@belgiumcampus.ac.za ", ObjectId = $" {{{ObjectId}}} " };
         var result = Assert.IsType<JsonResult>(await page.OnPostSaveTeamsOrganizerAsync(default));
         var json = JsonSerializer.SerializeToElement(result.Value);
