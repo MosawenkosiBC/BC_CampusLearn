@@ -26,7 +26,7 @@ The account panel shows whether the effective values come from the server enviro
 
 ## Microsoft configuration
 
-The institution must authorise the existing application for the shared account's calendar and online meetings. Calendar creation uses `Calendars.ReadWrite` application permission. Co-organiser assignment additionally uses `OnlineMeetings.ReadWrite.All`; reading attendance and recordings uses `OnlineMeetingArtifact.Read.All` and `OnlineMeetingRecording.Read.All`. Optional Teams-transcript downloads use `OnlineMeetingTranscript.Read.All`. Gemini analysis uses the submitted PDF/Word transcript, not a fetched Teams transcript.
+The institution must authorise the existing application for the shared account's calendar and online meetings. Calendar creation uses `Calendars.ReadWrite` application permission. Co-organiser assignment additionally uses `OnlineMeetings.ReadWrite.All`; reading attendance and recordings uses `OnlineMeetingArtifact.Read.All` and `OnlineMeetingRecording.Read.All`. Teams-transcript downloads and Gemini transcript analysis use `OnlineMeetingTranscript.Read.All`. Gemini prefers the timestamped Teams transcript, falls back to the submitted PDF/Word transcript, and continues with the remaining review and attendance evidence if neither transcript can be read.
 
 The Teams application access policy must contain the deployed application's client ID and be assigned to the **shared account's Microsoft Object ID**. The account must have the institution's appropriate calendar, Teams, recording and storage capabilities/licensing. Allow the policy's propagation period (Microsoft documents up to 30 minutes). Do not put the account password in these fields. Keep application client secrets in existing secure deployment configuration.
 

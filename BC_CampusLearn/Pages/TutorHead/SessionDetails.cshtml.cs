@@ -309,7 +309,8 @@ public class SessionDetailsModel(
     private async Task<GeminiSessionEvidence> BuildEvidenceAsync(
         CancellationToken cancellationToken)
     {
-        GeminiTranscriptDocument? uploadedTranscript = await ReadUploadedTranscriptAsync(cancellationToken);
+        GeminiTranscriptDocument? transcript = await ReadPreferredTranscriptAsync(
+            cancellationToken);
 
         return new GeminiSessionEvidence(
             Answer(Session.Summary),
@@ -320,13 +321,89 @@ public class SessionDetailsModel(
             TutorReviewAnswers.ToDictionary(
                 answer => answer.Question,
                 answer => answer.Value),
-            uploadedTranscript,
+            transcript,
             TeamsEvidence.Start is null ? null : JsonSerializer.Serialize(new
             {
                 TeamsEvidence.Start, TeamsEvidence.End,
                 MeetingDurationSeconds = TeamsEvidence.Duration?.TotalSeconds,
                 TeamsEvidence.Tutor, TeamsEvidence.Student
             }, AssessmentJsonOptions));
+    }
+
+    private async Task<GeminiTranscriptDocument?> ReadPreferredTranscriptAsync(
+        CancellationToken cancellationToken)
+    {
+        GeminiTranscriptDocument? teamsTranscript = await ReadTeamsTranscriptAsync(
+            cancellationToken);
+        if (teamsTranscript is not null)
+        {
+            return teamsTranscript;
+        }
+
+        try
+        {
+            return await ReadUploadedTranscriptAsync(cancellationToken);
+        }
+        catch (Exception exception) when (exception is GeminiAssessmentException or
+            IOException or UnauthorizedAccessException)
+        {
+            logger?.LogWarning(
+                exception,
+                "The submitted transcript for booking {BookingId} could not be read. Gemini will continue without transcript evidence.",
+                Session.BookingId);
+            return null;
+        }
+    }
+
+    private async Task<GeminiTranscriptDocument?> ReadTeamsTranscriptAsync(
+        CancellationToken cancellationToken)
+    {
+        if (!CanUseTeamsReview || teamsReviewService is null ||
+            TeamsEvidence.Transcripts.Count == 0)
+        {
+            return null;
+        }
+
+        var transcriptParts = new List<string>();
+        foreach (TeamsReviewArtifact transcript in TeamsEvidence.Transcripts)
+        {
+            try
+            {
+                string content = await teamsReviewService.GetTranscriptAsync(
+                    Session.BookingId,
+                    transcript.Id,
+                    cancellationToken);
+                if (!string.IsNullOrWhiteSpace(content))
+                {
+                    transcriptParts.Add(content.Trim());
+                }
+            }
+            catch (TeamsMeetingException exception)
+            {
+                logger?.LogWarning(
+                    exception,
+                    "Teams transcript {TranscriptId} for booking {BookingId} could not be read.",
+                    transcript.Id,
+                    Session.BookingId);
+            }
+        }
+
+        if (transcriptParts.Count == 0)
+        {
+            return null;
+        }
+
+        string combinedContent = string.Join(
+            Environment.NewLine + Environment.NewLine,
+            transcriptParts.Select((part, index) =>
+                transcriptParts.Count == 1
+                    ? part
+                    : $"TRANSCRIPT PART {index + 1}{Environment.NewLine}{part}"));
+        return new GeminiTranscriptDocument(
+            $"session-{Session.BookingId}-teams-transcript.vtt",
+            "text/vtt",
+            combinedContent,
+            null);
     }
 
     private async Task<GeminiTranscriptDocument?> ReadUploadedTranscriptAsync(

@@ -990,7 +990,10 @@ public class TutorHeadSessionReviewsTests
                 new FixedTimeProvider(DateTimeOffset.UtcNow),
                 new TestGeminiApiKeyProtector(),
                 assessmentService,
-                teamsReviewService: new TestTeamsReviewService(),
+                teamsReviewService: new TestTeamsReviewService
+                {
+                    TranscriptFails = true
+                },
                 teamsOptions: Options.Create(new TeamsMeetingOptions { Enabled = true, PilotTutorHeadBcUserIds = [2] }));
 
             IActionResult result = await page.OnPostGenerateAiAssessmentAsync(
@@ -1011,6 +1014,137 @@ public class TutorHeadSessionReviewsTests
         {
             Directory.Delete(contentRoot, recursive: true);
         }
+    }
+
+    [Fact]
+    public async Task AiAssessmentPrefersTeamsTranscript()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorCourseModule assignment = CreateAssignment();
+        Booking booking = CreateBooking(
+            1,
+            assignment,
+            "Reviewed Student",
+            BookingStatus.Completed,
+            new StudentEvaluation { TutorTopic = "Loops" },
+            new TutorStudentEvaluation
+            {
+                TutorComments = "Covered loops.",
+                TranscriptOriginalFileName = "submitted.docx",
+                TranscriptStoragePath =
+                    "App_Data/tutor-review-transcripts/1/missing.docx",
+                TranscriptContentType =
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            });
+        context.TutorCourseModules.Add(assignment);
+        context.BcUsers.Add(new BcUser
+        {
+            BcUserId = 2,
+            PersonnelNumber = "TH001",
+            DisplayName = "Tutor Head",
+            Role = BcUserRole.HeadOfTutors,
+            EncryptedGeminiApiKey = "protected:gemini-secret-key"
+        });
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var assessmentService = new TestGeminiAssessmentService();
+        var teams = new TestTeamsReviewService();
+        var page = new SessionDetailsModel(
+            context,
+            new TestCurrentUserService(new CurrentUser(
+                2,
+                "TH001",
+                "Tutor Head",
+                "tutorhead@example.com",
+                BcUserRole.HeadOfTutors)),
+            new TestWebHostEnvironment(),
+            new FixedTimeProvider(DateTimeOffset.UtcNow),
+            new TestGeminiApiKeyProtector(),
+            assessmentService,
+            teamsReviewService: teams,
+            teamsOptions: Options.Create(new TeamsMeetingOptions
+            {
+                Enabled = true,
+                PilotTutorHeadBcUserIds = [2]
+            }));
+
+        IActionResult result = await page.OnPostGenerateAiAssessmentAsync(
+            booking.BookingId,
+            CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        GeminiTranscriptDocument transcript = Assert.IsType<
+            GeminiTranscriptDocument>(
+                assessmentService.Evidence?.UploadedTranscript);
+        Assert.Equal("text/vtt", transcript.ContentType);
+        Assert.Equal("session-1-teams-transcript.vtt", transcript.FileName);
+        Assert.Contains("Tutor Head", transcript.ExtractedText);
+        Assert.Equal(1, teams.ContentCalls);
+    }
+
+    [Fact]
+    public async Task AiAssessmentContinuesWhenNoTranscriptCanBeRead()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorCourseModule assignment = CreateAssignment();
+        Booking booking = CreateBooking(
+            1,
+            assignment,
+            "Reviewed Student",
+            BookingStatus.Completed,
+            new StudentEvaluation { TutorTopic = "Loops" },
+            new TutorStudentEvaluation
+            {
+                TutorComments = "Covered loops.",
+                TranscriptOriginalFileName = "missing.docx",
+                TranscriptStoragePath =
+                    "App_Data/tutor-review-transcripts/1/missing.docx",
+                TranscriptContentType =
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            });
+        context.TutorCourseModules.Add(assignment);
+        context.BcUsers.Add(new BcUser
+        {
+            BcUserId = 2,
+            PersonnelNumber = "TH001",
+            DisplayName = "Tutor Head",
+            Role = BcUserRole.HeadOfTutors,
+            EncryptedGeminiApiKey = "protected:gemini-secret-key"
+        });
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var assessmentService = new TestGeminiAssessmentService();
+        var page = new SessionDetailsModel(
+            context,
+            new TestCurrentUserService(new CurrentUser(
+                2,
+                "TH001",
+                "Tutor Head",
+                "tutorhead@example.com",
+                BcUserRole.HeadOfTutors)),
+            new TestWebHostEnvironment(),
+            new FixedTimeProvider(DateTimeOffset.UtcNow),
+            new TestGeminiApiKeyProtector(),
+            assessmentService,
+            teamsReviewService: new TestTeamsReviewService
+            {
+                TranscriptFails = true
+            },
+            teamsOptions: Options.Create(new TeamsMeetingOptions
+            {
+                Enabled = true,
+                PilotTutorHeadBcUserIds = [2]
+            }));
+
+        IActionResult result = await page.OnPostGenerateAiAssessmentAsync(
+            booking.BookingId,
+            CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.NotNull(page.AiAssessment);
+        Assert.True(page.OpenAiAssessmentModal);
+        Assert.Null(assessmentService.Evidence?.UploadedTranscript);
+        Assert.Single(context.SessionAiAssessments);
     }
 
     [Fact]
@@ -1253,6 +1387,15 @@ public class TutorHeadSessionReviewsTests
 
     private sealed class TestTeamsReviewService : ITeamsSessionReviewService
     {
+        private const string DefaultTranscript = """
+            WEBVTT
+
+            00:00:01.000 --> 00:00:05.000
+            <v Tutor Head>Today we will cover loops.</v>
+            """;
+
+        public string? TranscriptContent { get; init; } = DefaultTranscript;
+        public bool TranscriptFails { get; init; }
         public int LoadCalls { get; private set; }
         public int ContentCalls { get; private set; }
         public Task<TeamsSessionReview> GetAsync(int bookingId, CancellationToken cancellationToken)
@@ -1267,7 +1410,13 @@ public class TutorHeadSessionReviewsTests
         public Task<string> GetTranscriptAsync(int bookingId, string transcriptId, CancellationToken cancellationToken)
         {
             ContentCalls++;
-            throw new InvalidOperationException("AI generation must use the submitted transcript, not fetch a Teams transcript.");
+            if (TranscriptFails)
+            {
+                throw new TeamsMeetingException(
+                    "The Teams transcript is unavailable for this test.");
+            }
+
+            return Task.FromResult(TranscriptContent ?? string.Empty);
         }
         public Task<HttpResponseMessage> OpenRecordingAsync(int bookingId, string recordingId, string? range, CancellationToken cancellationToken)
         {

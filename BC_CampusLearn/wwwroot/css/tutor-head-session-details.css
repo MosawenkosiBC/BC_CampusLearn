@@ -697,6 +697,9 @@ body > footer small {
 .tutor-head-recording-link:hover { color: #8f174f; }
 .tutor-head-recording-link:focus-visible { outline: 2px solid #4f87a5; outline-offset: 4px; border-radius: .15rem; }
 .tutor-head-recordings { min-height: 0; max-height: 25rem; overflow-y: auto; flex: 0 1 auto; }
+.tutor-head-recording-part + .tutor-head-recording-part { border-top: 1px solid #e7eaed; margin-top: 1rem; padding-top: .25rem; }
+.tutor-head-recording-meta { align-items: center; color: #626b78; display: flex; flex-wrap: wrap; font-size: .82rem; gap: .45rem 0; margin: 0 0 .75rem; }
+.tutor-head-recording-meta > span + span { border-left: 1px solid #9ba1a6; margin-left: .75rem; padding-left: .75rem; }
 .tutor-head-video-card .tutor-head-evidence-actions { margin-left: 0; flex-wrap: wrap; justify-content: flex-end; }
 .tutor-head-video-card h3 { font-size: 1rem; margin: 1rem 0 .75rem; }
 .tutor-head-video-card h4 { font-size: .95rem; margin: 0 0 .5rem; }
@@ -722,4 +725,8 @@ body > footer small {
     .tutor-head-attendance { flex: none; }
     .tutor-head-attendance-grid { max-height: 18rem; }
     .tutor-head-attendance-person ul { max-height: 12rem; }
+}
+@media (max-width: 575.98px) {
+    .tutor-head-video-heading { align-items: flex-start; flex-direction: column; }
+    .tutor-head-attendance-grid { grid-template-columns: 1fr; }
 }

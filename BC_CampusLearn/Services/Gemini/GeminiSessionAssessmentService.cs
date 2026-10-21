@@ -183,7 +183,7 @@ public sealed class GeminiSessionAssessmentService(
             evidence.StudentReview,
             evidence.TutorReview,
             evidence.TeamsAttendanceEvidence,
-            UploadedTranscript = evidence.UploadedTranscript is null
+            Transcript = evidence.UploadedTranscript is null
                 ? null
                 : new
                 {
@@ -207,13 +207,15 @@ public sealed class GeminiSessionAssessmentService(
             of what happened. A face-to-face delivery mode is therefore not a
             mismatch with transcript evidence and must never be reported as one.
             Private session chats are intentionally excluded and must not be
-            inferred, requested, or mentioned in the analysis. If the uploaded
-            transcript or reviews do not demonstrate what happened, say that the
-            evidence is insufficient. Assess whether the session appears genuine,
+            inferred, requested, or mentioned in the analysis. If the transcript
+            is unreadable, empty, or unusable, ignore it and still complete the
+            review from the remaining evidence. If the transcript or reviews do
+            not demonstrate what happened, say that the evidence is insufficient.
+            Assess whether the session appears genuine,
             whether the requested topics were covered, discrepancies between the
             sources, and what the human reviewer should verify. Determine the
             session duration only from timestamps or explicit timing evidence in
-            the uploaded transcript. Never use the booked duration, scheduled
+            the transcript. Never use the booked duration, scheduled
             duration, or an assumed one-hour duration. If the transcript does not
             establish a reliable duration, say that it could not be determined
             from the transcript. Keep the summary

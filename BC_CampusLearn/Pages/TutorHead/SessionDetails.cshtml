@@ -294,17 +294,26 @@
                 @foreach (var recording in Model.TeamsEvidence.Recordings)
                 {
                     <div class="tutor-head-recording-part">
-                        <h3>Recording @(Model.TeamsEvidence.Recordings.IndexOf(recording) + 1)</h3>
-                        @if (recording.Start is { } recordingStart)
+                        @if (Model.TeamsEvidence.Recordings.Count > 1)
                         {
-                            <p>@recordingStart.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm:ss") SAST</p>
+                            <h3>Recording @(Model.TeamsEvidence.Recordings.IndexOf(recording) + 1)</h3>
                         }
+                        <div class="tutor-head-recording-meta">
+                            @if (recording.Start is { } recordingStart)
+                            {
+                                <span>@recordingStart.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm:ss") SAST</span>
+                            }
+                            @if (Model.TeamsEvidence.Duration is { } recordingMeetingDuration)
+                            {
+                                <span>Meeting duration: <strong>@recordingMeetingDuration.ToString(@"hh\:mm\:ss")</strong></span>
+                            }
+                        </div>
                         <video controls preload="none" playsinline aria-label="Session recording"
                                data-session-recording
                                src="@Url.Page("/TutorHead/SessionDetails", "TeamsRecording", new { id = session.BookingId, recordingId = recording.Id })">
                             Your browser does not support video playback.
                         </video>
-                        <p>Video duration: <span data-recording-duration>Load the video to see its duration</span></p>
+                        <span class="visually-hidden" data-recording-duration>Load the video to see its duration</span>
                         <p data-recording-error role="status" hidden>Playback is unavailable. The recording may still be processing, have expired, or require administrator access settings to be updated.</p>
                     </div>
                 }
