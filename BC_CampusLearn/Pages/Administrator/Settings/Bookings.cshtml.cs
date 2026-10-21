@@ -24,7 +24,7 @@ public class BookingsModel(
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        Input = await context.PlatformSettings.AsNoTracking()
+        BookingTermsInput configured = await context.PlatformSettings.AsNoTracking()
             .Where(settings => settings.PlatformSettingsId == PlatformSettings.SingletonId)
             .Select(settings => new BookingTermsInput
             {
@@ -44,6 +44,31 @@ public class BookingsModel(
                     .UseLastDayOfMonthForAdminSessionReviewDeadline
             })
             .SingleAsync(cancellationToken);
+
+        DateOnly today = DateOnly.FromDateTime(
+            timeProvider.GetUtcNow().ToOffset(TimeSpan.FromHours(2)).DateTime);
+
+        if (configured.IsReviewDeadlineRecurring)
+        {
+            configured.ReviewDeadline = MonthlyReviewPeriod.Resolve(
+                configured.ReviewDeadline,
+                configured.UseLastDayOfMonth,
+                today).Deadline;
+        }
+
+        if (configured.IsAdminReviewDeadlineRecurring)
+        {
+            ReviewPeriodWindow activeAdminPeriod = MonthlyReviewPeriod.Resolve(
+                configured.AdminReviewPeriodStartDate,
+                configured.AdminReviewDeadline,
+                configured.UseLastDayOfMonthForAdminReview,
+                today);
+            configured.AdminReviewPeriodStartDate =
+                activeAdminPeriod.StartDate;
+            configured.AdminReviewDeadline = activeAdminPeriod.Deadline;
+        }
+
+        Input = configured;
     }
 
     public async Task<IActionResult> OnPostAsync(

@@ -84,7 +84,7 @@
                             <tbody>
                                 <tr>
                                     <th scope="row">Tutor Head review deadline<small>Final date for the Tutor Head to complete reviews.</small></th>
-                                    <td><div class="settings-field"><label asp-for="Input.ReviewDeadline" class="visually-hidden"></label><input asp-for="Input.ReviewDeadline" type="date" /><span asp-validation-for="Input.ReviewDeadline"></span></div></td>
+                                    <td><div class="settings-field"><label for="review-deadline-display" class="visually-hidden">Tutor Head review deadline, day/month/year</label><input asp-for="Input.ReviewDeadline" type="hidden" asp-format="{0:yyyy-MM-dd}" /><input id="review-deadline-display" type="text" value="@Model.Input.ReviewDeadline.ToString("dd/MM/yyyy")" inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" data-review-date-display data-date-target="Input_ReviewDeadline" /><span asp-validation-for="Input.ReviewDeadline"></span></div></td>
                                     <td class="settings-review-toggle-cell"><label class="settings-switch settings-table-switch"><input asp-for="Input.IsReviewDeadlineRecurring" /><span aria-hidden="true"></span><strong>Repeat monthly</strong></label></td>
                                 </tr>
                                 <tr>
@@ -104,12 +104,12 @@
                             <tbody>
                                 <tr>
                                     <th scope="row">Review period start date<small>First session date included in the administrator review period.</small></th>
-                                    <td><div class="settings-field"><label asp-for="Input.AdminReviewPeriodStartDate" class="visually-hidden"></label><input asp-for="Input.AdminReviewPeriodStartDate" type="date" /><span asp-validation-for="Input.AdminReviewPeriodStartDate"></span></div></td>
+                                    <td><div class="settings-field"><label for="admin-review-start-display" class="visually-hidden">Administrator review period start date, day/month/year</label><input asp-for="Input.AdminReviewPeriodStartDate" type="hidden" asp-format="{0:yyyy-MM-dd}" /><input id="admin-review-start-display" type="text" value="@Model.Input.AdminReviewPeriodStartDate.ToString("dd/MM/yyyy")" inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" data-review-date-display data-date-target="Input_AdminReviewPeriodStartDate" /><span asp-validation-for="Input.AdminReviewPeriodStartDate"></span></div></td>
                                     <td class="settings-review-toggle-cell"></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">Administrator review deadline<small>Final date for administrators to complete their reviews.</small></th>
-                                    <td><div class="settings-field"><label asp-for="Input.AdminReviewDeadline" class="visually-hidden"></label><input asp-for="Input.AdminReviewDeadline" type="date" /><span asp-validation-for="Input.AdminReviewDeadline"></span></div></td>
+                                    <td><div class="settings-field"><label for="admin-review-deadline-display" class="visually-hidden">Administrator review deadline, day/month/year</label><input asp-for="Input.AdminReviewDeadline" type="hidden" asp-format="{0:yyyy-MM-dd}" /><input id="admin-review-deadline-display" type="text" value="@Model.Input.AdminReviewDeadline.ToString("dd/MM/yyyy")" inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" data-review-date-display data-date-target="Input_AdminReviewDeadline" /><span asp-validation-for="Input.AdminReviewDeadline"></span></div></td>
                                     <td class="settings-review-toggle-cell"><label class="settings-switch settings-table-switch"><input asp-for="Input.IsAdminReviewDeadlineRecurring" /><span aria-hidden="true"></span><strong>Repeat monthly</strong></label></td>
                                 </tr>
                                 <tr>

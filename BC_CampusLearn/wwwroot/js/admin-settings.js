@@ -18,6 +18,63 @@
         activate(window.location.hash);
     }
 
+    const parseDisplayDate = value => {
+        const match = value.trim().match(
+            /^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (!match) return null;
+
+        const day = Number(match[1]);
+        const month = Number(match[2]);
+        const year = Number(match[3]);
+        const date = new Date(Date.UTC(year, month - 1, day));
+
+        if (date.getUTCFullYear() !== year ||
+            date.getUTCMonth() !== month - 1 ||
+            date.getUTCDate() !== day) {
+            return null;
+        }
+
+        return `${String(year).padStart(4, "0")}-${String(month)
+            .padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    };
+
+    const reviewDateDisplays = [...page.querySelectorAll(
+        "[data-review-date-display]")];
+
+    reviewDateDisplays.forEach(display => {
+        display.addEventListener("input", () => display.setCustomValidity(""));
+    });
+
+    [...new Set(reviewDateDisplays.map(display => display.form))]
+        .filter(Boolean)
+        .forEach(form => form.addEventListener("submit", event => {
+            let firstInvalid = null;
+
+            reviewDateDisplays
+                .filter(display => display.form === form)
+                .forEach(display => {
+                    const isoDate = parseDisplayDate(display.value);
+                    const hidden = form.querySelector(
+                        `#${display.dataset.dateTarget}`);
+
+                    if (!isoDate || !hidden) {
+                        display.setCustomValidity(
+                            "Enter a valid date in dd/mm/yyyy format.");
+                        firstInvalid ??= display;
+                        return;
+                    }
+
+                    display.setCustomValidity("");
+                    hidden.value = isoDate;
+                });
+
+            if (firstInvalid) {
+                event.preventDefault();
+                firstInvalid.reportValidity();
+                firstInvalid.focus();
+            }
+        }));
+
     page.ownerDocument.querySelectorAll("form[data-confirm]").forEach(form => {
         form.addEventListener("submit", event => {
             if (!window.confirm(form.dataset.confirm)) event.preventDefault();

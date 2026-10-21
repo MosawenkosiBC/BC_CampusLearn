@@ -480,7 +480,7 @@ public class BookingsAndSessionsModel(
         ReviewPeriodWindow? currentReviewPeriod = deadlineSettings switch
         {
             null => null,
-            { IsRecurring: true } => MonthlyReviewPeriod.ResolveByCalendarMonth(
+            { IsRecurring: true } => MonthlyReviewPeriod.Resolve(
                 deadlineSettings.StartDate,
                 deadlineSettings.Deadline,
                 deadlineSettings.UseLastDayOfMonth,

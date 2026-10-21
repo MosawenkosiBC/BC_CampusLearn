@@ -60,36 +60,36 @@ public class AdminBookingsAndSessionsTests
     }
 
     [Fact]
-    public void ConfiguredAdminPeriodAdvancesOnFirstDayOfEachMonth()
+    public void ConfiguredAdminPeriodAdvancesAfterItsDeadlinePasses()
     {
         DateOnly configuredStart = new(2026, 10, 21);
         DateOnly configuredDeadline = new(2026, 11, 20);
 
-        ReviewPeriodWindow beforeMonthChange =
-            MonthlyReviewPeriod.ResolveByCalendarMonth(
+        ReviewPeriodWindow beforeDeadline =
+            MonthlyReviewPeriod.Resolve(
             configuredStart,
             configuredDeadline,
             useLastDayOfMonth: false,
-            today: new DateOnly(2026, 10, 25));
-        ReviewPeriodWindow novemberPeriod =
-            MonthlyReviewPeriod.ResolveByCalendarMonth(
+                today: new DateOnly(2026, 11, 1));
+        ReviewPeriodWindow onDeadline =
+            MonthlyReviewPeriod.Resolve(
             configuredStart,
             configuredDeadline,
             useLastDayOfMonth: false,
-            today: new DateOnly(2026, 11, 1));
-        ReviewPeriodWindow decemberPeriod =
-            MonthlyReviewPeriod.ResolveByCalendarMonth(
+                today: new DateOnly(2026, 11, 20));
+        ReviewPeriodWindow afterDeadline =
+            MonthlyReviewPeriod.Resolve(
             configuredStart,
             configuredDeadline,
             useLastDayOfMonth: false,
-            today: new DateOnly(2026, 12, 1));
+                today: new DateOnly(2026, 11, 21));
 
-        Assert.Equal(new DateOnly(2026, 9, 21), beforeMonthChange.StartDate);
-        Assert.Equal(new DateOnly(2026, 10, 20), beforeMonthChange.EndDate);
-        Assert.Equal(new DateOnly(2026, 10, 21), novemberPeriod.StartDate);
-        Assert.Equal(new DateOnly(2026, 11, 20), novemberPeriod.EndDate);
-        Assert.Equal(new DateOnly(2026, 11, 21), decemberPeriod.StartDate);
-        Assert.Equal(new DateOnly(2026, 12, 20), decemberPeriod.EndDate);
+        Assert.Equal(configuredStart, beforeDeadline.StartDate);
+        Assert.Equal(configuredDeadline, beforeDeadline.EndDate);
+        Assert.Equal(configuredStart, onDeadline.StartDate);
+        Assert.Equal(configuredDeadline, onDeadline.EndDate);
+        Assert.Equal(new DateOnly(2026, 11, 21), afterDeadline.StartDate);
+        Assert.Equal(new DateOnly(2026, 12, 20), afterDeadline.EndDate);
     }
 
     [Fact]
