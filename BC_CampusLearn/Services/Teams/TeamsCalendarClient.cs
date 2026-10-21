@@ -228,7 +228,7 @@ public sealed class TeamsCalendarClient(HttpClient client, ITeamsGraphTokenProvi
                         ? "Microsoft denied co-organiser setup. Check OnlineMeetings.ReadWrite.All application consent and the Teams application access policy assigned to the meeting organiser. The existing meeting will be reused on retry."
                         : "Microsoft denied calendar access. Ask the administrator to check Calendars.ReadWrite application consent and access to the organiser's mailbox.",
                     HttpStatusCode.Unauthorized => "Microsoft could not authorize CampusLearn. Please contact the administrator.",
-                    HttpStatusCode.NotFound => "The tutor's Microsoft calendar or meeting could not be found. Please contact the administrator.",
+                    HttpStatusCode.NotFound => NotFoundMessage(request),
                     HttpStatusCode.TooManyRequests => "Microsoft is busy. Please wait a moment before retrying.",
                     _ => "Microsoft could not complete meeting creation. Please retry shortly or contact the administrator."
                 });
@@ -247,6 +247,20 @@ public sealed class TeamsCalendarClient(HttpClient client, ITeamsGraphTokenProvi
         {
             throw new TeamsMeetingException("Microsoft returned an unexpected response. Please contact the administrator.");
         }
+    }
+
+    private static string NotFoundMessage(HttpRequestMessage request)
+    {
+        string path = request.RequestUri?.ToString().Split('?')[0] ?? "";
+        if (path.Contains("/onlineMeetings", StringComparison.Ordinal))
+            return request.Method == HttpMethod.Patch
+                ? "Teams co-organiser update failed (HTTP 404): Microsoft could not find the organiser's Teams meeting. The calendar invitation may already exist. Check the organiser's Teams account and meeting access; retry Create Teams meeting to reuse the saved invitation."
+                : "Teams meeting lookup for co-organiser setup failed (HTTP 404): Microsoft could not find the organiser's Teams meeting resource. The calendar invitation may already exist. Check the organiser's Microsoft Object ID, tenant and Teams access; retry Create Teams meeting to reuse the saved invitation.";
+        if (path.Contains("/events/", StringComparison.Ordinal))
+            return "Saved calendar meeting lookup failed (HTTP 404): the event could not be found under its saved organiser. It may have been deleted or its account may no longer be available. Ask the administrator to check the existing invitation and organiser; changing account settings will not move this meeting.";
+        string stage = request.Method == HttpMethod.Post && path.EndsWith("/calendar/events", StringComparison.Ordinal)
+            ? "Calendar invitation creation" : "Organiser calendar lookup";
+        return $"{stage} failed (HTTP 404): Microsoft could not find the organiser's calendar. Verify the configured account's Microsoft Entra Object ID and tenant, and that it has an active Exchange Online mailbox/calendar. Teams access alone does not provide the calendar used by this integration.";
     }
 
     private static string FormatUtc(DateTimeOffset value) =>

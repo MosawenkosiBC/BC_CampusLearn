@@ -21,7 +21,6 @@ public partial class BookingsModel(
     ITeamsCalendarClient? teamsCalendar = null,
     IOptions<TeamsMeetingOptions>? teamsOptions = null) : PageModel
 {
-    [BindProperty]
     public BookingTermsInput Input { get; set; } = new();
 
     [TempData]
@@ -53,8 +52,10 @@ public partial class BookingsModel(
     }
 
     public async Task<IActionResult> OnPostAsync(
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [Bind(Prefix = "Input")] BookingTermsInput? input = null)
     {
+        Input = input ?? Input;
         Input.SupportEmail = Input.SupportEmail?.Trim() ?? string.Empty;
         Input.Terms = NormalizeLines(Input.Terms ?? string.Empty);
         if (Input.Terms.Length is < 20 or > 8000)
