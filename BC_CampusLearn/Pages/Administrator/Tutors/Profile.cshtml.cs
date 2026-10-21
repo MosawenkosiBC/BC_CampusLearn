@@ -68,6 +68,7 @@ public class ProfileModel(ApplicationDbContext context, ICurrentUserService? cur
             .AsNoTracking()
             .Include(item => item.BcUser)
             .Include(item => item.Programme)
+            .Include(item => item.DeregistrationHistory)
             .Include(item => item.TutorCourseModules.Where(a => a.IsActive))
                 .ThenInclude(item => item.ProgrammeModule)
             .FirstOrDefaultAsync(item => item.TutorId == id, cancellationToken);

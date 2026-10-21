@@ -1626,6 +1626,9 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
+                    b.Property<bool>("IsReapplication")
+                        .HasColumnType("bit");
+
                     b.Property<string>("LinkedInUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -1666,6 +1669,7 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("nvarchar(1000)");
 
                     b.Property<int>("Status")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(0);
@@ -1873,11 +1877,46 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
+                    b.Property<bool>("IsReapplicationSelection")
+                        .HasColumnType("bit");
+
                     b.HasKey("TutorId", "ProgrammeModuleId");
 
                     b.HasIndex("ProgrammeModuleId");
 
                     b.ToTable("TutorCourseModules");
+                });
+
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorDeregistrationEvent", b =>
+                {
+                    b.Property<int>("TutorDeregistrationEventId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TutorDeregistrationEventId"));
+
+                    b.Property<int?>("AdministratorBcUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AdministratorName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset>("DeregisteredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("TutorId")
+                        .HasColumnType("int");
+
+                    b.HasKey("TutorDeregistrationEventId");
+
+                    b.HasIndex("TutorId", "DeregisteredAt");
+
+                    b.ToTable("TutorDeregistrationEvents");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorDeregistrationRequest", b =>
@@ -1931,6 +1970,9 @@ namespace BC_CampusLearn.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsVerified")
                         .ValueGeneratedOnAdd()
@@ -2589,6 +2631,17 @@ namespace BC_CampusLearn.Migrations
                     b.Navigation("Tutor");
                 });
 
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorDeregistrationEvent", b =>
+                {
+                    b.HasOne("BC_CampusLearn.Models.Entities.Tutor", "Tutor")
+                        .WithMany("DeregistrationHistory")
+                        .HasForeignKey("TutorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Tutor");
+                });
+
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorDeregistrationRequest", b =>
                 {
                     b.HasOne("BC_CampusLearn.Models.Entities.Tutor", "Tutor")
@@ -2751,6 +2804,8 @@ namespace BC_CampusLearn.Migrations
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.Tutor", b =>
                 {
                     b.Navigation("ApplicationReviewDecisions");
+
+                    b.Navigation("DeregistrationHistory");
 
                     b.Navigation("DeregistrationRequests");
 

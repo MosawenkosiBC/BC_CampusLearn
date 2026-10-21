@@ -166,8 +166,8 @@ public class ApplicationsModel : ManualTutorPageModel
             ("programme", _) => candidates.OrderByDescending(tutor => tutor.Programme.Name),
             ("year", "asc") => candidates.OrderBy(tutor => tutor.YearOfStudy),
             ("year", _) => candidates.OrderByDescending(tutor => tutor.YearOfStudy),
-            ("modules", "asc") => candidates.OrderBy(tutor => tutor.TutorCourseModules.Count(item => item.IsActive)),
-            ("modules", _) => candidates.OrderByDescending(tutor => tutor.TutorCourseModules.Count(item => item.IsActive)),
+            ("modules", "asc") => candidates.OrderBy(tutor => tutor.TutorCourseModules.Count(item => tutor.IsReapplication ? item.IsReapplicationSelection : item.IsActive)),
+            ("modules", _) => candidates.OrderByDescending(tutor => tutor.TutorCourseModules.Count(item => tutor.IsReapplication ? item.IsReapplicationSelection : item.IsActive)),
             ("average", "asc") => candidates.OrderBy(tutor => tutor.OverallAverage),
             _ => candidates.OrderByDescending(tutor => tutor.OverallAverage)
         };
@@ -186,7 +186,7 @@ public class ApplicationsModel : ManualTutorPageModel
                 ProgrammeName = tutor.Programme.Name,
                 YearOfStudy = tutor.YearOfStudy,
                 OverallAverage = tutor.OverallAverage,
-                ModuleCount = tutor.TutorCourseModules.Count(item => item.IsActive),
+                ModuleCount = tutor.TutorCourseModules.Count(item => tutor.IsReapplication ? item.IsReapplicationSelection : item.IsActive),
                 SubmittedAt = tutor.SubmittedAt,
                 Status = tutor.Status,
                 ApplicationStage = tutor.Status == TutorStatus.Approved
@@ -217,7 +217,7 @@ public class ApplicationsModel : ManualTutorPageModel
                     })
                     .ToList(),
                 Modules = tutor.TutorCourseModules
-                    .Where(item => item.IsActive)
+                    .Where(item => tutor.IsReapplication ? item.IsReapplicationSelection : item.IsActive)
                     .OrderBy(item => item.ProgrammeModule.ModuleCode)
                     .Select(item => new CandidateModule
                     {
@@ -226,6 +226,7 @@ public class ApplicationsModel : ManualTutorPageModel
                     })
                     .ToList(),
                 Documents = tutor.TutorDocuments
+                    .Where(document => !document.IsArchived)
                     .OrderBy(document => document.DocumentType)
                     .Select(document => new CandidateDocument
                     {

@@ -8,6 +8,7 @@ public class TutorDocument
     public string FilePath { get; set; } = null!;
     public string OriginalFileName { get; set; } = null!;
     public bool IsVerified { get; set; }
+    public bool IsArchived { get; set; }
     public DateTime UploadedAt { get; set; }
     public DateTime? VerifiedAt { get; set; }
     public Tutor Tutor { get; set; } = null!;

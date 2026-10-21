@@ -180,7 +180,9 @@ public static class TutorApplicationReview
                 ? ShortlistResult.Success("There are no remaining applications to reject.")
                 : ShortlistResult.Failure("The selected applicants are no longer awaiting review.");
 
-        var documents = candidates.SelectMany(candidate => candidate.TutorDocuments).ToList();
+        // Returning tutors retain their profile and every historical relationship.
+        var removableCandidates = candidates.Where(candidate => !candidate.IsReapplication).ToList();
+        var documents = removableCandidates.SelectMany(candidate => candidate.TutorDocuments).ToList();
         if (documents.Count > 0 && string.IsNullOrWhiteSpace(contentRootPath))
             return ShortlistResult.Failure("The uploaded document storage could not be accessed. No profiles were deleted.");
 
@@ -216,9 +218,9 @@ public static class TutorApplicationReview
             ApplyApplicationRejection(context, candidate, reason, null, reviewedAt);
         }
         context.TutorDocuments.RemoveRange(documents);
-        context.TutorCourseModules.RemoveRange(candidates.SelectMany(candidate => candidate.TutorCourseModules));
-        context.TutorApplicationReviewDecisions.RemoveRange(candidates.SelectMany(candidate => candidate.ApplicationReviewDecisions));
-        context.Tutors.RemoveRange(candidates);
+        context.TutorCourseModules.RemoveRange(removableCandidates.SelectMany(candidate => candidate.TutorCourseModules));
+        context.TutorApplicationReviewDecisions.RemoveRange(removableCandidates.SelectMany(candidate => candidate.ApplicationReviewDecisions));
+        context.Tutors.RemoveRange(removableCandidates);
         await context.SaveChangesAsync(cancellationToken);
         string selection = selectedIds is null ? "remaining" : "selected";
         return ShortlistResult.Success(candidates.Count == 1
@@ -256,7 +258,7 @@ public static class TutorApplicationReview
         string? notificationMessage,
         DateTime reviewedAt)
     {
-        candidate.Status = TutorStatus.Rejected;
+        ApplyRejectedStatus(candidate);
         candidate.ApplicationStage = TutorApplicationStage.Rejected;
         candidate.ShortlistReason = string.IsNullOrEmpty(normalizedReason)
             ? null
@@ -415,7 +417,7 @@ public static class TutorApplicationReview
         }
 
         DateTime reviewedAt = DateTime.UtcNow;
-        candidate.Status = TutorStatus.Rejected;
+        ApplyRejectedStatus(candidate);
         candidate.ApplicationStage = TutorApplicationStage.Rejected;
         candidate.ReviewedAt = reviewedAt;
         candidate.UpdatedAt = reviewedAt;
@@ -463,6 +465,7 @@ public static class TutorApplicationReview
     {
         Tutor? candidate = await context.Tutors
             .Include(tutor => tutor.BcUser)
+            .Include(tutor => tutor.TutorCourseModules)
             .SingleOrDefaultAsync(
                 tutor => tutor.TutorId == tutorId,
                 cancellationToken);
@@ -480,6 +483,15 @@ public static class TutorApplicationReview
         candidate.ReviewedAt = reviewedAt;
         candidate.UpdatedAt = reviewedAt;
         candidate.BcUser.Role = BcUserRole.Tutor;
+        if (candidate.IsReapplication)
+        {
+            foreach (var assignment in candidate.TutorCourseModules)
+            {
+                assignment.IsActive = assignment.IsReapplicationSelection;
+                assignment.IsReapplicationSelection = false;
+            }
+            candidate.IsReapplication = false;
+        }
 
         ShortlistResult auditResult = await AddReviewDecisionAsync(
             context,
@@ -535,7 +547,7 @@ public static class TutorApplicationReview
         }
 
         DateTime reviewedAt = DateTime.UtcNow;
-        candidate.Status = TutorStatus.Rejected;
+        ApplyRejectedStatus(candidate);
         candidate.ApplicationStage = TutorApplicationStage.Rejected;
         candidate.IsActive = false;
         candidate.ReviewedAt = reviewedAt;
@@ -573,6 +585,12 @@ public static class TutorApplicationReview
 
         await context.SaveChangesAsync(cancellationToken);
         return ShortlistResult.Success("Candidate rejected.");
+    }
+
+    private static void ApplyRejectedStatus(Tutor candidate)
+    {
+        candidate.Status = candidate.IsReapplication ? TutorStatus.Deregistered : TutorStatus.Rejected;
+        candidate.IsReapplication = false;
     }
 
     private static async Task<ShortlistResult> AddReviewDecisionAsync(
@@ -691,8 +709,10 @@ public static class TutorApplicationReview
             .Include(tutor => tutor.TutorCourseModules)
             .Include(tutor => tutor.TutorDocuments)
             .Where(tutor =>
-                tutor.ApplicationStage == TutorApplicationStage.Rejected ||
-                tutor.Status == TutorStatus.Rejected)
+                tutor.Status != TutorStatus.Deregistered &&
+                !tutor.IsReapplication &&
+                (tutor.ApplicationStage == TutorApplicationStage.Rejected ||
+                tutor.Status == TutorStatus.Rejected))
             .ToListAsync(cancellationToken);
 
         if (rejectedApplications.Count == 0)

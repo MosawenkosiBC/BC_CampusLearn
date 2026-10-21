@@ -77,6 +77,11 @@ public class TutorDeregistrationTests
         Assert.Equal(200, tutor.DeregisteredByBcUserId);
         Assert.Equal("Administrator", tutor.DeregisteredByName);
         Assert.Equal("Programme participation ended.", tutor.DeregistrationReason);
+        var history = Assert.Single(await context.TutorDeregistrationEvents.ToListAsync());
+        Assert.Equal(Now, history.DeregisteredAt);
+        Assert.Equal(200, history.AdministratorBcUserId);
+        Assert.Equal("Administrator", history.AdministratorName);
+        Assert.Equal("Programme participation ended.", history.Reason);
         Assert.False(assignment.IsActive);
         Assert.Empty(await context.TutorAvailabilities.ToListAsync());
         Assert.Equal(BookingStatus.Completed, (await context.Bookings.SingleAsync()).Status);
@@ -95,6 +100,7 @@ public class TutorDeregistrationTests
         Assert.Equal(Now, notification.CreatedAt);
         Assert.NotNull(await service.DeregisterAsync(1, Administrator, "Repeated request"));
         Assert.Single(await context.UserNotifications.ToListAsync());
+        Assert.Single(await context.TutorDeregistrationEvents.ToListAsync());
         Assert.Equal("Programme participation ended.", tutor.DeregistrationReason);
     }
 

@@ -138,6 +138,20 @@
                 </button>
             }
         </section>
+        @if (tutor.DeregistrationHistory.Count > 0)
+        {
+            <section class="admin-deregistration-panel admin-profile-panel" aria-labelledby="deregistration-history-heading">
+                <h2 id="deregistration-history-heading">Deregistration history</h2>
+                @foreach (var entry in tutor.DeregistrationHistory.OrderByDescending(item => item.DeregisteredAt).ThenByDescending(item => item.TutorDeregistrationEventId))
+                {
+                    <dl>
+                        <dt>Date</dt><dd>@entry.DeregisteredAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")</dd>
+                        <dt>Administrator</dt><dd>@(entry.AdministratorName ?? "Not recorded")</dd>
+                        <dt>Reason</dt><dd class="admin-deregistration-reason">@(entry.Reason ?? "Not recorded")</dd>
+                    </dl>
+                }
+            </section>
+        }
         </div>
         <div class="admin-profile-content">
             <div class="admin-profile-stats">

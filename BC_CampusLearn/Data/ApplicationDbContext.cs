@@ -16,6 +16,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Announcement> Announcements => Set<Announcement>();
 
     public DbSet<Tutor> Tutors => Set<Tutor>();
+    public DbSet<TutorDeregistrationEvent> TutorDeregistrationEvents => Set<TutorDeregistrationEvent>();
     public DbSet<Admin> Admins => Set<Admin>();
     public DbSet<BcUser> BcUsers => Set<BcUser>();
     public DbSet<TutorDocument> TutorDocuments => Set<TutorDocument>();

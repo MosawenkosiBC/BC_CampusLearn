@@ -194,8 +194,11 @@ public class TutorApplicationTests
         Assert.Equal("Pretoria Campus", page.ProfileInput.CampusOfStudy);
     }
 
-    [Fact]
-    public async Task RejectedStudentCannotReapplyWhileCycleIsOpen()
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    public async Task ExistingApplicationCanOnlyBeResubmittedAfterDeregistration(bool deregistered, bool applicationsOpen)
     {
         string contentRoot = Path.Combine(
             Path.GetTempPath(),
@@ -250,7 +253,7 @@ public class TutorApplicationTests
                 CampusOfStudy = "Old campus",
                 DemonstrationVideoUrl = "https://example.test/old",
                 PreferredTutoringMode = PreferredTutoringMode.Online,
-                Status = TutorStatus.Rejected,
+                Status = deregistered ? TutorStatus.Deregistered : TutorStatus.Rejected,
                 ApplicationStage = TutorApplicationStage.Rejected,
                 ShortlistReason = "Previously unsuccessful",
                 SubmittedAt = DateTime.UtcNow.AddMonths(-1),
@@ -258,13 +261,18 @@ public class TutorApplicationTests
                 TutorCourseModules =
                 [
                     new TutorCourseModule { ProgrammeModule = firstModule }
-                ]
+                ],
+                TutorDocuments = [new TutorDocument
+                {
+                    FilePath = "App_Data/tutor-documents/previous.pdf",
+                    OriginalFileName = "previous.pdf"
+                }]
             };
             context.Tutors.Add(rejected);
             context.ProgrammeModules.Add(secondModule);
             context.TutorApplicationSettings.Add(new TutorApplicationSettings
             {
-                IsOpen = true,
+                IsOpen = applicationsOpen,
                 ShortlistLimit = 2,
                 OpenDate = DateTime.UtcNow.Date.AddDays(-1),
                 CloseDate = DateTime.UtcNow.Date.AddDays(7),
@@ -315,6 +323,43 @@ public class TutorApplicationTests
             };
 
             IActionResult result = await page.OnPostAsync(CancellationToken.None);
+
+            if (!applicationsOpen)
+            {
+                Assert.IsType<PageResult>(result);
+                Assert.Equal(TutorStatus.Deregistered, rejected.Status);
+                Assert.Equal("Old reason", rejected.ReasonForTutoring);
+                Assert.Empty(await context.UserNotifications.ToListAsync());
+                Assert.False((await context.TutorDocuments.SingleAsync()).IsArchived);
+                return;
+            }
+
+            if (deregistered)
+            {
+                Assert.IsType<RedirectToPageResult>(result);
+                var updated = await context.Tutors.Include(t => t.BcUser).SingleAsync();
+                Assert.Equal(rejected.TutorId, updated.TutorId);
+                Assert.Equal(TutorStatus.Pending, updated.Status);
+                Assert.True(updated.IsReapplication);
+                Assert.False(updated.IsActive);
+                Assert.Equal(BcUserRole.Student, updated.BcUser.Role);
+                Assert.Equal(TutorApplicationStage.Submitted, updated.ApplicationStage);
+                Assert.Equal("New reason", updated.ReasonForTutoring);
+                Assert.Equal(2, updated.TutorCourseModules.Count);
+                Assert.All(updated.TutorCourseModules, assignment =>
+                {
+                    Assert.False(assignment.IsActive);
+                    Assert.True(assignment.IsReapplicationSelection);
+                });
+                Assert.Single(await context.UserNotifications.ToListAsync());
+                Assert.Equal(2, await context.TutorDocuments.CountAsync());
+                Assert.True((await context.TutorDocuments.SingleAsync(d => d.OriginalFileName == "previous.pdf")).IsArchived);
+                Assert.Equal("transcript.pdf", (await context.TutorDocuments.SingleAsync(d => !d.IsArchived)).OriginalFileName);
+                Assert.IsType<PageResult>(await page.OnPostAsync(CancellationToken.None));
+                Assert.Single(await context.Tutors.ToListAsync());
+                Assert.Single(await context.UserNotifications.ToListAsync());
+                return;
+            }
 
             Assert.IsType<PageResult>(result);
             Assert.Equal(1, await context.Tutors.CountAsync());

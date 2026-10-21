@@ -43,11 +43,20 @@ public sealed class TutorDeregistrationService(ApplicationDbContext context, Tim
 
             var now = timeProvider.GetUtcNow();
             tutor.Status = TutorStatus.Deregistered;
+            tutor.IsReapplication = false;
             tutor.IsActive = false;
             tutor.DeregisteredAt = now;
             tutor.DeregisteredByBcUserId = administrator.BcUserId;
             tutor.DeregisteredByName = administrator.DisplayName;
             tutor.DeregistrationReason = reason;
+            context.TutorDeregistrationEvents.Add(new TutorDeregistrationEvent
+            {
+                TutorId = tutor.TutorId,
+                DeregisteredAt = now,
+                AdministratorBcUserId = administrator.BcUserId,
+                AdministratorName = administrator.DisplayName,
+                Reason = reason
+            });
             tutor.UpdatedAt = now.UtcDateTime;
             foreach (var assignment in tutor.TutorCourseModules) assignment.IsActive = false;
             context.TutorAvailabilities.RemoveRange(tutor.TutorAvailabilities);

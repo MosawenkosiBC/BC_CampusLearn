@@ -182,7 +182,7 @@ public class TutorApplicationModel : PageModel
             .SingleOrDefaultAsync(
                 item => item.BcUserId == currentUser.BcUserId,
                 cancellationToken);
-        if (tutor is not null)
+        if (tutor is not null && tutor.Status != TutorStatus.Deregistered)
         {
             ModelState.AddModelError(
                 string.Empty,
@@ -190,11 +190,24 @@ public class TutorApplicationModel : PageModel
             return Page();
         }
 
-        tutor = new Tutor
+        bool isNew = tutor is null;
+        tutor ??= new Tutor { BcUserId = currentUser.BcUserId, CreatedAt = submittedAt };
+        tutor.IsReapplication = !isNew;
+        if (!isNew)
         {
-            BcUserId = currentUser.BcUserId,
-            CreatedAt = submittedAt
-        };
+            // Keep historical module rows: completed bookings reference their composite keys.
+            foreach (var assignment in tutor.TutorCourseModules)
+            {
+                assignment.IsActive = false;
+                assignment.IsReapplicationSelection = false;
+            }
+            foreach (var document in tutor.TutorDocuments) document.IsArchived = true;
+            tutor.InterviewNotes = null;
+            tutor.InterviewPreparationNotes = null;
+            tutor.InterviewScheduledAt = null;
+            tutor.InterviewDurationMinutes = null;
+            tutor.InterviewLocation = null;
+        }
 
         tutor.ProgrammeId = Input.ProgrammeId!.Value;
         tutor.OverallAverage = Input.OverallAverage!.Value;
@@ -219,11 +232,13 @@ public class TutorApplicationModel : PageModel
 
         foreach (int moduleId in moduleIds)
         {
-            tutor.TutorCourseModules.Add(
-                new TutorCourseModule
-                {
-                    ProgrammeModuleId = moduleId
-                });
+            var assignment = tutor.TutorCourseModules.SingleOrDefault(item => item.ProgrammeModuleId == moduleId);
+            if (assignment is null)
+            {
+                assignment = new TutorCourseModule { ProgrammeModuleId = moduleId, IsActive = isNew };
+                tutor.TutorCourseModules.Add(assignment);
+            }
+            assignment.IsReapplicationSelection = !isNew;
         }
 
         string directoryName = Guid.NewGuid().ToString("N");
@@ -260,7 +275,7 @@ public class TutorApplicationModel : PageModel
                     cancellationToken);
             }
 
-            _context.Tutors.Add(tutor);
+            if (isNew) _context.Tutors.Add(tutor);
             _context.UserNotifications.Add(new UserNotification
             {
                 RecipientBcUserId = currentUser.BcUserId,
@@ -451,7 +466,7 @@ public class TutorApplicationModel : PageModel
             _ => null
         };
 
-        if (!ApplicationsOpen || existingApplication is not null)
+        if (!ApplicationsOpen || (existingApplication is not null && existingApplication.Status != TutorStatus.Deregistered))
         {
             return;
         }

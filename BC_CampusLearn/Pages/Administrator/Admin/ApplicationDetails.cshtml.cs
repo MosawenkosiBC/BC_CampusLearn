@@ -168,7 +168,7 @@ public class ApplicationDetailsModel(
             .Include(tutor => tutor.Programme)
             .Include(tutor => tutor.TutorCourseModules)
                 .ThenInclude(item => item.ProgrammeModule)
-            .Include(tutor => tutor.TutorDocuments)
+            .Include(tutor => tutor.TutorDocuments.Where(document => !document.IsArchived))
             .Include(tutor => tutor.ApplicationReviewDecisions)
                 .ThenInclude(decision => decision.Reviewer)
             .SingleOrDefaultAsync(
@@ -181,6 +181,8 @@ public class ApplicationDetailsModel(
         }
 
         Application = application;
+        Application.TutorCourseModules = application.TutorCourseModules
+            .Where(item => application.IsReapplication ? item.IsReapplicationSelection : item.IsActive).ToList();
         return true;
     }
 

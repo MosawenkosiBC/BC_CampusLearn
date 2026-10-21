@@ -27,7 +27,7 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
         builder.Property(tutor => tutor.PreferredTutoringMode).HasConversion<int>().IsRequired();
         builder.Property(tutor => tutor.CampusOfStudy).HasMaxLength(100).IsRequired();
         builder.Property(tutor => tutor.DemonstrationVideoUrl).HasMaxLength(500).IsRequired();
-        builder.Property(tutor => tutor.Status).HasConversion<int>().HasDefaultValue(TutorStatus.Pending);
+        builder.Property(tutor => tutor.Status).HasConversion<int>().HasDefaultValue(TutorStatus.Pending).IsConcurrencyToken();
         builder.Property(tutor => tutor.ApplicationStage)
             .HasConversion<int>()
             .HasDefaultValue(TutorApplicationStage.Submitted);

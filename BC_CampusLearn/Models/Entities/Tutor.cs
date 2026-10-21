@@ -14,6 +14,8 @@ public class Tutor
     public string CampusOfStudy { get; set; } = null!;
     public string DemonstrationVideoUrl { get; set; } = null!;
     public TutorStatus Status { get; set; }
+    public bool IsReapplication { get; set; }
+    public ICollection<TutorDeregistrationEvent> DeregistrationHistory { get; set; } = new List<TutorDeregistrationEvent>();
     public TutorApplicationStage ApplicationStage { get; set; }
     public string? ShortlistReason { get; set; }
     public string? InterviewPreparationNotes { get; set; }
