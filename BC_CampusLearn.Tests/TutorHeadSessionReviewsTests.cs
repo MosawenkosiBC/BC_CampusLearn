@@ -905,7 +905,15 @@ public class TutorHeadSessionReviewsTests
             page.AiAssessment.TranscriptDuration);
         Assert.Equal("gemini-secret-key", assessmentService.ApiKey);
         Assert.Equal("Please cover loops.", assessmentService.Evidence?.BookingSummary);
+        Assert.Equal("Online", assessmentService.Evidence?.DeliveryMode);
         Assert.Contains("Loops", assessmentService.Evidence?.StudentReview.Values ?? []);
+        Assert.Equal(
+            "What condition controls the loop?",
+            page.AiAssessment.TutorQuestion);
+        Assert.Equal("The Boolean condition.", page.AiAssessment.Answer);
+        Assert.Equal(
+            "Explicit speaker labels",
+            page.AiAssessment.SpeakerAttribution);
 
         SessionAiAssessment storedAssessment = Assert.Single(
             context.SessionAiAssessments);
@@ -1446,7 +1454,10 @@ public class TutorHeadSessionReviewsTests
                 ["The reviews mention loops."],
                 [],
                 "Verify and complete the human review.",
-                "52 minutes from transcript timestamps"));
+                "52 minutes from transcript timestamps",
+                TutorQuestion: "What condition controls the loop?",
+                Answer: "The Boolean condition.",
+                SpeakerAttribution: "Explicit speaker labels"));
         }
     }
 

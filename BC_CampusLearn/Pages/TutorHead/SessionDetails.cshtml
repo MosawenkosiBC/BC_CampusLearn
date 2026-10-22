@@ -413,6 +413,14 @@
                                 }
                             </div>
                             <p>@assessment.Summary</p>
+                            <section class="tutor-head-ai-exchange" aria-labelledby="ai-exchange-title">
+                                <h3 id="ai-exchange-title">Tutor question and answer</h3>
+                                <dl>
+                                    <div><dt>Tutor question</dt><dd>@(assessment.TutorQuestion ?? "Not reliably identified")</dd></div>
+                                    <div><dt>Answer</dt><dd>@(assessment.Answer ?? "Not reliably identified")</dd></div>
+                                    <div><dt>Speaker attribution</dt><dd>@(assessment.SpeakerAttribution ?? "Not available")</dd></div>
+                                </dl>
+                            </section>
                             @if (Model.CanUseTeamsReview)
                             {
                             <section class="tutor-head-ai-watch-ranges" aria-labelledby="ai-watch-ranges-title">

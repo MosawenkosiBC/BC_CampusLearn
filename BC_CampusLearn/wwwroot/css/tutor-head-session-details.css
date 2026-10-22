@@ -717,6 +717,11 @@ body > footer small {
 .tutor-head-evidence-notice, [data-recording-error] { color: #626b78; font-size: .85rem; margin: .85rem 0 0; }
 .tutor-head-ai-watch-ranges { border-top: 1px solid #e7eaed; padding-top: 1rem; margin: 1rem 0; }
 .tutor-head-ai-watch-ranges li { margin-bottom: .75rem; }
+.tutor-head-ai-exchange { border-top: 1px solid #e7eaed; margin-top: 1rem; padding-top: 1rem; }
+.tutor-head-ai-exchange dl { display: grid; gap: .75rem; margin: 0; }
+.tutor-head-ai-exchange dl > div { background: #f6f8f9; border-radius: .4rem; padding: .8rem .9rem; }
+.tutor-head-ai-exchange dt { color: #626b78; font-size: .8rem; font-weight: 700; margin-bottom: .25rem; text-transform: uppercase; }
+.tutor-head-ai-exchange dd { margin: 0; }
 @media (max-width: 991.98px) {
     .tutor-head-evidence-layout { grid-template-columns: 1fr; height: auto; }
     .tutor-head-review-panels > .admin-session-review-panel-card:not([hidden]) { min-height: 26rem; max-height: 44rem; }

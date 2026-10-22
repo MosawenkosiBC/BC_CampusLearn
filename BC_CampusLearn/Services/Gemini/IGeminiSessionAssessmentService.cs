@@ -14,7 +14,8 @@ public sealed record GeminiSessionEvidence(
     IReadOnlyDictionary<string, string> StudentReview,
     IReadOnlyDictionary<string, string> TutorReview,
     GeminiTranscriptDocument? UploadedTranscript,
-    string? TeamsAttendanceEvidence = null);
+    string? TeamsAttendanceEvidence = null,
+    string? DeliveryMode = null);
 
 public sealed record GeminiTranscriptDocument(
     string FileName,
@@ -30,7 +31,10 @@ public sealed record GeminiSessionAssessment(
     IReadOnlyList<string> Concerns,
     string Recommendation,
     string TranscriptDuration = "Could not determine from transcript",
-    IReadOnlyList<GeminiWatchRange>? SuggestedWatchRanges = null);
+    IReadOnlyList<GeminiWatchRange>? SuggestedWatchRanges = null,
+    string? TutorQuestion = null,
+    string? Answer = null,
+    string? SpeakerAttribution = null);
 
 public sealed record GeminiWatchRange(int StartSeconds, int EndSeconds, string Reason)
 {

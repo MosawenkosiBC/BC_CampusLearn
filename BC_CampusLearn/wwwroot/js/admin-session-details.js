@@ -26,8 +26,6 @@
             panel.querySelectorAll("video").forEach((video, index) => {
                 if (isVisible && index === 0) {
                     video.play().catch(() => { });
-                } else {
-                    video.pause();
                 }
             });
         });

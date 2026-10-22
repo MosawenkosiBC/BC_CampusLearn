@@ -83,6 +83,29 @@ public sealed class GeminiSessionAssessmentService(
                                 "Duration determined only from transcript timestamps or explicit transcript evidence. State that it could not be determined when the transcript has no reliable duration evidence."
                         },
                         summary = new { type = "STRING" },
+                        tutorQuestion = new
+                        {
+                            type = "STRING",
+                            description =
+                                "One meaningful instructional question asked by the tutor, quoted or closely paraphrased from the transcript. Use 'Not reliably identified' when the exchange or tutor role cannot be supported."
+                        },
+                        answer = new
+                        {
+                            type = "STRING",
+                            description =
+                                "The answer that immediately corresponds to tutorQuestion, quoted or closely paraphrased. Use 'Not reliably identified' when no supported answer exists."
+                        },
+                        speakerAttribution = new
+                        {
+                            type = "STRING",
+                            @enum = new[]
+                            {
+                                "Explicit speaker labels",
+                                "Inferred from conversation context",
+                                "Uncertain",
+                                "Not available"
+                            }
+                        },
                         evidence = new
                         {
                             type = "ARRAY",
@@ -121,6 +144,9 @@ public sealed class GeminiSessionAssessmentService(
                         "topicCoverage",
                         "transcriptDuration",
                         "summary",
+                        "tutorQuestion",
+                        "answer",
+                        "speakerAttribution",
                         "evidence",
                         "concerns",
                         "recommendation",
@@ -180,6 +206,7 @@ public sealed class GeminiSessionAssessmentService(
         {
             evidence.BookingSummary,
             evidence.Module,
+            evidence.DeliveryMode,
             evidence.StudentReview,
             evidence.TutorReview,
             evidence.TeamsAttendanceEvidence,
@@ -211,6 +238,23 @@ public sealed class GeminiSessionAssessmentService(
             is unreadable, empty, or unusable, ignore it and still complete the
             review from the remaining evidence. If the transcript or reviews do
             not demonstrate what happened, say that the evidence is insufficient.
+            Identify one meaningful question-and-answer exchange that demonstrates
+            tutoring, when the transcript supports one. Put the tutor's question
+            in tutorQuestion and the corresponding answer in answer. Do not select
+            greetings, attendance checks, or administrative questions. For an
+            online session, use explicit transcript speaker names or labels when
+            they reliably identify the tutor and student. For a face-to-face
+            session, the tutor and student may join through one device and share
+            one microphone, so a transcript can assign both voices to one account.
+            In that case, distinguish turns using the conversational structure,
+            instructional language, and the relationship between a question and
+            its answer, but never treat the account label as proof of who spoke.
+            Set speakerAttribution to "Inferred from conversation context" when
+            the roles are reasonably supported but not explicit, and describe the
+            uncertainty in concerns. If the roles or exchange cannot be supported,
+            return "Not reliably identified" for both fields and set attribution
+            to "Uncertain" or "Not available". Never invent or silently relabel a
+            speaker.
             Assess whether the session appears genuine,
             whether the requested topics were covered, discrepancies between the
             sources, and what the human reviewer should verify. Determine the

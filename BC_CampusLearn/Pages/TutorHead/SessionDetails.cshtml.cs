@@ -327,7 +327,8 @@ public class SessionDetailsModel(
                 TeamsEvidence.Start, TeamsEvidence.End,
                 MeetingDurationSeconds = TeamsEvidence.Duration?.TotalSeconds,
                 TeamsEvidence.Tutor, TeamsEvidence.Student
-            }, AssessmentJsonOptions));
+            }, AssessmentJsonOptions),
+            Session.Location);
     }
 
     private async Task<GeminiTranscriptDocument?> ReadPreferredTranscriptAsync(
