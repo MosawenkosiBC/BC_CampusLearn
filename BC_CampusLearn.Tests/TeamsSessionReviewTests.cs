@@ -66,7 +66,6 @@ public class TeamsSessionReviewTests
 
     [Theory]
     [InlineData("disabled")]
-    [InlineData("not-pilot")]
     [InlineData("manual")]
     [InlineData("incomplete")]
     [InlineData("organizer-mismatch")]
@@ -75,7 +74,7 @@ public class TeamsSessionReviewTests
     public async Task IneligibleBookingsCannotReadOrStreamTeamsArtifacts(string scenario)
     {
         await using var db = await CreateContextAsync();
-        var options = new TeamsMeetingOptions { Enabled = scenario != "disabled", PilotTutorBcUserIds = scenario == "not-pilot" ? [99] : [8] };
+        var options = new TeamsMeetingOptions { Enabled = scenario != "disabled" };
         var booking = await db.Bookings.Include(b => b.MeetingLink).SingleAsync();
         if (scenario == "manual") booking.MeetingLink!.TeamsManualFallbackAllowed = true;
         if (scenario == "incomplete") booking.Status = BookingStatus.Confirmed;
@@ -91,7 +90,6 @@ public class TeamsSessionReviewTests
         string expectedReason = scenario switch
         {
             "disabled" => "disabled on this server",
-            "not-pilot" => "not included in the Teams pilot",
             "manual" or "older-link" => "manually supplied or older meeting link",
             "missing-organizer" => "missing its organizer verification details",
             "incomplete" => "completed session",
@@ -122,7 +120,7 @@ public class TeamsSessionReviewTests
     }
 
     [Fact]
-    public async Task PilotBcUserTwoResolvesRecordingsUsingMicrosoftOrganizerIdRatherThanTutorId()
+    public async Task TutorResolvesRecordingsUsingMicrosoftOrganizerIdRatherThanTutorId()
     {
         await using var db = await CreateContextAsync(tutorBcUserId: 2);
         var service = CreateService(db, new Handler(request =>
@@ -133,7 +131,7 @@ public class TeamsSessionReviewTests
             if (path.EndsWith("/onlineMeetings")) return Json("""{"value":[{"id":"meeting-1"}]}""");
             if (path.EndsWith("/recordings")) return Json("""{"value":[{"id":"recording-1"}]}""");
             return Json("""{"value":[]}""");
-        }), new() { Enabled = true, PilotTutorBcUserIds = [2] });
+        }), new() { Enabled = true });
         var result = await service.GetAsync(1, default);
         Assert.Equal("recording-1", Assert.Single(result.Recordings).Id);
         Assert.DoesNotContain(result.Notices, n => n.Contains("not included"));
@@ -279,7 +277,7 @@ public class TeamsSessionReviewTests
     private static readonly IEntraIdentityProtector Identities = Protector();
     private static TeamsSessionReviewService CreateService(ApplicationDbContext db, Handler handler, TeamsMeetingOptions? options = null) =>
         new(new HttpClient(handler) { BaseAddress = new("https://graph.microsoft.com/v1.0/") }, new Tokens(), db, Identities,
-            Options.Create(options ?? new() { Enabled = true, PilotTutorBcUserIds = [8] }),
+            Options.Create(options ?? new() { Enabled = true }),
             new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["AzureAd:TenantId"] = Tenant }).Build(), new Environment());
 
     private static async Task<ApplicationDbContext> CreateContextAsync(int tutorBcUserId = 8)

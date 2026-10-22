@@ -2,6 +2,9 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
+using BC_CampusLearn.Services.Gemini;
+using BC_CampusLearn.Services.Teams;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -12,8 +15,12 @@ public class SessionDetailsModel(
     ApplicationDbContext context,
     IWebHostEnvironment environment,
     ICurrentUserService currentUserService,
-    TimeProvider timeProvider) : PageModel
+    TimeProvider timeProvider,
+    ITeamsSessionReviewService? teamsReviewService = null) : PageModel
 {
+    private static readonly JsonSerializerOptions AssessmentJsonOptions = new(
+        JsonSerializerDefaults.Web);
+
     public Booking Session { get; private set; } = null!;
 
     public IReadOnlyList<ReviewAnswer> StudentReviewAnswers { get; private set; } = [];
@@ -24,23 +31,40 @@ public class SessionDetailsModel(
 
     public IReadOnlyList<ReviewAnswer> TutorHeadReviewAnswers { get; private set; } = [];
 
+    public TeamsSessionReview TeamsEvidence { get; private set; } = new();
+
+    public bool HasTeamsRecording => TeamsEvidence.Recordings.Count > 0;
+
+    public GeminiSessionAssessment? AiAssessment { get; private set; }
+
+    public DateTimeOffset? AiAssessmentGeneratedAt { get; private set; }
+
     public bool IsSuperAdmin =>
         currentUserService.GetRequiredUser().Role == BcUserRole.SuperAdmin;
 
-    public bool CanRecordSuperAdminReview =>
+    public bool CanRecordFinalValidity =>
         IsSuperAdmin &&
         Session.Status == BookingStatus.Completed &&
         Session.StudentEvaluation is not null &&
         Session.TutorEvaluation is not null &&
         TutorHeadReview is not null &&
-        Session.AdminSessionReview is not null;
+        Session.AdminSessionReview is not null &&
+        Session.SuperAdminSessionReview is null &&
+        Session.AdminSessionReview.ReviewerBcUserId !=
+            currentUserService.GetRequiredUser().BcUserId;
+
+    public bool AwaitingIndependentFinalReview =>
+        IsSuperAdmin &&
+        Session.AdminSessionReview is not null &&
+        Session.SuperAdminSessionReview is null &&
+        Session.AdminSessionReview.ReviewerBcUserId ==
+            currentUserService.GetRequiredUser().BcUserId;
 
     public bool HasVisibleTutorHeadConcern =>
         string.Equals(
             TutorHeadReview?.ConcernLevel,
             "Concerns",
-            StringComparison.OrdinalIgnoreCase) &&
-        Session.AdminSessionReview?.EvidenceSupportsApproval != true;
+            StringComparison.OrdinalIgnoreCase);
 
     public sealed record ReviewAnswer(string Question, string Value);
 
@@ -50,12 +74,14 @@ public class SessionDetailsModel(
     [TempData]
     public string? AdminReviewMessage { get; set; }
 
-    public bool CanRecordAdminReview =>
-        !IsSuperAdmin &&
+    public bool CanRecordSuperAdminAssessment =>
+        IsSuperAdmin &&
         Session.Status == BookingStatus.Completed &&
         Session.StudentEvaluation is not null &&
         Session.TutorEvaluation is not null &&
-        TutorHeadReview is not null;
+        TutorHeadReview is not null &&
+        Session.AdminSessionReview is null &&
+        Session.SuperAdminSessionReview is null;
 
     public async Task<IActionResult> OnGetAsync(int id, CancellationToken cancellationToken) =>
         await LoadPageAsync(id, populateInput: true, cancellationToken);
@@ -85,6 +111,32 @@ public class SessionDetailsModel(
         TutorHeadReview = session.SessionReviews.FirstOrDefault(review =>
             review.Reviewer.Role == BcUserRole.HeadOfTutors);
         TutorHeadReviewAnswers = BuildTutorHeadReviewAnswers(TutorHeadReview);
+        if (teamsReviewService is not null && session.Status == BookingStatus.Completed)
+        {
+            TeamsEvidence = await teamsReviewService.GetAsync(id, cancellationToken);
+        }
+        SessionAiAssessment? storedAssessment = await context
+            .SessionAiAssessments
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item =>
+                item.BookingId == id &&
+                item.GeneratedBy.Role == BcUserRole.HeadOfTutors,
+                cancellationToken);
+        if (storedAssessment is not null)
+        {
+            try
+            {
+                AiAssessment = JsonSerializer.Deserialize<GeminiSessionAssessment>(
+                    storedAssessment.AssessmentJson,
+                    AssessmentJsonOptions);
+                AiAssessmentGeneratedAt = storedAssessment.GeneratedAt;
+            }
+            catch (JsonException)
+            {
+                AiAssessment = null;
+                AiAssessmentGeneratedAt = null;
+            }
+        }
         if (populateInput && session.AdminSessionReview is { } saved)
         {
             AdminReviewInput = new AdminSessionReviewInput
@@ -102,11 +154,11 @@ public class SessionDetailsModel(
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAdminReviewAsync(
+    public async Task<IActionResult> OnPostSuperAdminAssessmentAsync(
         int id,
         CancellationToken cancellationToken)
     {
-        if (IsSuperAdmin)
+        if (!IsSuperAdmin)
         {
             return Forbid();
         }
@@ -124,6 +176,7 @@ public class SessionDetailsModel(
             .Include(item => item.StudentEvaluation)
             .Include(item => item.TutorEvaluation)
             .Include(item => item.AdminSessionReview)
+            .Include(item => item.SuperAdminSessionReview)
             .Include(item => item.SessionReviews).ThenInclude(item => item.Reviewer)
             .SingleOrDefaultAsync(item => item.BookingId == id,
                 cancellationToken);
@@ -131,6 +184,8 @@ public class SessionDetailsModel(
         if (booking.Status != BookingStatus.Completed ||
             booking.StudentEvaluation is null ||
             booking.TutorEvaluation is null ||
+            booking.AdminSessionReview is not null ||
+            booking.SuperAdminSessionReview is not null ||
             !booking.SessionReviews.Any(review =>
                 review.Reviewer.Role == BcUserRole.HeadOfTutors))
         {
@@ -142,7 +197,7 @@ public class SessionDetailsModel(
             return await LoadPageAsync(id, populateInput: false, cancellationToken);
         }
 
-        AdminSessionReview review = booking.AdminSessionReview ?? new AdminSessionReview
+        AdminSessionReview review = new()
         {
             BookingId = booking.BookingId
         };
@@ -155,14 +210,9 @@ public class SessionDetailsModel(
         review.EvidenceSupportsApproval =
             AdminReviewInput.EvidenceSupportsApproval!.Value;
         review.RecordedAt = timeProvider.GetUtcNow();
-        if (booking.AdminSessionReview is null)
-        {
-            context.AdminSessionReviews.Add(review);
-        }
+        context.AdminSessionReviews.Add(review);
         await context.SaveChangesAsync(cancellationToken);
-        AdminReviewMessage = review.EvidenceSupportsApproval
-            ? "Session accepted successfully."
-            : "Session declined successfully.";
+        AdminReviewMessage = "Superadmin assessment saved. A different Superadmin must record the final validity decision.";
         return RedirectToPage(
             "/Administrator/Tutors/SessionDetails",
             new { id });
@@ -192,11 +242,18 @@ public class SessionDetailsModel(
             return NotFound();
         }
 
+        if (booking.AdminSessionReview?.ReviewerBcUserId ==
+            currentUser.BcUserId)
+        {
+            return Forbid();
+        }
+
         bool hasEveryPriorReview =
             booking.Status == BookingStatus.Completed &&
             booking.StudentEvaluation is not null &&
             booking.TutorEvaluation is not null &&
             booking.AdminSessionReview is not null &&
+            booking.SuperAdminSessionReview is null &&
             booking.SessionReviews.Any(review =>
                 review.Reviewer.Role == BcUserRole.HeadOfTutors);
         if (!hasEveryPriorReview)
@@ -204,8 +261,8 @@ public class SessionDetailsModel(
             return BadRequest();
         }
 
-        SuperAdminSessionReview review = booking.SuperAdminSessionReview ??
-            new SuperAdminSessionReview { BookingId = booking.BookingId };
+        SuperAdminSessionReview review =
+            new() { BookingId = booking.BookingId };
         review.ReviewerBcUserId = currentUser.BcUserId;
         review.IsAccepted = accepted;
         if (accepted && review.CompensationAmount is null)
@@ -216,15 +273,12 @@ public class SessionDetailsModel(
                 .SingleOrDefaultAsync(cancellationToken);
         }
         review.RecordedAt = timeProvider.GetUtcNow();
-        if (booking.SuperAdminSessionReview is null)
-        {
-            context.SuperAdminSessionReviews.Add(review);
-        }
+        context.SuperAdminSessionReviews.Add(review);
 
         await context.SaveChangesAsync(cancellationToken);
         AdminReviewMessage = accepted
-            ? "Session accepted by the Superadmin."
-            : "Session rejected by the Superadmin.";
+            ? "Session marked valid by the approving Superadmin."
+            : "Session marked invalid by the approving Superadmin.";
         return RedirectToPage("/Administrator/Admin/BookingsAndSessions");
     }
 
@@ -344,6 +398,11 @@ public class SessionDetailsModel(
         int id,
         CancellationToken cancellationToken)
     {
+        if (!IsSuperAdmin)
+        {
+            return Forbid();
+        }
+
         TutorStudentEvaluation? evaluation = await context
             .TutorStudentEvaluations
             .AsNoTracking()
@@ -380,5 +439,49 @@ public class SessionDetailsModel(
         {
             FileDownloadName = evaluation.TranscriptOriginalFileName
         };
+    }
+
+    public async Task<IActionResult> OnGetTeamsRecordingAsync(
+        int id,
+        string recordingId,
+        CancellationToken cancellationToken)
+    {
+        if (teamsReviewService is null)
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            using HttpResponseMessage upstream = await teamsReviewService
+                .OpenRecordingAsync(
+                    id,
+                    recordingId,
+                    Request.Headers.Range.ToString(),
+                    cancellationToken);
+            Response.StatusCode = (int)upstream.StatusCode;
+            Response.ContentType = "video/mp4";
+            Response.Headers.CacheControl = "private, no-store";
+            Response.Headers.XContentTypeOptions = "nosniff";
+            if (upstream.Content.Headers.ContentLength is long length)
+            {
+                Response.ContentLength = length;
+            }
+            if (upstream.Content.Headers.ContentRange is { } range)
+            {
+                Response.Headers.ContentRange = range.ToString();
+            }
+            if (upstream.Headers.AcceptRanges.Count > 0)
+            {
+                Response.Headers.AcceptRanges = string.Join(
+                    ", ", upstream.Headers.AcceptRanges);
+            }
+            await upstream.Content.CopyToAsync(Response.Body, cancellationToken);
+            return new EmptyResult();
+        }
+        catch (TeamsMeetingException exception)
+        {
+            return StatusCode(503, exception.Message);
+        }
     }
 }

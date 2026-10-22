@@ -8,10 +8,12 @@ using BC_CampusLearn.Services.Teams;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Pages.Administrator.Settings;
 
+[Authorize(Roles = nameof(BcUserRole.SuperAdmin))]
 public partial class BookingsModel(
     ApplicationDbContext context,
     ICurrentUserService currentUserService,
@@ -100,7 +102,7 @@ public partial class BookingsModel(
         {
             ModelState.AddModelError(
                 "Input.AdminReviewPeriodStartDate",
-                "The administrator review period must start on or before its deadline.");
+                "The Superadmin review period must start on or before its deadline.");
         }
         if (!ModelState.IsValid)
         {
@@ -157,19 +159,19 @@ public partial class BookingsModel(
             currentUser);
         changed |= auditService.Record(
             "Bookings and sessions",
-            "Administrator review period start date",
+            "Superadmin review period start date",
             FormatDate(settings.AdminSessionReviewPeriodStartDate),
             FormatDate(Input.AdminReviewPeriodStartDate),
             currentUser);
         changed |= auditService.Record(
             "Bookings and sessions",
-            "Administrator review deadline",
+            "Superadmin review deadline",
             FormatDate(settings.AdminSessionReviewDeadline),
             FormatDate(effectiveAdminDeadline),
             currentUser);
         changed |= auditService.Record(
             "Bookings and sessions",
-            "Administrator review deadline recurrence",
+            "Superadmin review deadline recurrence",
             settings.IsAdminSessionReviewDeadlineRecurring
                 ? "Monthly"
                 : "One time",
@@ -179,7 +181,7 @@ public partial class BookingsModel(
             currentUser);
         changed |= auditService.Record(
             "Bookings and sessions",
-            "Administrator review deadline monthly rule",
+            "Superadmin review deadline monthly rule",
             settings.UseLastDayOfMonthForAdminSessionReviewDeadline
                 ? "Last day of the month"
                 : "Same date each month",
@@ -245,15 +247,15 @@ public partial class BookingsModel(
         [Display(Name = "Use the last day of each month")]
         public bool UseLastDayOfMonth { get; set; }
 
-        [Display(Name = "Administrator review deadline")]
+        [Display(Name = "Superadmin review deadline")]
         public DateOnly AdminReviewDeadline { get; set; } =
             new(2026, 10, 31);
 
-        [Display(Name = "Administrator review period start date")]
+        [Display(Name = "Superadmin review period start date")]
         public DateOnly AdminReviewPeriodStartDate { get; set; } =
             new(2026, 9, 6);
 
-        [Display(Name = "Repeat the administrator review period monthly")]
+        [Display(Name = "Repeat the Superadmin review period monthly")]
         public bool IsAdminReviewDeadlineRecurring { get; set; } = true;
 
         [Display(Name = "Use the last day of each month")]

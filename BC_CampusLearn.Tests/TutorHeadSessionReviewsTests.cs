@@ -18,10 +18,9 @@ namespace BC_CampusLearn.Tests;
 public class TutorHeadSessionReviewsTests
 {
     [Theory]
-    [InlineData(2, true, true)]
-    [InlineData(3, true, false)]
-    [InlineData(2, false, false)]
-    public async Task OnlyConfiguredPilotTutorHeadLoadsTeamsEvidence(int reviewerId, bool configured, bool expected)
+    [InlineData(2)]
+    [InlineData(3)]
+    public async Task EveryTutorHeadLoadsTeamsEvidenceWhenEnabled(int reviewerId)
     {
         await using var context = CreateContext();
         var assignment = CreateAssignment();
@@ -35,36 +34,25 @@ public class TutorHeadSessionReviewsTests
             new TestWebHostEnvironment(), TimeProvider.System, teamsReviewService: teams,
             teamsOptions: Options.Create(new TeamsMeetingOptions
             {
-                Enabled = true,
-                PilotTutorBcUserIds = [assignment.Tutor.BcUserId],
-                PilotTutorHeadBcUserIds = configured ? [2] : []
+                Enabled = true
             }));
         Assert.IsType<PageResult>(await page.OnGetAsync(1, default));
-        Assert.Equal(expected, page.CanUseTeamsReview);
-        Assert.Equal(expected ? 1 : 0, teams.LoadCalls);
+        Assert.True(page.CanUseTeamsReview);
+        Assert.Equal(1, teams.LoadCalls);
         Assert.True(page.CanWatchRecording);
         Assert.True(page.HasTranscript);
         Assert.NotEmpty(page.TutorReviewAnswers);
-        if (!expected)
-        {
-            Assert.IsType<ForbidResult>(await page.OnGetTeamsRecordingAsync(1, "recording-1", default));
-            Assert.IsType<ForbidResult>(await page.OnGetTeamsTranscriptAsync(1, "transcript-1", default));
-            Assert.Equal(0, teams.ContentCalls);
-        }
     }
 
     [Fact]
-    public async Task ReviewPilotIsDisabledByDefaultAndDoesNotDependOnOrganizerAllowlist()
+    public async Task TeamsReviewDependsOnlyOnFeatureSwitch()
     {
         await using var context = CreateContext();
         var teams = new TestTeamsReviewService();
         var user = new TestCurrentUserService(new CurrentUser(2, "TH", "Tutor Head", "head@example.com", BcUserRole.HeadOfTutors));
-        var options = new TeamsMeetingOptions { Enabled = true, PilotTutorBcUserIds = [2] };
+        var options = new TeamsMeetingOptions { Enabled = true };
         var page = new SessionDetailsModel(context, user, new TestWebHostEnvironment(), TimeProvider.System,
             teamsReviewService: teams, teamsOptions: Options.Create(options));
-        Assert.False(page.CanUseTeamsReview);
-        Assert.IsType<ForbidResult>(await page.OnGetTeamsRecordingAsync(1, "recording-1", default));
-        options.PilotTutorHeadBcUserIds = [2];
         Assert.True(page.CanUseTeamsReview);
         options.Enabled = false;
         Assert.False(page.CanUseTeamsReview);
@@ -1002,7 +990,7 @@ public class TutorHeadSessionReviewsTests
                 {
                     TranscriptFails = true
                 },
-                teamsOptions: Options.Create(new TeamsMeetingOptions { Enabled = true, PilotTutorHeadBcUserIds = [2] }));
+                teamsOptions: Options.Create(new TeamsMeetingOptions { Enabled = true }));
 
             IActionResult result = await page.OnPostGenerateAiAssessmentAsync(
                 1,
@@ -1072,8 +1060,7 @@ public class TutorHeadSessionReviewsTests
             teamsReviewService: teams,
             teamsOptions: Options.Create(new TeamsMeetingOptions
             {
-                Enabled = true,
-                PilotTutorHeadBcUserIds = [2]
+                Enabled = true
             }));
 
         IActionResult result = await page.OnPostGenerateAiAssessmentAsync(
@@ -1140,8 +1127,7 @@ public class TutorHeadSessionReviewsTests
             },
             teamsOptions: Options.Create(new TeamsMeetingOptions
             {
-                Enabled = true,
-                PilotTutorHeadBcUserIds = [2]
+                Enabled = true
             }));
 
         IActionResult result = await page.OnPostGenerateAiAssessmentAsync(
@@ -1429,7 +1415,7 @@ public class TutorHeadSessionReviewsTests
         public Task<HttpResponseMessage> OpenRecordingAsync(int bookingId, string recordingId, string? range, CancellationToken cancellationToken)
         {
             ContentCalls++;
-            throw new InvalidOperationException("A non-pilot Tutor Head must not request Teams video content.");
+            throw new InvalidOperationException("This test double does not provide Teams video content.");
         }
     }
 

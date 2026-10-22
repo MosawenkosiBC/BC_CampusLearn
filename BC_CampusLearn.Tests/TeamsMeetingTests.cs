@@ -34,7 +34,6 @@ public sealed class TeamsMeetingTests
     {
         fixture.Options.SharedOrganizerEnabled = true;
         fixture.Options.SharedOrganizerObjectId = SharedObjectId;
-        fixture.Options.SharedOrganizerPilotTutorBcUserIds = [2];
         fixture.Calendar.ExpectedOrganizerId = SharedObjectId;
     }
 
@@ -103,17 +102,15 @@ public sealed class TeamsMeetingTests
     }
 
     [Fact]
-    public async Task NonPilotTutorsKeepAutomaticCreationEvenWithSharedPilotEnabled()
+    public async Task EveryTutorUsesSharedOrganizerWhenEnabled()
     {
         await using var fixture = await Fixture.CreateAsync();
         EnableShared(fixture);
-        fixture.Calendar.ExpectedOrganizerId = ObjectId;
-        fixture.Options.PilotTutorBcUserIds = [2];
-        fixture.Options.SharedOrganizerObjectId = null;
         Assert.True((await fixture.Service.CreateAsync(8, 1)).Succeeded);
-        Assert.Equal(ObjectId, Assert.Single(fixture.Calendar.Requests).OrganizerObjectId);
-        Assert.Empty(fixture.Calendar.CoOrganizerRequests);
-        Assert.False((await fixture.Context.MeetingLinks.SingleAsync()).UsesSharedTeamsOrganizer);
+        Assert.Equal(SharedObjectId, Assert.Single(fixture.Calendar.Requests).OrganizerObjectId);
+        Assert.Equal((SharedObjectId, ObjectId),
+            Assert.Single(fixture.Calendar.CoOrganizerRequests));
+        Assert.True((await fixture.Context.MeetingLinks.SingleAsync()).UsesSharedTeamsOrganizer);
     }
 
     [Fact]

@@ -53,6 +53,27 @@
     const selectedTab = tabs.find(tab => tab.getAttribute("aria-selected") === "true");
     if (selectedTab) activateTab(selectedTab);
 
+    document.querySelectorAll("[data-session-recording]").forEach(video => {
+        const part = video.closest(".tutor-head-recording-part");
+        video.addEventListener("loadedmetadata", () => {
+            if (!part || !Number.isFinite(video.duration)) return;
+            const seconds = Math.floor(video.duration);
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor(seconds % 3600 / 60);
+            const duration = part.querySelector("[data-recording-duration]");
+            if (duration) {
+                duration.textContent =
+                    `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+            }
+            const error = part.querySelector("[data-recording-error]");
+            if (error) error.hidden = true;
+        });
+        video.addEventListener("error", () => {
+            const error = part?.querySelector("[data-recording-error]");
+            if (error) error.hidden = false;
+        });
+    });
+
     document.querySelectorAll("[data-review-pager]").forEach(pager => {
         const answers = [...pager.querySelectorAll("[data-review-answer]")];
         const controls = pager.querySelector(".admin-session-review-pagination");

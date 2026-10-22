@@ -399,6 +399,8 @@
                     </span>
                     <strong>Manage tutors</strong>
                 </a>
+                @if (User.IsInRole(nameof(BcUserRole.SuperAdmin)))
+                {
                 <a asp-page="/Administrator/Admin/Applications"
                    asp-route-Stage="applications"
                    class="admin-quick-action">
@@ -410,6 +412,7 @@
                     </span>
                     <strong>Review applications</strong>
                 </a>
+                }
                 <a asp-page="/Administrator/Admin/BookingsAndSessions"
                    asp-route-Queue="admin"
                    class="admin-quick-action">

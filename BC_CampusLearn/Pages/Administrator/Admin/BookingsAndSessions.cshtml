@@ -18,34 +18,6 @@
 }
 
 <section class="admin-bookings-sessions" aria-labelledby="bookings-sessions-title">
-    @if (!Model.IsSuperAdmin)
-    {
-    <div class="approval-status-help">
-        <button type="button"
-                class="approval-status-help-button"
-                aria-label="Explain admin approval statuses"
-                aria-describedby="approval-status-help-card">?</button>
-        <div class="approval-status-help-card" id="approval-status-help-card" role="tooltip">
-            <h2>Approval status guide</h2>
-            <div>
-                <span class="session-approval is-awaiting">Awaiting review</span>
-                <span aria-hidden="true">–</span>
-                <p>The administrator approval is still pending.</p>
-            </div>
-            <div>
-                <span class="session-approval is-reviewed">Accepted</span>
-                <span aria-hidden="true">–</span>
-                <p>The session reviews have been accepted.</p>
-            </div>
-            <div>
-                <span class="session-approval is-rejected">Rejected</span>
-                <span aria-hidden="true">–</span>
-                <p>The Tutor Head rejected the session and no administrator approval was submitted.</p>
-            </div>
-        </div>
-    </div>
-    }
-
     <header class="bookings-sessions-heading">
         <h1 id="bookings-sessions-title">Bookings and Sessions</h1>
     </header>
@@ -53,22 +25,6 @@
     @if (!Model.IsSuperAdmin)
     {
     <section class="admin-stat-grid admin-session-stats" aria-label="Administrator session review statistics">
-        <a asp-page="/Administrator/Admin/BookingsAndSessions"
-           asp-route-Stat="carried-over"
-           class="admin-stat-card admin-stat-card-link @(Model.Stat == "carried-over" ? "is-active" : null)"
-           aria-current="@(Model.Stat == "carried-over" ? "true" : null)"
-           aria-label="Show @Model.ReviewStats.CarriedOver sessions carried over from previous periods">
-            <div class="admin-stat-icon" aria-hidden="true">
-                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-                    <path d="M0 0h24v24H0z" fill="none" />
-                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
-                        <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2c4.478 0 8.226 2.943 9.5 7H19" />
-                        <path d="M12 8v4l2 2m7.955-1q.045-.495.045-1m-7 10a10 10 0 0 0 1-.392M20.79 17q.291-.558.515-1.154m-3.113 4.383q.518-.428.977-.922" />
-                    </g>
-                </svg>
-            </div>
-            <div class="admin-stat-content"><h2>Carried over</h2><p>@Model.ReviewStats.CarriedOver</p></div>
-        </a>
         <a asp-page="/Administrator/Admin/BookingsAndSessions"
            asp-route-Stat="flagged"
            class="admin-stat-card admin-stat-card-link @(Model.Stat == "flagged" ? "is-active" : null)"
@@ -97,30 +53,6 @@
                 </svg>
             </div>
             <div class="admin-stat-content"><h2>Rejected by Tutor Head</h2><p>@Model.ReviewStats.RejectedByTutorHead</p></div>
-        </a>
-        <a asp-page="/Administrator/Admin/BookingsAndSessions"
-           asp-route-Stat="awaiting"
-           class="admin-stat-card admin-stat-card-link @(Model.Stat == "awaiting" ? "is-active" : null)"
-           aria-current="@(Model.Stat == "awaiting" ? "true" : null)"
-           aria-label="Show @Model.ReviewStats.AwaitingAdminReview sessions awaiting administrator review">
-            <div class="admin-stat-icon" aria-hidden="true">
-                <svg class="awaiting-review-progress"
-                     viewBox="0 0 24 24"
-                     shape-rendering="geometricPrecision">
-                    <circle class="awaiting-review-progress-fill"
-                            cx="12"
-                            cy="12"
-                            r="4.25"
-                            pathLength="100"
-                            stroke-dasharray="@($"{Model.ReviewStats.AwaitingAdminReviewPercentage} 100")"
-                            transform="rotate(-90 12 12)" />
-                    <circle class="awaiting-review-progress-ring"
-                            cx="12"
-                            cy="12"
-                            r="10.5" />
-                </svg>
-            </div>
-            <div class="admin-stat-content"><h2>Awaiting admin review</h2><p>@Model.ReviewStats.AwaitingAdminReview</p></div>
         </a>
     </section>
     }
@@ -151,8 +83,10 @@
                     </span>
                 </label>
 
+                @if (Model.IsSuperAdmin)
+                {
                 <label class="session-filter-field">
-                    <span>@(Model.IsSuperAdmin ? "Superadmin decision" : "Administrator decision")</span>
+                    <span>Final session validity</span>
                     <select asp-for="Approval">
                         <option value="all">All approval statuses</option>
                         <option value="pending">Awaiting review</option>
@@ -160,6 +94,7 @@
                         <option value="rejected">Rejected</option>
                     </select>
                 </label>
+                }
 
                 <label class="session-filter-field">
                     <span>Date</span>
@@ -201,10 +136,10 @@
                             <th scope="col">Location</th>
                             <th scope="col">Session date</th>
                             <th scope="col" class="session-decision-column">Tutor Head decision</th>
-                            <th scope="col">Admin decision</th>
                             @if (Model.IsSuperAdmin)
                             {
-                                <th scope="col">Superadmin approval</th>
+                                <th scope="col">Superadmin review</th>
+                                <th scope="col">Final validity</th>
                             }
                             <th scope="col" class="session-action-heading">Action</th>
                         </tr>
@@ -213,7 +148,7 @@
                         @if (Model.Sessions.Count == 0)
                         {
                             <tr>
-                                <td colspan="@(Model.IsSuperAdmin ? 8 : 7)" class="completed-session-empty">
+                                <td colspan="@(Model.IsSuperAdmin ? 8 : 6)" class="completed-session-empty">
                                     No completed sessions match the selected filters.
                                 </td>
                             </tr>
@@ -266,13 +201,13 @@
                                             <span>@session.TutorHeadDecisionLabel</span>
                                         </span>
                                     </td>
-                                    <td>
-                                        <span class="session-approval @session.AdminApprovalCssClass">
-                                            @session.AdminApprovalLabel
-                                        </span>
-                                    </td>
                                     @if (Model.IsSuperAdmin)
                                     {
+                                        <td>
+                                            <span class="session-approval @session.AdminApprovalCssClass">
+                                                @session.AdminApprovalLabel
+                                            </span>
+                                        </td>
                                         <td>
                                             <span class="session-approval @session.SuperAdminDecisionCssClass">
                                                 @session.SuperAdminDecisionLabel

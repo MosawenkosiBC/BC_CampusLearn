@@ -35,7 +35,7 @@ public interface ITeamsSessionReviewService
     Task<HttpResponseMessage> OpenRecordingAsync(int bookingId, string recordingId, string? range, CancellationToken cancellationToken);
 }
 
-// Only saved, application-created meetings for allowlisted tutors can be read.
+// Only saved, application-created meetings with a verified organizer can be read.
 // User-supplied recording URLs are never fetched with the application's credentials.
 public sealed class TeamsSessionReviewService(
     HttpClient client, ITeamsGraphTokenProvider tokens, ApplicationDbContext context,

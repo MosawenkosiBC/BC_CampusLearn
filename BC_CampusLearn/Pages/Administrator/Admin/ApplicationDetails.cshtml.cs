@@ -3,6 +3,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Tutors;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BC_CampusLearn.Pages.Administrator.Admin;
 
+[Authorize(Roles = nameof(BcUserRole.SuperAdmin))]
 public class ApplicationDetailsModel(
     ApplicationDbContext context,
     IWebHostEnvironment environment,

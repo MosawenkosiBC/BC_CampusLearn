@@ -17,7 +17,7 @@
         <h1 id="admin-tutors-title">Tutors</h1>
     </header>
 
-    @if (Model.Tab == "all")
+    @if (Model.Tab == "all" && Model.CanAddTutor)
     {
         <div class="admin-tutors-actions">
             <button type="button" class="add-tutor-button" data-add-tutor-open>
@@ -157,7 +157,10 @@
             }
         </div>
         </div>
-        <partial name="/Pages/Administrator/_AddTutorModal.cshtml" model="Model" />
+        @if (Model.CanAddTutor)
+        {
+            <partial name="/Pages/Administrator/_AddTutorModal.cshtml" model="Model" />
+        }
     }
     else
     {

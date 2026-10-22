@@ -1,4 +1,5 @@
 using BC_CampusLearn.Data;
+using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Students;
 using BC_CampusLearn.Services.Notifications;
@@ -12,12 +13,19 @@ using Microsoft.EntityFrameworkCore;
 namespace BC_CampusLearn.Pages.Administrator;
 
 // Shared manual tutor workflow for the placement and tutor directory pages.
-public abstract class ManualTutorPageModel(ApplicationDbContext context, IStudentDetailsService? studentDetailsService) : PageModel
+public abstract class ManualTutorPageModel(
+    ApplicationDbContext context,
+    IStudentDetailsService? studentDetailsService,
+    ICurrentUserService? currentUserService = null) : PageModel
 {
     private readonly ApplicationDbContext _context = context;
     protected ApplicationDbContext Context => _context;
 
     protected virtual IActionResult RedirectAfterAddTutor() => RedirectToPage();
+
+    public bool CanAddTutor => currentUserService is null ||
+        (currentUserService.IsAuthenticated &&
+         currentUserService.GetRequiredUser().Role == BcUserRole.SuperAdmin);
 
     public bool RequiresStudentVerification => true;
     private StudentDetails? _verifiedStudent;
@@ -50,6 +58,11 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
 
     public async Task<IActionResult> OnGetStudentDetailsAsync(int studentId, CancellationToken cancellationToken)
     {
+        if (!CanAddTutor)
+        {
+            return Forbid();
+        }
+
         var student = await Context.BcUsers.AsNoTracking().Where(EligibleStudent).SingleOrDefaultAsync(
             user => user.BcUserId == studentId,
             cancellationToken);
@@ -146,6 +159,11 @@ public abstract class ManualTutorPageModel(ApplicationDbContext context, IStuden
     public async Task<IActionResult> OnPostAddTutorAsync(
         CancellationToken cancellationToken)
     {
+        if (!CanAddTutor)
+        {
+            return Forbid();
+        }
+
         // This page contains several independent forms. Validate only the
         // manual tutor input so application/interview fields cannot block it.
         ModelState.Clear();

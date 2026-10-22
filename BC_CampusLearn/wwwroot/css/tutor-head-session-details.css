@@ -176,10 +176,10 @@
 }
 
 .tutor-head-ai-title-row {
-    align-items: center;
+    align-items: flex-start;
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
+    flex-direction: column;
+    gap: 0.35rem;
 }
 
 .tutor-head-ai-review-notice {

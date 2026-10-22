@@ -7,6 +7,3 @@ services:
       TeamsMeetings__SharedOrganizerEnabled: "true"
       TeamsMeetings__SharedOrganizerEmail: "mzalaconnect@belgiumcampus.ac.za"
       TeamsMeetings__SharedOrganizerObjectId: "${MZALA_TEAMS_ORGANIZER_OBJECT_ID:-}"
-      TeamsMeetings__SharedOrganizerPilotTutorBcUserIds__0: "2"
-      TeamsMeetings__PilotTutorBcUserIds__0: "2"
-      TeamsMeetings__PilotTutorHeadBcUserIds__0: "2"

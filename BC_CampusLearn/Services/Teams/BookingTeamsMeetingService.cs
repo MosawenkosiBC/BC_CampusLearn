@@ -84,7 +84,7 @@ public sealed class BookingTeamsMeetingService(
         EntraIdentity tutorIdentity = identity;
         bool useShared = booking.MeetingLink?.TeamsCreationRequestId is not null
             ? booking.MeetingLink.UsesSharedTeamsOrganizer
-            : options.Value.SharedOrganizerEnabled && options.Value.SharedOrganizerPilotTutorBcUserIds.Contains(tutorBcUserId);
+            : options.Value.SharedOrganizerEnabled;
         try
         {
             if (booking.MeetingLink?.EncryptedTeamsOrganizerObjectId is not null)

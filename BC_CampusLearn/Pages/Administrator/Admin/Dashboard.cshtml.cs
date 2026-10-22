@@ -103,11 +103,15 @@ public class DashboardModel : PageModel
             .AsNoTracking()
             .CountAsync(cancellationToken);
 
-        int pendingTutorApplications = await _context.Tutors
-            .AsNoTracking()
-            .CountAsync(
-                tutor => tutor.Status == TutorStatus.Pending,
-                cancellationToken);
+        bool canReviewApplications = _currentUserService is null ||
+            _currentUserService.GetRequiredUser().Role == BcUserRole.SuperAdmin;
+        int pendingTutorApplications = canReviewApplications
+            ? await _context.Tutors
+                .AsNoTracking()
+                .CountAsync(
+                    tutor => tutor.Status == TutorStatus.Pending,
+                    cancellationToken)
+            : 0;
 
         int pendingModuleRequests = await _context.TutorModuleChangeRequests
             .AsNoTracking()
