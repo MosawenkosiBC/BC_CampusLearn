@@ -1559,6 +1559,7 @@ namespace BC_CampusLearn.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TutorId"));
 
                     b.Property<int>("ApplicationStage")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(0);
@@ -1607,8 +1608,8 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("InterviewLocation")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
 
                     b.Property<string>("InterviewNotes")
                         .HasMaxLength(4000)
@@ -2000,6 +2001,60 @@ namespace BC_CampusLearn.Migrations
                     b.HasIndex("TutorId");
 
                     b.ToTable("TutorDocuments", (string)null);
+                });
+
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorInterviewMeeting", b =>
+                {
+                    b.Property<Guid>("TutorInterviewMeetingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ApplicationSubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("CreatedByBcUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EventId")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<string>("JoinUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("OrganizerObjectId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("RequestJson")
+                        .IsRequired()
+                        .HasMaxLength(30000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("ScheduledStart")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("TutorId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("TutorInterviewMeetingId");
+
+                    b.HasIndex("TutorId", "ApplicationSubmittedAt")
+                        .IsUnique();
+
+                    b.ToTable("TutorInterviewMeetings");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorModuleChangeRequest", b =>

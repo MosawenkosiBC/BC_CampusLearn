@@ -651,10 +651,10 @@ public static class TutorApplicationReview
                 "Interview preparation notes cannot exceed 1,000 characters.");
         }
 
-        if (normalizedLocation.Length > 500)
+        if (normalizedLocation.Length > 2048)
         {
             return ShortlistResult.Failure(
-                "The interview location or meeting link cannot exceed 500 characters.");
+                "The interview location or meeting link cannot exceed 2,048 characters.");
         }
 
         if (preparation.DurationMinutes is < 15 or > 240)

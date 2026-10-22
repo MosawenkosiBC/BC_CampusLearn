@@ -10,6 +10,7 @@
     <link rel="stylesheet"
           href="~/css/admin-applications.css"
           asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-interview-scheduling.css" asp-append-version="true" />
 }
 
 <section class="admin-applications" aria-labelledby="applications-title">
@@ -616,7 +617,7 @@
         @foreach (var candidate in Model.Candidates)
         {
             <dialog id="shortlist-candidate-@candidate.TutorId"
-                    class="admin-application-modal shortlist-review-modal"
+                    class="admin-application-modal shortlist-review-modal shortlist-meeting-modal"
                     data-shortlist-review-modal
                     data-show="@((Model.OpenShortlistCandidateId == candidate.TutorId).ToString().ToLowerInvariant())"
                     aria-labelledby="shortlist-candidate-title-@candidate.TutorId">
@@ -630,6 +631,8 @@
                     <p>Submitted @candidate.SubmittedAt.ToString("dd MMMM yyyy")</p>
                 </header>
 
+                <div class="shortlist-meeting-columns">
+                <div class="shortlist-applicant-column">
                 <section class="shortlist-modal-section" aria-labelledby="applicant-details-@candidate.TutorId">
                     <h3 id="applicant-details-@candidate.TutorId">Applicant details</h3>
 
@@ -753,7 +756,7 @@
                                           name="InterviewPreparation.Notes"
                                           rows="4"
                                           maxlength="1000"
-                                          placeholder="Add notes for the interview panel."></textarea>
+                                          placeholder="Add notes for the interview panel.">@candidate.InterviewPreparationNotes</textarea>
 
                                 <div class="shortlist-notes-actions">
                                     <button type="submit"
@@ -799,6 +802,11 @@
                     </div>
                 </details>
 
+                </div>
+                @await Html.PartialAsync("_InterviewSchedule", new BC_CampusLearn.Models.ViewModels.InterviewScheduleViewModel(
+                    candidate.TutorId, Model.GetMeetingInput(candidate), Model.SchedulingAdmin?.Email, Model.PanelDirectory,
+                    Model.InterviewMeetings.ContainsKey(candidate.TutorId), Model.FailedMeetingTutorId == candidate.TutorId ? Model.MeetingError : null, Model.Search))
+                </div>
                 <footer class="shortlist-modal-footer">
                     <button type="button"
                             class="shortlist-reject-button"
@@ -814,12 +822,9 @@
                             data-communication-modal-id="candidate-email-@candidate.TutorId">
                         Communicate
                     </button>
-                    <button type="button"
-                            class="shortlist-interview-button"
-                            aria-haspopup="dialog"
-                            data-interview-confirm-open
-                            data-interview-confirm-modal-id="shortlist-interview-confirm-@candidate.TutorId">
-                        Move to interview
+                    <button type="submit" form="interview-meeting-@candidate.TutorId"
+                            class="shortlist-interview-button" data-create-interview>
+                        @(Model.InterviewMeetings.ContainsKey(candidate.TutorId) ? "Retry meeting & move to interview" : "Create meeting & move to interview")
                     </button>
                 </footer>
             </dialog>
@@ -1165,9 +1170,13 @@ Mzala Connect Tutor Team</textarea>
                             </div>
                         </div>
                         <div class="interview-room-launch-actions">
-                            @if (candidate.HasInterviewMeetingLink)
+                            @if (Model.InterviewMeetings.ContainsKey(candidate.TutorId))
                             {
-                                <a href="@candidate.InterviewLocation"
+                                <button type="button" class="interview-room-card-open" data-edit-interview-open="edit-interview-@candidate.TutorId">Edit interview</button>
+                            }
+                            @if (Model.GetInterviewMeetingLink(candidate) is { } meetingLink)
+                            {
+                                <a href="@meetingLink"
                                    class="interview-teams-button"
                                    target="_blank"
                                    rel="noopener noreferrer">
@@ -1362,6 +1371,22 @@ Mzala Connect Tutor Team</textarea>
                 </form>
             </dialog>
 
+            @if (Model.InterviewMeetings.TryGetValue(candidate.TutorId, out var interviewMeeting))
+            {
+                <dialog id="edit-interview-@candidate.TutorId" class="admin-application-modal interview-edit-modal"
+                        data-interview-edit-modal data-show="@((Model.OpenInterviewEditCandidateId == candidate.TutorId).ToString().ToLowerInvariant())"
+                        data-parent-id="interview-candidate-@candidate.TutorId" aria-labelledby="edit-interview-title-@candidate.TutorId">
+                    <header class="shortlist-review-header"><h2 id="edit-interview-title-@candidate.TutorId">@candidate.DisplayName</h2></header>
+                    @await Html.PartialAsync("_InterviewSchedule", new BC_CampusLearn.Models.ViewModels.InterviewScheduleViewModel(
+                        candidate.TutorId, Model.GetMeetingInput(candidate), Model.SchedulingAdmin?.Email, Model.PanelDirectory,
+                        interviewMeeting.CompletedAt is null, Model.FailedMeetingTutorId == candidate.TutorId ? Model.MeetingError : null, Model.Search, true))
+                    <footer class="shortlist-modal-footer">
+                        <button type="button" class="interview-schedule-cancel" data-edit-interview-close>Cancel</button>
+                        <button type="submit" class="shortlist-interview-button" form="interview-meeting-@candidate.TutorId" data-create-interview>Save &amp; send update</button>
+                    </footer>
+                </dialog>
+            }
+
             <dialog id="interview-room-@candidate.TutorId"
                     class="admin-application-modal interview-room-modal"
                     data-interview-room-modal
@@ -1433,4 +1458,5 @@ Mzala Connect Tutor Team</textarea>
     <script src="~/js/components/pagination.js" asp-append-version="true"></script>
     <script src="~/js/admin-application-selection.js" asp-append-version="true"></script>
     <script src="~/js/admin-applications.js" asp-append-version="true"></script>
+    <script src="~/js/admin-interview-scheduling.js" asp-append-version="true"></script>
 }

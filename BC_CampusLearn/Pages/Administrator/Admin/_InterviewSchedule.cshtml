@@ -1,0 +1,87 @@
+@model BC_CampusLearn.Models.ViewModels.InterviewScheduleViewModel
+<section class="interview-scheduler" aria-labelledby="schedule-title-@Model.TutorId">
+    <header class="interview-scheduler-heading">
+        <img class="interview-teams-icon" src="~/images/microsoft-teams.svg" alt="" aria-hidden="true" />
+        <div><h3 id="schedule-title-@Model.TutorId">@(Model.Editing ? "Edit interview" : "Schedule interview")</h3><p>Microsoft Teams</p></div>
+    </header>
+    <div class="interview-organiser">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M0 0h24v24H0z" fill="none" />
+            <g fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16v-2" />
+                <path d="M5 15a7 7 0 1 1 14 0a7 7 0 0 1-14 0Z" />
+                <path stroke-linecap="round" d="M16.5 9.5v-3a4.5 4.5 0 1 0-9 0v3" />
+            </g>
+        </svg>
+        <div><span>Meeting organiser</span><strong>mzalaconnect@belgiumcampus.ac.za</strong></div>
+    </div>
+    @if (!string.IsNullOrEmpty(Model.Error))
+    {
+        <div class="interview-schedule-error" role="alert">@Model.Error</div>
+    }
+    @if (Model.Reserved)
+    {
+        <p class="interview-reservation-note">@(Model.Editing ? "An update is saved. Retry to finish updating this same meeting." : "A meeting request is saved. Retry to finish this same invitation without creating another meeting.")</p>
+    }
+    <form id="interview-meeting-@Model.TutorId" method="post" asp-page-handler="@(Model.Editing ? "UpdateInterview" : "ScheduleInterview")" data-interview-meeting-form data-admin-email="@Model.AdminEmail" data-reserved="@Model.Reserved.ToString().ToLowerInvariant()" data-editing="@Model.Editing.ToString().ToLowerInvariant()">
+        <input type="hidden" name="tutorId" value="@Model.TutorId" />
+        <input type="hidden" name="Search" value="@Model.Search" />
+        <fieldset disabled="@Model.Reserved">
+            <label for="meeting-title-@Model.TutorId">Meeting title</label>
+            <input id="meeting-title-@Model.TutorId" name="Meeting.Title" value="@Model.Input.Title" maxlength="200" required />
+            <div class="interview-schedule-grid">
+                <div><label for="meeting-date-@Model.TutorId">Date</label><input id="meeting-date-@Model.TutorId" type="date" name="Meeting.Date" value="@Model.Input.Date" required /></div>
+                <div><label for="meeting-time-@Model.TutorId">Start time</label><input id="meeting-time-@Model.TutorId" type="time" name="Meeting.Time" value="@Model.Input.Time" required /></div>
+                <div><label for="meeting-duration-@Model.TutorId">Duration</label><select id="meeting-duration-@Model.TutorId" name="Meeting.DurationMinutes">
+                    @foreach (int duration in new[] { 15, 30, 45, 60, 90, 120, 180, 240 })
+                    {
+                        var durationLabel = duration < 60
+                            ? $"{duration} minutes"
+                            : duration == 60 ? "1 hour" : $"{(duration / 60m).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)} hours";
+                        <option value="@duration" selected="@(duration == Model.Input.DurationMinutes)">@durationLabel</option>
+                    }
+                </select></div>
+            </div>
+            <p class="interview-timezone">South Africa Standard Time (UTC+02:00)</p>
+            <div class="interview-panel-heading"><h4>Interview panel</h4><p>@(Model.Editing ? "Add or remove panel members, then send the update." : "Add panel members before creating the meeting.")</p></div>
+            <div class="interview-panel-search">
+                <div class="interview-panel-picker" data-panel-picker>
+                    <label class="visually-hidden" for="panel-search-@Model.TutorId">Search administrators</label>
+                    <input id="panel-search-@Model.TutorId" type="text" placeholder="Search administrators" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="panel-directory-@Model.TutorId" aria-describedby="panel-error-@Model.TutorId" data-panel-search />
+                    <div class="interview-panel-options" id="panel-directory-@Model.TutorId" role="listbox" aria-label="Administrators" data-panel-options hidden>
+                        @for (int i = 0; i < Model.Directory.Count; i++)
+                        {
+                            var person = Model.Directory[i];
+                            <button type="button" id="panel-option-@Model.TutorId-@i" role="option" aria-selected="false" tabindex="-1" data-panel-option data-email="@person.Email" data-name="@person.Name"><strong>@person.Name</strong><small>@person.Email</small></button>
+                        }
+                        <p data-panel-empty hidden>No administrators found.</p>
+                    </div>
+                </div>
+                <button type="button" data-panel-add>+ Add</button>
+            </div>
+            <p class="interview-panel-error" id="panel-error-@Model.TutorId" data-panel-error role="status" aria-live="polite"></p>
+            <ul class="interview-panel-list" data-panel-list>
+                @for (int i = 0; i < Model.Input.Panel.Count; i++)
+                {
+                    var member = Model.Input.Panel[i];
+                    bool isYou = string.Equals(member.Email, Model.AdminEmail, StringComparison.OrdinalIgnoreCase);
+                    <li data-panel-member data-email="@member.Email">
+                        <span class="interview-panel-avatar" aria-hidden="true">@((string.IsNullOrWhiteSpace(member.Name) ? member.Email ?? "?" : member.Name).FirstOrDefault().ToString().ToUpperInvariant())</span>
+                        <span class="interview-panel-person"><strong>@(member.Name ?? member.Email) @if (isYou) { <span class="interview-you">You</span> }</strong><small>@member.Email</small></span>
+                        <input type="hidden" name="Meeting.Panel[@i].Email" value="@member.Email" data-panel-email />
+                        <input type="hidden" name="Meeting.Panel[@i].Name" value="@member.Name" data-panel-name />
+                        <select name="Meeting.Panel[@i].Optional" aria-label="Attendance for @member.Name" data-panel-optional><option value="false" selected="@(!member.Optional)">Required</option><option value="true" selected="@member.Optional">Optional</option></select>
+                        <button type="button" data-panel-remove aria-label="Remove @member.Name from panel">&times;</button>
+                    </li>
+                }
+            </ul>
+            @if (Model.Editing)
+            {
+                <p class="interview-field-help">Attendees receive calendar updates when you save.</p>
+            }
+            <label for="meeting-message-@Model.TutorId">Message to attendees</label>
+            <textarea id="meeting-message-@Model.TutorId" name="Meeting.Message" maxlength="4000" rows="3" readonly="@Model.Editing">@Model.Input.Message</textarea>
+            <p class="interview-field-help">@(Model.Editing ? "The original invitation message and Teams link are retained." : "The Teams join link is added automatically.")</p>
+        </fieldset>
+    </form>
+</section>

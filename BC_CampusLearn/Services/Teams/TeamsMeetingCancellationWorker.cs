@@ -13,6 +13,8 @@ public sealed class TeamsMeetingCancellationWorker(
                 await using AsyncServiceScope scope = scopes.CreateAsyncScope();
                 await scope.ServiceProvider.GetRequiredService<IBookingTeamsMeetingService>()
                     .ProcessPendingCancellationsAsync(stoppingToken);
+                await scope.ServiceProvider.GetRequiredService<InterviewTeamsMeetingService>()
+                    .ProcessCancellationsAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { return; }
             catch (Exception exception)

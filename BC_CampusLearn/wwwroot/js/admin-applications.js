@@ -726,7 +726,10 @@ Mzala Connect Tutor Team`
             }
             const returnModalId = modal.dataset.returnModalId;
             if (returnModalId) {
-                document.getElementById(returnModalId)?.showModal();
+                const returnModal = document.getElementById(returnModalId);
+                if (returnModal && !returnModal.open) {
+                    returnModal.showModal();
+                }
             }
         });
 
@@ -938,7 +941,10 @@ Mzala Connect Tutor Team`;
                     return;
                 }
 
-                button.closest("dialog")?.close();
+                const parentModal = button.closest("dialog");
+                if (!parentModal?.matches(".shortlist-meeting-modal")) {
+                    parentModal?.close();
+                }
                 emailModal.showModal();
             });
         });

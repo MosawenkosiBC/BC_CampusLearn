@@ -14,6 +14,32 @@ namespace BC_CampusLearn.Tests;
 
 public class AdminApplicationsTests
 {
+    [Theory]
+    [InlineData(null, "https://teams.microsoft.com/l/meetup-join/saved", false, "https://teams.microsoft.com/l/meetup-join/saved")]
+    [InlineData("Microsoft Teams", "https://teams.microsoft.com/l/meetup-join/saved", false, "https://teams.microsoft.com/l/meetup-join/saved")]
+    [InlineData("https://teams.microsoft.com/legacy", null, false, "https://teams.microsoft.com/legacy")]
+    [InlineData("https://teams.microsoft.com/legacy", "invalid", false, "https://teams.microsoft.com/legacy")]
+    [InlineData(null, "https://teams.microsoft.com/cancelled", true, null)]
+    [InlineData(null, null, false, null)]
+    [InlineData("Microsoft Teams", null, false, null)]
+    [InlineData("javascript:alert(1)", "javascript:alert(1)", false, null)]
+    public void InterviewJoinButtonUsesAvailableMeetingLink(
+        string? location, string? savedLink, bool cancelled, string? expected)
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+        using var context = new ApplicationDbContext(options);
+        var page = new ApplicationsModel(context);
+        var candidate = new ApplicationsModel.ApplicationCandidate { TutorId = 1, InterviewLocation = location };
+        page.InterviewMeetings.Add(1, new TutorInterviewMeeting
+        {
+            TutorId = 1, JoinUrl = savedLink,
+            CancelledAt = cancelled ? DateTimeOffset.UtcNow : null
+        });
+
+        Assert.Equal(expected, page.GetInterviewMeetingLink(candidate));
+    }
+
     [Fact]
     public async Task RejectRemainingRequiresConfirmationAndIncludesOtherPagesAndSearchResults()
     {

@@ -30,7 +30,7 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
         builder.Property(tutor => tutor.Status).HasConversion<int>().HasDefaultValue(TutorStatus.Pending).IsConcurrencyToken();
         builder.Property(tutor => tutor.ApplicationStage)
             .HasConversion<int>()
-            .HasDefaultValue(TutorApplicationStage.Submitted);
+            .HasDefaultValue(TutorApplicationStage.Submitted).IsConcurrencyToken();
         builder.Property(tutor => tutor.ShortlistReason)
             .HasMaxLength(1000);
         builder.Property(tutor => tutor.InterviewPreparationNotes)
@@ -38,7 +38,7 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
         builder.Property(tutor => tutor.InterviewNotes)
             .HasMaxLength(4000);
         builder.Property(tutor => tutor.InterviewLocation)
-            .HasMaxLength(500);
+            .HasMaxLength(2048);
         builder.Property(tutor => tutor.IsActive).HasDefaultValue(false);
         builder.Property(tutor => tutor.DeregisteredAt).HasColumnType("datetimeoffset");
         builder.Property(tutor => tutor.DeregisteredByName).HasMaxLength(200);
