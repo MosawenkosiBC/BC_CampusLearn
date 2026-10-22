@@ -11,6 +11,8 @@
             <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" d="M4 5h6m3 0h7m-4 4v6M10 2v6m2 8v6m4-10h4M4 12h9m-1 7h8M4 19h5" />
         </svg><span>General</span>
     </a>
+    @if (User.IsInRole(nameof(BcUserRole.SuperAdmin)))
+    {
     <a asp-page="/Administrator/Settings/Bookings"
        class="@(currentPage.EndsWith("/Bookings", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" aria-hidden="true">
@@ -18,6 +20,7 @@
             <path d="M16 2v4M8 2v4m13 7v-1c0-3.771 0-5.657-1.172-6.828S16.771 4 13 4h-2C7.229 4 5.343 4 4.172 5.172S3 8.229 3 12v2c0 3.771 0 5.657 1.172 6.828S7.229 22 11 22M3 10h18M17.5 18.5a2 2 0 1 0 0-4a2 2 0 0 0 0 4Zm0 0A3.5 3.5 0 0 1 21 22m-3.5-3.5A3.5 3.5 0 0 0 14 22" />
         </svg><span>Bookings &amp; sessions</span>
     </a>
+    }
     <a asp-page="/Administrator/Settings/StudyAreas"
        class="@(currentPage.EndsWith("/StudyAreas", StringComparison.OrdinalIgnoreCase) ? "is-active" : null)">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">

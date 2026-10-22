@@ -1,6 +1,6 @@
 # Mzala Connect shared Teams organiser
 
-New meetings requested by tutor **BcUserId 2** can be created in the calendar of **mzalaconnect@belgiumcampus.ac.za**. That account remains the organiser; the assigned tutor is invited and added as **co-organiser**, and the student is invited as an attendee. Other eligible tutors retain automatic creation using their own calendars. No account password is required: the existing AzureAd tenant ID, application client ID and client secret continue to authenticate Microsoft Graph requests.
+New meetings requested by any active tutor are created in the calendar of **mzalaconnect@belgiumcampus.ac.za** when shared-organiser routing is enabled. That account remains the organiser; the assigned tutor is invited and added as **co-organiser**, and the student is invited as an attendee. No account password is required: the existing AzureAd tenant ID, application client ID and client secret continue to authenticate Microsoft Graph requests.
 
 ## Deploy
 
@@ -12,7 +12,7 @@ New meetings requested by tutor **BcUserId 2** can be created in the calendar of
    ```
 
 3. Merge [the Compose example](teams-shared-organizer.compose.example.yml) into the existing application's `environment:` section. Keep all existing AzureAd credentials, database configuration, encryption-key storage, and uploaded-transcript volume mounts. The environment variable is passed into the container as `TeamsMeetings__SharedOrganizerObjectId`; a value in `.env` alone is not passed unless Compose references it. Recreate the app container through the normal deployment process after changing its environment.
-4. Keep `SharedOrganizerPilotTutorBcUserIds__0=2` to route only the organising tutor with BcUserId 2 through the shared account. `PilotTutorBcUserIds` separately scopes whose completed meetings can be reviewed. `PilotTutorHeadBcUserIds` scopes the logged-in reviewer who can see/use the preview; set that list to the actual pilot Tutor Head's BC user ID. The example uses 2 for both only if that account performs both roles. These allowlists do not restrict automatic meeting creation for other tutors.
+4. Do not configure the former `SharedOrganizerPilotTutorBcUserIds`, `PilotTutorBcUserIds`, or `PilotTutorHeadBcUserIds` settings. They remain bindable for compatibility but no longer restrict access. All active tutors use the shared organiser, and every Tutor Head can review available Teams evidence while `TeamsMeetings__Enabled=true`.
 
 ## Change the account through Super Admin
 
@@ -20,7 +20,7 @@ After a verified Microsoft sign-in, `mzalaconnect@belgiumcampus.ac.za` alone sto
 
 Open **Super Admin → Settings → Bookings & sessions → Teams meeting account**. The form shows the email and **Microsoft Entra Object ID**, initially falling back to the environment values above. Save an account to override the environment pair for future requests. Subsequent account changes can be made here without editing code or restarting the app. Only a Super Admin can save or test these settings, including direct POST requests. Saved changes are recorded in settings audit history.
 
-**Test calendar connection** makes a read-only calendar capability request using the values in the form; it neither saves settings nor creates/invites anyone to a meeting. It verifies calendar access and Teams support, not all artifact/co-organiser permissions. The email is a descriptive account identifier; the verified Entra Object ID determines the calendar used. A saved account overrides both environment fields together. If the shared route is enabled but its account ID is missing/invalid, the pilot request fails rather than silently falling back to the tutor's account.
+**Test calendar connection** makes a read-only calendar capability request using the values in the form; it neither saves settings nor creates/invites anyone to a meeting. It verifies calendar access and Teams support, not all artifact/co-organiser permissions. The email is a descriptive account identifier; the verified Entra Object ID determines the calendar used. A saved account overrides both environment fields together. If the shared route is enabled but its account ID is missing or invalid, meeting creation fails rather than silently falling back to the tutor's account.
 
 The account panel shows whether the effective values come from the server environment or saved Super Admin settings. It opens with a field-specific configuration error when that account is incomplete. Completely blank saved values fall back to the environment; an incomplete nonblank saved account remains visible for correction rather than being combined with a different environment account. Save and Test show progress and an inline result. Saving does not require a successful Microsoft calendar test, and testing does not save the account. If the test reports missing calendar support, ask the institution to check the shared account's Exchange/Outlook calendar in addition to its Teams access.
 
@@ -38,13 +38,13 @@ Each new meeting reservation stores its organiser's tenant/object identity encry
 
 The event and invitation may exist before co-organiser setup finishes. CampusLearn saves the event and retries setup on that same event. It only reports success after Microsoft confirms the tutor's role; the normal confirmation path also refuses to confirm an unfinished shared-account meeting. A co-organiser error does not discard the known event or create another invitation on retry. Cancellation uses the saved organiser even after the feature is disabled or the configured account changes.
 
-## Live pilot check
+## Live check
 
-1. Use a fresh booking assigned to BcUserId 2 and willing test participants. Creation sends real calendar invitations.
+1. Use fresh bookings assigned to different active tutors and willing test participants. Creation sends real calendar invitations.
 2. Create Teams meeting. Verify the invite organiser is Mzala Connect, both tutor and student receive invitations, and the tutor is a co-organiser with the central account absent from the call.
 3. Check the tutor can start/run/end the session and start recording as allowed by institutional policy. Recording is not automatically started by this change.
-4. Complete the session and both reviews. As the configured pilot Tutor Head, verify recording playback and actual tutor/student attendance. Other Tutor Heads should keep their standard review view.
-5. Cancel a separate fresh test booking. Verify the cancellation arrives from the shared account. Test a non-pilot tutor's booking to confirm their calendar path is unchanged.
+4. Complete the session and both reviews. Verify recording playback and actual tutor/student attendance using more than one Tutor Head account.
+5. Cancel a separate fresh test booking. Verify the cancellation arrives from the shared account.
 6. If any stage is denied, inspect the operation and check the shared account's policy and application consent. A successful calendar test does not prove co-organiser or recording access.
 
 References: [calendar event creation](https://learn.microsoft.com/en-us/graph/api/calendar-post-events?view=graph-rest-1.0), [online meeting updates](https://learn.microsoft.com/en-us/graph/api/onlinemeeting-update?view=graph-rest-1.0), [participant roles](https://learn.microsoft.com/en-us/graph/api/resources/meetingparticipantinfo?view=graph-rest-1.0), [Teams application access policy](https://learn.microsoft.com/en-us/graph/cloud-communication-online-meeting-application-access-policy).

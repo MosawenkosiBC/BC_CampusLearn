@@ -1,4 +1,5 @@
 using BC_CampusLearn.Data;
+using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Students;
 using Microsoft.AspNetCore.Mvc;
@@ -7,8 +8,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Pages.Administrator.Tutors;
 
-public class IndexModel(ApplicationDbContext context, IStudentDetailsService studentDetailsService)
-    : ManualTutorPageModel(context, studentDetailsService)
+public class IndexModel(
+    ApplicationDbContext context,
+    IStudentDetailsService studentDetailsService,
+    ICurrentUserService? currentUserService = null)
+    : ManualTutorPageModel(context, studentDetailsService, currentUserService)
 {
     public const int PageSize = 8;
     public const int ApplicationPageSize = 10;
@@ -62,7 +66,10 @@ public class IndexModel(ApplicationDbContext context, IStudentDetailsService stu
 
     private async Task LoadTutorsAsync(CancellationToken cancellationToken)
     {
-        await LoadManualTutorOptionsAsync(cancellationToken);
+        if (CanAddTutor)
+        {
+            await LoadManualTutorOptionsAsync(cancellationToken);
+        }
 
         var query = Context.Tutors.AsNoTracking().Where(tutor =>
             tutor.ApplicationStage == TutorApplicationStage.Placement &&

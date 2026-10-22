@@ -26,8 +26,8 @@
             {
                 <details class="teams-organizer-settings" open="@(ViewData.ModelState.ErrorCount > 0 || Model.TeamsOrganizerConfigurationError is not null || !string.IsNullOrWhiteSpace(Model.TeamsOrganizerMessage))">
                     <summary>Teams meeting account</summary>
-                    <p>New pilot sessions are scheduled by this account. The tutor is invited as co-organiser and the student as attendee. Changes apply to new meeting requests only.</p>
-                    <p>Shared account routing: <strong>@(Model.SharedOrganizerEnabled ? "Enabled for configured pilot tutors" : "Disabled in server configuration")</strong></p>
+                    <p>New sessions are scheduled by this account. The tutor is invited as co-organiser and the student as attendee. Changes apply to new meeting requests only.</p>
+                    <p>Shared account routing: <strong>@(Model.SharedOrganizerEnabled ? "Enabled for all tutors" : "Disabled in server configuration")</strong></p>
                     <p>Current account settings: <strong data-teams-organizer-source>@Model.TeamsOrganizerConfigurationSource</strong></p>
                     <p class="text-danger" role="alert" data-teams-organizer-configuration-error hidden="@(Model.TeamsOrganizerConfigurationError is null)">@Model.TeamsOrganizerConfigurationError</p>
                     <p role="status" aria-live="polite" data-teams-organizer-status hidden="@(string.IsNullOrWhiteSpace(Model.TeamsOrganizerMessage))">@Model.TeamsOrganizerMessage</p>
@@ -128,19 +128,19 @@
                     </div>
                 </div>
                 <div class="settings-subsection">
-                    <div class="settings-subsection-copy"><h3>Administrator Review Period</h3></div>
+                    <div class="settings-subsection-copy"><h3>Superadmin Review Period</h3></div>
                     <div class="settings-review-table-wrap">
                         <table class="settings-review-table">
                             <thead><tr><th scope="col">Setting</th><th scope="col">Date</th><th scope="col" class="settings-review-toggle-heading">Option</th></tr></thead>
                             <tbody>
                                 <tr>
-                                    <th scope="row">Review period start date<small>First session date included in the administrator review period.</small></th>
-                                    <td><div class="settings-field"><label for="admin-review-start-display" class="visually-hidden">Administrator review period start date, day/month/year</label><input asp-for="Input.AdminReviewPeriodStartDate" type="hidden" asp-format="{0:yyyy-MM-dd}" /><input id="admin-review-start-display" type="text" value="@Model.Input.AdminReviewPeriodStartDate.ToString("dd/MM/yyyy")" inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" data-review-date-display data-date-target="Input_AdminReviewPeriodStartDate" /><span asp-validation-for="Input.AdminReviewPeriodStartDate"></span></div></td>
+                                    <th scope="row">Review period start date<small>First session date included in the Superadmin review period.</small></th>
+                                    <td><div class="settings-field"><label for="admin-review-start-display" class="visually-hidden">Superadmin review period start date, day/month/year</label><input asp-for="Input.AdminReviewPeriodStartDate" type="hidden" asp-format="{0:yyyy-MM-dd}" /><input id="admin-review-start-display" type="text" value="@Model.Input.AdminReviewPeriodStartDate.ToString("dd/MM/yyyy")" inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" data-review-date-display data-date-target="Input_AdminReviewPeriodStartDate" /><span asp-validation-for="Input.AdminReviewPeriodStartDate"></span></div></td>
                                     <td class="settings-review-toggle-cell"></td>
                                 </tr>
                                 <tr>
-                                    <th scope="row">Administrator review deadline<small>Final date for administrators to complete their reviews.</small></th>
-                                    <td><div class="settings-field"><label for="admin-review-deadline-display" class="visually-hidden">Administrator review deadline, day/month/year</label><input asp-for="Input.AdminReviewDeadline" type="hidden" asp-format="{0:yyyy-MM-dd}" /><input id="admin-review-deadline-display" type="text" value="@Model.Input.AdminReviewDeadline.ToString("dd/MM/yyyy")" inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" data-review-date-display data-date-target="Input_AdminReviewDeadline" /><span asp-validation-for="Input.AdminReviewDeadline"></span></div></td>
+                                    <th scope="row">Superadmin review deadline<small>Final date for Superadmins to complete both review stages.</small></th>
+                                    <td><div class="settings-field"><label for="admin-review-deadline-display" class="visually-hidden">Superadmin review deadline, day/month/year</label><input asp-for="Input.AdminReviewDeadline" type="hidden" asp-format="{0:yyyy-MM-dd}" /><input id="admin-review-deadline-display" type="text" value="@Model.Input.AdminReviewDeadline.ToString("dd/MM/yyyy")" inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" data-review-date-display data-date-target="Input_AdminReviewDeadline" /><span asp-validation-for="Input.AdminReviewDeadline"></span></div></td>
                                     <td class="settings-review-toggle-cell"><label class="settings-switch settings-table-switch"><input asp-for="Input.IsAdminReviewDeadlineRecurring" /><span aria-hidden="true"></span><strong>Repeat monthly</strong></label></td>
                                 </tr>
                                 <tr>

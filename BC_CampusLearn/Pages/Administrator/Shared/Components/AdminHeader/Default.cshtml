@@ -34,10 +34,13 @@
                     <span>@Model.NotificationCount pending</span>
                 </div>
                 <div class="admin-notification-list">
+                    @if (Model.IsSuperAdmin)
+                    {
                     <div class="admin-notification-item">
                         <span>Tutor applications</span>
                         <strong>@Model.PendingTutorApplications</strong>
                     </div>
+                    }
                     <div class="admin-notification-item">
                         <span>Module change requests</span>
                         <strong>@Model.PendingModuleRequests</strong>

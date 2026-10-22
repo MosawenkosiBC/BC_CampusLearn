@@ -8,13 +8,15 @@ public class AdminHeaderViewModel
 
     public string RoleName { get; set; } = "Admin";
 
+    public bool IsSuperAdmin { get; set; }
+
     public int PendingTutorApplications { get; set; }
 
     public int PendingModuleRequests { get; set; }
 
     public int PendingDeregistrationRequests { get; set; }
 
-    public int NotificationCount => PendingTutorApplications +
+    public int NotificationCount => (IsSuperAdmin ? PendingTutorApplications : 0) +
         PendingModuleRequests +
         PendingDeregistrationRequests;
 }

@@ -11,10 +11,12 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Pages.Administrator.Admin;
 
+[Authorize(Roles = nameof(BcUserRole.SuperAdmin))]
 public class ApplicationsModel : ManualTutorPageModel
 {
     protected override IActionResult RedirectAfterAddTutor() =>
@@ -33,7 +35,8 @@ public class ApplicationsModel : ManualTutorPageModel
         ITutorApplicationEmailSender? emailSender = null,
         IStudentDetailsService? studentDetailsService = null,
         IWebHostEnvironment? environment = null,
-        InterviewTeamsMeetingService? interviewMeetings = null) : base(context, studentDetailsService)
+        InterviewTeamsMeetingService? interviewMeetings = null) : base(
+            context, studentDetailsService, currentUserService)
     {
         _context = context;
         _currentUserService = currentUserService;
