@@ -3,6 +3,8 @@
 
     const tabs = [...document.querySelectorAll("[data-review-tab]")];
     const panels = [...document.querySelectorAll("[data-review-panel]")];
+    const evidencePanels = [...document.querySelectorAll("[data-review-evidence-for]")];
+    const reviewLayout = document.querySelector("[data-review-layout]");
 
     const activateTab = (tab, moveFocus = false) => {
         tabs.forEach(candidate => {
@@ -15,6 +17,20 @@
         panels.forEach(panel => {
             panel.hidden = panel.id !== tab.dataset.reviewTab;
         });
+
+        let showsEvidence = false;
+        evidencePanels.forEach(panel => {
+            const isVisible = panel.dataset.reviewEvidenceFor === tab.dataset.reviewTab;
+            panel.hidden = !isVisible;
+            showsEvidence ||= isVisible;
+            panel.querySelectorAll("video").forEach((video, index) => {
+                if (isVisible && index === 0) {
+                    video.play().catch(() => { });
+                }
+            });
+        });
+        reviewLayout?.classList.toggle("tutor-head-evidence-layout", showsEvidence);
+        reviewLayout?.classList.toggle("tutor-head-standard-review-layout", !showsEvidence);
 
         if (moveFocus) tab.focus();
     };
@@ -33,6 +49,9 @@
             activateTab(tabs[nextIndex], true);
         });
     });
+
+    const selectedTab = tabs.find(tab => tab.getAttribute("aria-selected") === "true");
+    if (selectedTab) activateTab(selectedTab);
 
     document.querySelectorAll("[data-review-pager]").forEach(pager => {
         const answers = [...pager.querySelectorAll("[data-review-answer]")];
