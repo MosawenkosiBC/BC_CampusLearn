@@ -60,6 +60,9 @@
 .admin-session-answers dt,
 .admin-session-review-form legend { color: #414849; font-family: var(--campus-font-family); font-size: 1rem; font-weight: 600; line-height: inherit; }
 .admin-session-answers dd { margin: .4rem 0 0; white-space: pre-wrap; }
+.admin-session-mode-options { display: flex; flex-wrap: wrap; gap: .85rem; }
+.admin-session-mode-options label { align-items: center; display: inline-flex; gap: .4rem; }
+.admin-session-mode-options input { accent-color: #363c3d; }
 .admin-session-review-pagination { align-items: center; display: flex; gap: .75rem; justify-content: center; margin-top: 1.25rem; }
 .admin-session-review-pagination[hidden] { display: none; }
 .admin-session-review-pagination button { border: 0; border-radius: .5rem; font-weight: 600; min-height: 2.5rem; padding: .4rem .9rem; }

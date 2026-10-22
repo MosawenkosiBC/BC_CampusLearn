@@ -225,7 +225,17 @@
                                 {
                                     <div data-review-answer>
                                         <dt>@answer.Question</dt>
-                                        <dd>@answer.Value</dd>
+                                        @if (answer.Question == "Mode of tutoring")
+                                        {
+                                            <dd class="admin-session-mode-options">
+                                                <label><input type="radio" name="display-tutoring-mode" disabled checked="@(answer.Value == "Online")" /> <span>Online</span></label>
+                                                <label><input type="radio" name="display-tutoring-mode" disabled checked="@(answer.Value == "Face-to-face")" /> <span>Face-to-face</span></label>
+                                            </dd>
+                                        }
+                                        else
+                                        {
+                                            <dd>@answer.Value</dd>
+                                        }
                                     </div>
                                 }
                             </dl>

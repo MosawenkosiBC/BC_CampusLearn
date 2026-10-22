@@ -454,6 +454,20 @@ public class BookingServiceTests
                 studyAreaName));
     }
 
+    [Theory]
+    [InlineData("Online", "Online")]
+    [InlineData(" online ", "Online")]
+    [InlineData("Main Library & Study area", "Face-to-face")]
+    [InlineData("Chi study", "Face-to-face")]
+    public void DeliveryModeComesFromBookedStudyArea(
+        string studyAreaName,
+        string expected)
+    {
+        Assert.Equal(
+            expected,
+            TutoringModeLocationPolicy.GetDeliveryMode(studyAreaName));
+    }
+
     [Fact]
     public async Task CreateBookingAsync_IdentifiesExpiredAvailability()
     {

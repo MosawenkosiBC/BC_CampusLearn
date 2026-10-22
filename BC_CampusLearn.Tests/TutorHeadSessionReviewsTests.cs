@@ -42,6 +42,16 @@ public class TutorHeadSessionReviewsTests
         Assert.True(page.CanWatchRecording);
         Assert.True(page.HasTranscript);
         Assert.NotEmpty(page.TutorReviewAnswers);
+        Assert.Equal(
+            "Online",
+            page.StudentReviewAnswers.Single(answer =>
+                answer.Question == "Mode of tutoring").Value);
+        Assert.DoesNotContain(page.StudentReviewAnswers, answer =>
+            answer.Question is "Platform experience" or
+                "Tutor kept to the arranged session time" or
+                "Topic covered" or
+                "Would use the tutoring service again" or
+                "Suggestions for the peer-tutoring programme");
     }
 
     [Fact]
@@ -853,7 +863,7 @@ public class TutorHeadSessionReviewsTests
             assignment,
             "Reviewed Student",
             BookingStatus.Completed,
-            new StudentEvaluation { TutorTopic = "Loops" },
+            new StudentEvaluation { TutorResponse = "Loops" },
             new TutorStudentEvaluation { TutorComments = "Covered loops." });
         booking.Summary = "Please cover loops.";
         context.TutorCourseModules.Add(assignment);
@@ -953,7 +963,7 @@ public class TutorHeadSessionReviewsTests
                 assignment,
                 "Reviewed Student",
                 BookingStatus.Completed,
-                new StudentEvaluation { TutorTopic = "Loops" },
+                new StudentEvaluation { TutorResponse = "Loops" },
                 new TutorStudentEvaluation
                 {
                     TutorComments = "Covered loops.",
@@ -1022,7 +1032,7 @@ public class TutorHeadSessionReviewsTests
             assignment,
             "Reviewed Student",
             BookingStatus.Completed,
-            new StudentEvaluation { TutorTopic = "Loops" },
+            new StudentEvaluation { TutorResponse = "Loops" },
             new TutorStudentEvaluation
             {
                 TutorComments = "Covered loops.",
@@ -1087,7 +1097,7 @@ public class TutorHeadSessionReviewsTests
             assignment,
             "Reviewed Student",
             BookingStatus.Completed,
-            new StudentEvaluation { TutorTopic = "Loops" },
+            new StudentEvaluation { TutorResponse = "Loops" },
             new TutorStudentEvaluation
             {
                 TutorComments = "Covered loops.",

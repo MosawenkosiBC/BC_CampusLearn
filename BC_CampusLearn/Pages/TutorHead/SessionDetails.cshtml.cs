@@ -4,6 +4,7 @@ using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Gemini;
 using BC_CampusLearn.Services.Teams;
+using BC_CampusLearn.Services.Bookings;
 using System.Security.Cryptography;
 using System.IO.Compression;
 using System.Text.Json;
@@ -256,8 +257,7 @@ public class SessionDetailsModel(
         }
 
         Session = session;
-        StudentReviewAnswers = BuildStudentReviewAnswers(
-            session.StudentEvaluation!);
+        StudentReviewAnswers = BuildStudentReviewAnswers(session);
         TutorReviewAnswers = BuildTutorReviewAnswers(
             session.TutorEvaluation!);
         TutorHeadReview = session.SessionReviews.FirstOrDefault(review =>
@@ -661,23 +661,18 @@ public class SessionDetailsModel(
     };
 
     private static IReadOnlyList<ReviewAnswer> BuildStudentReviewAnswers(
-        StudentEvaluation review) =>
+        Booking session) =>
     [
-        new("Mode of tutoring", Answer(review.TutoringMode)),
-        new("Platform experience", Answer(review.PlatformExperience)),
-        new("Tutor listened and responded clearly", Answer(review.TutorResponse)),
-        new("Tutor showed interest in teaching the module", Answer(review.TutorInterest)),
-        new("Tutor was friendly and created a comfortable environment", Answer(review.TutorFriendliness)),
-        new("Tutor explained the subject clearly", Answer(review.TutorExplanation)),
-        new("Tutor encouraged participation", Answer(review.TutorParticipation)),
-        new("Tutor kept to the arranged session time", Answer(review.TutorPunctuality)),
-        new("Tutor suggested ways to improve study habits", Answer(review.TutorAdvice)),
-        new("How the tutor helped", Answer(review.TutorHelp)),
-        new("Topic covered", Answer(review.TutorTopic)),
-        new("Would use the tutoring service again", Answer(review.TutoringService)),
-        new("Suggestions for the peer-tutoring programme", Answer(review.ImproveBCProgramme)),
-        new("Overall tutoring experience", $"{review.ModeRating}/5"),
-        new("Tutoring platform rating", $"{review.PlatformRating}/5")
+        new("Mode of tutoring", TutoringModeLocationPolicy.GetDeliveryMode(session.Location)),
+        new("Tutor listened and responded clearly", Answer(session.StudentEvaluation!.TutorResponse)),
+        new("Tutor showed interest in teaching the module", Answer(session.StudentEvaluation.TutorInterest)),
+        new("Tutor was friendly and created a comfortable environment", Answer(session.StudentEvaluation.TutorFriendliness)),
+        new("Tutor explained the subject clearly", Answer(session.StudentEvaluation.TutorExplanation)),
+        new("Tutor encouraged participation", Answer(session.StudentEvaluation.TutorParticipation)),
+        new("Tutor suggested ways to improve study habits", Answer(session.StudentEvaluation.TutorAdvice)),
+        new("How the tutor helped", Answer(session.StudentEvaluation.TutorHelp)),
+        new("Overall tutoring experience", $"{session.StudentEvaluation.ModeRating}/5"),
+        new("Tutoring platform rating", $"{session.StudentEvaluation.PlatformRating}/5")
     ];
 
     private static IReadOnlyList<ReviewAnswer> BuildTutorReviewAnswers(

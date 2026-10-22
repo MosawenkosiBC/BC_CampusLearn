@@ -688,7 +688,7 @@ body > footer small {
 .tutor-head-evidence-layout > * { min-width: 0; min-height: 0; }
 .tutor-head-review-panels > .admin-session-review-panel-card:not([hidden]) { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .tutor-head-review-panels .admin-session-review-panel-heading { flex: 0 0 auto; }
-.tutor-head-review-panels .admin-session-review-body { min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; flex: 1; }
+.tutor-head-review-panels .admin-session-review-body { min-height: 0; overflow-y: auto; overscroll-behavior-y: auto; scrollbar-gutter: stable; flex: 1; }
 .tutor-head-video-card { display: flex; flex-direction: column; gap: .75rem; background: #fff; border: 1px solid #f0f1f2; border-radius: .5rem; box-shadow: 0 .25rem .8rem rgba(25,30,38,.1); padding: 1.25rem; overflow: hidden; }
 .tutor-head-video-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; flex: 0 0 auto; }
 .tutor-head-video-card .tutor-head-video-heading h2 { font-size: 1.05rem; margin: 0; }

@@ -4,6 +4,7 @@ using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Sessions;
 using BC_CampusLearn.Services.Notifications;
+using BC_CampusLearn.Services.Bookings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -283,7 +284,6 @@ public class SessionDetailsModel : PageModel
             "Strongly agree", "Agree", "Neither agree nor disagree",
             "Disagree", "Strongly disagree"
         ];
-        string[] tutoringModes = ["Online", "Face-to-face"];
         string[] helpOptions =
         [
             "Test Preparation", "Explanation of Content",
@@ -291,19 +291,13 @@ public class SessionDetailsModel : PageModel
             "Problem Solving Technique"
         ];
         bool selectionsAreValid =
-            tutoringModes.Contains(EvaluationInput.TutoringMode) &&
             threeWay.Contains(EvaluationInput.TutorResponse) &&
             threeWay.Contains(EvaluationInput.TutorInterest) &&
             agreement.Contains(EvaluationInput.TutorFriendliness) &&
             agreement.Contains(EvaluationInput.TutorExplanation) &&
             agreement.Contains(EvaluationInput.TutorParticipation) &&
-            threeWay.Contains(EvaluationInput.TutorPunctuality) &&
             agreement.Contains(EvaluationInput.TutorAdvice) &&
-            helpOptions.Contains(EvaluationInput.TutorHelp) &&
-            threeWay.Contains(EvaluationInput.TutoringService) &&
-            !string.IsNullOrWhiteSpace(EvaluationInput.PlatformExperience) &&
-            !string.IsNullOrWhiteSpace(EvaluationInput.TutorTopic) &&
-            !string.IsNullOrWhiteSpace(EvaluationInput.ImproveBCProgramme);
+            helpOptions.Contains(EvaluationInput.TutorHelp);
         if (!ModelState.IsValid || !selectionsAreValid)
         {
             SessionActionError = true;
@@ -314,20 +308,16 @@ public class SessionDetailsModel : PageModel
         _context.StudentEvaluations.Add(new StudentEvaluation
         {
             BookingId = bookingId,
-            TutoringMode = EvaluationInput.TutoringMode,
-            PlatformExperience = EvaluationInput.PlatformExperience.Trim(),
+            TutoringMode = TutoringModeLocationPolicy.GetDeliveryMode(
+                booking.Location),
             ModeRating = EvaluationInput.ModeRating!.Value,
             TutorResponse = EvaluationInput.TutorResponse,
             TutorInterest = EvaluationInput.TutorInterest,
             TutorFriendliness = EvaluationInput.TutorFriendliness,
             TutorExplanation = EvaluationInput.TutorExplanation,
             TutorParticipation = EvaluationInput.TutorParticipation,
-            TutorPunctuality = EvaluationInput.TutorPunctuality,
             TutorAdvice = EvaluationInput.TutorAdvice,
             TutorHelp = EvaluationInput.TutorHelp,
-            TutorTopic = EvaluationInput.TutorTopic.Trim(),
-            TutoringService = EvaluationInput.TutoringService,
-            ImproveBCProgramme = EvaluationInput.ImproveBCProgramme.Trim(),
             PlatformRating = EvaluationInput.PlatformRating!.Value
         });
         await _context.SaveChangesAsync(cancellationToken);

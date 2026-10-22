@@ -501,22 +501,11 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body tutor-evaluation-form">
-                        <fieldset class="evaluation-question" data-evaluation-required>
-                            <legend>1. Mode of tutoring <span aria-hidden="true">*</span></legend>
-                            <div class="evaluation-radio-group">
-                                <label><input asp-for="EvaluationInput.TutoringMode" id="tutoring-mode-online" type="radio" value="Online" /> <span>Online</span></label>
-                                <label><input asp-for="EvaluationInput.TutoringMode" id="tutoring-mode-face" type="radio" value="Face-to-face" /> <span>Face-to-face</span></label>
-                            </div>
-                        </fieldset>
-                        <div class="evaluation-question" data-evaluation-required>
-                            <label asp-for="EvaluationInput.PlatformExperience">2. What was your experience with the platform? <span aria-hidden="true">*</span></label>
-                            <textarea asp-for="EvaluationInput.PlatformExperience" rows="3" maxlength="1000"></textarea>
-                        </div>
                         @{
                             var threeWayQuestions = new[]
                             {
-                                (3, "TutorResponse", "Did the tutor listen carefully and respond clearly and directly?"),
-                                (4, "TutorInterest", "Did the tutor understand and show genuine interest in teaching the module?")
+                                (1, "TutorResponse", "Did the tutor listen carefully and respond clearly and directly?"),
+                                (2, "TutorInterest", "Did the tutor understand and show genuine interest in teaching the module?")
                             };
                         }
                         @foreach (var question in threeWayQuestions)
@@ -535,9 +524,9 @@
                         @{
                             var agreementQuestions = new[]
                             {
-                                (5, "TutorFriendliness", "The tutor was friendly and helped me feel comfortable."),
-                                (6, "TutorExplanation", "The tutor explained the subject in a way I understood and could apply independently."),
-                                (7, "TutorParticipation", "The tutor encouraged my participation in the session.")
+                                (3, "TutorFriendliness", "The tutor was friendly and helped me feel comfortable."),
+                                (4, "TutorExplanation", "The tutor explained the subject in a way I understood and could apply independently."),
+                                (5, "TutorParticipation", "The tutor encouraged my participation in the session.")
                             };
                             var agreementOptions = new[]
                             {
@@ -569,16 +558,7 @@
                             </fieldset>
                         }
                         <fieldset class="evaluation-question" data-evaluation-required>
-                            <legend>8. Did the tutor commit to the arranged session times? <span aria-hidden="true">*</span></legend>
-                            <div class="evaluation-radio-group">
-                                @foreach (string option in new[] { "Yes", "No", "Maybe" })
-                                {
-                                    <label><input asp-for="EvaluationInput.TutorPunctuality" id="punctuality-@option.ToLowerInvariant()" type="radio" value="@option" /> <span>@option</span></label>
-                                }
-                            </div>
-                        </fieldset>
-                        <fieldset class="evaluation-question" data-evaluation-required>
-                            <legend>9. Did the tutor suggest ways to improve your study habits and become a more independent learner? <span aria-hidden="true">*</span></legend>
+                            <legend>6. Did the tutor suggest ways to improve your study habits and become a more independent learner? <span aria-hidden="true">*</span></legend>
                             <div class="evaluation-radio-group evaluation-radio-group-stack evaluation-sentiment-group">
                                 @foreach (var option in agreementOptions)
                                 {
@@ -594,7 +574,7 @@
                             </div>
                         </fieldset>
                         <fieldset class="evaluation-question" data-evaluation-required>
-                            <legend>10. In what way did the tutor help you? <span aria-hidden="true">*</span></legend>
+                            <legend>7. In what way did the tutor help you? <span aria-hidden="true">*</span></legend>
                             <div class="evaluation-radio-group evaluation-radio-group-stack">
                                 @foreach (string option in new[] { "Test Preparation", "Explanation of Content", "Understanding the Concept", "Memory Techniques", "Problem Solving Technique" })
                                 {
@@ -602,25 +582,8 @@
                                 }
                             </div>
                         </fieldset>
-                        <div class="evaluation-question" data-evaluation-required>
-                            <label asp-for="EvaluationInput.TutorTopic">11. What topic did the tutor assist you with? Please be specific. <span aria-hidden="true">*</span></label>
-                            <textarea asp-for="EvaluationInput.TutorTopic" rows="3" maxlength="1000"></textarea>
-                        </div>
                         <fieldset class="evaluation-question" data-evaluation-required>
-                            <legend>12. Do you plan on using the tutoring service again? <span aria-hidden="true">*</span></legend>
-                            <div class="evaluation-radio-group">
-                                @foreach (string option in new[] { "Yes", "No", "Maybe" })
-                                {
-                                    <label><input asp-for="EvaluationInput.TutoringService" id="service-@option.ToLowerInvariant()" type="radio" value="@option" /> <span>@option</span></label>
-                                }
-                            </div>
-                        </fieldset>
-                        <div class="evaluation-question" data-evaluation-required>
-                            <label asp-for="EvaluationInput.ImproveBCProgramme">13. Do you have suggestions to improve the BC Peer-Tutoring programme? <span aria-hidden="true">*</span></label>
-                            <textarea asp-for="EvaluationInput.ImproveBCProgramme" rows="3" maxlength="2000"></textarea>
-                        </div>
-                        <fieldset class="evaluation-question" data-evaluation-required>
-                            <legend>14. How would you rate the overall tutoring experience? <span aria-hidden="true">*</span></legend>
+                            <legend>8. How would you rate the overall tutoring experience? <span aria-hidden="true">*</span></legend>
                             <div class="evaluation-radio-group evaluation-rating-group">
                                 @for (byte rating = 1; rating <= 5; rating++)
                                 {
@@ -635,7 +598,7 @@
                             </div>
                         </fieldset>
                         <fieldset class="evaluation-question" data-evaluation-required>
-                            <legend>15. How would you rate the tutoring platform? <span aria-hidden="true">*</span></legend>
+                            <legend>9. How would you rate the tutoring platform? <span aria-hidden="true">*</span></legend>
                             <div class="evaluation-radio-group evaluation-rating-group">
                                 @for (byte rating = 1; rating <= 5; rating++)
                                 {

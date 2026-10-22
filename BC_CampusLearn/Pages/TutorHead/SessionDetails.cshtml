@@ -271,7 +271,20 @@
                     <dl class="admin-session-answers" id="student-review-answers">
                         @foreach (var answer in Model.StudentReviewAnswers)
                         {
-                            <div data-review-answer><dt>@answer.Question</dt><dd>@answer.Value</dd></div>
+                            <div data-review-answer>
+                                <dt>@answer.Question</dt>
+                                @if (answer.Question == "Mode of tutoring")
+                                {
+                                    <dd class="admin-session-mode-options">
+                                        <label><input type="radio" name="display-tutoring-mode" disabled checked="@(answer.Value == "Online")" /> <span>Online</span></label>
+                                        <label><input type="radio" name="display-tutoring-mode" disabled checked="@(answer.Value == "Face-to-face")" /> <span>Face-to-face</span></label>
+                                    </dd>
+                                }
+                                else
+                                {
+                                    <dd>@answer.Value</dd>
+                                }
+                            </div>
                         }
                     </dl>
                     <nav class="admin-session-review-pagination" aria-label="Student review pages" hidden>

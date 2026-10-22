@@ -4,6 +4,7 @@ using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Gemini;
 using BC_CampusLearn.Services.Teams;
+using BC_CampusLearn.Services.Bookings;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -288,21 +289,16 @@ public class SessionDetailsModel(
         if (session.StudentEvaluation is { } review)
         {
             answers.AddRange([
-                new("1. Mode of tutoring", Answer(review.TutoringMode)),
-                new("2. What was your experience with the platform?", Answer(review.PlatformExperience)),
-                new("3. Did the tutor listen carefully and respond clearly and directly?", Answer(review.TutorResponse)),
-                new("4. Did the tutor understand and show genuine interest in teaching the module?", Answer(review.TutorInterest)),
-                new("5. The tutor was friendly and helped me feel comfortable.", Answer(review.TutorFriendliness)),
-                new("6. The tutor explained the subject in a way I understood and could apply independently.", Answer(review.TutorExplanation)),
-                new("7. The tutor encouraged my participation in the session.", Answer(review.TutorParticipation)),
-                new("8. Did the tutor commit to the arranged session times?", Answer(review.TutorPunctuality)),
-                new("9. Did the tutor suggest ways to improve your study habits and become a more independent learner?", Answer(review.TutorAdvice)),
-                new("10. In what way did the tutor help you?", Answer(review.TutorHelp)),
-                new("11. What topic did the tutor assist you with?", Answer(review.TutorTopic)),
-                new("12. Do you plan on using the tutoring service again?", Answer(review.TutoringService)),
-                new("13. Do you have suggestions to improve the BC Peer-Tutoring programme?", Answer(review.ImproveBCProgramme)),
-                new("14. How would you rate the overall tutoring experience?", $"{review.ModeRating}/5"),
-                new("15. How would you rate the tutoring platform?", $"{review.PlatformRating}/5")
+                new("Mode of tutoring", TutoringModeLocationPolicy.GetDeliveryMode(session.Location)),
+                new("1. Did the tutor listen carefully and respond clearly and directly?", Answer(review.TutorResponse)),
+                new("2. Did the tutor understand and show genuine interest in teaching the module?", Answer(review.TutorInterest)),
+                new("3. The tutor was friendly and helped me feel comfortable.", Answer(review.TutorFriendliness)),
+                new("4. The tutor explained the subject in a way I understood and could apply independently.", Answer(review.TutorExplanation)),
+                new("5. The tutor encouraged my participation in the session.", Answer(review.TutorParticipation)),
+                new("6. Did the tutor suggest ways to improve your study habits and become a more independent learner?", Answer(review.TutorAdvice)),
+                new("7. In what way did the tutor help you?", Answer(review.TutorHelp)),
+                new("8. How would you rate the overall tutoring experience?", $"{review.ModeRating}/5"),
+                new("9. How would you rate the tutoring platform?", $"{review.PlatformRating}/5")
             ]);
         }
 
