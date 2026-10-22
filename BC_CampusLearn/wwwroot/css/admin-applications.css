@@ -1365,13 +1365,14 @@ button.candidate-view-link {
 .interview-process-footer button {
     background: var(--shortlist-admin-ink);
     border: 0;
-    border-radius: 0.42rem;
+    border-radius: 0.4rem;
     color: #fff;
     cursor: pointer;
     font: inherit;
-    font-size: 0.76rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    padding: 0.72rem 1.15rem;
+    min-height: 2.55rem;
+    padding: 0.55rem 0.85rem;
 }
 
 .interview-process-footer button:hover {
@@ -1425,65 +1426,55 @@ button.candidate-view-link {
 }
 
 .interview-process-footer .interview-reject-button {
-    background: #b4232f;
-    color: #fff;
+    background: #fff;
+    color: #b42318;
+    border: 1px solid #b42318;
 }
 
-.interview-process-footer .interview-reject-button:hover {
-    background: #941d27;
+.interview-process-footer .interview-reject-button:hover,
+.interview-process-footer .interview-reject-button:focus-visible {
+    background: #fff;
 }
 
 .interview-process-footer .interview-placement-button {
-    background: var(--shortlist-admin-accent);
+    background: var(--shortlist-admin-ink);
+    margin-left: auto;
 }
 
 .interview-process-footer .interview-placement-button:hover {
-    background: #286f70;
+    background: #161b1c;
 }
 
 .interview-process-footer .interview-communicate-button {
-    background: var(--shortlist-admin-ink);
-    color: #fff;
+    background: #e9ecec;
+    color: #555c5d;
 }
 
-.interview-process-footer .interview-communicate-button:hover {
-    background: #161b1c;
+.interview-process-footer .interview-communicate-button:hover,
+.interview-process-footer .interview-communicate-button:focus-visible {
+    background: #dce1e1;
+    color: #252a2b;
 }
 
 .interview-room-launch-card {
     background: #fff;
-    border-radius: 0.55rem;
-    box-shadow: 0 0.45rem 1.25rem rgba(25, 30, 32, 0.09);
+    border: 1px solid #e2e6e8;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.4rem 1.2rem rgba(25, 30, 32, 0.06);
     margin: 1rem 1.65rem;
-    padding: 1.15rem;
+    padding: 1.4rem;
 }
 
 .interview-room-launch-copy {
-    align-items: flex-start;
-    display: flex;
-    gap: 0.85rem;
-}
-
-.interview-room-launch-icon {
-    align-items: center;
-    background: #dcebea;
-    border-radius: 0.5rem;
-    color: #2f8586;
-    display: inline-flex;
-    flex: 0 0 2.55rem;
-    height: 2.55rem;
-    justify-content: center;
-}
-
-.interview-room-launch-icon svg {
-    height: 1.35rem;
-    width: 1.35rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e8ebed;
 }
 
 .interview-room-launch-copy h3 {
     color: var(--shortlist-admin-ink);
-    font-size: 0.86rem;
-    margin: 0.1rem 0 0.3rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0 0 0.35rem;
 }
 
 .interview-room-launch-copy p {
@@ -1493,45 +1484,42 @@ button.candidate-view-link {
     margin: 0;
 }
 
-.interview-room-launch-copy small {
-    color: #4f5758;
-    display: block;
-    font-size: 0.68rem;
-    font-weight: 700;
-    margin-top: 0.55rem;
-}
+.interview-meeting-details { display: grid; gap: .65rem; padding: 1.15rem 0; }
+.interview-meeting-details h4 { color: var(--shortlist-admin-ink); font-size: .88rem; line-height: 1.5; font-weight: 650; margin: 0 0 .15rem; overflow-wrap: anywhere; }
+.interview-meeting-detail { display: flex; align-items: center; gap: .7rem; color: #535d67; font-size: .78rem; }
+.interview-meeting-detail svg, .interview-meeting-detail img { width: 1.2rem; height: 1.2rem; flex-shrink: 0; }
+.interview-room-launch-card .interview-room-launch-help { color: var(--shortlist-admin-muted); font-size: .72rem; line-height: 1.5; margin: .75rem 0 0; }
 
 .interview-room-launch-actions {
     display: grid;
     gap: 0.6rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-top: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 0.25rem;
 }
 
 .interview-room-launch-actions a,
 .interview-room-launch-actions button {
     align-items: center;
     border: 0;
-    border-radius: 0.42rem;
+    border-radius: 0.6rem;
     cursor: pointer;
     display: inline-flex;
     font: inherit;
-    font-size: 0.73rem;
-    font-weight: 700;
+    font-size: 0.78rem;
+    font-weight: 600;
     justify-content: center;
-    min-height: 2.65rem;
+    gap: 0.55rem;
+    min-height: 3rem;
     padding: 0.65rem 0.8rem;
     text-align: center;
     text-decoration: none;
 }
 
-.interview-teams-button {
-    background: #252a2b;
-    color: #fff;
-}
-
-.interview-teams-button:hover:not(:disabled) {
-    background: #161b1c;
+.interview-room-launch-actions svg,
+.interview-room-launch-actions img {
+    width: 1.2rem;
+    height: 1.2rem;
+    flex-shrink: 0;
 }
 
 .interview-teams-button:disabled {
@@ -1540,13 +1528,16 @@ button.candidate-view-link {
 }
 
 .interview-room-card-open {
-    background: #2f8586;
-    color: #fff;
+    background: color-mix(in srgb, var(--shortlist-admin-ink) 9%, white);
+    color: var(--shortlist-admin-ink);
 }
 
 .interview-room-card-open:hover {
-    background: #286f70;
+    background: color-mix(in srgb, var(--shortlist-admin-ink) 15%, white);
 }
+
+.interview-room-launch-actions .interview-meeting-edit { background: #fff; border: 1px solid #b9c0c7; color: #424b56; }
+.interview-room-launch-actions .interview-meeting-edit:hover { background: #f5f6f7; border-color: #8d98a3; }
 
 .interview-room-launch-actions a:focus-visible,
 .interview-room-launch-actions button:focus-visible {
@@ -2673,6 +2664,7 @@ button.candidate-view-link {
     .interview-process-footer .interview-placement-button {
         grid-column: 1 / -1;
         grid-row: 1;
+        margin-left: 0;
     }
 
     .interview-room-launch-actions {

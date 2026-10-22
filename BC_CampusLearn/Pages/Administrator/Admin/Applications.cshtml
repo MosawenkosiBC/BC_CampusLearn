@@ -1146,48 +1146,51 @@ Mzala Connect Tutor Team</textarea>
                     </section>
 
                     <section class="interview-room-launch-card">
-                        <div class="interview-room-launch-copy">
-                            <span class="interview-room-launch-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                                    <path d="M8 7V5.8A2.8 2.8 0 0 1 10.8 3h2.4A2.8 2.8 0 0 1 16 5.8V7" />
-                                    <rect x="4" y="7" width="16" height="13" rx="2.5" />
-                                    <path d="M8 12h8M8 16h5" />
-                                </svg>
-                            </span>
-                            <div>
-                                <h3>Open Interview Room</h3>
-                                <p>Record private notes while interviewing @candidate.DisplayName.</p>
-                                @if (candidate.InterviewScheduledAt.HasValue)
-                                {
-                                    <small>
-                                        @candidate.InterviewScheduledAt.Value.ToString("dd MMM yyyy · HH:mm")
-                                        @if (candidate.InterviewDurationMinutes.HasValue)
-                                        {
-                                            <text> · @candidate.InterviewDurationMinutes minutes</text>
-                                        }
-                                    </small>
-                                }
+                        <header class="interview-room-launch-copy">
+                            <h3>Peer tutor interview</h3>
+                            <p>Manage the meeting and record interview notes.</p>
+                        </header>
+                        <div class="interview-meeting-details">
+                            <div class="interview-meeting-detail">
+                                <img src="~/images/microsoft-teams.svg" alt="" aria-hidden="true" />
+                                <span>Microsoft Teams</span>
                             </div>
+                            @if (candidate.InterviewScheduledAt is { } scheduledAt)
+                            {
+                                <div class="interview-meeting-detail">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 11h18" /></svg>
+                                    <span>@scheduledAt.ToString("dd MMM yyyy")</span>
+                                </div>
+                                <div class="interview-meeting-detail">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                                    <span>@scheduledAt.ToString("HH:mm")@if (candidate.InterviewDurationMinutes is { } duration) {<text> &ndash; @scheduledAt.AddMinutes(duration).ToString("HH:mm")</text>} &middot; SAST</span>
+                                </div>
+                            }
                         </div>
                         <div class="interview-room-launch-actions">
                             @if (Model.InterviewMeetings.ContainsKey(candidate.TutorId))
                             {
-                                <button type="button" class="interview-room-card-open" data-edit-interview-open="edit-interview-@candidate.TutorId">Edit interview</button>
+                                <button type="button" class="interview-meeting-edit" data-edit-interview-open="edit-interview-@candidate.TutorId">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z" /><path d="m14 5 5 5" /></svg>
+                                    Edit Teams meeting
+                                </button>
                             }
                             @if (Model.GetInterviewMeetingLink(candidate) is { } meetingLink)
                             {
                                 <a href="@meetingLink"
-                                   class="interview-teams-button"
+                                   class="btn btn-teams interview-teams-button"
                                    target="_blank"
                                    rel="noopener noreferrer">
+                                    <img src="~/images/microsoft-teams-white.svg" alt="" aria-hidden="true" />
                                     Join Teams meeting
                                 </a>
                             }
                             else
                             {
                                 <button type="button"
-                                        class="interview-teams-button"
+                                        class="btn btn-teams interview-teams-button"
                                         disabled>
+                                    <img src="~/images/microsoft-teams-white.svg" alt="" aria-hidden="true" />
                                     Teams link unavailable
                                 </button>
                             }
@@ -1195,9 +1198,11 @@ Mzala Connect Tutor Team</textarea>
                                     class="interview-room-card-open"
                                     data-interview-room-open
                                     data-interview-room-modal-id="interview-room-@candidate.TutorId">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4H4v16h10M10 12h11m-4-4 4 4-4 4" /></svg>
                                 Open Interview Room
                             </button>
                         </div>
+                        <p class="interview-room-launch-help">Record private notes during the interview.</p>
                     </section>
                 </div>
 
