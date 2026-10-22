@@ -17,7 +17,11 @@ public sealed record TeamsCalendarRequest(
     string StudentEmail,
     string StudentName,
     string? TutorEmail = null,
-    string? TutorName = null);
+    string? TutorName = null,
+    IReadOnlyList<TeamsCalendarAttendee>? Panel = null,
+    string? Message = null);
+
+public sealed record TeamsCalendarAttendee(string Email, string Name, bool Optional = false);
 
 public sealed record TeamsCalendarEvent(string Id, string? JoinUrl);
 
@@ -25,6 +29,8 @@ public interface ITeamsCalendarClient
 {
     Task<bool> SupportsTeamsAsync(string organizerObjectId, CancellationToken cancellationToken);
     Task<TeamsCalendarEvent> CreateAsync(TeamsCalendarRequest request, CancellationToken cancellationToken);
+    Task<TeamsCalendarEvent> UpdateInterviewAsync(string eventId, TeamsCalendarRequest request, CancellationToken cancellationToken) =>
+        throw new TeamsMeetingException("Interview updates are not available.");
     Task<TeamsCalendarEvent> GetAsync(string organizerObjectId, string eventId, CancellationToken cancellationToken);
     Task CancelAsync(string organizerObjectId, string eventId, CancellationToken cancellationToken);
     Task<string?> FindByTransactionAsync(string organizerObjectId, Guid transactionId, DateTimeOffset start, CancellationToken cancellationToken);
@@ -54,12 +60,19 @@ public sealed class TeamsCalendarClient(HttpClient client, ITeamsGraphTokenProvi
         };
         if (!string.IsNullOrWhiteSpace(meeting.TutorEmail))
             attendees.Add(new { emailAddress = new { address = meeting.TutorEmail, name = meeting.TutorName }, type = "required" });
+        var emails = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { meeting.StudentEmail };
+        if (meeting.TutorEmail is not null) emails.Add(meeting.TutorEmail);
+        foreach (var member in meeting.Panel ?? [])
+        {
+            if (emails.Add(member.Email))
+                attendees.Add(new { emailAddress = new { address = member.Email, name = member.Name }, type = member.Optional ? "optional" : "required" });
+        }
         using HttpRequestMessage request = new(HttpMethod.Post,
             $"users/{Uri.EscapeDataString(meeting.OrganizerObjectId)}/calendar/events");
         request.Content = JsonContent.Create(new
         {
             subject = meeting.Subject,
-            body = new { contentType = "text", content = "Tutoring session scheduled through Mzala Connect." },
+            body = new { contentType = "text", content = meeting.Message ?? "Tutoring session scheduled through Mzala Connect." },
             start = new { dateTime = FormatUtc(meeting.Start), timeZone = "UTC" },
             end = new { dateTime = FormatUtc(meeting.End), timeZone = "UTC" },
             attendees,
@@ -127,6 +140,30 @@ public sealed class TeamsCalendarClient(HttpClient client, ITeamsGraphTokenProvi
         }
     }
 
+    public async Task<TeamsCalendarEvent> UpdateInterviewAsync(string eventId, TeamsCalendarRequest meeting, CancellationToken cancellationToken)
+    {
+        var attendees = new List<object>
+        {
+            new { emailAddress = new { address = meeting.StudentEmail, name = meeting.StudentName }, type = "required" }
+        };
+        var emails = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { meeting.StudentEmail };
+        foreach (var member in meeting.Panel ?? [])
+            if (emails.Add(member.Email))
+                attendees.Add(new { emailAddress = new { address = member.Email, name = member.Name }, type = member.Optional ? "optional" : "required" });
+        using var request = new HttpRequestMessage(HttpMethod.Patch,
+            $"users/{Uri.EscapeDataString(meeting.OrganizerObjectId)}/events/{Uri.EscapeDataString(eventId)}");
+        // Preserve the existing invitation body and Microsoft's Teams join block.
+        request.Content = JsonContent.Create(new
+        {
+            subject = meeting.Subject,
+            start = new { dateTime = FormatUtc(meeting.Start), timeZone = "UTC" },
+            end = new { dateTime = FormatUtc(meeting.End), timeZone = "UTC" },
+            attendees
+        });
+        using var document = await SendAsync(request, cancellationToken);
+        return ReadEvent(document.RootElement);
+    }
+
     public async Task<TeamsCalendarEvent> GetAsync(string organizerObjectId, string eventId, CancellationToken cancellationToken)
     {
         using HttpRequestMessage request = new(HttpMethod.Get,
@@ -141,7 +178,7 @@ public sealed class TeamsCalendarClient(HttpClient client, ITeamsGraphTokenProvi
             $"users/{Uri.EscapeDataString(organizerObjectId)}/events/{Uri.EscapeDataString(eventId)}/cancel");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await tokens.GetTokenAsync(cancellationToken));
         request.Headers.Add("Prefer", "IdType=\"ImmutableId\"");
-        request.Content = JsonContent.Create(new { comment = "This tutoring session was cancelled in Mzala Connect." });
+        request.Content = JsonContent.Create(new { comment = "This meeting was cancelled in Mzala Connect." });
         try
         {
             using HttpResponseMessage response = await client.SendAsync(request, cancellationToken);

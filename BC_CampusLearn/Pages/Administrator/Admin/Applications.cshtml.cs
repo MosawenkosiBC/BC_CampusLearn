@@ -5,6 +5,8 @@ using BC_CampusLearn.Models.ViewModels;
 using BC_CampusLearn.Services.Notifications;
 using BC_CampusLearn.Services.Tutors;
 using BC_CampusLearn.Services.Students;
+using BC_CampusLearn.Services.Teams;
+using System.Text.Json;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -23,18 +25,21 @@ public class ApplicationsModel : ManualTutorPageModel
     private readonly ICurrentUserService? _currentUserService;
     private readonly ITutorApplicationEmailSender? _emailSender;
     private readonly IWebHostEnvironment? _environment;
+    private readonly InterviewTeamsMeetingService? _interviewMeetings;
 
     public ApplicationsModel(
         ApplicationDbContext context,
         ICurrentUserService? currentUserService = null,
         ITutorApplicationEmailSender? emailSender = null,
         IStudentDetailsService? studentDetailsService = null,
-        IWebHostEnvironment? environment = null) : base(context, studentDetailsService)
+        IWebHostEnvironment? environment = null,
+        InterviewTeamsMeetingService? interviewMeetings = null) : base(context, studentDetailsService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _emailSender = emailSender;
         _environment = environment;
+        _interviewMeetings = interviewMeetings;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -94,6 +99,46 @@ public class ApplicationsModel : ManualTutorPageModel
     [BindProperty]
     [StringLength(4000, ErrorMessage = "Interview notes cannot exceed 4,000 characters.")]
     public string? InterviewNotes { get; set; }
+
+    [BindProperty]
+    public InterviewMeetingInput Meeting { get; set; } = new();
+    public CurrentUser? SchedulingAdmin { get; private set; }
+    public IReadOnlyList<InterviewPanelInput> PanelDirectory { get; private set; } = [];
+    public Dictionary<int, TutorInterviewMeeting> InterviewMeetings { get; private set; } = [];
+    public int? FailedMeetingTutorId { get; private set; }
+    public string? MeetingError { get; private set; }
+    public int? OpenInterviewEditCandidateId { get; private set; }
+
+    public string? GetInterviewMeetingLink(ApplicationCandidate candidate)
+    {
+        if (InterviewMeetings.TryGetValue(candidate.TutorId, out var meeting) &&
+            meeting.CancelledAt is null &&
+            Uri.TryCreate(meeting.JoinUrl?.Trim(), UriKind.Absolute, out var uri) &&
+            (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp))
+        {
+            return meeting.JoinUrl!.Trim();
+        }
+        return candidate.HasInterviewMeetingLink ? candidate.InterviewLocation!.Trim() : null;
+    }
+
+    public InterviewMeetingInput GetMeetingInput(ApplicationCandidate candidate)
+    {
+        if (InterviewMeetings.TryGetValue(candidate.TutorId, out var saved))
+        {
+            if (FailedMeetingTutorId == candidate.TutorId && saved.CompletedAt is not null) return Meeting;
+            return InterviewMeetingInput.FromRequest(JsonSerializer.Deserialize<TeamsCalendarRequest>(saved.RequestJson)!);
+        }
+        if (FailedMeetingTutorId == candidate.TutorId) return Meeting;
+        return new InterviewMeetingInput
+        {
+            Title = $"Peer Tutoring Programme Interview : {candidate.DisplayName}",
+            Message = "Please join us for your tutor interview. We look forward to meeting you.",
+            Panel = InterviewMeetingInput.IsEmail(SchedulingAdmin?.Email) &&
+                PanelDirectory.Any(p => string.Equals(p.Email, SchedulingAdmin.Email, StringComparison.OrdinalIgnoreCase))
+                ? [new InterviewPanelInput { Email = SchedulingAdmin!.Email, Name = SchedulingAdmin.DisplayName }]
+                : []
+        };
+    }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
@@ -237,6 +282,20 @@ public class ApplicationsModel : ManualTutorPageModel
                     .ToList()
             })
             .ToListAsync(cancellationToken);
+
+        if (Stage is "shortlist" or "interview")
+        {
+            SchedulingAdmin = _currentUserService?.GetRequiredUser();
+            PanelDirectory = await _context.BcUsers.AsNoTracking()
+                .Where(u => u.IsAdministrativeAccessActive && u.Email != null &&
+                    (u.Role == BcUserRole.Admin || u.Role == BcUserRole.SuperAdmin))
+                .OrderBy(u => u.DisplayName)
+                .Select(u => new InterviewPanelInput { Email = u.Email, Name = u.DisplayName }).ToListAsync(cancellationToken);
+            int[] ids = Candidates.Select(c => c.TutorId).ToArray();
+            var meetings = await _context.TutorInterviewMeetings.AsNoTracking().Where(m => ids.Contains(m.TutorId)).ToListAsync(cancellationToken);
+            InterviewMeetings = meetings.Where(m => Candidates.Any(c => c.TutorId == m.TutorId && c.SubmittedAt == m.ApplicationSubmittedAt))
+                .ToDictionary(m => m.TutorId);
+        }
 
         if (Stage == "placement")
         {
@@ -422,23 +481,53 @@ public class ApplicationsModel : ManualTutorPageModel
         int tutorId,
         CancellationToken cancellationToken)
     {
-        ShortlistResult result = await TutorApplicationReview.MoveToInterviewAsync(
-            _context,
-            tutorId,
-            InterviewPreparation.ToDetails(),
-            cancellationToken,
-            _currentUserService?.GetRequiredUser().BcUserId);
+        // Keep the former endpoint, but require the same Teams scheduling flow.
+        return await OnPostScheduleInterviewAsync(tutorId, cancellationToken);
+    }
 
+    public async Task<IActionResult> OnPostScheduleInterviewAsync(int tutorId, CancellationToken cancellationToken)
+    {
+        var user = _currentUserService?.GetRequiredUser();
+        var result = user is null || _interviewMeetings is null
+            ? ShortlistResult.Failure("Interview scheduling is unavailable. Sign in as an administrator and retry.")
+            : !ModelState.IsValid && ModelState.Any(x => x.Key.StartsWith("Meeting.") && x.Value!.Errors.Count > 0)
+                ? ShortlistResult.Failure("Check the interview fields and try again.")
+                : await _interviewMeetings.CreateAsync(tutorId, user.BcUserId, Meeting, cancellationToken);
+        if (result.Succeeded)
+        {
+            PageMessage = "Interview scheduled. The candidate and selected panel have been invited through Mzala Connect.";
+            return RedirectToPage(new { Stage = "interview", Search });
+        }
+        // Render the same modal with the entered form. Never redirect away and lose it.
+        _context.ChangeTracker.Clear();
+        FailedMeetingTutorId = tutorId;
+        MeetingError = result.Message;
+        OpenShortlistCandidateId = tutorId;
+        Stage = "shortlist";
+        await OnGetAsync(cancellationToken);
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostUpdateInterviewAsync(int tutorId, CancellationToken cancellationToken)
+    {
+        var user = _currentUserService?.GetRequiredUser();
+        var result = user is null || _interviewMeetings is null
+            ? ShortlistResult.Failure("Interview scheduling is unavailable. Sign in as an administrator and retry.")
+            : ModelState.Any(x => x.Key.StartsWith("Meeting.") && x.Value!.Errors.Count > 0)
+                ? ShortlistResult.Failure("Check the interview fields and try again.")
+                : await _interviewMeetings.UpdateAsync(tutorId, user.BcUserId, Meeting, cancellationToken);
         if (result.Succeeded)
         {
             PageMessage = result.Message;
+            return RedirectToPage(new { Stage = "interview", Search });
         }
-        else
-        {
-            PageError = result.Message;
-        }
-
-        return RedirectToPage(new { Stage = "shortlist", Search });
+        _context.ChangeTracker.Clear();
+        FailedMeetingTutorId = tutorId;
+        MeetingError = result.Message;
+        OpenInterviewEditCandidateId = tutorId;
+        Stage = "interview";
+        await OnGetAsync(cancellationToken);
+        return Page();
     }
 
     public async Task<IActionResult> OnPostSendCommunicationAsync(
@@ -739,7 +828,7 @@ public class ApplicationsModel : ManualTutorPageModel
         [Range(15, 240)]
         public int? DurationMinutes { get; set; }
 
-        [StringLength(500)]
+        [StringLength(2048)]
         public string? LocationOrMeetingLink { get; set; }
 
         public InterviewPreparationDetails ToDetails() => new(
