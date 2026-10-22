@@ -11,6 +11,14 @@
         : tutorUser.DisplayName;
     DateTimeOffset localStart = session.ScheduledStartTime.ToOffset(TimeSpan.FromHours(2));
     DateTimeOffset localEnd = localStart.AddHours((int)session.Duration);
+    DateTimeOffset? teamsLocalStart = Model.TeamsEvidence.Start?.ToOffset(TimeSpan.FromHours(2));
+    DateTimeOffset? teamsLocalEnd = Model.TeamsEvidence.End?.ToOffset(TimeSpan.FromHours(2));
+    string? teamsRecordingRange = teamsLocalStart is { } evidenceStart &&
+        teamsLocalEnd is { } evidenceEnd
+        ? evidenceStart.Date == evidenceEnd.Date
+            ? $"{evidenceStart:dd MMM yyyy, HH:mm:ss} – {evidenceEnd:HH:mm:ss} SAST"
+            : $"{evidenceStart:dd MMM yyyy, HH:mm:ss} – {evidenceEnd:dd MMM yyyy, HH:mm:ss} SAST"
+        : null;
 }
 
 @section Styles {
@@ -96,15 +104,15 @@
         <section class="admin-session-reviews" aria-labelledby="session-reviews-title">
             <h2 id="session-reviews-title" class="visually-hidden">Session reviews</h2>
             <div class="admin-session-review-tabs tutor-head-review-tabs" role="tablist" aria-label="Session reviews">
-                <button type="button" class="admin-session-review-tab is-active"
+                <button type="button" class="admin-session-review-tab"
                         id="student-review-tab" role="tab" aria-controls="student-review-panel"
-                        aria-selected="true" data-review-tab="student-review-panel">
+                        aria-selected="false" tabindex="-1" data-review-tab="student-review-panel">
                     <span>Student Review</span>
                     <strong class="is-submitted">Submitted</strong>
                 </button>
-                <button type="button" class="admin-session-review-tab"
+                <button type="button" class="admin-session-review-tab is-active"
                         id="tutor-review-tab" role="tab" aria-controls="tutor-review-panel"
-                        aria-selected="false" tabindex="-1" data-review-tab="tutor-review-panel">
+                        aria-selected="true" data-review-tab="tutor-review-panel">
                     <span>Tutor Review</span>
                     <strong class="is-submitted">Submitted</strong>
                 </button>
@@ -118,7 +126,8 @@
                 </button>
             </div>
 
-            <div class="@(Model.CanUseTeamsReview ? "tutor-head-evidence-layout" : "tutor-head-standard-review-layout")">
+            <div class="@(Model.CanUseTeamsReview ? "tutor-head-evidence-layout" : "tutor-head-standard-review-layout")"
+                 data-review-layout>
             <div class="@(Model.CanUseTeamsReview ? "tutor-head-review-panels" : "tutor-head-standard-review-panels")">
             <section class="admin-session-review-panel-card" id="tutor-head-review-panel"
                      role="tabpanel" aria-labelledby="tutor-head-review-tab" tabindex="0" hidden
@@ -212,7 +221,7 @@
             </section>
 
             <section class="admin-session-review-panel-card" id="tutor-review-panel"
-                     role="tabpanel" aria-labelledby="tutor-review-tab" tabindex="0" hidden
+                     role="tabpanel" aria-labelledby="tutor-review-tab" tabindex="0"
                      data-review-panel data-review-pager>
                 <header class="admin-session-review-panel-heading">
                     <div>
@@ -251,7 +260,7 @@
             </section>
 
             <section class="admin-session-review-panel-card" id="student-review-panel"
-                     role="tabpanel" aria-labelledby="student-review-tab" tabindex="0"
+                     role="tabpanel" aria-labelledby="student-review-tab" tabindex="0" hidden
                      data-review-panel data-review-pager>
                 <header class="admin-session-review-panel-heading">
                     <div>
@@ -275,9 +284,16 @@
         </div>
         @if (Model.CanUseTeamsReview)
         {
-        <aside class="tutor-head-video-card" aria-labelledby="session-video-title">
+        <aside class="tutor-head-video-card" aria-labelledby="session-video-title"
+               data-review-evidence-for="tutor-review-panel">
             <header class="tutor-head-video-heading">
-                <h2 id="session-video-title">Session recording</h2>
+                <div>
+                    <h2 id="session-video-title">Session recording</h2>
+                    @if (teamsRecordingRange is not null)
+                    {
+                        <p class="tutor-head-recording-range">@teamsRecordingRange</p>
+                    }
+                </div>
                 @if (Model.CanWatchRecording)
                 {
                     <a class="tutor-head-recording-link" href="@Model.RecordingUrl" target="_blank" rel="noopener noreferrer">
@@ -298,17 +314,7 @@
                         {
                             <h3>Recording @(Model.TeamsEvidence.Recordings.IndexOf(recording) + 1)</h3>
                         }
-                        <div class="tutor-head-recording-meta">
-                            @if (recording.Start is { } recordingStart)
-                            {
-                                <span>@recordingStart.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm:ss") SAST</span>
-                            }
-                            @if (Model.TeamsEvidence.Duration is { } recordingMeetingDuration)
-                            {
-                                <span>Meeting duration: <strong>@recordingMeetingDuration.ToString(@"hh\:mm\:ss")</strong></span>
-                            }
-                        </div>
-                        <video controls preload="none" playsinline aria-label="Session recording"
+                        <video controls muted preload="metadata" playsinline aria-label="Session recording"
                                data-session-recording
                                src="@Url.Page("/TutorHead/SessionDetails", "TeamsRecording", new { id = session.BookingId, recordingId = recording.Id })">
                             Your browser does not support video playback.
@@ -323,22 +329,11 @@
                 <div class="tutor-head-video-empty">Teams video preview is unavailable for this session. See the details below.</div>
             }
             </div>
-            <div class="tutor-head-evidence-actions">
-                @if (Model.HasTranscript)
-                {
-                    <a class="tutor-head-recording-button" href="@Url.Page("/TutorHead/SessionDetails", "Transcript", new { id = session.BookingId })" target="_blank" rel="noopener noreferrer">Transcript</a>
-                }
-                @foreach (var transcript in Model.TeamsEvidence.Transcripts)
-                {
-                    <a class="tutor-head-recording-button" href="@Url.Page("/TutorHead/SessionDetails", "TeamsTranscript", new { id = session.BookingId, transcriptId = transcript.Id })" target="_blank" rel="noopener noreferrer">Teams transcript @(Model.TeamsEvidence.Transcripts.Count > 1 ? (Model.TeamsEvidence.Transcripts.IndexOf(transcript) + 1).ToString() : "")</a>
-                }
-            </div>
             <section class="tutor-head-attendance" aria-labelledby="session-attendance-title">
                 <h3 id="session-attendance-title">Teams session details</h3>
                 @if (Model.TeamsEvidence.Duration is { } measuredDuration)
                 {
                     <p>Meeting duration: <strong>@measuredDuration.ToString(@"hh\:mm\:ss")</strong></p>
-                    <p>@Model.TeamsEvidence.Start?.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm:ss") – @Model.TeamsEvidence.End?.ToOffset(TimeSpan.FromHours(2)).ToString("HH:mm:ss") SAST</p>
                 }
                 else { <p>Meeting duration unavailable.</p> }
                 <div class="tutor-head-attendance-grid">
