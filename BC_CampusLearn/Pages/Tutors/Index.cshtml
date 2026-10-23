@@ -25,6 +25,9 @@
     <link rel="stylesheet"
           href="~/css/tutors.css"
           asp-append-version="true" />
+    <link rel="stylesheet"
+          href="~/css/components/pagination.css"
+          asp-append-version="true" />
 }
 
 @await Html.PartialAsync(
@@ -168,7 +171,7 @@
                     <a asp-page="/Tutors/Index">Clear all filters</a>
                 </div>
 
-                <div class="tutor-grid">
+                <div class="tutor-grid" id="tutor-results-grid">
                     @foreach (var tutor in Model.SearchableTutors)
                     {
                         string tutoringModeLabel =
@@ -192,6 +195,8 @@
 
                         <article class="tutor-card"
                                  data-tutor-search-card
+                                 data-pagination-row
+                                 data-pagination-excluded="@(!visibleTutorIds.Contains(tutor.TutorId) ? "true" : "false")"
                                  data-tutor-name="@tutor.DisplayName"
                                  data-tutor-modules="@searchableModules"
                                  data-tutor-available-dates="@availableDates"
@@ -239,6 +244,15 @@
                         </article>
                     }
                 </div>
+                @await Component.InvokeAsync(
+                    "Pagination",
+                    new
+                    {
+                        targetId = "tutor-results-grid",
+                        mobilePageSize = 8,
+                        defaultPageSize = 12,
+                        ariaLabel = "Tutor result pages"
+                    })
             </div>
         </div>
     </div>
@@ -248,5 +262,7 @@
     <script src="~/js/components/navigation-drawer.js"
             asp-append-version="true"></script>
     <script src="~/js/tutors.js"
+            asp-append-version="true"></script>
+    <script src="~/js/components/pagination.js"
             asp-append-version="true"></script>
 }

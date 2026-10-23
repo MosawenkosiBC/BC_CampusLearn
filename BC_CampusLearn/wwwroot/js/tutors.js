@@ -81,6 +81,7 @@
         "[data-live-tutor-date-input]");
     const resultsContent = document.querySelector(
         "[data-tutor-results-content]");
+    const resultsGrid = document.querySelector("#tutor-results-grid");
     const resultsCount = document.querySelector(
         "[data-tutor-results-count]");
     const emptyResults = document.querySelector(
@@ -147,12 +148,16 @@
                 availableDates.includes(dateQuery);
             const isVisible = matchesName && matchesModule && matchesDate;
 
+            card.dataset.paginationExcluded = String(!isVisible);
             card.hidden = !isVisible;
             visibleCount += isVisible ? 1 : 0;
         });
 
         resultsCount.textContent = String(visibleCount);
         emptyResults.hidden = visibleCount !== 0;
+        resultsGrid?.dispatchEvent(new CustomEvent(
+            "campus:pagination-refresh",
+            { detail: { resetPage: true } }));
         updateFilterIndicator();
         updateUrl();
     };

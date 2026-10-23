@@ -27,6 +27,9 @@
         let pageSize = mobileQuery.matches ? mobilePageSize : defaultPageSize;
         let currentPage = 1;
 
+        const getEligibleRows = () => rows.filter((row) =>
+            row.dataset.paginationExcluded !== "true");
+
         const getPageNumbers = (pageCount) => {
             if (pageCount <= 7) {
                 return Array.from(
@@ -46,14 +49,19 @@
         };
 
         const showPage = (requestedPage, shouldScroll = false) => {
-            const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
+            const eligibleRows = getEligibleRows();
+            const pageCount = Math.max(
+                1,
+                Math.ceil(eligibleRows.length / pageSize));
             currentPage = Math.min(Math.max(requestedPage, 1), pageCount);
             const firstRowIndex = (currentPage - 1) * pageSize;
             const lastRowIndex = Math.min(
-                firstRowIndex + pageSize, rows.length);
+                firstRowIndex + pageSize, eligibleRows.length);
+            const rowsOnPage = new Set(
+                eligibleRows.slice(firstRowIndex, lastRowIndex));
 
-            rows.forEach((row, index) => {
-                row.hidden = index < firstRowIndex || index >= lastRowIndex;
+            rows.forEach((row) => {
+                row.hidden = !rowsOnPage.has(row);
             });
 
             pagination.hidden = pageCount <= 1;
@@ -86,9 +94,9 @@
                 previousPageNumber = pageNumber;
             });
 
-            pageStatus.textContent = rows.length === 0
+            pageStatus.textContent = eligibleRows.length === 0
                 ? "No items to display."
-                : `Page ${currentPage} of ${pageCount}. Showing items ${firstRowIndex + 1} through ${lastRowIndex} of ${rows.length}.`;
+                : `Page ${currentPage} of ${pageCount}. Showing items ${firstRowIndex + 1} through ${lastRowIndex} of ${eligibleRows.length}.`;
 
             if (shouldScroll) {
                 target.scrollIntoView({
@@ -119,6 +127,11 @@
             "click", () => showPage(currentPage - 1, true));
         nextButton.addEventListener(
             "click", () => showPage(currentPage + 1, true));
+        target.addEventListener("campus:pagination-refresh", (event) => {
+            const resetPage = event instanceof CustomEvent &&
+                event.detail?.resetPage === true;
+            showPage(resetPage ? 1 : currentPage);
+        });
         mobileQuery.addEventListener("change", updatePageSize);
 
         showPage(1);
