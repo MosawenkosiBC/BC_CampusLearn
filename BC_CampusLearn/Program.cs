@@ -167,6 +167,19 @@ builder.Services.AddHttpClient<ITeamsSessionReviewService, TeamsSessionReviewSer
     })
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddHostedService<TeamsMeetingCancellationWorker>();
+builder.Services.Configure<TeamsJoinPilotOptions>(
+    builder.Configuration.GetSection(TeamsJoinPilotOptions.SectionName));
+builder.Services.AddSingleton<TeamsJoinPilotCrypto>();
+builder.Services.AddSingleton<ITeamsJoinTokenValidator, TeamsJoinTokenValidator>();
+builder.Services.AddScoped<TeamsJoinNotificationHandler>();
+builder.Services.AddHttpClient<TeamsJoinSubscriptionService>(client =>
+    {
+        client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
+        client.Timeout = TimeSpan.FromSeconds(15);
+        client.MaxResponseContentBufferSize = 1024 * 1024;
+    })
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddHostedService<TeamsJoinSubscriptionWorker>();
 
 builder.Services.AddScoped<
     ICurrentUserService,
@@ -286,6 +299,7 @@ app.Use(async (httpContext, next) =>
 {
     PathString path = httpContext.Request.Path;
     bool bypass = path.StartsWithSegments("/Maintenance") ||
+        path.Equals(new PathString(TeamsJoinPilotOptions.WebhookPath)) ||
         path.StartsWithSegments("/Account") ||
         httpContext.User.IsInRole(nameof(BcUserRole.Dev));
 
@@ -313,6 +327,7 @@ app.Use(async (httpContext, next) =>
 });
 
 app.MapRazorPages();
+app.MapTeamsJoinWebhook();
 app.MapHub<SessionHub>("/hubs/session");
 
 app.Run();

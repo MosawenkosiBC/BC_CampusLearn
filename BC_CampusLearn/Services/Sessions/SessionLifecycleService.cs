@@ -476,7 +476,8 @@ public class SessionLifecycleService : ISessionLifecycleService
             booking,
             BookingStatus.InProgress,
             now,
-            changedByBcUserId: changedByBcUserId);
+            reasonCode: source == SessionStartSource.TeamsApplication ? "TutorJoinedTeams" : null,
+            changedByBcUserId: source == SessionStartSource.TeamsApplication ? null : changedByBcUserId);
         await AddStudentStatusNotificationAsync(
             booking,
             BookingStatus.InProgress,
