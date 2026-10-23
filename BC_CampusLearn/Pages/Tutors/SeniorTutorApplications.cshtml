@@ -2,7 +2,7 @@
 @model BC_CampusLearn.Pages.Tutors.SeniorTutorApplicationsModel
 
 @{
-    ViewData["Title"] = "Senior Tutor Application";
+    ViewData["Title"] = "Head of Tutor Application";
     bool hasPendingApplication = Model.LatestApplication?.Status == TutorAccountRequestStatus.Pending;
     bool hasApprovedTutorRole = Model.IsSeniorTutor || Model.IsHeadOfTutors;
     bool canCompleteHeadOfTutorApplication = Model.LatestApplication is
@@ -118,7 +118,7 @@
         </aside>
 
         <div class="tutor-senior-applications">
-            <h2>Senior Tutor Application</h2>
+            <h2>Head of Tutor Application</h2>
 
             <section class="tutor-senior-application-card" aria-labelledby="senior-job-purpose">
                 <div class="tutor-senior-introduction">
