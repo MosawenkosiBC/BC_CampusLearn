@@ -29,9 +29,9 @@ public sealed class AddSeniorTutorApplicationModules : Migration
                         item.ProgrammeModuleId
                     });
                 table.ForeignKey(
-                    name: "FK_SeniorTutorApplicationModules_ProgrammeModules_ProgrammeModuleId",
+                    name: "FK_SeniorTutorApplicationModules_ProgrammeModule_ProgrammeModuleId",
                     column: item => item.ProgrammeModuleId,
-                    principalTable: "ProgrammeModules",
+                    principalTable: "ProgrammeModule",
                     principalColumn: "ProgrammeModuleId",
                     onDelete: ReferentialAction.Restrict);
                 table.ForeignKey(
