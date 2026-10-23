@@ -61,6 +61,18 @@ public class TutorDashboardModel : PageModel
 
     public bool CanManageResources { get; private set; }
     public bool ShowSeniorTutorApplicationButton { get; private set; }
+    public bool CanApplyForHeadOfTutor { get; private set; }
+    public DateTime? SeniorTutorApplicationCloseDate { get; private set; }
+    public IReadOnlyList<TutorModuleOptionViewModel> CurrentTutorModules
+    { get; private set; } = [];
+    public IReadOnlyList<TutorModuleOptionViewModel> ModulesAvailableFor2027
+    { get; private set; } = [];
+    public IReadOnlySet<int> Preselected2027ModuleIds { get; private set; }
+        = new HashSet<int>();
+    public bool? PreselectedHeadOfTutorChoice { get; private set; }
+
+    [BindProperty(SupportsGet = true)]
+    public bool OpenSeniorApplication { get; set; }
 
     public TutorNextSessionViewModel? NextSession
     { get; private set; }
@@ -94,10 +106,13 @@ public class TutorDashboardModel : PageModel
 
         await _lifecycleService.ProcessDueTransitionsAsync(cancellationToken);
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
+        CanApplyForHeadOfTutor = currentUser.Role != BcUserRole.HeadOfTutors;
         TutorApplicationSettings? applicationSettings = await _context
             .TutorApplicationSettings
             .AsNoTracking()
             .SingleOrDefaultAsync(cancellationToken);
+        SeniorTutorApplicationCloseDate =
+            applicationSettings?.SeniorTutorCloseDate;
         bool canApplyForSeniorTutor = await _context.Tutors
             .AsNoTracking()
             .AnyAsync(tutor =>
@@ -111,6 +126,47 @@ public class TutorDashboardModel : PageModel
         ShowSeniorTutorApplicationButton = canApplyForSeniorTutor &&
             (applicationSettings?.IsAcceptingSeniorTutorApplications(
                 DateTime.UtcNow) ?? false);
+        if (ShowSeniorTutorApplicationButton)
+        {
+            CurrentTutorModules = await _context.TutorCourseModules
+                .AsNoTracking()
+                .Where(item => item.TutorId == tutorId.Value && item.IsActive)
+                .OrderBy(item => item.ProgrammeModule.ModuleCode)
+                .Select(item => new TutorModuleOptionViewModel
+                {
+                    ProgrammeModuleId = item.ProgrammeModuleId,
+                    ModuleCode = item.ProgrammeModule.ModuleCode,
+                    ModuleName = item.ProgrammeModule.ModuleName
+                })
+                .ToListAsync(cancellationToken);
+            int[] currentModuleIds = CurrentTutorModules
+                .Select(item => item.ProgrammeModuleId)
+                .ToArray();
+            ModulesAvailableFor2027 = await _context.ProgrammeModules
+                .AsNoTracking()
+                .Where(module => !currentModuleIds.Contains(module.ProgrammeModuleId))
+                .OrderBy(module => module.ModuleCode)
+                .Select(module => new TutorModuleOptionViewModel
+                {
+                    ProgrammeModuleId = module.ProgrammeModuleId,
+                    ModuleCode = module.ModuleCode,
+                    ModuleName = module.ModuleName
+                })
+                .ToListAsync(cancellationToken);
+            if (TempData.Peek("SeniorTutorApplicationModuleIds") is string selectedIds)
+            {
+                Preselected2027ModuleIds = selectedIds
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(value => int.TryParse(value, out int id) ? id : 0)
+                    .Where(id => id > 0)
+                    .ToHashSet();
+            }
+            if (TempData.Peek("SeniorTutorApplicationHeadChoice") is string headChoice &&
+                bool.TryParse(headChoice, out bool parsedHeadChoice))
+            {
+                PreselectedHeadOfTutorChoice = parsedHeadChoice;
+            }
+        }
         CanManageResources = currentUser.Role == BcUserRole.HeadOfTutors ||
             await _context.ResourceTutorNominations
                 .AsNoTracking()

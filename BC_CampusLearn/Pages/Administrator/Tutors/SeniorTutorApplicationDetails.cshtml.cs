@@ -59,6 +59,7 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
             .SeniorTutorApplications
             .Include(item => item.Tutor)
                 .ThenInclude(tutor => tutor.BcUser)
+            .Include(item => item.RequestedModules)
             .SingleOrDefaultAsync(
                 item => item.SeniorTutorApplicationId == id,
                 cancellationToken);
@@ -83,17 +84,44 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
         application.ReviewNote = ReviewNote;
         if (approve)
         {
-            application.Tutor.BcUser.Role = BcUserRole.SeniorTutor;
+            application.Tutor.OverallAverage = application.AcademicAverage;
+            application.Tutor.BcUser.Role = application.IsHeadOfTutorApplication
+                ? BcUserRole.HeadOfTutors
+                : BcUserRole.SeniorTutor;
+            foreach (SeniorTutorApplicationModule requestedModule in
+                application.RequestedModules)
+            {
+                TutorCourseModule? assignment = await context.TutorCourseModules
+                    .SingleOrDefaultAsync(item =>
+                        item.TutorId == application.TutorId &&
+                        item.ProgrammeModuleId == requestedModule.ProgrammeModuleId,
+                        cancellationToken);
+                if (assignment is null)
+                {
+                    context.TutorCourseModules.Add(new TutorCourseModule
+                    {
+                        TutorId = application.TutorId,
+                        ProgrammeModuleId = requestedModule.ProgrammeModuleId,
+                        IsActive = true
+                    });
+                }
+                else
+                {
+                    assignment.IsActive = true;
+                }
+            }
             application.IsArchived = true;
         }
 
         context.UserNotifications.Add(new UserNotification
         {
             RecipientBcUserId = application.Tutor.BcUserId,
-            Title = "Senior tutor application update",
+            Title = "Senior Tutor application update",
             Message = approve
-                ? "Your senior tutor application was accepted."
-                : $"Your senior tutor application was rejected. {ReviewNote}",
+                ? application.IsHeadOfTutorApplication
+                    ? "Your Senior Tutor and Head of Tutor application was accepted."
+                    : "Your Senior Tutor application was accepted."
+                : $"Your Senior Tutor application was rejected. {ReviewNote}",
             LinkUrl = "/Tutors/SeniorTutorApplications",
             CreatedAt = DateTimeOffset.UtcNow
         });
@@ -109,8 +137,8 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
         }
 
         TempData["PageMessage"] = approve
-            ? "Senior tutor application accepted. The tutor has been notified."
-            : "Senior tutor application rejected. The tutor has been notified.";
+            ? "Senior Tutor application accepted. The tutor has been notified."
+            : "Senior Tutor application rejected. The tutor has been notified.";
         return RedirectToPage("Index", new { Tab = "senior-applications" });
     }
 
@@ -128,6 +156,8 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
             .Include(item => item.Tutor)
                 .ThenInclude(tutor => tutor.TutorCourseModules.Where(module => module.IsActive))
                 .ThenInclude(module => module.ProgrammeModule)
+            .Include(item => item.RequestedModules)
+                .ThenInclude(item => item.ProgrammeModule)
             .SingleOrDefaultAsync(
                 item => item.SeniorTutorApplicationId == id,
                 cancellationToken);

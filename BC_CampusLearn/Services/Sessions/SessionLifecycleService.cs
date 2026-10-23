@@ -25,19 +25,59 @@ public class SessionLifecycleService : ISessionLifecycleService
     private readonly ApplicationDbContext _context;
     private readonly TimeProvider _timeProvider;
     private readonly IBookingTeamsMeetingService? _teamsMeetings;
+    private readonly ILogger<SessionLifecycleService>? _logger;
 
     public SessionLifecycleService(
         ApplicationDbContext context,
         TimeProvider timeProvider,
-        IBookingTeamsMeetingService? teamsMeetings = null)
+        IBookingTeamsMeetingService? teamsMeetings = null,
+        ILogger<SessionLifecycleService>? logger = null)
     {
         _context = context;
         _timeProvider = timeProvider;
         _teamsMeetings = teamsMeetings;
+        _logger = logger;
     }
 
     public async Task ProcessDueTransitionsAsync(
         CancellationToken cancellationToken = default)
+    {
+        const int maximumAttempts = 2;
+        for (int attempt = 1; attempt <= maximumAttempts; attempt++)
+        {
+            try
+            {
+                await ProcessDueTransitionsCoreAsync(cancellationToken);
+                return;
+            }
+            catch (DbUpdateConcurrencyException exception)
+            {
+                // Dashboard requests can overlap and attempt the same automatic
+                // transition with an identical row version. Discard the stale
+                // tracked graph and re-query once so the operation is idempotent.
+                _context.ChangeTracker.Clear();
+
+                if (attempt < maximumAttempts)
+                {
+                    _logger?.LogDebug(
+                        exception,
+                        "A concurrent session lifecycle update was detected. Retrying with fresh state.");
+                    continue;
+                }
+
+                // These transitions are maintenance work performed while loading
+                // a page. Another request has already changed the affected row, so
+                // a remaining collision must not make the dashboard unavailable.
+                _logger?.LogWarning(
+                    exception,
+                    "Session lifecycle transitions remained concurrent after retry and will be checked again on the next request.");
+                return;
+            }
+        }
+    }
+
+    private async Task ProcessDueTransitionsCoreAsync(
+        CancellationToken cancellationToken)
     {
         DateTimeOffset now = _timeProvider.GetUtcNow();
         List<Booking> dueBookings = await _context.Bookings

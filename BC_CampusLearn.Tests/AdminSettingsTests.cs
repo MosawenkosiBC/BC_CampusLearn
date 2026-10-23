@@ -901,7 +901,7 @@ public class AdminSettingsTests
     }
 
     [Fact]
-    public async Task DemotingSeniorTutorDeletesTheirApplicationHistory()
+    public async Task DemotingHeadOfTutorsDeletesTheirApplicationHistory()
     {
         await using ApplicationDbContext context = CreateContext();
         AddBaseData(context, BcUserRole.SuperAdmin);
@@ -909,9 +909,9 @@ public class AdminSettingsTests
         context.BcUsers.Add(new BcUser
         {
             BcUserId = 2,
-            Email = "senior@campus.test",
-            DisplayName = "Senior Tutor",
-            Role = BcUserRole.SeniorTutor,
+            Email = "head@campus.test",
+            DisplayName = "Head of Tutor",
+            Role = BcUserRole.HeadOfTutors,
             Tutor = tutor
         });
         context.SeniorTutorApplications.AddRange(

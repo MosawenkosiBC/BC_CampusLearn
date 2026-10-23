@@ -584,7 +584,143 @@
         updateRangeLabel(calendar.view);
     };
 
+    const setupSeniorTutorApplication = () => {
+        const form = document.querySelector(
+            "[data-dashboard-senior-application-form]");
+        if (!form) {
+            return;
+        }
+
+        const modal = document.querySelector(
+            "#senior-tutor-application-modal");
+        const average = form.querySelector(
+            "[data-dashboard-senior-average]");
+        const error = form.querySelector(
+            "[data-dashboard-senior-average-error]");
+        const hotNotice = form.querySelector(
+            "[data-dashboard-hot-notice]");
+        const hotChoices = Array.from(form.querySelectorAll(
+            "[data-dashboard-hot-choice]"));
+        const hotChoiceError = form.querySelector(
+            "[data-dashboard-hot-choice-error]");
+        const hotNextStep = form.querySelector(
+            "[data-dashboard-hot-next-step]");
+        const moduleSearch = form.querySelector(
+            "[data-renewal-module-search]");
+        const moduleOptions = Array.from(form.querySelectorAll(
+            "[data-renewal-module-option]"));
+        const moduleCount = form.querySelector(
+            "[data-renewal-module-count]");
+        const moduleEmpty = form.querySelector(
+            "[data-renewal-module-empty]");
+
+        modal?.addEventListener("show.bs.modal", () => {
+            document.documentElement.classList.add(
+                "senior-application-modal-open");
+        });
+        modal?.addEventListener("hidden.bs.modal", () => {
+            document.documentElement.classList.remove(
+                "senior-application-modal-open");
+        });
+
+        let validationAttempted = false;
+
+        const updateHotChoice = () => {
+            const selected = hotChoices.find((choice) => choice.checked);
+            if (hotNextStep) {
+                hotNextStep.hidden = selected?.value !== "true";
+            }
+            if (hotChoiceError && selected) {
+                hotChoiceError.textContent = "";
+            }
+        };
+
+        const validate = (showErrors = validationAttempted) => {
+            const value = average?.value.trim() ?? "";
+            const parsed = Number(value);
+            const message = value.length === 0
+                ? "Enter your academic average."
+                : !Number.isFinite(parsed) || parsed < 0 || parsed > 100
+                    ? "Enter an academic average from 0 to 100."
+                    : "";
+            if (error) {
+                error.textContent = showErrors ? message : "";
+            }
+            average?.setAttribute(
+                "aria-invalid",
+                String(showErrors && Boolean(message)));
+            if (hotNotice) {
+                hotNotice.hidden = Boolean(message) || parsed < 72;
+            }
+            return !message;
+        };
+
+        average?.addEventListener("input", () => validate());
+        hotChoices.forEach((choice) => {
+            choice.addEventListener("change", updateHotChoice);
+        });
+        const updateModuleCount = () => {
+            const selected = moduleOptions.filter((option) =>
+                option.querySelector("input")?.checked).length;
+            if (moduleCount) {
+                moduleCount.textContent = `${selected} selected`;
+            }
+        };
+        moduleOptions.forEach((option) => {
+            option.querySelector("input")?.addEventListener(
+                "change",
+                updateModuleCount);
+        });
+        moduleSearch?.addEventListener("input", () => {
+            const query = moduleSearch.value.trim().toLowerCase();
+            let visible = 0;
+            moduleOptions.forEach((option) => {
+                const matches = option.textContent
+                    .toLowerCase()
+                    .includes(query);
+                option.hidden = !matches;
+                if (matches) {
+                    visible += 1;
+                }
+            });
+            if (moduleEmpty) {
+                moduleEmpty.hidden = visible !== 0;
+            }
+        });
+        form.addEventListener("submit", (event) => {
+            validationAttempted = true;
+            const averageIsValid = validate(true);
+            const parsed = Number(average?.value.trim() ?? "");
+            const hotChoiceRequired = hotNotice &&
+                !hotNotice.hidden &&
+                parsed >= 72;
+            const selectedHotChoice = hotChoices.find((choice) =>
+                choice.checked);
+            if (hotChoiceError) {
+                hotChoiceError.textContent = hotChoiceRequired &&
+                    !selectedHotChoice
+                    ? "Choose Yes or No."
+                    : "";
+            }
+            if (!averageIsValid) {
+                event.preventDefault();
+                average?.focus();
+            } else if (hotChoiceRequired && !selectedHotChoice) {
+                event.preventDefault();
+                hotChoices[0]?.focus();
+            }
+        });
+        validate(false);
+        updateHotChoice();
+        updateModuleCount();
+
+        if (modal?.dataset.openOnLoad === "true" && window.bootstrap) {
+            window.bootstrap.Modal.getOrCreateInstance(modal).show();
+        }
+    };
+
     setupCountdown();
     setupAvailabilityViews();
     setupBookingPopover();
+    setupSeniorTutorApplication();
 })();

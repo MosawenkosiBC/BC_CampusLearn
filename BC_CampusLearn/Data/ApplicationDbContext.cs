@@ -39,6 +39,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<SeniorTutorApplication> SeniorTutorApplications =>
         Set<SeniorTutorApplication>();
 
+    public DbSet<SeniorTutorApplicationModule> SeniorTutorApplicationModules =>
+        Set<SeniorTutorApplicationModule>();
+
     public DbSet<TutorDeregistrationRequest> TutorDeregistrationRequests =>
         Set<TutorDeregistrationRequest>();
 

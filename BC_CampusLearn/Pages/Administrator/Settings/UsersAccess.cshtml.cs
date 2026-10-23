@@ -220,11 +220,12 @@ public class UsersAccessModel(
             await IsLastActiveSuperAdminAsync(target.BcUserId, cancellationToken))
             return AccessError("The last active Super Admin cannot be demoted.");
 
-        bool removingSeniorTutorRole = target.Role == BcUserRole.SeniorTutor;
+        bool removingApplicationRole = target.Role is
+            BcUserRole.SeniorTutor or BcUserRole.HeadOfTutors;
         string previous = target.Role.ToString();
         target.Role = DemotionRole(target.Role, IsApprovedTutor(target));
         target.IsAdministrativeAccessActive = true;
-        if (removingSeniorTutorRole)
+        if (removingApplicationRole)
         {
             List<SeniorTutorApplication> applications = await context
                 .SeniorTutorApplications
@@ -236,7 +237,7 @@ public class UsersAccessModel(
         EnsureAdminProfile(target);
         RecordAccessAudit(target, "Administrative role", previous, target.Role.ToString(), currentUser, reason);
         await context.SaveChangesAsync(cancellationToken);
-        SuccessMessage = removingSeniorTutorRole
+        SuccessMessage = removingApplicationRole
             ? $"{target.DisplayName} was demoted to Tutor. Their Senior Tutor application was removed."
             : $"{target.DisplayName} was demoted to {RoleLabel(target.Role)}.";
         return RedirectToPage();

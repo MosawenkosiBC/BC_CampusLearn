@@ -69,18 +69,43 @@
                 </div>
                 <dl class="admin-senior-answer-summary">
                     <div>
+                        <dt>Application type</dt>
+                        <dd>@(application.IsHeadOfTutorApplication ? "Senior Tutor and Head of Tutor" : "Senior Tutor")</dd>
+                    </div>
+                    <div>
                         <dt>Academic average</dt>
                         <dd>@application.AcademicAverage.ToString("0.##")%</dd>
                     </div>
                     <div>
-                        <dt>Best description</dt>
-                        <dd>@application.BestDescription</dd>
+                        <dt>Additional modules for 2027</dt>
+                        <dd>
+                            @if (application.RequestedModules.Count == 0)
+                            {
+                                <span>None requested</span>
+                            }
+                            else
+                            {
+                                @string.Join(", ", application.RequestedModules
+                                    .OrderBy(item => item.ProgrammeModule.ModuleCode)
+                                    .Select(item => $"{item.ProgrammeModule.ModuleCode} — {item.ProgrammeModule.ModuleName}"))
+                            }
+                        </dd>
                     </div>
+                    @if (application.IsHeadOfTutorApplication)
+                    {
+                        <div>
+                            <dt>Best description</dt>
+                            <dd>@application.BestDescription</dd>
+                        </div>
+                    }
                 </dl>
-                <div class="admin-senior-written-answer">
-                    <h3>Why do you think you are a suitable candidate for the Senior Tutor Role?</h3>
-                    <p>@application.SuitabilityReason</p>
-                </div>
+                @if (application.IsHeadOfTutorApplication)
+                {
+                    <div class="admin-senior-written-answer">
+                        <h3>Why do you think you are a suitable candidate for the Head of Tutor role?</h3>
+                        <p>@application.SuitabilityReason</p>
+                    </div>
+                }
             </section>
 
             <section class="admin-senior-panel admin-senior-analytics"

@@ -8,9 +8,11 @@ public class SeniorTutorApplication
 
     public decimal AcademicAverage { get; set; }
 
-    public string BestDescription { get; set; } = null!;
+    public bool IsHeadOfTutorApplication { get; set; }
 
-    public string SuitabilityReason { get; set; } = null!;
+    public string? BestDescription { get; set; }
+
+    public string? SuitabilityReason { get; set; }
 
     public TutorAccountRequestStatus Status { get; set; }
 
@@ -25,4 +27,7 @@ public class SeniorTutorApplication
     public string? ReviewNote { get; set; }
 
     public Tutor Tutor { get; set; } = null!;
+
+    public ICollection<SeniorTutorApplicationModule> RequestedModules { get; set; }
+        = new List<SeniorTutorApplicationModule>();
 }

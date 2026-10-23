@@ -1069,7 +1069,6 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("decimal(5,2)");
 
                     b.Property<string>("BestDescription")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -1077,6 +1076,9 @@ namespace BC_CampusLearn.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
+
+                    b.Property<bool>("IsHeadOfTutorApplication")
+                        .HasColumnType("bit");
 
                     b.Property<string>("ReviewNote")
                         .HasMaxLength(500)
@@ -1101,7 +1103,6 @@ namespace BC_CampusLearn.Migrations
                         .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.Property<string>("SuitabilityReason")
-                        .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
@@ -1113,6 +1114,21 @@ namespace BC_CampusLearn.Migrations
                     b.HasIndex("TutorId", "Status");
 
                     b.ToTable("SeniorTutorApplications");
+                });
+
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.SeniorTutorApplicationModule", b =>
+                {
+                    b.Property<int>("SeniorTutorApplicationId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProgrammeModuleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("SeniorTutorApplicationId", "ProgrammeModuleId");
+
+                    b.HasIndex("ProgrammeModuleId");
+
+                    b.ToTable("SeniorTutorApplicationModules");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.SessionAiAssessment", b =>
@@ -2470,6 +2486,25 @@ namespace BC_CampusLearn.Migrations
                     b.Navigation("Tutor");
                 });
 
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.SeniorTutorApplicationModule", b =>
+                {
+                    b.HasOne("BC_CampusLearn.Models.Entities.ProgrammeModule", "ProgrammeModule")
+                        .WithMany("SeniorTutorApplicationModules")
+                        .HasForeignKey("ProgrammeModuleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BC_CampusLearn.Models.Entities.SeniorTutorApplication", "SeniorTutorApplication")
+                        .WithMany("RequestedModules")
+                        .HasForeignKey("SeniorTutorApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProgrammeModule");
+
+                    b.Navigation("SeniorTutorApplication");
+                });
+
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.SessionAiAssessment", b =>
                 {
                     b.HasOne("BC_CampusLearn.Models.Entities.Booking", "Booking")
@@ -2809,9 +2844,16 @@ namespace BC_CampusLearn.Migrations
 
                     b.Navigation("ResourceTutorNominations");
 
+                    b.Navigation("SeniorTutorApplicationModules");
+
                     b.Navigation("TutorCourseModules");
 
                     b.Navigation("TutorModuleChangeRequests");
+                });
+
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.SeniorTutorApplication", b =>
+                {
+                    b.Navigation("RequestedModules");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.ProgrammeOfStudy", b =>

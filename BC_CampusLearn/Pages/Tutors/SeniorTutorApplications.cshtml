@@ -2,8 +2,15 @@
 @model BC_CampusLearn.Pages.Tutors.SeniorTutorApplicationsModel
 
 @{
-    ViewData["Title"] = "Senior Tutor Applications";
+    ViewData["Title"] = "Senior Tutor Application";
     bool hasPendingApplication = Model.LatestApplication?.Status == TutorAccountRequestStatus.Pending;
+    bool hasApprovedTutorRole = Model.IsSeniorTutor || Model.IsHeadOfTutors;
+    bool canCompleteHeadOfTutorApplication = Model.LatestApplication is
+    {
+        Status: TutorAccountRequestStatus.Pending,
+        IsHeadOfTutorApplication: false,
+        AcademicAverage: >= 72m
+    };
 }
 
 @section Styles {
@@ -21,7 +28,15 @@
     {
         @await Html.PartialAsync("_CampusAlert",
             new CampusAlertViewModel(
-                "Your senior tutor application has been submitted for review.",
+                "Your Senior Tutor application has been submitted for review.",
+                CampusAlertVariant.Success))
+    }
+
+    @if (TempData["HeadOfTutorApplicationSaved"] is true)
+    {
+        @await Html.PartialAsync("_CampusAlert",
+            new CampusAlertViewModel(
+                "Your Head of Tutor application has been added to your Senior Tutor application.",
                 CampusAlertVariant.Success))
     }
 
@@ -96,18 +111,21 @@
                               stroke-linejoin="round" stroke-width="1.5"
                               d="m13.728 3.444l1.76 3.549c.24.494.88.968 1.42 1.058l3.189.535c2.04.343 2.52 1.835 1.05 3.307l-2.48 2.5c-.42.423-.65 1.24-.52 1.825l.71 3.095c.56 2.45-.73 3.397-2.88 2.117l-2.99-1.785c-.54-.322-1.43-.322-1.98 0L8.019 21.43c-2.14 1.28-3.44.322-2.88-2.117l.71-3.095c.13-.585-.1-1.402-.52-1.825l-2.48-2.5C1.39 10.42 1.86 8.929 3.899 8.586l3.19-.535c.53-.09 1.17-.564 1.41-1.058l1.76-3.549c.96-1.925 2.52-1.925 3.47 0" />
                     </svg>
-                    <span class="tutor-profile-senior-label-full">ST Applications</span>
-                    <span class="tutor-profile-senior-label-mobile">ST Applications</span>
+                    <span class="tutor-profile-senior-label-full">HOT Applications</span>
+                    <span class="tutor-profile-senior-label-mobile">HOT Applications</span>
                 </a>
             </nav>
         </aside>
 
         <div class="tutor-senior-applications">
-            <h2>Senior Tutor Applications</h2>
+            <h2>Senior Tutor Application</h2>
 
             <section class="tutor-senior-application-card" aria-labelledby="senior-job-purpose">
                 <div class="tutor-senior-introduction">
-                    <h3 id="senior-job-purpose">Job Purpose</h3>
+                    <h3 id="senior-job-purpose">Head of Tutor opportunity</h3>
+                    <p>
+                        Applicants with an academic average of 72% or higher can also choose to apply for the Head of Tutor role.
+                    </p>
                     <p>
                         The peer-tutoring programme at Belgium Campus iTversity assists students with academic challenges,
                         with particular focus on content they may find difficult to understand as taught by their lecturers.
@@ -131,7 +149,7 @@
                             </svg>
                         </button>
                         <div id="senior-duties-panel" class="tutor-senior-information-panel">
-                            <p>The senior tutor ensures that the following functions are fulfilled throughout the year:</p>
+                            <p>The Head of Tutor ensures that the following functions are fulfilled throughout the year:</p>
                             <ul>
                                 <li>Organise and facilitate regular meetings with the rest of the tutors.</li>
                                 <li>Market and advertise the peer-tutoring programme to students at all three campuses.</li>
@@ -178,7 +196,7 @@
                         <div id="senior-benefits-panel" class="tutor-senior-information-panel">
                             <ul>
                                 <li>A higher hourly rate for tutoring sessions.</li>
-                                <li>A senior tutor T-shirt.</li>
+                                <li>A Head of Tutor T-shirt.</li>
                                 <li>A letter of recommendation.</li>
                                 <li>A certificate.</li>
                             </ul>
@@ -188,10 +206,16 @@
 
                 <div class="tutor-senior-application-action">
                     <div>
-                        <h3>@(Model.IsSeniorTutor ? "You are a Senior Tutor" : "Ready to apply?")</h3>
+                        <h3>@(Model.IsHeadOfTutors
+                            ? "You are the Head of Tutor"
+                            : Model.IsSeniorTutor
+                                ? "You are a Senior Tutor"
+                                : "Ready to apply?")</h3>
                         <p>
-                            @(Model.IsSeniorTutor
-                                ? "Your Senior Tutor application has been accepted."
+                            @(Model.IsHeadOfTutors
+                                ? "Your Head of Tutor application has been accepted."
+                                : Model.IsSeniorTutor
+                                    ? "Your Senior Tutor application has been accepted."
                                 : "If you meet the requirements and believe you are suitable for the vacancy, complete the application form.")
                         </p>
                         @if (Model.LatestApplication is not null)
@@ -202,24 +226,33 @@
                             </p>
                         }
                     </div>
-                    @if (!Model.IsSeniorTutor)
+                    @if (!hasApprovedTutorRole)
                     {
                         @if (hasPendingApplication)
                         {
-                            <button type="button"
-                                    class="tutor-modal-primary tutor-senior-apply-button"
-                                    disabled>Application pending</button>
+                            @if (canCompleteHeadOfTutorApplication)
+                            {
+                                <button type="button"
+                                        class="tutor-modal-primary tutor-senior-apply-button"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#senior-tutor-application-modal">
+                                    Apply for Head of Tutor
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button"
+                                        class="tutor-modal-primary tutor-senior-apply-button"
+                                        disabled>Application pending</button>
+                            }
                         }
                         else
                         {
-                            <button type="button"
-                                    class="tutor-modal-primary tutor-senior-apply-button"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="@(Model.ApplicationsOpen
-                                        ? "#senior-tutor-application-modal"
-                                        : "#senior-tutor-applications-closed-modal")">
-                                Apply to become a senior tutor
-                            </button>
+                            <a asp-page="/Tutors/TutorDashboard"
+                               asp-route-openSeniorApplication="true"
+                               class="tutor-modal-primary tutor-senior-apply-button">
+                                Start Senior Tutor application
+                            </a>
                         }
                     }
                 </div>
@@ -229,30 +262,8 @@
 </section>
 
 @section Modals {
-@if (!Model.IsSeniorTutor)
+@if (!hasApprovedTutorRole && (canCompleteHeadOfTutorApplication || Model.OpenApplicationModal))
 {
-<div class="modal fade tutor-account-modal"
-     id="senior-tutor-applications-closed-modal"
-     tabindex="-1"
-     aria-labelledby="senior-tutor-applications-closed-title"
-     aria-hidden="true"
-     data-open-on-load="@Model.ShowClosedApplicationsModal.ToString().ToLowerInvariant()">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title" id="senior-tutor-applications-closed-title">Applications closed</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Senior Tutor applications are currently closed. You can apply when applications open again.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="tutor-modal-primary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="modal fade tutor-account-modal"
      id="senior-tutor-application-modal"
      tabindex="-1"
@@ -262,86 +273,72 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <form method="post"
-                  asp-page-handler="Apply"
+                  asp-page-handler="ApplyForHead"
                   data-senior-tutor-application-form
                   novalidate>
+                <input type="hidden" name="applicationId"
+                       value="@Model.LatestApplication?.SeniorTutorApplicationId" />
                 <div class="modal-header">
                     <div>
-                        <h2 class="modal-title" id="senior-tutor-application-title">Apply to become a senior tutor</h2>
-                        <p>Complete all three questions. Your application will be sent for review.</p>
+                        <h2 class="modal-title" id="senior-tutor-application-title">Head of Tutor Application</h2>
+                        <p>Your Senior Tutor application was submitted successfully. Because your average is at least 72%, you may also apply for the Head of Tutor role.</p>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div asp-validation-summary="ModelOnly" class="tutor-profile-validation"></div>
 
-                    <div class="tutor-profile-field">
-                        <label asp-for="Input.AcademicAverage">
-                            1. Academic average (must be 72% or more)
-                            <span class="tutor-required-marker" aria-hidden="true">*</span>
-                        </label>
-                        <div class="tutor-senior-average-input">
-                            <input asp-for="Input.AcademicAverage"
-                                   type="text"
-                                   inputmode="decimal"
-                                   autocomplete="off"
-                                   data-senior-average />
-                            <span aria-hidden="true">%</span>
-                        </div>
-                        <span asp-validation-for="Input.AcademicAverage" data-senior-average-error></span>
-                    </div>
-
                     <fieldset class="tutor-senior-choice-field">
-                        <legend>
-                            2. Choose one option that describes you best.
-                            <span class="tutor-required-marker" aria-hidden="true">*</span>
-                        </legend>
-                        <div class="tutor-senior-choice-options">
-                            @foreach (string option in new[]
-                            {
-                                "Self-driven",
-                                "Self-disciplined",
-                                "Motivated",
-                                "Professional",
-                                "Good time management skills",
-                                "Good interpersonal skills",
-                                "Good leadership skills"
-                            })
-                            {
-                                <label>
-                                    <input type="radio"
-                                           asp-for="Input.BestDescription"
-                                           value="@option"
-                                           data-senior-description />
-                                    <span>@option</span>
-                                </label>
-                            }
-                        </div>
-                        <span asp-validation-for="Input.BestDescription" data-senior-description-error></span>
+                                <legend>
+                                    1. Choose one option that describes you best.
+                                    <span class="tutor-required-marker" aria-hidden="true">*</span>
+                                </legend>
+                                <div class="tutor-senior-choice-options">
+                                    @foreach (string option in new[]
+                                    {
+                                        "Self-driven",
+                                        "Self-disciplined",
+                                        "Motivated",
+                                        "Professional",
+                                        "Good time management skills",
+                                        "Good interpersonal skills",
+                                        "Good leadership skills"
+                                    })
+                                    {
+                                        <label>
+                                            <input type="radio"
+                                                   asp-for="Input.BestDescription"
+                                                   value="@option"
+                                                   data-senior-description />
+                                            <span>@option</span>
+                                        </label>
+                                    }
+                                </div>
+                                <span asp-validation-for="Input.BestDescription" data-senior-description-error></span>
                     </fieldset>
 
                     <div class="tutor-profile-field tutor-senior-summary-field">
-                        <label asp-for="Input.SuitabilityReason">
-                            3. Why do you think you are a suitable candidate for the Senior Tutor Role?
-                            <span class="tutor-required-marker" aria-hidden="true">*</span>
-                        </label>
-                        <textarea asp-for="Input.SuitabilityReason"
-                                  rows="5"
-                                  data-senior-reason
-                                  data-max-length="2000"
-                                  aria-describedby="senior-suitability-counter"></textarea>
-                        <span id="senior-suitability-counter"
-                              class="tutor-senior-summary-counter"
-                              data-senior-reason-counter
-                              aria-live="polite">
-                            2,000 characters remaining
-                        </span>
-                        <span asp-validation-for="Input.SuitabilityReason" data-senior-reason-error></span>
+                                <label asp-for="Input.SuitabilityReason">
+                                    2. Why do you think you are a suitable candidate for the Head of Tutor role?
+                                    <span class="tutor-required-marker" aria-hidden="true">*</span>
+                                </label>
+                                <textarea asp-for="Input.SuitabilityReason"
+                                          rows="5"
+                                          data-senior-reason
+                                          data-max-length="2000"
+                                          aria-describedby="senior-suitability-counter"></textarea>
+                                <span id="senior-suitability-counter"
+                                      class="tutor-senior-summary-counter"
+                                      data-senior-reason-counter
+                                      aria-live="polite">
+                                    2,000 characters remaining
+                                </span>
+                                <span asp-validation-for="Input.SuitabilityReason" data-senior-reason-error></span>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="tutor-modal-cancel" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="tutor-modal-primary">Submit application</button>
+                    <a asp-page="/Tutors/TutorDashboard" class="tutor-modal-cancel">Not now</a>
+                    <button type="submit" class="tutor-modal-primary">Submit HOT application</button>
                 </div>
             </form>
         </div>

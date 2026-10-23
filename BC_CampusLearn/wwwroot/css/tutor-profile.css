@@ -443,7 +443,17 @@
     place-items: center;
 }
 
-.tutor-senior-average-input input { border-radius: 0.25rem 0 0 0.25rem; }
+.tutor-senior-average-input input {
+    border-radius: 0.25rem 0 0 0.25rem;
+}
+
+@media (min-width: 768px) {
+    .tutor-senior-average-input input {
+        min-height: 2.25rem;
+        padding-bottom: 0.42rem;
+        padding-top: 0.42rem;
+    }
+}
 
 .tutor-senior-choice-field { border: 0; margin: 0; padding: 0; }
 
@@ -1288,9 +1298,32 @@ a.tutor-profile-nav-link:focus-visible {
 }
 
 .tutor-account-modal .modal-content {
-    border: 0;
+    border: 1px solid #dfe2e6;
     border-radius: 0.55rem;
-    box-shadow: 0 1.25rem 3rem rgba(24, 27, 32, 0.2);
+    box-shadow: none;
+    max-height: calc(100dvh - 2rem);
+    overflow: hidden;
+}
+
+.tutor-account-modal .modal-content > form {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 2rem);
+    min-height: 0;
+    overflow: hidden;
+}
+
+html.senior-application-modal-open,
+html.senior-application-modal-open body {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+}
+
+.tutor-account-modal input:focus,
+.tutor-account-modal textarea:focus,
+.tutor-account-modal select:focus,
+.tutor-account-modal button:focus-visible {
+    box-shadow: none !important;
 }
 
 .tutor-account-modal .modal-header {
@@ -1313,13 +1346,404 @@ a.tutor-profile-nav-link:focus-visible {
 
 .tutor-account-modal .modal-body {
     display: grid;
+    min-height: 0;
     gap: 1rem;
+    overscroll-behavior: contain;
+    overflow-y: auto;
     padding: 1.25rem 1.5rem;
+    scrollbar-gutter: stable;
 }
 
 .tutor-account-modal .modal-footer {
     border-top-color: #eceef1;
     padding: 0.9rem 1.5rem 1.2rem;
+}
+
+.tutor-renewal-intro {
+    background: #fff;
+    border: 0;
+    border-radius: 0.6rem;
+    box-shadow: 0 0.35rem 1rem rgba(24, 27, 32, 0.08);
+    padding: 1rem;
+}
+
+.tutor-renewal-intro h3,
+.tutor-renewal-section-heading h3 {
+    color: #252830;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.tutor-renewal-section-heading p {
+    color: #626a74;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    margin: 0.25rem 0 0;
+}
+
+.tutor-renewal-intro ul {
+    color: #111;
+    display: grid;
+    font-size: 0.8rem;
+    gap: 0.35rem;
+    line-height: 1.45;
+    margin: 0.55rem 0 0;
+    padding-left: 1.1rem;
+}
+
+.tutor-renewal-intro li::marker {
+    color: #111;
+}
+
+.tutor-renewal-intro .tutor-renewal-nonreturn-note {
+    border-top: 1px solid #ececec;
+    color: #3d4249;
+    font-size: 0.77rem;
+    font-weight: 600;
+    line-height: 1.45;
+    margin: 0.75rem 0 0;
+    padding-top: 0.65rem;
+}
+
+.tutor-renewal-intro .tutor-renewal-deadline {
+    align-items: center;
+    color: #555d67;
+    display: flex;
+    font-size: 0.76rem;
+    gap: 0.4rem;
+    margin: 0.65rem 0 0;
+}
+
+.tutor-renewal-deadline svg {
+    fill: none;
+    height: 1rem;
+    stroke: #111;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.7;
+    width: 1rem;
+}
+
+.tutor-renewal-deadline strong {
+    color: #b51228;
+}
+
+.tutor-renewal-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.tutor-renewal-section {
+    background: #fff;
+    border: 0;
+    border-radius: 0.6rem;
+    box-shadow: 0 0.35rem 1rem rgba(24, 27, 32, 0.08);
+    min-width: 0;
+    padding: 1rem;
+}
+
+.tutor-renewal-section-heading {
+    align-items: flex-start;
+    border-bottom: 1px solid #eceef0;
+    display: flex;
+    gap: 0.7rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.8rem;
+}
+
+.tutor-renewal-section-heading > span {
+    align-items: center;
+    align-self: stretch;
+    background: transparent;
+    border: 0;
+    border-right: 1px solid #e2e2e2;
+    border-radius: 0;
+    color: #111;
+    display: flex;
+    flex: 0 0 auto;
+    font-family: "Valley Sans", sans-serif;
+    font-size: 1.35rem;
+    font-weight: 600;
+    height: auto;
+    justify-content: center;
+    padding-right: 0.75rem;
+    width: auto;
+}
+
+.tutor-renewal-hot-choice {
+    border: 0;
+    margin: 1rem 0 0;
+    padding: 0;
+}
+
+.tutor-renewal-hot-choice legend {
+    align-items: center;
+    color: #1f2923;
+    display: flex;
+    float: none;
+    font-size: 0.88rem;
+    font-weight: 700;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.tutor-renewal-hot-choice legend svg {
+    background: #27834a;
+    border-radius: 50%;
+    fill: none;
+    flex: 0 0 auto;
+    height: 1.25rem;
+    padding: 0.25rem;
+    stroke: #fff;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.2;
+    width: 1.25rem;
+}
+
+.tutor-renewal-hot-choice > p:not(.tutor-renewal-hot-next-step) {
+    color: #555d67;
+    font-size: 0.78rem;
+    margin: 0.45rem 0 0.6rem;
+}
+
+.tutor-renewal-hot-options {
+    display: flex;
+    gap: 0.55rem;
+}
+
+.tutor-renewal-hot-options label {
+    cursor: pointer;
+    margin: 0;
+    position: relative;
+}
+
+.tutor-renewal-hot-options input {
+    height: 1px;
+    opacity: 0;
+    position: absolute;
+    width: 1px;
+}
+
+.tutor-renewal-hot-options label > span {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #cfd3d7;
+    border-radius: 0.35rem;
+    color: #343941;
+    display: flex;
+    font-size: 0.78rem;
+    font-weight: 650;
+    justify-content: center;
+    min-height: 2.25rem;
+    min-width: 4.75rem;
+    padding: 0.45rem 0.8rem;
+}
+
+.tutor-renewal-hot-options input:checked + span {
+    border-color: #343941;
+    box-shadow: inset 0 0 0 1px #343941;
+}
+
+.tutor-renewal-hot-options input:focus-visible + span {
+    outline: 2px solid #555;
+    outline-offset: 2px;
+}
+
+.tutor-renewal-hot-error {
+    color: #b51228;
+    display: block;
+    font-size: 0.75rem;
+    margin-top: 0.35rem;
+}
+
+.tutor-renewal-hot-next-step {
+    color: #4f565f;
+    font-size: 0.76rem;
+    margin: 0.65rem 0 0;
+}
+
+.tutor-renewal-module-label label {
+    color: #343941;
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.tutor-renewal-current-modules-content > p,
+.tutor-renewal-module-help,
+.tutor-renewal-empty {
+    color: #737a84;
+    font-size: 0.75rem;
+    margin: 0.45rem 0 0;
+}
+
+.tutor-renewal-current-modules {
+    border: 1px solid #e1e1e1;
+    border-radius: 0.4rem;
+    margin-top: 0.3rem;
+    overflow: hidden;
+}
+
+.tutor-renewal-current-modules > summary {
+    align-items: center;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    list-style: none;
+    min-height: 2.65rem;
+    padding: 0.55rem 0.8rem;
+    user-select: none;
+}
+
+.tutor-renewal-current-modules > summary::-webkit-details-marker {
+    display: none;
+}
+
+.tutor-renewal-current-modules > summary:hover {
+    background: #f7f7f7;
+}
+
+.tutor-renewal-current-modules > summary:focus-visible {
+    outline: 2px solid #555;
+    outline-offset: -2px;
+}
+
+.tutor-renewal-current-modules-title {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
+}
+
+.tutor-renewal-current-modules > summary strong {
+    color: #343941;
+    font-size: 0.82rem;
+}
+
+.tutor-renewal-current-modules-meta {
+    align-items: center;
+    display: flex;
+    gap: 0.65rem;
+}
+
+.tutor-renewal-current-modules-meta small {
+    background: #f1f2f3;
+    border-radius: 999px;
+    color: #5f6670;
+    font-size: 0.68rem;
+    padding: 0.25rem 0.55rem;
+}
+
+.tutor-renewal-current-modules > summary svg {
+    fill: none;
+    height: 1rem;
+    stroke: #555;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.7;
+    transition: transform 160ms ease;
+    width: 1rem;
+}
+
+.tutor-renewal-current-modules[open] > summary svg {
+    transform: rotate(180deg);
+}
+
+.tutor-renewal-current-modules-content {
+    border-top: 1px solid #e7e7e7;
+    padding: 0.75rem 0.85rem;
+}
+
+.tutor-renewal-current-module-list {
+    display: grid;
+}
+
+.tutor-renewal-current-module-list > div {
+    align-items: center;
+    border-bottom: 1px solid #ededed;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(4.5rem, auto) minmax(0, 1fr);
+    padding: 0.5rem 0;
+}
+
+.tutor-renewal-current-module-list > div:last-child {
+    border-bottom: 0;
+}
+
+.tutor-renewal-current-module-list strong {
+    color: #303640;
+    font-size: 0.73rem;
+}
+
+.tutor-renewal-current-module-list span {
+    color: #646b74;
+    font-size: 0.72rem;
+    overflow-wrap: anywhere;
+}
+
+.tutor-renewal-module-picker { border-top: 1px solid #e7e7e7; margin-top: 1rem; padding-top: 0.9rem; }
+.tutor-renewal-module-label { align-items: center; display: flex; justify-content: space-between; }
+.tutor-renewal-module-label label span { color: #737a84; font-weight: 400; }
+.tutor-renewal-module-label > span { color: #555; font-size: 0.72rem; font-weight: 700; }
+
+.tutor-renewal-module-search { margin-top: 0.55rem; position: relative; }
+.tutor-renewal-module-search svg {
+    fill: none;
+    height: 1rem;
+    left: 0.75rem;
+    position: absolute;
+    stroke: #737a84;
+    stroke-linecap: round;
+    stroke-width: 1.7;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1rem;
+}
+.tutor-account-modal .tutor-renewal-module-search input { padding-left: 2.2rem; }
+
+.tutor-renewal-module-options {
+    border: 1px solid #e0e3e6;
+    border-radius: 0.35rem;
+    margin-top: 0.45rem;
+    max-height: 10rem;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.tutor-renewal-module-options label {
+    align-items: center;
+    border-bottom: 1px solid #ededed;
+    border-radius: 0;
+    cursor: pointer;
+    display: flex;
+    gap: 0.65rem;
+    margin: 0;
+    min-height: 2.4rem;
+    padding: 0.45rem 0.65rem;
+}
+
+.tutor-renewal-module-options label:hover { background: #f5f5f6; }
+.tutor-renewal-module-options label:last-of-type { border-bottom: 0; }
+.tutor-renewal-module-options label[hidden] { display: none; }
+.tutor-renewal-module-options input { accent-color: #444; flex: 0 0 auto; height: 1rem; width: 1rem; }
+.tutor-renewal-module-options label > span {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(4.5rem, auto) minmax(0, 1fr);
+    min-width: 0;
+    width: 100%;
+}
+.tutor-renewal-module-options strong { color: #303640; font-size: 0.75rem; }
+.tutor-renewal-module-options small { color: #6d747d; font-size: 0.72rem; overflow-wrap: anywhere; }
+
+@media (max-width: 767.98px) {
+    .tutor-renewal-grid { grid-template-columns: 1fr; }
+    .tutor-renewal-intro { padding: 0.85rem; }
 }
 
 .tutor-modal-cancel,
@@ -2017,6 +2441,11 @@ a.tutor-profile-nav-link:focus-visible {
 .tutor-account-modal .tutor-modal-cancel,
 .tutor-account-modal .tutor-modal-primary {
     font-size: 16px;
+}
+
+.tutor-account-modal .tutor-renewal-module-label label {
+    font-size: 0.95rem;
+    font-weight: 700;
 }
 
 .tutor-profile-page .tutor-profile-identity p {
