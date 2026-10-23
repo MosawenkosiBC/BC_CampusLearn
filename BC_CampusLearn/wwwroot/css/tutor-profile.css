@@ -1677,6 +1677,7 @@ html.senior-application-modal-open body {
 .tutor-renewal-current-module-list strong {
     color: #303640;
     font-size: 0.73rem;
+    font-weight: 600;
 }
 
 .tutor-renewal-current-module-list span {
@@ -1738,12 +1739,13 @@ html.senior-application-modal-open body {
     min-width: 0;
     width: 100%;
 }
-.tutor-renewal-module-options strong { color: #303640; font-size: 0.75rem; }
+.tutor-renewal-module-options strong { color: #303640; font-size: 0.75rem; font-weight: 600; }
 .tutor-renewal-module-options small { color: #6d747d; font-size: 0.72rem; overflow-wrap: anywhere; }
 
 @media (max-width: 767.98px) {
     .tutor-renewal-grid { grid-template-columns: 1fr; }
     .tutor-renewal-intro { padding: 0.85rem; }
+    .tutor-renewal-current-modules-meta small { font-size: 11px; }
 }
 
 .tutor-modal-cancel,
@@ -2493,6 +2495,29 @@ html.senior-application-modal-open body {
 }
 
 @media (max-width: 767.98px) {
+    .tutor-account-modal .modal-header p {
+        font-size: 14px;
+    }
+
+    .tutor-account-modal .tutor-renewal-intro ul {
+        font-size: 13.5px;
+    }
+
+    .tutor-account-modal .tutor-renewal-section-heading h3 {
+        font-size: 15px;
+    }
+
+    .tutor-account-modal label[for="dashboard-senior-academic-average"] {
+        font-size: 13.5px;
+    }
+
+    .tutor-account-modal .tutor-renewal-module-options strong,
+    .tutor-account-modal .tutor-renewal-module-options small,
+    .tutor-account-modal .tutor-renewal-current-module-list strong,
+    .tutor-account-modal .tutor-renewal-current-module-list span {
+        font-size: 13.5px;
+    }
+
     .tutor-profile-personal-label-full {
         display: none;
     }
