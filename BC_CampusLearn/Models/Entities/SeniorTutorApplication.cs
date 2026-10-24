@@ -10,6 +10,8 @@ public class SeniorTutorApplication
 
     public bool IsHeadOfTutorApplication { get; set; }
 
+    public bool? HeadOfTutorApproved { get; set; }
+
     public string? BestDescription { get; set; }
 
     public string? SuitabilityReason { get; set; }

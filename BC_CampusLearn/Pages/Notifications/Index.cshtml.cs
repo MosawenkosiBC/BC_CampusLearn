@@ -170,9 +170,9 @@ public class IndexModel(
             .Split('\n', 2, StringSplitOptions.None)[0];
 
         public bool IsTutorApprovalNotification =>
-            Title.Equals(
+            (Title.Equals("Senior Tutor application approved", StringComparison.Ordinal) || Title.Equals(
                 "Tutor application approved",
-                StringComparison.Ordinal) &&
+                StringComparison.Ordinal)) &&
             SummaryMessage.StartsWith(
                 "Congratulations!",
                 StringComparison.Ordinal);

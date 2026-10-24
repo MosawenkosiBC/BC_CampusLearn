@@ -527,7 +527,8 @@
 }
 
 .admin-senior-decision-actions { display: grid; gap: 0.65rem; grid-template-columns: 1fr 1fr; margin-top: 1rem; }
-.admin-senior-decision-actions button {
+.admin-senior-accept-button,
+.admin-senior-reject-button {
     border-radius: 0.45rem;
     font-weight: 650;
     min-height: 2.75rem;
@@ -538,6 +539,7 @@
 .admin-senior-reject-button:hover { background: #fff1f0; }
 .admin-senior-accept-button { background: #246338; border: 1px solid #246338; color: #fff; }
 .admin-senior-accept-button:hover { background: #194b2a; border-color: #194b2a; }
+.admin-senior-accept-button:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .admin-senior-reject-modal { border: 0; }
 .admin-senior-reject-modal .modal-title { font-size: 1.15rem; }

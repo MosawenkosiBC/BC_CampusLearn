@@ -1077,6 +1077,9 @@ namespace BC_CampusLearn.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
+                    b.Property<bool?>("HeadOfTutorApproved")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsHeadOfTutorApplication")
                         .HasColumnType("bit");
 

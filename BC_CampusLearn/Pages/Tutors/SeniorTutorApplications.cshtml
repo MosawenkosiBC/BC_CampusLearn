@@ -223,6 +223,12 @@
                             <p class="tutor-senior-status">
                                 Latest application: <strong>@Model.LatestApplication.Status</strong>
                                 <span>Submitted @Model.LatestApplication.SubmittedAt.ToLocalTime().ToString("dd MMM yyyy")</span>
+                                @if (Model.LatestApplication.IsHeadOfTutorApplication)
+                                {
+                                    <span>Head of Tutor: @(Model.LatestApplication.HeadOfTutorApproved.HasValue
+                                        ? Model.LatestApplication.HeadOfTutorApproved.Value ? "Approved" : "Declined"
+                                        : "Pending")</span>
+                                }
                             </p>
                         }
                     </div>
