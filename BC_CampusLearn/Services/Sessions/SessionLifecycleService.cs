@@ -447,6 +447,23 @@ public class SessionLifecycleService : ISessionLifecycleService
                     booking.BookingId,
                     notificationContext.Details,
                     now));
+            NotificationEmailQueue.Add(
+                _context,
+                $"booking:{booking.BookingId}:cancelled-by-student:tutor",
+                notificationContext.TutorEmail,
+                notificationContext.TutorName,
+                "A tutoring session has been cancelled",
+                $"{NotificationEmailQueue.Greeting(notificationContext.TutorName)}" +
+                $"{Environment.NewLine}{Environment.NewLine}" +
+                $"{booking.StudentName} cancelled the tutoring session below." +
+                $"{Environment.NewLine}{Environment.NewLine}" +
+                NotificationEmailQueue.SessionDetails(
+                    notificationContext.Details.ModuleCode,
+                    notificationContext.Details.ModuleName,
+                    booking.ScheduledStartTime,
+                    booking.Location),
+                $"/Tutors/SessionDetails/{booking.BookingId}",
+                now);
         }
 
         RequestTeamsCancellation(booking, now);
@@ -634,6 +651,42 @@ public class SessionLifecycleService : ISessionLifecycleService
                 status,
                 notificationContext.Details,
                 createdAt));
+
+        if (status is BookingStatus.Confirmed or BookingStatus.Declined or
+            BookingStatus.Cancelled or BookingStatus.Completed)
+        {
+            (string subject, string update) = status switch
+            {
+                BookingStatus.Confirmed => (
+                    "Your tutoring session is confirmed",
+                    $"{notificationContext.TutorName} confirmed your tutoring session."),
+                BookingStatus.Declined => (
+                    "Update on your tutoring request",
+                    $"{notificationContext.TutorName} was unable to accept your tutoring request. You can return to Mzala Connect to choose another available session."),
+                BookingStatus.Cancelled => (
+                    "Your tutoring session has been cancelled",
+                    $"Your tutoring session with {notificationContext.TutorName} has been cancelled."),
+                _ => (
+                    "Please review your tutoring session",
+                    $"Your tutoring session with {notificationContext.TutorName} is complete. Please submit your session review.")
+            };
+            NotificationEmailQueue.Add(
+                _context,
+                $"booking:{booking.BookingId}:status:{status}:student",
+                booking.StudentEmail,
+                booking.StudentName,
+                subject,
+                $"{NotificationEmailQueue.Greeting(booking.StudentName)}" +
+                $"{Environment.NewLine}{Environment.NewLine}{update}" +
+                $"{Environment.NewLine}{Environment.NewLine}" +
+                NotificationEmailQueue.SessionDetails(
+                    notificationContext.Details.ModuleCode,
+                    notificationContext.Details.ModuleName,
+                    booking.ScheduledStartTime,
+                    booking.Location),
+                $"/Bookings/SessionDetails/{booking.BookingId}",
+                createdAt);
+        }
     }
 
     private async Task AddTutorCompletionNotificationAsync(
@@ -656,6 +709,24 @@ public class SessionLifecycleService : ISessionLifecycleService
                 booking.BookingId,
                 notificationContext.Details,
                 createdAt));
+        NotificationEmailQueue.Add(
+            _context,
+            $"booking:{booking.BookingId}:completed-review:tutor",
+            notificationContext.TutorEmail,
+            notificationContext.TutorName,
+            "Please complete your session review",
+            $"{NotificationEmailQueue.Greeting(notificationContext.TutorName)}" +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            $"Your tutoring session with {booking.StudentName} is complete. " +
+            "Please submit your session review while the details are still fresh." +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            NotificationEmailQueue.SessionDetails(
+                notificationContext.Details.ModuleCode,
+                notificationContext.Details.ModuleName,
+                booking.ScheduledStartTime,
+                booking.Location),
+            $"/Tutors/SessionDetails/{booking.BookingId}",
+            createdAt);
     }
 
     private async Task<BookingNotificationContext>
@@ -679,20 +750,22 @@ public class SessionLifecycleService : ISessionLifecycleService
             .SingleOrDefaultAsync(cancellationToken);
 
         string tutorName = "your tutor";
+        UserNameDetails? tutorDetails = null;
         if (tutorBcUserId.HasValue)
         {
-            UserNameDetails? tutorUser = await _context.BcUsers
+            tutorDetails = await _context.BcUsers
                 .AsNoTracking()
                 .Where(user => user.BcUserId == tutorBcUserId.Value)
                 .Select(user => new UserNameDetails(
                     user.DisplayName,
-                    user.PersonnelNumber))
+                    user.PersonnelNumber,
+                    user.Email))
                 .SingleOrDefaultAsync(cancellationToken);
-            if (tutorUser is not null)
+            if (tutorDetails is not null)
             {
-                tutorName = string.IsNullOrWhiteSpace(tutorUser.DisplayName)
-                    ? tutorUser.PersonnelNumber
-                    : tutorUser.DisplayName;
+                tutorName = string.IsNullOrWhiteSpace(tutorDetails.DisplayName)
+                    ? tutorDetails.PersonnelNumber ?? "your tutor"
+                    : tutorDetails.DisplayName;
             }
         }
 
@@ -715,12 +788,16 @@ public class SessionLifecycleService : ISessionLifecycleService
                 tutorName,
                 booking.StudentName,
                 meetingLinkUrl),
-            tutorBcUserId);
+            tutorBcUserId,
+            tutorDetails?.Email,
+            tutorName);
     }
 
     private sealed record BookingNotificationContext(
         BookingNotificationDetails Details,
-        int? TutorBcUserId);
+        int? TutorBcUserId,
+        string? TutorEmail,
+        string TutorName);
 
     private sealed record ModuleNotificationDetails(
         string ModuleCode,
@@ -728,5 +805,6 @@ public class SessionLifecycleService : ISessionLifecycleService
 
     private sealed record UserNameDetails(
         string DisplayName,
-        string PersonnelNumber);
+        string? PersonnelNumber,
+        string? Email);
 }

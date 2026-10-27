@@ -454,6 +454,9 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
+                    b.Property<DateTimeOffset?>("NotificationsQueuedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<DateTimeOffset>("PublishAt")
                         .HasColumnType("datetimeoffset");
 
@@ -509,6 +512,72 @@ namespace BC_CampusLearn.Migrations
                     b.HasIndex("CampusEventId", "Position");
 
                     b.ToTable("CampusEventDetail", (string)null);
+                });
+
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.EmailNotificationOutbox", b =>
+                {
+                    b.Property<long>("EmailNotificationOutboxId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("EmailNotificationOutboxId"));
+
+                    b.Property<string>("ActionPath")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("EventKey")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTimeOffset?>("FailedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("RecipientEmail")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<string>("RecipientName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset?>("SentAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("EmailNotificationOutboxId");
+
+                    b.HasIndex("EventKey")
+                        .IsUnique();
+
+                    b.HasIndex("SentAt", "FailedAt", "NextAttemptAt");
+
+                    b.ToTable("EmailNotificationOutbox", (string)null);
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.LearningResource", b =>
@@ -754,6 +823,9 @@ namespace BC_CampusLearn.Migrations
                     b.Property<bool>("IsMaintenanceModeEnabled")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsSuperAdminReviewThresholdAlertActive")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsTutorHeadReviewDeadlineRecurring")
                         .HasColumnType("bit");
 
@@ -766,6 +838,9 @@ namespace BC_CampusLearn.Migrations
                     b.Property<decimal?>("SeniorTutorPaymentAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("SuperAdminReviewThresholdSequence")
+                        .HasColumnType("int");
 
                     b.Property<string>("SupportEmail")
                         .IsRequired()
@@ -841,8 +916,10 @@ namespace BC_CampusLearn.Migrations
                             IsAdminSessionReviewDeadlineRecurring = true,
                             IsAnnouncementEnabled = false,
                             IsMaintenanceModeEnabled = false,
+                            IsSuperAdminReviewThresholdAlertActive = false,
                             IsTutorHeadReviewDeadlineRecurring = true,
                             RowVersion = new byte[0],
+                            SuperAdminReviewThresholdSequence = 0,
                             SupportEmail = "tutors@belgiumcampus.ac.za",
                             TutorHeadReviewDeadline = new DateOnly(2026, 10, 5),
                             TutorHeadReviewPeriodEndDate = new DateOnly(2026, 9, 30),
@@ -2851,11 +2928,6 @@ namespace BC_CampusLearn.Migrations
                     b.Navigation("TutorModuleChangeRequests");
                 });
 
-            modelBuilder.Entity("BC_CampusLearn.Models.Entities.SeniorTutorApplication", b =>
-                {
-                    b.Navigation("RequestedModules");
-                });
-
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.ProgrammeOfStudy", b =>
                 {
                     b.Navigation("ProgrammeModules");
@@ -2866,6 +2938,11 @@ namespace BC_CampusLearn.Migrations
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.ResourceComment", b =>
                 {
                     b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.SeniorTutorApplication", b =>
+                {
+                    b.Navigation("RequestedModules");
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.StudyArea", b =>

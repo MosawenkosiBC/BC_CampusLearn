@@ -1,10 +1,12 @@
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Notifications;
 using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Data;
 
 public class ApplicationDbContext : DbContext
 {
+    private readonly HashSet<string> _queuedRoleChanges = [];
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -72,6 +74,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<UserNotification> UserNotifications =>
         Set<UserNotification>();
 
+    public DbSet<EmailNotificationOutbox> EmailNotificationOutbox =>
+        Set<EmailNotificationOutbox>();
+
     public DbSet<PlatformSettings> PlatformSettings =>
         Set<PlatformSettings>();
 
@@ -121,7 +126,10 @@ public class ApplicationDbContext : DbContext
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         SynchronizeTutorRoles();
-        return base.SaveChanges(acceptAllChangesOnSuccess);
+        QueueRoleChangeNotifications();
+        int result = base.SaveChanges(acceptAllChangesOnSuccess);
+        _queuedRoleChanges.Clear();
+        return result;
     }
 
     public override async Task<int> SaveChangesAsync(
@@ -129,9 +137,88 @@ public class ApplicationDbContext : DbContext
         CancellationToken cancellationToken = default)
     {
         await SynchronizeTutorRolesAsync(cancellationToken);
-        return await base.SaveChangesAsync(
+        QueueRoleChangeNotifications();
+        int result = await base.SaveChangesAsync(
             acceptAllChangesOnSuccess,
             cancellationToken);
+        _queuedRoleChanges.Clear();
+        return result;
+    }
+
+    private void QueueRoleChangeNotifications()
+    {
+        ChangeTracker.DetectChanges();
+        foreach (var entry in ChangeTracker.Entries<BcUser>().Where(entry =>
+            entry.State == EntityState.Modified &&
+            entry.Property(user => user.Role).IsModified))
+        {
+            BcUserRole previous = entry.Property(user => user.Role).OriginalValue;
+            BcUserRole current = entry.Entity.Role;
+            string changeKey = $"{entry.Entity.BcUserId}:{previous}:{current}";
+            if (previous == current || current == BcUserRole.Dev ||
+                current == BcUserRole.Student ||
+                !_queuedRoleChanges.Add(changeKey))
+            {
+                continue;
+            }
+
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            (string title, string message, string link) = current switch
+            {
+                BcUserRole.Tutor => (
+                    "Tutor access granted",
+                    "Your account has been updated to Tutor. You can now manage your availability, bookings and tutoring sessions.",
+                    "/Tutors/TutorDashboard"),
+                BcUserRole.SeniorTutor => (
+                    "Senior Tutor access granted",
+                    "Your account has been updated to Senior Tutor. Your Senior Tutor tools are now available.",
+                    "/Tutors/TutorDashboard"),
+                BcUserRole.HeadOfTutors => (
+                    "Head of Tutors access granted",
+                    "Your account has been updated to Head of Tutors. You can now manage tutor activities and review completed sessions.",
+                    "/TutorHead/SessionReviews"),
+                BcUserRole.Admin => (
+                    "Admin access granted",
+                    "You have been granted Admin access. Administrative tools are now available from your dashboard.",
+                    "/Administrator/Admin/Dashboard"),
+                BcUserRole.SuperAdmin => (
+                    "Super Admin access granted",
+                    "You have been granted Super Admin access. Advanced administration tools are now available.",
+                    "/Administrator/Admin/Dashboard"),
+                _ => (
+                    "Account access updated",
+                    "Your Mzala Connect role or access has been updated. Sign in to see the tools available to you.",
+                    "/Student/Dashboard")
+            };
+
+            bool alreadyHasPlatformNotification = ChangeTracker
+                .Entries<UserNotification>()
+                .Any(notification =>
+                    notification.State == EntityState.Added &&
+                    notification.Entity.RecipientBcUserId ==
+                        entry.Entity.BcUserId);
+            if (!alreadyHasPlatformNotification)
+            {
+                UserNotifications.Add(new UserNotification
+                {
+                    RecipientBcUserId = entry.Entity.BcUserId,
+                    Title = title,
+                    Message = message,
+                    LinkUrl = link,
+                    CreatedAt = now
+                });
+            }
+            NotificationEmailQueue.Add(
+                this,
+                $"role-change:{entry.Entity.BcUserId}:{previous}:{current}:{now.ToUnixTimeMilliseconds()}",
+                entry.Entity.Email,
+                entry.Entity.DisplayName,
+                title,
+                $"{NotificationEmailQueue.Greeting(entry.Entity.DisplayName)}" +
+                $"{Environment.NewLine}{Environment.NewLine}{message}",
+                link,
+                now);
+        }
     }
 
     private void SynchronizeTutorRoles()

@@ -1010,9 +1010,9 @@ public class AdminSettingsTests
         UserNotification notification = Assert.Single(
             await context.UserNotifications.ToListAsync());
         Assert.Equal(2, notification.RecipientBcUserId);
-        Assert.Equal("Promoted to Head of Tutors", notification.Title);
-        Assert.Contains("promoted to Head of Tutors", notification.Message);
-        Assert.Contains("navigation drawer", notification.Message);
+        Assert.Equal("Head of Tutors access granted", notification.Title);
+        Assert.Contains("updated to Head of Tutors", notification.Message);
+        Assert.Contains("review completed sessions", notification.Message);
         Assert.Equal("/TutorHead/SessionReviews", notification.LinkUrl);
     }
 
