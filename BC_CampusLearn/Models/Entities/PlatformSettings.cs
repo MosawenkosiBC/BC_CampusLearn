@@ -34,6 +34,8 @@ public class PlatformSettings
         new(2026, 9, 6);
     public bool IsAdminSessionReviewDeadlineRecurring { get; set; } = true;
     public bool UseLastDayOfMonthForAdminSessionReviewDeadline { get; set; } = true;
+    public bool IsSuperAdminReviewThresholdAlertActive { get; set; }
+    public int SuperAdminReviewThresholdSequence { get; set; }
     public int? UpdatedByBcUserId { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
     public byte[] RowVersion { get; set; } = [];

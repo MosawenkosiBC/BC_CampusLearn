@@ -539,7 +539,7 @@ public class BookingService : IBookingService
             DateTimeOffset notificationTime = DateTimeOffset.UtcNow;
             string tutorName = string.IsNullOrWhiteSpace(
                 slot.Tutor.BcUser.DisplayName)
-                ? slot.Tutor.BcUser.PersonnelNumber
+                ? slot.Tutor.BcUser.PersonnelNumber ?? "Tutor"
                 : slot.Tutor.BcUser.DisplayName;
             var notificationDetails = new BookingNotificationDetails(
                 selectedAssignment.ProgrammeModule.ModuleCode,
@@ -560,6 +560,43 @@ public class BookingService : IBookingService
                     booking.BookingId,
                     notificationDetails,
                     notificationTime));
+
+            string module = NotificationEmailQueue.FormatModule(
+                notificationDetails.ModuleCode,
+                notificationDetails.ModuleName);
+            string sessionDetails = NotificationEmailQueue.SessionDetails(
+                notificationDetails.ModuleCode,
+                notificationDetails.ModuleName,
+                notificationDetails.ScheduledStartTime,
+                notificationDetails.Location);
+            NotificationEmailQueue.Add(
+                _context,
+                $"booking:{booking.BookingId}:submitted:student",
+                student.Email,
+                student.DisplayName,
+                "Your tutoring request is pending",
+                $"{NotificationEmailQueue.Greeting(student.DisplayName)}" +
+                $"{Environment.NewLine}{Environment.NewLine}" +
+                $"Your tutoring request for {module} has been sent to " +
+                $"{tutorName}. It is pending until the tutor confirms it. " +
+                "We will notify you when the tutor responds." +
+                $"{Environment.NewLine}{Environment.NewLine}{sessionDetails}",
+                $"/Bookings/SessionDetails/{booking.BookingId}",
+                notificationTime);
+            NotificationEmailQueue.Add(
+                _context,
+                $"booking:{booking.BookingId}:received:tutor",
+                slot.Tutor.BcUser.Email,
+                tutorName,
+                $"New tutoring request from {student.DisplayName}",
+                $"{NotificationEmailQueue.Greeting(tutorName)}" +
+                $"{Environment.NewLine}{Environment.NewLine}" +
+                $"You have received a new tutoring request from " +
+                $"{student.DisplayName}. Please open Mzala Connect to " +
+                "confirm or decline the request." +
+                $"{Environment.NewLine}{Environment.NewLine}{sessionDetails}",
+                $"/Tutors/SessionDetails/{booking.BookingId}",
+                notificationTime);
 
             await _context.SaveChangesAsync(cancellationToken);
 

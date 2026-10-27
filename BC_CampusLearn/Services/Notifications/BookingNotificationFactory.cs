@@ -20,8 +20,8 @@ public static class BookingNotificationFactory
         BookingNotificationDetails details,
         DateTimeOffset createdAt) => Create(
             studentBcUserId,
-            "Booking submitted",
-            $"Your booking request for {FormatModule(details)} with {details.TutorName} was submitted for {FormatScheduledTime(details)} at {details.Location}.",
+            "Booking request pending",
+            $"Your booking request for {FormatModule(details)} with {details.TutorName} is pending. The tutor must confirm it before the session is booked. We will notify you when the tutor responds.",
             StudentSessionUrl(bookingId),
             createdAt);
 
@@ -32,7 +32,7 @@ public static class BookingNotificationFactory
         DateTimeOffset createdAt) => Create(
             tutorBcUserId,
             "New booking request",
-            $"{details.StudentName} submitted a booking request for {FormatModule(details)} on {FormatScheduledTime(details)} at {details.Location}.",
+            $"{details.StudentName} requested a {FormatModule(details)} tutoring session for {FormatScheduledTime(details)} at {details.Location}. Please confirm or decline the request.",
             TutorSessionUrl(bookingId),
             createdAt);
 
@@ -129,7 +129,7 @@ public static class BookingNotificationFactory
             BookingStatus.InProgress =>
                 $"Your {FormatModule(details)} session with {details.TutorName} has started at {details.Location}; join now using {FormatMeetingLink(details)}.",
             BookingStatus.Completed =>
-                $"Great work completing your {FormatModule(details)} session with {details.TutorName} on {FormatScheduledTime(details)} at {details.Location}! Please complete your review and help us make future tutoring sessions even better.",
+                $"Your {FormatModule(details)} session with {details.TutorName} is complete. Please submit your session review.",
             _ =>
                 $"Your {FormatModule(details)} booking for {FormatScheduledTime(details)} at {details.Location} changed to {status.ToDisplayText()}."
         };
