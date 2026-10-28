@@ -111,7 +111,7 @@
 
         const query = parameters.toString();
         window.history.replaceState(
-            {},
+            { ...window.history.state, tutorDirectoryScroll: null },
             "",
             `${window.location.pathname}${query ? `?${query}` : ""}`);
     };
