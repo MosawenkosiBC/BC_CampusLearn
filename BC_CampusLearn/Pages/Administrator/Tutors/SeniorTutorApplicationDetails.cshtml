@@ -244,17 +244,18 @@
             <section class="admin-senior-panel admin-senior-decision-panel"
                      aria-labelledby="decision-title">
                 <h2 id="decision-title">Application decision</h2>
-                @if (application.Status == TutorAccountRequestStatus.Pending)
+                @if (application.Status == TutorAccountRequestStatus.Pending &&
+                    (!application.IsHeadOfTutorApplication || Model.CanReviewHeadApplication))
                 {
                     <p>Review the application and performance statistics before making a final decision.</p>
                     <form id="senior-application-decision-form" method="post"
                           asp-page-handler="Review" asp-route-id="@application.SeniorTutorApplicationId">
                         <label asp-for="ReviewNote">
-                            Decision note
+                            Internal decision note
                             <span>Required when rejecting</span>
                         </label>
                         <textarea asp-for="ReviewNote" rows="4" maxlength="500"
-                                  placeholder="Add context for the tutor"
+                                  placeholder="Add an internal note for administrators"
                                   aria-describedby="review-note-validation"></textarea>
                         <span asp-validation-for="ReviewNote" id="review-note-validation"
                               class="text-danger" data-review-note-validation></span>
@@ -262,15 +263,33 @@
                             <button type="button" class="admin-senior-reject-button"
                                     data-senior-reject-trigger
                                     aria-controls="reject-senior-application-modal">Reject</button>
-                            <button type="submit" name="approve" value="true"
-                                    class="admin-senior-accept-button">Accept</button>
+                            @if (application.IsHeadOfTutorApplication)
+                            {
+                                <button type="button" class="admin-senior-accept-button"
+                                        data-bs-toggle="modal" data-bs-target="#approve-senior-application-modal">Accept</button>
+                            }
+                            else
+                            {
+                                <button type="submit" name="approve" value="true"
+                                        class="admin-senior-accept-button">Accept</button>
+                            }
                         </div>
                     </form>
                 }
                 else
                 {
+                    @if (application.Status == TutorAccountRequestStatus.Pending)
+                    {
+                        <p>A Super Admin must review this combined Senior Tutor and Head of Tutor application.</p>
+                    }
                     <dl class="admin-senior-decision-details">
                         <div><dt>Decision</dt><dd>@application.Status</dd></div>
+                        @if (application.IsHeadOfTutorApplication)
+                        {
+                            <div><dt>Head of Tutor decision</dt><dd>@(application.HeadOfTutorApproved.HasValue
+                                ? application.HeadOfTutorApproved.Value ? "Approved" : "Declined"
+                                : "Pending")</dd></div>
+                        }
                         <div><dt>Reviewed by</dt><dd>@(application.ReviewedBy ?? "Administrator")</dd></div>
                         <div><dt>Reviewed</dt><dd>@application.ReviewedAt?.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</dd></div>
                         @if (!string.IsNullOrWhiteSpace(application.ReviewNote))
@@ -286,17 +305,80 @@
 
 @if (application.Status == TutorAccountRequestStatus.Pending)
 {
+    @if (application.IsHeadOfTutorApplication && Model.CanReviewHeadApplication)
+    {
+        <div class="modal fade" id="approve-senior-application-modal" tabindex="-1"
+             aria-labelledby="approve-senior-application-title" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content admin-senior-reject-modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title" id="approve-senior-application-title">Review application</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Select the roles you would like to approve for @applicantName.</p>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="approve-senior-toggle" name="approveSenior" value="true"
+                                   form="senior-application-decision-form" />
+                            <label class="form-check-label" for="approve-senior-toggle">Approve Senior Tutor</label>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="approve-head-toggle" name="approveHead" value="true"
+                                   form="senior-application-decision-form" disabled />
+                            <label class="form-check-label" for="approve-head-toggle">Also approve Head of Tutor</label>
+                        </div>
+                        <input type="hidden" name="approveHead" value="false" form="senior-application-decision-form" />
+                    </div>
+                    <div class="modal-footer">
+                        <p id="senior-approval-summary" class="w-100 text-start mb-2" aria-live="polite" hidden></p>
+                        <button type="button" class="admin-senior-reject-button"
+                                data-senior-reject-trigger aria-controls="reject-senior-application-modal">Reject both</button>
+                        <button type="submit" form="senior-application-decision-form"
+                                name="approve" value="true" data-senior-approve-confirm
+                                class="admin-senior-accept-button" disabled>Confirm approval</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="confirm-head-approval-modal" tabindex="-1"
+             aria-labelledby="confirm-head-approval-title" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content admin-senior-reject-modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title" id="confirm-head-approval-title">Approve Senior Tutor and Head of Tutor?</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>This will approve @applicantName's Senior Tutor and Head of Tutor applications and appoint them to the Head of Tutor role.</p>
+                        <p>The tutor will be notified once you confirm.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Back</button>
+                        <button type="button" class="admin-senior-accept-button" data-head-selection-confirm>Approve both</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
     <div class="modal fade" id="reject-senior-application-modal" tabindex="-1"
          aria-labelledby="reject-senior-application-title" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content admin-senior-reject-modal">
                 <div class="modal-header">
-                    <h2 class="modal-title" id="reject-senior-application-title">Reject this application?</h2>
+                    <h2 class="modal-title" id="reject-senior-application-title">@(application.IsHeadOfTutorApplication ? "Reject both applications?" : "Reject this application?")</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>This will reject @applicantName's Senior Tutor application and notify the tutor.</p>
-                    <p>Make sure a rejection reason has been entered in the decision note.</p>
+                    <p>This will reject @applicantName's @(application.IsHeadOfTutorApplication ? "Senior Tutor and Head of Tutor applications" : "Senior Tutor application") and notify the tutor.</p>
+                    <p>The tutor will remain in the programme. Their account and application history will be kept.</p>
+                    <label for="senior-rejection-note" class="form-label">Internal reason for rejection</label>
+                    <textarea id="senior-rejection-note" class="form-control" rows="3" maxlength="500"
+                              aria-describedby="senior-rejection-error"
+                              placeholder="Record the reason for administrators only">@Model.ReviewNote</textarea>
+                    <p class="form-text">This reason is internal and will not be shared with the tutor.</p>
+                    <span id="senior-rejection-error" class="text-danger" aria-live="polite"></span>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>

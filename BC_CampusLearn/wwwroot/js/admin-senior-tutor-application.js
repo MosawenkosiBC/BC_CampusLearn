@@ -1,9 +1,56 @@
 document.addEventListener("DOMContentLoaded", () => {
+    const approvalModal = document.getElementById("approve-senior-application-modal");
+    const seniorToggle = document.getElementById("approve-senior-toggle");
+    const headToggle = document.getElementById("approve-head-toggle");
+    const approvalConfirm = document.querySelector("[data-senior-approve-confirm]");
+    const approvalSummary = document.getElementById("senior-approval-summary");
+    const headConfirmation = document.getElementById("confirm-head-approval-modal");
+    let returningFromHeadConfirmation = false;
+    let headSelectionConfirmed = false;
+    const syncApproval = () => {
+        if (!seniorToggle || !headToggle || !approvalConfirm || !approvalSummary) return;
+        headToggle.disabled = !seniorToggle.checked;
+        if (!seniorToggle.checked) headToggle.checked = false;
+        approvalConfirm.disabled = !seniorToggle.checked;
+        approvalSummary.hidden = !seniorToggle.checked;
+        approvalSummary.textContent = !seniorToggle.checked
+            ? ""
+            : headToggle.checked
+                ? "Senior Tutor and Head of Tutor will both be approved."
+                : "Senior Tutor will be approved. Head of Tutor will be declined.";
+    };
+    seniorToggle?.addEventListener("change", syncApproval);
+    headToggle?.addEventListener("change", () => {
+        headSelectionConfirmed = false;
+        syncApproval();
+    });
+    document.querySelector("[data-head-selection-confirm]")?.addEventListener("click", () => {
+        headSelectionConfirmed = true;
+        window.bootstrap.Modal.getOrCreateInstance(headConfirmation).hide();
+        decisionForm.requestSubmit(approvalConfirm);
+    });
+    headConfirmation?.addEventListener("hidden.bs.modal", () => {
+        if (headSelectionConfirmed) return;
+        window.bootstrap.Modal.getOrCreateInstance(approvalModal).show();
+    });
+    approvalModal?.addEventListener("show.bs.modal", () => {
+        if (returningFromHeadConfirmation) {
+            returningFromHeadConfirmation = false;
+            return;
+        }
+        seniorToggle.checked = false;
+        headToggle.checked = false;
+        headSelectionConfirmed = false;
+        syncApproval();
+    });
+    syncApproval();
     const decisionForm = document.getElementById(
         "senior-application-decision-form");
     const reviewNote = decisionForm?.querySelector("#ReviewNote");
     const reviewNoteValidation = decisionForm?.querySelector(
         "[data-review-note-validation]");
+    const rejectionNote = document.getElementById("senior-rejection-note");
+    const rejectionError = document.getElementById("senior-rejection-error");
 
     const clearReviewNoteError = () => {
         if (!reviewNote || !reviewNoteValidation) return;
@@ -11,6 +58,8 @@ document.addEventListener("DOMContentLoaded", () => {
         reviewNoteValidation.textContent = "";
         reviewNoteValidation.classList.remove("field-validation-error");
         reviewNoteValidation.classList.add("field-validation-valid");
+        rejectionNote?.removeAttribute("aria-invalid");
+        if (rejectionError) rejectionError.textContent = "";
     };
 
     const validateRejectionNote = (focus = true) => {
@@ -25,43 +74,59 @@ document.addEventListener("DOMContentLoaded", () => {
             "Enter a decision note before rejecting this application.";
         reviewNoteValidation.classList.remove("field-validation-valid");
         reviewNoteValidation.classList.add("field-validation-error");
-        if (focus) reviewNote.focus();
+        rejectionNote?.setAttribute("aria-invalid", "true");
+        if (rejectionError) rejectionError.textContent = "Enter a reason before confirming rejection.";
+        if (focus) (rejectionNote ?? reviewNote).focus();
         return false;
     };
 
     reviewNote?.addEventListener("input", () => {
+        if (rejectionNote) rejectionNote.value = reviewNote.value;
         if (reviewNote.value.trim()) clearReviewNoteError();
     });
+    rejectionNote?.addEventListener("input", () => {
+        if (reviewNote) reviewNote.value = rejectionNote.value;
+        if (rejectionNote.value.trim()) clearReviewNoteError();
+    });
 
-    document.querySelector("[data-senior-reject-trigger]")
-        ?.addEventListener("click", event => {
+    document.querySelectorAll("[data-senior-reject-trigger]")
+        .forEach(trigger => trigger.addEventListener("click", event => {
             event.preventDefault();
-            if (!validateRejectionNote()) return;
 
             const modalElement = document.getElementById(
                 "reject-senior-application-modal");
             if (modalElement && window.bootstrap) {
-                window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
+                if (rejectionNote && reviewNote) rejectionNote.value = reviewNote.value;
+                const showRejection = () => {
+                    modalElement.addEventListener("shown.bs.modal", () => rejectionNote?.focus(), { once: true });
+                    window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
+                };
+                if (approvalModal?.classList.contains("show")) {
+                    approvalModal.addEventListener("hidden.bs.modal", showRejection, { once: true });
+                    window.bootstrap.Modal.getOrCreateInstance(approvalModal).hide();
+                } else {
+                    showRejection();
+                }
             }
-        });
+        }));
 
     decisionForm?.addEventListener("submit", event => {
+        if (event.submitter === approvalConfirm && headToggle?.checked &&
+            !headSelectionConfirmed && headConfirmation && window.bootstrap) {
+            event.preventDefault();
+            returningFromHeadConfirmation = true;
+            approvalModal.addEventListener("hidden.bs.modal", () => {
+                window.bootstrap.Modal.getOrCreateInstance(headConfirmation).show();
+            }, { once: true });
+            window.bootstrap.Modal.getOrCreateInstance(approvalModal).hide();
+            return;
+        }
         const isRejection = event.submitter?.matches(
             "[data-senior-reject-confirm]");
-        if (!isRejection || validateRejectionNote(false)) return;
+        if (isRejection && rejectionNote && reviewNote) reviewNote.value = rejectionNote.value;
+        if (!isRejection || validateRejectionNote()) return;
 
         event.preventDefault();
-        const modalElement = document.getElementById(
-            "reject-senior-application-modal");
-        if (modalElement && window.bootstrap) {
-            modalElement.addEventListener(
-                "hidden.bs.modal",
-                () => reviewNote?.focus(),
-                { once: true });
-            window.bootstrap.Modal.getOrCreateInstance(modalElement).hide();
-        } else {
-            reviewNote?.focus();
-        }
     });
 
     if (!window.Chart) {

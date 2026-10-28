@@ -1,4 +1,5 @@
 using BC_CampusLearn.Authentication;
+using System.Security.Claims;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
@@ -116,6 +117,7 @@ public class SeniorTutorApplicationsTests
         {
             HttpContext = new DefaultHttpContext()
         };
+        reviewPage.TempData = new TempDataDictionary(reviewPage.HttpContext, new TestTempDataProvider());
         await reviewPage.OnPostReviewAsync(
             application.SeniorTutorApplicationId,
             approve: true,
@@ -221,8 +223,10 @@ public class SeniorTutorApplicationsTests
         Assert.Equal(TutorAccountRequestStatus.Approved, archived.Status);
     }
 
-    [Fact]
-    public async Task AdministratorCanAcceptHeadOfTutorApplication()
+    [Theory]
+    [InlineData(true, BcUserRole.HeadOfTutors)]
+    [InlineData(false, BcUserRole.SeniorTutor)]
+    public async Task SuperAdminCanChooseCombinedApplicationOutcome(bool approveHead, BcUserRole expectedRole)
     {
         await using ApplicationDbContext context = await CreateContextAsync();
         var application = new SeniorTutorApplication
@@ -244,13 +248,20 @@ public class SeniorTutorApplicationsTests
         };
         page.PageContext = new PageContext
         {
-            HttpContext = new DefaultHttpContext()
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [new Claim(ClaimTypes.Role, nameof(BcUserRole.SuperAdmin))], "Test"))
+            }
         };
 
+        page.TempData = new TempDataDictionary(page.HttpContext, new TestTempDataProvider());
         IActionResult result = await page.OnPostReviewAsync(
             application.SeniorTutorApplicationId,
             approve: true,
-            default);
+            default,
+            approveSenior: true,
+            approveHead: approveHead);
 
         RedirectToPageResult redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("Index", redirect.PageName);
@@ -258,14 +269,90 @@ public class SeniorTutorApplicationsTests
         Assert.Equal(TutorAccountRequestStatus.Approved, application.Status);
         Assert.True(application.IsArchived);
         Assert.Equal(
-            BcUserRole.HeadOfTutors,
+            expectedRole,
             (await context.BcUsers.SingleAsync()).Role);
+        Assert.Equal(approveHead, application.HeadOfTutorApproved);
         Assert.Equal(80, (await context.Tutors.SingleAsync()).OverallAverage);
         Assert.NotNull(application.ReviewedAt);
         UserNotification notification = await context.UserNotifications.SingleAsync();
         Assert.Equal(1, notification.RecipientBcUserId);
         Assert.Contains("accepted", notification.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.StartsWith("Congratulations!", notification.Message);
+        if (!approveHead) Assert.Contains("Head of Tutor application was not accepted", notification.Message);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RejectionPreservesTutorAndApplication(bool combined)
+    {
+        await using ApplicationDbContext context = await CreateContextAsync();
+        var application = new SeniorTutorApplication
+        {
+            TutorId = 1, AcademicAverage = 80,
+            IsHeadOfTutorApplication = combined,
+            Status = TutorAccountRequestStatus.Pending, SubmittedAt = DateTime.UtcNow
+        };
+        context.SeniorTutorApplications.Add(application);
+        await context.SaveChangesAsync();
+        var page = ReviewPage(context, BcUserRole.SuperAdmin);
+        page.ReviewNote = "Please build more leadership experience.";
+        page.TempData = new TempDataDictionary(page.HttpContext, new TestTempDataProvider());
+        await page.OnPostReviewAsync(application.SeniorTutorApplicationId, false, default);
+        Assert.Equal(TutorAccountRequestStatus.Declined, application.Status);
+        Assert.False(application.IsArchived);
+        Assert.Single(await context.SeniorTutorApplications.ToListAsync());
+        Tutor tutor = await context.Tutors.Include(item => item.BcUser).SingleAsync();
+        Assert.True(tutor.IsActive);
+        Assert.Equal(TutorStatus.Approved, tutor.Status);
+        Assert.Equal(BcUserRole.Tutor, tutor.BcUser.Role);
+        Assert.Equal(78m, tutor.OverallAverage);
+        Assert.Equal(combined ? (bool?)false : null, application.HeadOfTutorApproved);
+        Assert.Contains("remain part of our tutor programme", (await context.UserNotifications.SingleAsync()).Message);
+        Assert.Equal(page.ReviewNote, application.ReviewNote);
+        Assert.DoesNotContain(page.ReviewNote!, (await context.UserNotifications.SingleAsync()).Message);
+    }
+
+    [Theory]
+    [InlineData(BcUserRole.Admin, true, true)]
+    [InlineData(BcUserRole.SuperAdmin, false, false)]
+    [InlineData(BcUserRole.SuperAdmin, false, true)]
+    [InlineData(BcUserRole.SuperAdmin, null, null)]
+    public async Task CombinedApprovalRequiresSuperAdminAndExplicitValidChoices(
+        BcUserRole role, bool? senior, bool? head)
+    {
+        await using ApplicationDbContext context = await CreateContextAsync();
+        var application = new SeniorTutorApplication
+        {
+            TutorId = 1, AcademicAverage = 80, IsHeadOfTutorApplication = true,
+            Status = TutorAccountRequestStatus.Pending, SubmittedAt = DateTime.UtcNow
+        };
+        context.SeniorTutorApplications.Add(application);
+        await context.SaveChangesAsync();
+        var page = ReviewPage(context, role);
+        page.TempData = new TempDataDictionary(page.HttpContext, new TestTempDataProvider());
+        IActionResult result = await page.OnPostReviewAsync(
+            application.SeniorTutorApplicationId, true, default, senior, head);
+        if (role == BcUserRole.Admin) Assert.IsType<ForbidResult>(result);
+        Assert.Equal(TutorAccountRequestStatus.Pending, application.Status);
+        Assert.Null(application.HeadOfTutorApproved);
+        Assert.Empty(await context.UserNotifications.ToListAsync());
+        Assert.Equal(BcUserRole.Tutor, (await context.BcUsers.SingleAsync()).Role);
+    }
+
+    private static global::BC_CampusLearn.Pages.Administrator.Tutors.SeniorTutorApplicationDetailsModel
+        ReviewPage(ApplicationDbContext context, BcUserRole role)
+        => new(context)
+        {
+            PageContext = new PageContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                        [new Claim(ClaimTypes.Role, role.ToString())], "Test"))
+                }
+            }
+        };
 
     [Fact]
     public async Task ApprovedSeniorTutorApplicationUpdatesAverageAndAssignsSeniorTutorRole()
@@ -290,6 +377,7 @@ public class SeniorTutorApplicationsTests
             HttpContext = new DefaultHttpContext()
         };
 
+        page.TempData = new TempDataDictionary(page.HttpContext, new TestTempDataProvider());
         await page.OnPostReviewAsync(
             application.SeniorTutorApplicationId,
             approve: true,
@@ -331,6 +419,7 @@ public class SeniorTutorApplicationsTests
         {
             HttpContext = new DefaultHttpContext()
         };
+        reviewPage.TempData = new TempDataDictionary(reviewPage.HttpContext, new TestTempDataProvider());
         await reviewPage.OnPostReviewAsync(
             application.SeniorTutorApplicationId,
             approve: true,

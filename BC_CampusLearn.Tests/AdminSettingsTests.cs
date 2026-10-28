@@ -901,7 +901,7 @@ public class AdminSettingsTests
     }
 
     [Fact]
-    public async Task DemotingHeadOfTutorsDeletesTheirApplicationHistory()
+    public async Task DemotingHeadOfTutorsPreservesTheirApplicationHistory()
     {
         await using ApplicationDbContext context = CreateContext();
         AddBaseData(context, BcUserRole.SuperAdmin);
@@ -943,8 +943,10 @@ public class AdminSettingsTests
         Assert.Equal(
             BcUserRole.Tutor,
             (await context.BcUsers.FindAsync(2))!.Role);
-        Assert.Empty(await context.SeniorTutorApplications.ToListAsync());
-        Assert.Contains("application was removed", page.SuccessMessage);
+        Assert.Equal(2, await context.SeniorTutorApplications.CountAsync());
+        Assert.Contains(await context.SeniorTutorApplications.ToListAsync(),
+            application => application.Status == TutorAccountRequestStatus.Declined);
+        Assert.Contains("history has been preserved", page.SuccessMessage);
     }
 
     [Theory]

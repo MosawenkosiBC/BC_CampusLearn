@@ -9,6 +9,17 @@ namespace BC_CampusLearn.Tests;
 
 public class NotificationsPageTests
 {
+    [Fact]
+    public void SeniorApprovalEnablesConfettiAndKeepsPartialDecisionMessage()
+    {
+        var notification = new IndexModel.NotificationItem(
+            1, "Senior Tutor application approved",
+            "Congratulations! Senior Tutor accepted. Head of Tutor was not accepted.",
+            "/Tutors/SeniorTutorApplications", DateTimeOffset.UtcNow, null);
+        Assert.True(notification.IsTutorApprovalNotification);
+        Assert.Equal("Senior Tutor accepted. Head of Tutor was not accepted.", notification.TutorApprovalMessage);
+    }
+
     private static readonly DateTimeOffset Now =
         new(2026, 9, 18, 10, 30, 0, TimeSpan.Zero);
 

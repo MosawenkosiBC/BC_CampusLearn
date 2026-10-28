@@ -17,6 +17,7 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
     public string? ReviewError { get; set; }
 
     public SeniorTutorApplication Application { get; private set; } = null!;
+    public bool CanReviewHeadApplication => User.IsInRole(nameof(BcUserRole.SuperAdmin));
     public IReadOnlyList<SessionStatusStatistic> SessionStatuses
     { get; private set; } = [];
     public IReadOnlyList<ModuleStatistic> TopModules { get; private set; } = [];
@@ -41,7 +42,9 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
     public async Task<IActionResult> OnPostReviewAsync(
         int id,
         bool approve,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool? approveSenior = null,
+        bool? approveHead = null)
     {
         ReviewNote = ReviewNote?.Trim();
         if (ReviewNote?.Length > 500 ||
@@ -69,9 +72,34 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
             return NotFound();
         }
 
+        if (application.IsHeadOfTutorApplication && !CanReviewHeadApplication)
+        {
+            return Forbid();
+        }
+
         if (application.Status != TutorAccountRequestStatus.Pending)
         {
             ReviewError = "This application has already been reviewed.";
+            return RedirectToPage(new { id });
+        }
+
+        if (approve && application.IsHeadOfTutorApplication &&
+            (approveSenior != true || !approveHead.HasValue ||
+             (approveHead == true && application.AcademicAverage < 72m)))
+        {
+            ReviewError = "Approve Senior Tutor before confirming a decision. Head of Tutor approval also requires an average of at least 72%.";
+            return RedirectToPage(new { id });
+        }
+
+        if (approveHead == true && !application.IsHeadOfTutorApplication)
+        {
+            return BadRequest();
+        }
+
+        if (approve && (!application.Tutor.IsActive ||
+            application.Tutor.Status != TutorStatus.Approved))
+        {
+            ReviewError = "Only an active, approved tutor can be appointed. This application has not been changed.";
             return RedirectToPage(new { id });
         }
 
@@ -79,13 +107,16 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
             ? TutorAccountRequestStatus.Approved
             : TutorAccountRequestStatus.Declined;
         application.Status = decision;
+        application.HeadOfTutorApproved = application.IsHeadOfTutorApplication
+            ? approve && approveHead == true
+            : null;
         application.ReviewedAt = DateTime.UtcNow;
         application.ReviewedBy = User.Identity?.Name ?? "Administrator";
         application.ReviewNote = ReviewNote;
         if (approve)
         {
             application.Tutor.OverallAverage = application.AcademicAverage;
-            application.Tutor.BcUser.Role = application.IsHeadOfTutorApplication
+            application.Tutor.BcUser.Role = application.HeadOfTutorApproved == true
                 ? BcUserRole.HeadOfTutors
                 : BcUserRole.SeniorTutor;
             foreach (SeniorTutorApplicationModule requestedModule in
@@ -116,12 +147,17 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
         context.UserNotifications.Add(new UserNotification
         {
             RecipientBcUserId = application.Tutor.BcUserId,
-            Title = "Senior Tutor application update",
+            Title = approve ? "Senior Tutor application approved" : "Senior Tutor application update",
             Message = approve
-                ? application.IsHeadOfTutorApplication
-                    ? "Your Senior Tutor and Head of Tutor application was accepted."
-                    : "Your Senior Tutor application was accepted."
-                : $"Your Senior Tutor application was rejected. {ReviewNote}",
+                ? application.HeadOfTutorApproved == true
+                    ? "Congratulations! Your Senior Tutor and Head of Tutor applications have been accepted! Thank you for the care and commitment you bring to our students. We are excited to see you guide and support the tutor team in this new chapter. Well done!"
+                    : "Congratulations! Your Senior Tutor application has been accepted! Thank you for the dedication and encouragement you bring to our students. We are delighted to have you continue this journey with us as a Senior Tutor. Well done!" +
+                        (application.IsHeadOfTutorApplication
+                            ? " Your Head of Tutor application was not accepted this time. We appreciate your willingness to lead and encourage you to keep developing your leadership skills."
+                            : string.Empty)
+                : "Thank you for taking the time to apply and for the support you give our students. After careful consideration, your Senior Tutor application" +
+                    (application.IsHeadOfTutorApplication ? " and Head of Tutor application were" : " was") +
+                    " not accepted this time. This decision does not diminish the contribution you make as a tutor. You remain part of our tutor programme, and we encourage you to keep growing and consider future opportunities.",
             LinkUrl = "/Tutors/SeniorTutorApplications",
             CreatedAt = DateTimeOffset.UtcNow
         });

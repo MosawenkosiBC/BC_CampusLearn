@@ -222,20 +222,11 @@ public class UsersAccessModel(
         string previous = target.Role.ToString();
         target.Role = DemotionRole(target.Role, IsApprovedTutor(target));
         target.IsAdministrativeAccessActive = true;
-        if (removingApplicationRole)
-        {
-            List<SeniorTutorApplication> applications = await context
-                .SeniorTutorApplications
-                .Where(application =>
-                    application.Tutor.BcUserId == target.BcUserId)
-                .ToListAsync(cancellationToken);
-            context.SeniorTutorApplications.RemoveRange(applications);
-        }
         EnsureAdminProfile(target);
         RecordAccessAudit(target, "Administrative role", previous, target.Role.ToString(), currentUser, reason);
         await context.SaveChangesAsync(cancellationToken);
         SuccessMessage = removingApplicationRole
-            ? $"{target.DisplayName} was demoted to Tutor. Their Senior Tutor application was removed."
+            ? $"{target.DisplayName} was demoted to Tutor. Their application history has been preserved."
             : $"{target.DisplayName} was demoted to {RoleLabel(target.Role)}.";
         return RedirectToPage();
     }
