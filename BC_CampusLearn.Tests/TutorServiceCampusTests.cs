@@ -23,7 +23,7 @@ public class TutorServiceCampusTests
         };
         context.Tutors.AddRange(
             CreateTutor(1, "Pretoria Tutor", "Pretoria Campus", programme),
-            CreateTutor(2, "Stellenbosch Tutor", "Stellenbosch Campus", programme));
+            CreateTutor(4, "Stellenbosch Tutor", "Stellenbosch Campus", programme));
         await context.SaveChangesAsync();
         var service = new TutorService(context);
 
@@ -35,6 +35,36 @@ public class TutorServiceCampusTests
         Assert.Equal(2, tutors.Count);
         Assert.Equal("Stellenbosch Tutor", tutors[0].DisplayName);
         Assert.Equal("Pretoria Tutor", tutors[1].DisplayName);
+    }
+
+    [Fact]
+    public async Task TestTutorsAreHiddenFromDirectoryButAvailableByDirectUrl()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        await using var context = new ApplicationDbContext(options);
+        var programme = new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        };
+        context.Tutors.AddRange(
+            CreateTutor(2, "Test Tutor Two", "Pretoria Campus", programme),
+            CreateTutor(3, "Test Tutor Three", "Pretoria Campus", programme),
+            CreateTutor(5, "Test Tutor Five", "Pretoria Campus", programme),
+            CreateTutor(6, "Visible Tutor", "Pretoria Campus", programme));
+        await context.SaveChangesAsync();
+        var service = new TutorService(context);
+
+        IReadOnlyList<TutorCardViewModel> tutors =
+            await service.GetTutorsAsync(programmeModuleId: null);
+
+        TutorCardViewModel visibleTutor = Assert.Single(tutors);
+        Assert.Equal(6, visibleTutor.TutorId);
+        Assert.NotNull(await service.GetTutorDetailsAsync(2));
+        Assert.NotNull(await service.GetTutorDetailsAsync(3));
+        Assert.NotNull(await service.GetTutorDetailsAsync(5));
     }
 
     [Fact]
