@@ -2,6 +2,7 @@ using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Notifications;
 using BC_CampusLearn.Services.Teams;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Services.Sessions;
@@ -73,7 +74,40 @@ public class SessionLifecycleService : ISessionLifecycleService
                     "Session lifecycle transitions remained concurrent after retry and will be checked again on the next request.");
                 return;
             }
+            catch (DbUpdateException exception)
+                when (IsDuplicateEmailEventKey(exception))
+            {
+                // A competing request can insert the notification outbox row
+                // before EF reaches the booking row-version update. Treat the
+                // unique event key as evidence that the same transition is
+                // already being processed, then re-query the booking state.
+                _context.ChangeTracker.Clear();
+
+                if (attempt < maximumAttempts)
+                {
+                    _logger?.LogDebug(
+                        exception,
+                        "A concurrent session lifecycle notification was detected. Retrying with fresh state.");
+                    continue;
+                }
+
+                _logger?.LogWarning(
+                    exception,
+                    "Session lifecycle notification deduplication remained concurrent after retry and will be checked again on the next request.");
+                return;
+            }
         }
+    }
+
+    private static bool IsDuplicateEmailEventKey(
+        DbUpdateException exception)
+    {
+        return exception.InnerException is SqlException
+        {
+            Number: 2601 or 2627
+        } sqlException && sqlException.Message.Contains(
+            "IX_EmailNotificationOutbox_EventKey",
+            StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task ProcessDueTransitionsCoreAsync(
