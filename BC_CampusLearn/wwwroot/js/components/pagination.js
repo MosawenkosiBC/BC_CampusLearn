@@ -26,6 +26,10 @@
 
         let pageSize = mobileQuery.matches ? mobilePageSize : defaultPageSize;
         let currentPage = 1;
+        const pageParameter = target.dataset.paginationPageParameter;
+        const initialPage = pageParameter
+            ? Number(new URL(window.location.href).searchParams.get(pageParameter))
+            : 1;
 
         const getEligibleRows = () => rows.filter((row) =>
             row.dataset.paginationExcluded !== "true");
@@ -54,6 +58,18 @@
                 1,
                 Math.ceil(eligibleRows.length / pageSize));
             currentPage = Math.min(Math.max(requestedPage, 1), pageCount);
+            if (pageParameter) {
+                const url = new URL(window.location.href);
+                if (currentPage === 1) {
+                    url.searchParams.delete(pageParameter);
+                } else {
+                    url.searchParams.set(pageParameter, String(currentPage));
+                }
+                if (shouldScroll) url.hash = "";
+                window.history.replaceState(shouldScroll
+                    ? { ...window.history.state, tutorDirectoryScroll: null }
+                    : window.history.state, "", url);
+            }
             const firstRowIndex = (currentPage - 1) * pageSize;
             const lastRowIndex = Math.min(
                 firstRowIndex + pageSize, eligibleRows.length);
@@ -134,6 +150,6 @@
         });
         mobileQuery.addEventListener("change", updatePageSize);
 
-        showPage(1);
+        showPage(Number.isSafeInteger(initialPage) && initialPage > 0 ? initialPage : 1);
     });
 })();

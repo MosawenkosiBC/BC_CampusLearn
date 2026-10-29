@@ -171,7 +171,8 @@
                     <a asp-page="/Tutors/Index">Clear all filters</a>
                 </div>
 
-                <div class="tutor-grid" id="tutor-results-grid">
+                <div class="tutor-grid" id="tutor-results-grid"
+                     data-pagination-page-parameter="tutorPage">
                     @foreach (var tutor in Model.SearchableTutors)
                     {
                         string tutoringModeLabel =
@@ -194,6 +195,7 @@
                                 date.ToString("yyyy-MM-dd")));
 
                         <article class="tutor-card"
+                                 id="tutor-@tutor.TutorId"
                                  data-tutor-search-card
                                  data-pagination-row
                                  data-pagination-excluded="@(!visibleTutorIds.Contains(tutor.TutorId) ? "true" : "false")"
@@ -264,5 +266,7 @@
     <script src="~/js/tutors.js"
             asp-append-version="true"></script>
     <script src="~/js/components/pagination.js"
+            asp-append-version="true"></script>
+    <script src="~/js/tutor-directory-navigation.js"
             asp-append-version="true"></script>
 }
