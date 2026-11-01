@@ -62,6 +62,10 @@
                 <footer class="settings-form-footer">
                     <button type="submit" class="settings-primary-button">Send announcement</button>
                 </footer>
+                <div class="announcement-send-progress" data-announcement-progress hidden role="status" aria-live="polite">
+                    <label for="announcement-send-progress">Sending announcement and queuing emails…</label>
+                    <progress id="announcement-send-progress" aria-label="Sending announcement"></progress>
+                </div>
             </form>
             </section>
             <section id="admin-notification-settings" class="admin-notification-settings" role="tabpanel" aria-labelledby="tab-admin-notifications" hidden="@(Model.Tab != "notifications")">

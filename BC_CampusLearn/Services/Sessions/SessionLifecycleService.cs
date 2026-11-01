@@ -43,12 +43,44 @@ public class SessionLifecycleService : ISessionLifecycleService
     public async Task ProcessDueTransitionsAsync(
         CancellationToken cancellationToken = default)
     {
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+        // Select IDs only: each booking and its notifications are saved in their
+        // own transaction, so one failed booking cannot block the remaining IDs.
+        List<int> bookingIds = await _context.Bookings
+            .AsNoTracking()
+            .Where(booking =>
+                (booking.Status == BookingStatus.Pending &&
+                 booking.ScheduledStartTime <= now) ||
+                (booking.Status == BookingStatus.Confirmed &&
+                 booking.ScheduledStartTime.AddMinutes(15) <= now) ||
+                (booking.Status == BookingStatus.InProgress &&
+                 booking.SessionExecution != null &&
+                 booking.SessionExecution.ExpectedCompletionAt <= now) ||
+                (booking.Status == BookingStatus.Confirmed &&
+                 booking.StudentBcUserId != null &&
+                 booking.ReminderSentAt == null &&
+                 booking.ScheduledStartTime > now &&
+                 booking.ScheduledStartTime <= now.AddHours(1)))
+            .Select(booking => booking.BookingId)
+            .ToListAsync(cancellationToken);
+
+        foreach (int bookingId in bookingIds)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await ProcessBookingWithRetryAsync(bookingId, cancellationToken);
+        }
+    }
+
+    private async Task ProcessBookingWithRetryAsync(
+        int bookingId,
+        CancellationToken cancellationToken)
+    {
         const int maximumAttempts = 2;
         for (int attempt = 1; attempt <= maximumAttempts; attempt++)
         {
             try
             {
-                await ProcessDueTransitionsCoreAsync(cancellationToken);
+                await ProcessBookingCoreAsync(bookingId, cancellationToken);
                 return;
             }
             catch (DbUpdateConcurrencyException exception)
@@ -62,7 +94,8 @@ public class SessionLifecycleService : ISessionLifecycleService
                 {
                     _logger?.LogDebug(
                         exception,
-                        "A concurrent session lifecycle update was detected. Retrying with fresh state.");
+                        "A concurrent session lifecycle update was detected for booking {BookingId}. Retrying with fresh state.",
+                        bookingId);
                     continue;
                 }
 
@@ -71,7 +104,8 @@ public class SessionLifecycleService : ISessionLifecycleService
                 // a remaining collision must not make the dashboard unavailable.
                 _logger?.LogWarning(
                     exception,
-                    "Session lifecycle transitions remained concurrent after retry and will be checked again on the next request.");
+                    "Session lifecycle updates for booking {BookingId} remained concurrent after retry. The background worker will retry it; other bookings will continue.",
+                    bookingId);
                 return;
             }
             catch (DbUpdateException exception)
@@ -87,13 +121,30 @@ public class SessionLifecycleService : ISessionLifecycleService
                 {
                     _logger?.LogDebug(
                         exception,
-                        "A concurrent session lifecycle notification was detected. Retrying with fresh state.");
+                        "A concurrent session lifecycle notification was detected for booking {BookingId}. Retrying with fresh state.",
+                        bookingId);
                     continue;
                 }
 
                 _logger?.LogWarning(
                     exception,
-                    "Session lifecycle notification deduplication remained concurrent after retry and will be checked again on the next request.");
+                    "Session lifecycle notification deduplication for booking {BookingId} remained concurrent after retry. The background worker will retry it; other bookings will continue.",
+                    bookingId);
+                return;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                // Discard the failed booking's pending history and notifications
+                // before processing the next ID. Leave it due for the next run.
+                _context.ChangeTracker.Clear();
+                _logger?.LogError(
+                    exception,
+                    "Session lifecycle processing failed for booking {BookingId}. The background worker will retry it; other bookings will continue.",
+                    bookingId);
                 return;
             }
         }
@@ -110,94 +161,83 @@ public class SessionLifecycleService : ISessionLifecycleService
             StringComparison.OrdinalIgnoreCase);
     }
 
-    private async Task ProcessDueTransitionsCoreAsync(
+    private async Task ProcessBookingCoreAsync(
+        int bookingId,
         CancellationToken cancellationToken)
     {
         DateTimeOffset now = _timeProvider.GetUtcNow();
-        List<Booking> dueBookings = await _context.Bookings
+        Booking? booking = await _context.Bookings
             .Include(booking => booking.SessionExecution)
             .Include(booking => booking.MeetingLink)
-            .Where(booking =>
-                (booking.Status == BookingStatus.Pending &&
-                 booking.ScheduledStartTime <= now) ||
-                (booking.Status == BookingStatus.Confirmed &&
-                 booking.ScheduledStartTime.AddMinutes(15) <= now) ||
-                (booking.Status == BookingStatus.InProgress &&
-                 booking.SessionExecution != null &&
-                 booking.SessionExecution.ExpectedCompletionAt <= now))
-            .ToListAsync(cancellationToken);
-
-        List<Booking> reminderBookings = await _context.Bookings
-            .Where(booking =>
-                booking.Status == BookingStatus.Confirmed &&
-                booking.StudentBcUserId != null &&
-                booking.ReminderSentAt == null &&
-                booking.ScheduledStartTime > now &&
-                booking.ScheduledStartTime <= now.AddHours(1))
-            .ToListAsync(cancellationToken);
-
-        foreach (Booking booking in dueBookings)
+            .SingleOrDefaultAsync(booking => booking.BookingId == bookingId,
+                cancellationToken);
+        if (booking is null)
         {
-            BookingStatus? automaticStatus =
-                SessionLifecyclePolicy.GetAutomaticTransition(
-                    booking.Status,
-                    booking.ScheduledStartTime,
-                    booking.SessionExecution?.ExpectedCompletionAt,
-                    now);
-
-            if (automaticStatus == BookingStatus.Declined &&
-                booking.Status == BookingStatus.Pending)
-            {
-                RequestTeamsCancellation(booking, now);
-                ChangeStatus(
-                    booking,
-                    BookingStatus.Declined,
-                    now,
-                    UnreviewedReasonCode,
-                    UnreviewedWarningMessage);
-                await AddStudentStatusNotificationAsync(
-                    booking,
-                    BookingStatus.Declined,
-                    now,
-                    cancellationToken);
-            }
-            else if (automaticStatus == BookingStatus.Cancelled &&
-                booking.Status == BookingStatus.Confirmed)
-            {
-                RequestTeamsCancellation(booking, now);
-                ChangeStatus(
-                    booking,
-                    BookingStatus.Cancelled,
-                    now,
-                    NotStartedReasonCode,
-                    NotStartedCancellationReason);
-                await AddStudentStatusNotificationAsync(
-                    booking,
-                    BookingStatus.Cancelled,
-                    now,
-                    cancellationToken);
-            }
-            else if (automaticStatus == BookingStatus.Completed)
-            {
-                booking.SessionExecution!.CompletedAt = now;
-                booking.CompletedAt = now;
-                ChangeStatus(
-                    booking,
-                    BookingStatus.Completed,
-                    now);
-                await AddStudentStatusNotificationAsync(
-                    booking,
-                    BookingStatus.Completed,
-                    now,
-                    cancellationToken);
-                await AddTutorCompletionNotificationAsync(
-                    booking,
-                    now,
-                    cancellationToken);
-            }
+            return;
         }
 
-        foreach (Booking booking in reminderBookings)
+        BookingStatus? automaticStatus =
+            SessionLifecyclePolicy.GetAutomaticTransition(
+                booking.Status,
+                booking.ScheduledStartTime,
+                booking.SessionExecution?.ExpectedCompletionAt,
+                now);
+
+        if (automaticStatus == BookingStatus.Declined &&
+            booking.Status == BookingStatus.Pending)
+        {
+            RequestTeamsCancellation(booking, now);
+            ChangeStatus(
+                booking,
+                BookingStatus.Declined,
+                now,
+                UnreviewedReasonCode,
+                UnreviewedWarningMessage);
+            await AddStudentStatusNotificationAsync(
+                booking,
+                BookingStatus.Declined,
+                now,
+                cancellationToken);
+        }
+        else if (automaticStatus == BookingStatus.Cancelled &&
+            booking.Status == BookingStatus.Confirmed)
+        {
+            RequestTeamsCancellation(booking, now);
+            ChangeStatus(
+                booking,
+                BookingStatus.Cancelled,
+                now,
+                NotStartedReasonCode,
+                NotStartedCancellationReason);
+            await AddStudentStatusNotificationAsync(
+                booking,
+                BookingStatus.Cancelled,
+                now,
+                cancellationToken);
+        }
+        else if (automaticStatus == BookingStatus.Completed)
+        {
+            booking.SessionExecution!.CompletedAt = now;
+            booking.CompletedAt = now;
+            ChangeStatus(
+                booking,
+                BookingStatus.Completed,
+                now);
+            await AddStudentStatusNotificationAsync(
+                booking,
+                BookingStatus.Completed,
+                now,
+                cancellationToken);
+            await AddTutorCompletionNotificationAsync(
+                booking,
+                now,
+                cancellationToken);
+        }
+        else if (booking.Status == BookingStatus.Confirmed &&
+            booking.StudentBcUserId is int studentBcUserId &&
+            booking.ReminderSentAt == null &&
+            booking.ScheduledStartTime > now &&
+            booking.ScheduledStartTime <= now.AddHours(1))
         {
             BookingNotificationContext notificationContext =
                 await GetNotificationContextAsync(
@@ -205,10 +245,9 @@ public class SessionLifecycleService : ISessionLifecycleService
                     cancellationToken);
             if (!notificationContext.TutorBcUserId.HasValue)
             {
-                continue;
+                return;
             }
 
-            int studentBcUserId = booking.StudentBcUserId!.Value;
             booking.ReminderSentAt = now;
             _context.UserNotifications.AddRange(
                 BookingNotificationFactory.SessionReminderForStudent(
@@ -222,11 +261,13 @@ public class SessionLifecycleService : ISessionLifecycleService
                     notificationContext.Details,
                     now));
         }
-
-        if (dueBookings.Count > 0 || reminderBookings.Count > 0)
+        else
         {
-            await _context.SaveChangesAsync(cancellationToken);
+            // Another request may already have processed this ID.
+            return;
         }
+
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<SessionLifecycleResult> ConfirmAsync(

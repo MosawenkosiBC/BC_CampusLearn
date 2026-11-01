@@ -1,7 +1,9 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Sessions;
+using BC_CampusLearn.Services.Notifications;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Xunit;
 
 namespace BC_CampusLearn.Tests;
@@ -452,8 +454,8 @@ public class SessionLifecycleServiceTests
         UserNotification studentNotification = Assert.Single(
             completionNotifications,
             item => item.RecipientBcUserId == booking.StudentBcUserId);
-        Assert.Contains("Great work", studentNotification.Message);
-        Assert.Contains("complete your review", studentNotification.Message);
+        Assert.Contains("is complete", studentNotification.Message);
+        Assert.Contains("submit your session review", studentNotification.Message);
         UserNotification tutorNotification = Assert.Single(
             completionNotifications,
             item => item.RecipientBcUserId == 8);
@@ -549,10 +551,190 @@ public class SessionLifecycleServiceTests
             otherBooking.MeetingLink.Url);
     }
 
-    private static ApplicationDbContext CreateContext()
+    [Fact]
+    public async Task ExistingCancellationEmail_DoesNotBlockAnyOverdueCompletion()
+    {
+        DateTimeOffset now = new(2026, 10, 29, 20, 0, 0, TimeSpan.Zero);
+        await using ApplicationDbContext context = CreateContext();
+        Booking cancelledBefore = CreateBooking(now.AddHours(-3));
+        cancelledBefore.Status = BookingStatus.Confirmed;
+        cancelledBefore.StudentEmail = "student@example.com";
+        AddTutorAssignment(context, cancelledBefore);
+        cancelledBefore.TutorCourseModule.Tutor.BcUser.Email = "tutor@example.com";
+        Booking first = CreateOverdueSession(now);
+        Booking second = CreateOverdueSession(now);
+        context.Bookings.AddRange(cancelledBefore, first, second);
+        await context.SaveChangesAsync();
+        string cancellationKey = $"booking:{cancelledBefore.BookingId}:status:Cancelled:student";
+        NotificationEmailQueue.Add(context, cancellationKey, cancelledBefore.StudentEmail,
+            "Student", "Previously cancelled", "Original cancellation", null, now.AddHours(-4));
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+        var service = new SessionLifecycleService(context, new TestTimeProvider(now));
+
+        await service.ProcessDueTransitionsAsync();
+        await service.ProcessDueTransitionsAsync();
+
+        List<Booking> bookings = await context.Bookings.AsNoTracking()
+            .Include(item => item.SessionExecution).ToListAsync();
+        Assert.Equal(BookingStatus.Cancelled,
+            bookings.Single(item => item.BookingId == cancelledBefore.BookingId).Status);
+        Assert.All(bookings.Where(item => item.BookingId != cancelledBefore.BookingId), item =>
+        {
+            Assert.Equal(BookingStatus.Completed, item.Status);
+            Assert.Equal(now, item.CompletedAt);
+            Assert.Equal(now, item.SessionExecution!.CompletedAt);
+        });
+        List<EmailNotificationOutbox> emails = await context.EmailNotificationOutbox.AsNoTracking().ToListAsync();
+        Assert.Equal(5, emails.Count);
+        Assert.Equal("Original cancellation", Assert.Single(emails, item => item.EventKey == cancellationKey).Body);
+        foreach (Booking completed in new[] { first, second })
+        {
+            Assert.Contains(emails, item => item.EventKey == $"booking:{completed.BookingId}:status:Completed:student");
+            Assert.Contains(emails, item => item.EventKey == $"booking:{completed.BookingId}:completed-review:tutor");
+            Assert.Equal(1, await context.BookingStatusHistory.CountAsync(item =>
+                item.BookingId == completed.BookingId && item.NewStatus == BookingStatus.Completed));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FailedBooking_DoesNotRollBackOrBlockOtherBookings_AndIsRetriedNextRun(bool concurrencyFailure)
+    {
+        DateTimeOffset now = new(2026, 10, 29, 20, 0, 0, TimeSpan.Zero);
+        var interceptor = new BookingSaveFailureInterceptor();
+        await using ApplicationDbContext context = CreateContext(interceptor);
+        Booking first = CreateOverdueSession(now);
+        Booking failing = CreateOverdueSession(now);
+        Booking last = CreateOverdueSession(now);
+        AddTutorAssignment(context, first);
+        first.TutorCourseModule.Tutor.BcUser.Email = "tutor@example.com";
+        context.Bookings.AddRange(first, failing, last);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+        interceptor.FailingBookingId = failing.BookingId;
+        interceptor.UseConcurrencyFailure = concurrencyFailure;
+        var service = new SessionLifecycleService(context, new TestTimeProvider(now));
+
+        await service.ProcessDueTransitionsAsync();
+
+        List<Booking> bookings = await context.Bookings.AsNoTracking().ToListAsync();
+        Assert.Equal(BookingStatus.Completed, bookings.Single(item => item.BookingId == first.BookingId).Status);
+        Assert.Equal(BookingStatus.InProgress, bookings.Single(item => item.BookingId == failing.BookingId).Status);
+        Assert.Equal(BookingStatus.Completed, bookings.Single(item => item.BookingId == last.BookingId).Status);
+        Assert.Equal(4, await context.EmailNotificationOutbox.CountAsync());
+        Assert.False(await context.BookingStatusHistory.AnyAsync(item => item.BookingId == failing.BookingId));
+
+        interceptor.FailingBookingId = null;
+        await service.ProcessDueTransitionsAsync();
+
+        Assert.All(await context.Bookings.AsNoTracking().ToListAsync(), item =>
+            Assert.Equal(BookingStatus.Completed, item.Status));
+        Assert.Equal(6, await context.EmailNotificationOutbox.CountAsync());
+        Assert.Equal(3, await context.BookingStatusHistory.CountAsync(item => item.NewStatus == BookingStatus.Completed));
+    }
+
+    [Fact]
+    public async Task ConcurrentEmailInsert_RetriesWithFreshStateAndStillCompletes()
+    {
+        DateTimeOffset now = new(2026, 10, 29, 20, 0, 0, TimeSpan.Zero);
+        var interceptor = new BookingSaveFailureInterceptor();
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+        var interceptedOptions = new DbContextOptionsBuilder<ApplicationDbContext>(options)
+            .AddInterceptors(interceptor).Options;
+        await using var context = new ApplicationDbContext(interceptedOptions);
+        Booking booking = CreateOverdueSession(now);
+        AddTutorAssignment(context, booking);
+        booking.TutorCourseModule.Tutor.BcUser.Email = "tutor@example.com";
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+        interceptor.BeforeConcurrencyFailure = async () =>
+        {
+            await using var competitor = new ApplicationDbContext(options);
+            NotificationEmailQueue.Add(competitor, $"booking:{booking.BookingId}:status:Completed:student",
+                booking.StudentEmail, "Student", "Completion", "Already queued", null, now);
+            await competitor.SaveChangesAsync();
+        };
+        var service = new SessionLifecycleService(context, new TestTimeProvider(now));
+
+        await service.ProcessDueTransitionsAsync();
+        await service.ProcessDueTransitionsAsync();
+
+        Assert.Equal(BookingStatus.Completed, (await context.Bookings.AsNoTracking().SingleAsync()).Status);
+        Assert.Equal(2, await context.EmailNotificationOutbox.CountAsync());
+        Assert.Single(await context.BookingStatusHistory.ToListAsync());
+        Assert.Equal(2, await context.UserNotifications.CountAsync());
+    }
+
+    [Fact]
+    public async Task Cancellation_PropagatesWithoutSavingOrProcessingOtherBookings()
+    {
+        DateTimeOffset now = new(2026, 10, 29, 20, 0, 0, TimeSpan.Zero);
+        await using ApplicationDbContext context = CreateContext();
+        context.Bookings.Add(CreateOverdueSession(now));
+        await context.SaveChangesAsync();
+        var service = new SessionLifecycleService(context, new TestTimeProvider(now));
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            service.ProcessDueTransitionsAsync(cancellation.Token));
+
+        Assert.Equal(BookingStatus.InProgress, (await context.Bookings.AsNoTracking().SingleAsync()).Status);
+        Assert.Empty(context.EmailNotificationOutbox);
+    }
+
+    private static Booking CreateOverdueSession(DateTimeOffset now)
+    {
+        Booking booking = CreateBooking(now.AddHours(-2));
+        booking.Status = BookingStatus.InProgress;
+        booking.StudentEmail = "student@example.com";
+        booking.SessionExecution = new SessionExecution
+        {
+            StartedAt = now.AddHours(-2),
+            ExpectedCompletionAt = now.AddMinutes(-30),
+            StartSource = SessionStartSource.Manual
+        };
+        return booking;
+    }
+
+    private sealed class BookingSaveFailureInterceptor : SaveChangesInterceptor
+    {
+        public int? FailingBookingId { get; set; }
+        public bool UseConcurrencyFailure { get; set; }
+        public Func<Task>? BeforeConcurrencyFailure { get; set; }
+
+        public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (eventData.Context!.ChangeTracker.Entries<Booking>().Any(entry =>
+                entry.State == EntityState.Modified && entry.Entity.BookingId == FailingBookingId))
+            {
+                if (UseConcurrencyFailure)
+                {
+                    throw new DbUpdateConcurrencyException("Simulated repeated concurrent booking save failure.");
+                }
+                throw new DbUpdateException("Simulated booking save failure.");
+            }
+            if (BeforeConcurrencyFailure is { } beforeFailure)
+            {
+                BeforeConcurrencyFailure = null;
+                await beforeFailure();
+                throw new DbUpdateConcurrencyException("Simulated concurrent lifecycle update.");
+            }
+            return result;
+        }
+    }
+
+    private static ApplicationDbContext CreateContext(params IInterceptor[] interceptors)
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .AddInterceptors(interceptors)
             .Options;
         return new ApplicationDbContext(options);
     }
