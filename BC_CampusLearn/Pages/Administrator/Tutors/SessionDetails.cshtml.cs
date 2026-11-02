@@ -34,7 +34,19 @@ public class SessionDetailsModel(
 
     public TeamsSessionReview TeamsEvidence { get; private set; } = new();
 
-    public bool HasTeamsRecording => TeamsEvidence.Recordings.Count > 0;
+    public string? RecordingUrl =>
+        Uri.TryCreate(Session?.TutorEvaluation?.RecordingLink, UriKind.Absolute, out Uri? uri) &&
+        (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp)
+            ? uri.AbsoluteUri : null;
+
+    public bool HasTeamsEvidence =>
+        RecordingUrl is not null ||
+        TeamsEvidence.Recordings.Count > 0 ||
+        TeamsEvidence.Transcripts.Count > 0 ||
+        TeamsEvidence.Start.HasValue ||
+        TeamsEvidence.End.HasValue ||
+        TeamsEvidence.Tutor.Intervals.Count > 0 ||
+        TeamsEvidence.Student.Intervals.Count > 0;
 
     public GeminiSessionAssessment? AiAssessment { get; private set; }
 

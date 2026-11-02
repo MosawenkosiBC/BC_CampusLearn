@@ -10,6 +10,29 @@ namespace BC_CampusLearn.Tests;
 
 public class AdminBookingsAndSessionsTests
 {
+    [Theory]
+    [InlineData(BcUserRole.Admin)]
+    [InlineData(BcUserRole.SuperAdmin)]
+    public async Task CompletedTeamsSessionsAreReachableBeforeReviewsAreSubmitted(BcUserRole role)
+    {
+        await using var context = CreateContext();
+        var assignment = CreateAssignment();
+        var booking = CreateBooking(1, assignment, "Awaiting reviews", "Online");
+        booking.MeetingLink = new MeetingLink
+        {
+            Url = "https://teams.microsoft.com/l/meetup-join/test",
+            TeamsEventId = "event-1", TeamsOrganizerIdentityHash = "verified-organizer"
+        };
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var page = new BookingsAndSessionsModel(context, new FixedTimeProvider(), new RoleCurrentUserService(role));
+
+        await page.OnGetAsync(default);
+
+        Assert.Equal("Awaiting reviews", Assert.Single(page.Sessions).StudentName);
+        Assert.Equal(0, page.ReviewStats.AwaitingAdminReview);
+    }
+
     [Fact]
     public async Task SuperAdminQueueReceivesEveryTutorHeadReviewedSession()
     {

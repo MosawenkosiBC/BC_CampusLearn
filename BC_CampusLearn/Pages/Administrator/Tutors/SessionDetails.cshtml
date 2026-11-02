@@ -193,9 +193,9 @@
                 </button>
             </div>
 
-            <div class="@(Model.HasTeamsRecording ? "tutor-head-evidence-layout" : "tutor-head-standard-review-layout")"
+            <div class="@(Model.HasTeamsEvidence ? "tutor-head-evidence-layout" : "tutor-head-standard-review-layout")"
                  data-review-layout>
-            <div class="@(Model.HasTeamsRecording ? "tutor-head-review-panels" : "tutor-head-standard-review-panels")">
+            <div class="@(Model.HasTeamsEvidence ? "tutor-head-review-panels" : "tutor-head-standard-review-panels")">
 
             @foreach (var review in new[] {
                 new { Id = "student-review", Title = "Student Review", Answers = Model.StudentReviewAnswers, IsActive = false },
@@ -365,10 +365,10 @@
             }
             </div>
 
-            @if (Model.HasTeamsRecording)
+            @if (Model.HasTeamsEvidence)
             {
                 <aside class="tutor-head-video-card" aria-labelledby="session-video-title"
-                       data-review-evidence-for="tutor-head-review-panel">
+                       data-review-evidence-for="tutor-review-panel" hidden>
                     <header class="tutor-head-video-heading">
                         <div>
                             <h2 id="session-video-title">Session recording</h2>
@@ -377,8 +377,16 @@
                                 <p class="tutor-head-recording-range">@teamsRecordingRange</p>
                             }
                         </div>
+                        @if (Model.RecordingUrl is { } recordingUrl)
+                        {
+                            <a class="tutor-head-recording-link" href="@recordingUrl" target="_blank" rel="noopener noreferrer">Open submitted recording ↗</a>
+                        }
                     </header>
                     <div class="tutor-head-recordings">
+                        @if (Model.TeamsEvidence.Recordings.Count == 0)
+                        {
+                            <div class="tutor-head-video-empty">Teams video preview is unavailable for this session. See the details below.</div>
+                        }
                         @foreach (var recording in Model.TeamsEvidence.Recordings)
                         {
                             <div class="tutor-head-recording-part">
@@ -395,6 +403,45 @@
                                 <span class="visually-hidden" data-recording-duration>Load the video to see its duration</span>
                                 <p data-recording-error role="status" hidden>Playback is unavailable. The recording may still be processing or have expired.</p>
                             </div>
+                        }
+                    </div>
+                    <section class="tutor-head-attendance" aria-labelledby="session-attendance-title">
+                        <h3 id="session-attendance-title">Teams session details</h3>
+                        @if (Model.TeamsEvidence.Duration is { } measuredDuration)
+                        {
+                            <p>Meeting duration: <strong>@measuredDuration.ToString(@"hh\:mm\:ss")</strong></p>
+                        }
+                        else
+                        {
+                            <p>Meeting duration unavailable.</p>
+                        }
+                        <div class="tutor-head-attendance-grid">
+                            @foreach (var participant in new[] { Model.TeamsEvidence.Tutor, Model.TeamsEvidence.Student })
+                            {
+                                <div class="tutor-head-attendance-person">
+                                    <h4>@participant.Label</h4>
+                                    @if (participant.Intervals.Count == 0)
+                                    {
+                                        <p>No matched attendance record available.</p>
+                                    }
+                                    else
+                                    {
+                                        <p>Total attendance: <strong>@participant.Duration.ToString(@"hh\:mm\:ss")</strong></p>
+                                        <ul class="tutor-head-attendance-intervals" tabindex="0" aria-label="@($"{participant.Label} join and leave times")">
+                                            @foreach (var interval in participant.Intervals)
+                                            {
+                                                <li>Joined @interval.Join.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM, HH:mm:ss") · Left @interval.Leave.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM, HH:mm:ss") SAST</li>
+                                            }
+                                        </ul>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </section>
+                    <div class="tutor-head-evidence-notices">
+                        @foreach (string notice in Model.TeamsEvidence.Notices)
+                        {
+                            <p class="tutor-head-evidence-notice">@notice</p>
                         }
                     </div>
                 </aside>

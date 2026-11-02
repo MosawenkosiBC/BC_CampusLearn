@@ -2,6 +2,7 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Services.Students;
+using BC_CampusLearn.Services.Teams;
 using System.Text.Json;
 using BC_CampusLearn.Pages.Administrator.Tutors;
 using BC_CampusLearn.Models.ViewModels;
@@ -21,6 +22,48 @@ namespace BC_CampusLearn.Tests;
 
 public class AdminTutorsTests
 {
+    [Theory]
+    [InlineData(BcUserRole.Admin, false)]
+    [InlineData(BcUserRole.SuperAdmin, false)]
+    [InlineData(BcUserRole.Admin, true)]
+    [InlineData(BcUserRole.SuperAdmin, true)]
+    public async Task SessionDetailsShowsTeamsEvidenceWithoutReviews(BcUserRole role, bool recordingAvailable)
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var assignment = await context.TutorCourseModules.FirstAsync();
+        var booking = new Booking
+        {
+            TutorId = assignment.TutorId, TutorCourseModule = assignment,
+            ProgrammeModuleId = assignment.ProgrammeModuleId, Status = BookingStatus.Completed
+        };
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        var evidence = new TeamsSessionReview
+        {
+            Start = DateTimeOffset.UtcNow.AddHours(-1), End = DateTimeOffset.UtcNow,
+            Recordings = recordingAvailable ? [new("recording-1", null, null)] : []
+        };
+        var page = new SessionDetailsModel(context, new TestWebHostEnvironment(),
+            new TestCurrentUserService(role, 60), TimeProvider.System, new TestTeamsReviewService(evidence));
+        SetPageContext(page);
+
+        Assert.IsType<PageResult>(await page.OnGetAsync(booking.BookingId, default));
+        Assert.True(page.HasTeamsEvidence);
+        Assert.Same(evidence, page.TeamsEvidence);
+        Assert.Empty(page.StudentReviewAnswers);
+        Assert.Empty(page.TutorReviewAnswers);
+        Assert.False(page.CanRecordSuperAdminAssessment);
+        Assert.False(page.CanRecordFinalValidity);
+    }
+
+    private sealed class TestTeamsReviewService(TeamsSessionReview evidence) : ITeamsSessionReviewService
+    {
+        public Task<TeamsSessionReview> GetAsync(int bookingId, CancellationToken cancellationToken) => Task.FromResult(evidence);
+        public Task<string> GetTranscriptAsync(int bookingId, string transcriptId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<HttpResponseMessage> OpenRecordingAsync(int bookingId, string recordingId, string? range, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

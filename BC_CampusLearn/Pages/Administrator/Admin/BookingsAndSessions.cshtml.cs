@@ -148,6 +148,17 @@ public class BookingsAndSessionsModel(
             RejectedByTutorHead: rejectedByTutorHead,
             AwaitingAdminReview: awaitingAdminReview);
 
+        // Make Teams sessions reachable before reviews are submitted. Review queue
+        // statistics above still count only sessions ready for assessment.
+        reviewedSessions = reviewedSessions.Union(context.Bookings
+            .AsNoTracking()
+            .Where(booking => booking.Status == BookingStatus.Completed &&
+                booking.MeetingLink != null &&
+                booking.MeetingLink.TeamsEventId != null &&
+                booking.MeetingLink.TeamsEventId != "" &&
+                booking.MeetingLink.TeamsOrganizerIdentityHash != null &&
+                !booking.MeetingLink.TeamsManualFallbackAllowed));
+
         if (Period == "month" && deadlineSettings is not null)
         {
             reviewedSessions = reviewedSessions.Where(booking =>
