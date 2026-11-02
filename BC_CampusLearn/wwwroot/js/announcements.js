@@ -5,6 +5,16 @@
     const host = form.querySelector("[data-announcement-editor]");
     const error = form.querySelector("[data-announcement-validation]");
     const audienceHelp = form.querySelector("[data-announcement-audience-help]");
+    const progress = form.querySelector("[data-announcement-progress]");
+    const submitButton = form.querySelector('button[type="submit"]');
+    let sending = false;
+    window.addEventListener("pageshow", () => {
+        sending = false;
+        form.removeAttribute("aria-busy");
+        submitButton.disabled = false;
+        submitButton.textContent = "Send announcement";
+        progress.hidden = true;
+    });
     const updateAudienceHelp = () => {
         const selected = form.querySelector('input[name="Input.Audience"]:checked');
         audienceHelp.textContent = selected?.value === "TutorsOnly"
@@ -32,6 +42,10 @@
         });
     }
     form.addEventListener("submit", (event) => {
+        if (sending) {
+            event.preventDefault();
+            return;
+        }
         if (editor && !editor.getText().trim()) {
             event.preventDefault();
             error.textContent = "Enter an announcement message.";
@@ -39,8 +53,12 @@
             return;
         }
         if (editor) content.value = JSON.stringify(editor.getContents());
-        if (form.checkValidity()) {
-            form.querySelector('button[type="submit"]').disabled = true;
+        if (!event.defaultPrevented && form.checkValidity()) {
+            sending = true;
+            form.setAttribute("aria-busy", "true");
+            submitButton.disabled = true;
+            submitButton.textContent = "Sending…";
+            progress.hidden = false;
         }
     });
 })();

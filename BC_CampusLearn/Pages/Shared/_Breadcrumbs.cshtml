@@ -149,7 +149,7 @@
             break;
         case "/Tutors/SeniorTutorApplications":
             breadcrumbs.Add(("Personal Details", "/Tutors/Profile"));
-            breadcrumbs.Add(("Senior Tutor Applications", null));
+            breadcrumbs.Add(("Head of Tutor Application", null));
             break;
         case "/TutorHead/SessionReviews":
             breadcrumbs.Add(("Session Reviews", null));
@@ -266,6 +266,12 @@
                                asp-route-Tab="senior-applications"
                                title="@breadcrumb.Label">@breadcrumb.Label</a>
                         }
+                        else if (breadcrumb.Page == "/Tutors/Index" &&
+                            pagePath == "/Tutors/Details")
+                        {
+                            <a asp-page="@breadcrumb.Page" data-tutor-directory-return
+                               title="@breadcrumb.Label">@breadcrumb.Label</a>
+                        }
                         else
                         {
                             <a asp-page="@breadcrumb.Page" title="@breadcrumb.Label">@breadcrumb.Label</a>
@@ -276,7 +282,7 @@
                         if (useCompactMobileLabel)
                         {
                             <span class="campus-breadcrumb-label-compact-mobile"
-                                  data-mobile-label="ST Applications"
+                                  data-mobile-label="HOT Applications"
                                   title="@breadcrumb.Label">@breadcrumb.Label</span>
                         }
                         else

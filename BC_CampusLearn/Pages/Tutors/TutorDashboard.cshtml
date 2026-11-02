@@ -23,6 +23,9 @@
           href="~/css/tutor-dashboard.css"
           asp-append-version="true" />
     <link rel="stylesheet"
+          href="~/css/tutor-profile.css"
+          asp-append-version="true" />
+    <link rel="stylesheet"
           href="~/css/bookings-index.css"
           asp-append-version="true" />
 }
@@ -36,8 +39,10 @@
 
         @if (Model.ShowSeniorTutorApplicationButton)
         {
-            <a asp-page="/Tutors/SeniorTutorApplications"
-               class="tutor-dashboard-senior-application tutor-dashboard-senior-application--desktop">
+            <button type="button"
+               class="tutor-dashboard-senior-application tutor-dashboard-senior-application--desktop"
+               data-bs-toggle="modal"
+               data-bs-target="#senior-tutor-application-modal">
                 <svg xmlns="http://www.w3.org/2000/svg"
                      width="1em"
                      height="1em"
@@ -51,8 +56,8 @@
                           stroke-width="1.5"
                           d="m13.728 3.444l1.76 3.549c.24.494.88.968 1.42 1.058l3.189.535c2.04.343 2.52 1.835 1.05 3.307l-2.48 2.5c-.42.423-.65 1.24-.52 1.825l.71 3.095c.56 2.45-.73 3.397-2.88 2.117l-2.99-1.785c-.54-.322-1.43-.322-1.98 0L8.019 21.43c-2.14 1.28-3.44.322-2.88-2.117l.71-3.095c.13-.585-.1-1.402-.52-1.825l-2.48-2.5C1.39 10.42 1.86 8.929 3.899 8.586l3.19-.535c.53-.09 1.17-.564 1.41-1.058l1.76-3.549c.96-1.925 2.52-1.925 3.47 0" />
                 </svg>
-                ST Applications
-            </a>
+                ST Applications 2027
+            </button>
         }
     </div>
 
@@ -244,8 +249,10 @@
 
     @if (Model.ShowSeniorTutorApplicationButton)
     {
-        <a asp-page="/Tutors/SeniorTutorApplications"
-           class="tutor-dashboard-senior-application tutor-dashboard-senior-application--mobile">
+        <button type="button"
+           class="tutor-dashboard-senior-application tutor-dashboard-senior-application--mobile"
+           data-bs-toggle="modal"
+           data-bs-target="#senior-tutor-application-modal">
             <svg xmlns="http://www.w3.org/2000/svg"
                  width="1em"
                  height="1em"
@@ -259,8 +266,8 @@
                       stroke-width="1.5"
                       d="m13.728 3.444l1.76 3.549c.24.494.88.968 1.42 1.058l3.189.535c2.04.343 2.52 1.835 1.05 3.307l-2.48 2.5c-.42.423-.65 1.24-.52 1.825l.71 3.095c.56 2.45-.73 3.397-2.88 2.117l-2.99-1.785c-.54-.322-1.43-.322-1.98 0L8.019 21.43c-2.14 1.28-3.44.322-2.88-2.117l.71-3.095c.13-.585-.1-1.402-.52-1.825l-2.48-2.5C1.39 10.42 1.86 8.929 3.899 8.586l3.19-.535c.53-.09 1.17-.564 1.41-1.058l1.76-3.549c.96-1.925 2.52-1.925 3.47 0" />
             </svg>
-            ST Applications
-        </a>
+            ST Applications 2027
+        </button>
     }
 
     <div class="row g-4 tutor-dashboard-schedule">
@@ -887,6 +894,230 @@
 
 @section Modals {
 <partial name="_JoinMeetingUnavailableModal" />
+
+@if (Model.ShowSeniorTutorApplicationButton)
+{
+    <div class="modal fade tutor-account-modal"
+         id="senior-tutor-application-modal"
+         tabindex="-1"
+         aria-labelledby="senior-tutor-application-title"
+         aria-hidden="true"
+         data-open-on-load="@Model.OpenSeniorApplication.ToString().ToLowerInvariant()">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <form method="post"
+                      asp-page="/Tutors/SeniorTutorApplications"
+                      asp-page-handler="ApplySenior"
+                      data-dashboard-senior-application-form
+                      novalidate>
+                    <div class="modal-header">
+                        <div>
+                            <h2 class="modal-title" id="senior-tutor-application-title">Senior Tutor Application 2027</h2>
+                            <p>Confirm that you would like to return as a tutor for the 2027 academic year.</p>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (TempData["SeniorTutorApplicationError"] is string applicationError)
+                        {
+                            <p class="tutor-profile-validation" role="alert">@applicationError</p>
+                        }
+                        <section class="tutor-renewal-intro" aria-labelledby="tutor-renewal-about-title">
+                            <div>
+                                <h3 id="tutor-renewal-about-title">What is this application?</h3>
+                                <ul>
+                                    <li>Submit this application to return as a <strong>Senior Tutor in 2027</strong>.</li>
+                                    <li>Your current modules remain, and you can request additional modules.</li>
+                                    <li>Your average and requested modules update only after approval.</li>
+                                    @if (Model.CanApplyForHeadOfTutor)
+                                    {
+                                        <li>An average of 72% or higher lets you continue to the optional Head of Tutor application in the same application window.</li>
+                                    }
+                                </ul>
+                                <p class="tutor-renewal-nonreturn-note">
+                                    If you do not submit this application, we will assume that you are not returning as a tutor in 2027.
+                                </p>
+                                @if (Model.SeniorTutorApplicationCloseDate.HasValue)
+                                {
+                                    <p class="tutor-renewal-deadline">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M7 2v3m10-3v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+                                        </svg>
+                                        Due date <strong>@Model.SeniorTutorApplicationCloseDate.Value.ToString("dd MMMM yyyy")</strong>
+                                    </p>
+                                }
+                            </div>
+                        </section>
+
+                        <div class="tutor-renewal-grid">
+                            <section class="tutor-renewal-section" aria-labelledby="tutor-renewal-average-title">
+                                <div class="tutor-renewal-section-heading">
+                                    <span>1</span>
+                                    <div>
+                                        <h3 id="tutor-renewal-average-title">Academic average</h3>
+                                        <p>Enter your latest overall academic average.</p>
+                                    </div>
+                                </div>
+                                <div class="tutor-profile-field">
+                                    <label for="dashboard-senior-academic-average">
+                                        Current academic average
+                                        <span class="tutor-required-marker" aria-hidden="true">*</span>
+                                    </label>
+                                    <div class="tutor-senior-average-input">
+                                        <input id="dashboard-senior-academic-average"
+                                               name="academicAverage"
+                                               value="@TempData.Peek("SeniorTutorApplicationAverage")"
+                                               type="text"
+                                               inputmode="decimal"
+                                               autocomplete="off"
+                                               data-dashboard-senior-average />
+                                        <span aria-hidden="true">%</span>
+                                    </div>
+                                    <span data-dashboard-senior-average-error></span>
+                                </div>
+                                @if (Model.CanApplyForHeadOfTutor)
+                                {
+                                    <fieldset class="tutor-renewal-hot-choice"
+                                         data-dashboard-hot-notice
+                                         hidden>
+                                        <legend>
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M20 6 9 17l-5-5" />
+                                            </svg>
+                                            You qualify for the Head of Tutor Application
+                                        </legend>
+                                        <p>Do you want to apply for Head of Tutor?</p>
+                                        <div class="tutor-renewal-hot-options">
+                                            <label>
+                                                <input type="radio"
+                                                       name="applyForHeadOfTutor"
+                                                       value="true"
+                                                       checked="@(Model.PreselectedHeadOfTutorChoice == true ? "checked" : null)"
+                                                       data-dashboard-hot-choice />
+                                                <span>Yes</span>
+                                            </label>
+                                            <label>
+                                                <input type="radio"
+                                                       name="applyForHeadOfTutor"
+                                                       value="false"
+                                                       checked="@(Model.PreselectedHeadOfTutorChoice == false ? "checked" : null)"
+                                                       data-dashboard-hot-choice />
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                        <span class="tutor-renewal-hot-error" data-dashboard-hot-choice-error></span>
+                                        <p class="tutor-renewal-hot-next-step"
+                                           data-dashboard-hot-next-step
+                                           hidden>
+                                            After submitting, you will be taken to the Head of Tutor application.
+                                        </p>
+                                    </fieldset>
+                                }
+                                else
+                                {
+                                    <div class="tutor-renewal-hot-notice" role="status">
+                                        Your current Head of Tutor appointment does not carry over to 2027. If approved,
+                                        you will return as a Senior Tutor.
+                                    </div>
+                                }
+                            </section>
+
+                            <section class="tutor-renewal-section" aria-labelledby="tutor-renewal-modules-title">
+                                <div class="tutor-renewal-section-heading">
+                                    <span>2</span>
+                                    <div>
+                                        <h3 id="tutor-renewal-modules-title">Modules for 2027</h3>
+                                        <p>Keep your current modules and optionally request more.</p>
+                                    </div>
+                                </div>
+
+                                <details class="tutor-renewal-current-modules">
+                                    <summary>
+                                        <span class="tutor-renewal-current-modules-title">
+                                            <strong>Your current modules</strong>
+                                        </span>
+                                        <span class="tutor-renewal-current-modules-meta">
+                                            <small>@Model.CurrentTutorModules.Count @(Model.CurrentTutorModules.Count == 1 ? "module" : "modules")</small>
+                                            <svg viewBox="0 0 16 16" aria-hidden="true">
+                                                <path d="m4 6l4 4l4-4" />
+                                            </svg>
+                                        </span>
+                                    </summary>
+                                    <div class="tutor-renewal-current-modules-content">
+                                        @if (Model.CurrentTutorModules.Count == 0)
+                                        {
+                                            <p>No active modules are currently assigned.</p>
+                                        }
+                                        else
+                                        {
+                                            <div class="tutor-renewal-current-module-list">
+                                                @foreach (var module in Model.CurrentTutorModules)
+                                                {
+                                                    <div>
+                                                        <strong>@module.ModuleCode</strong>
+                                                        <span>@module.ModuleName</span>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </details>
+
+                                <div class="tutor-profile-field tutor-renewal-module-picker">
+                                    <div class="tutor-renewal-module-label">
+                                        <label for="dashboard-module-search">Add more modules <span>(optional)</span></label>
+                                        <span data-renewal-module-count>0 selected</span>
+                                    </div>
+                                    @if (Model.ModulesAvailableFor2027.Count == 0)
+                                    {
+                                        <p class="tutor-renewal-empty">There are no additional modules available.</p>
+                                    }
+                                    else
+                                    {
+                                        <div class="tutor-renewal-module-search">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <circle cx="11" cy="11" r="7" />
+                                                <path d="m16.25 16.25l4 4" />
+                                            </svg>
+                                            <input id="dashboard-module-search"
+                                                   type="search"
+                                                   placeholder="Search by module code or name"
+                                                   autocomplete="off"
+                                                   data-renewal-module-search />
+                                        </div>
+                                        <div class="tutor-renewal-module-options" data-renewal-module-options>
+                                            @foreach (var module in Model.ModulesAvailableFor2027)
+                                            {
+                                                <label data-renewal-module-option>
+                                                    <input type="checkbox"
+                                                           name="programmeModuleIds"
+                                                           value="@module.ProgrammeModuleId"
+                                                           checked="@(Model.Preselected2027ModuleIds.Contains(module.ProgrammeModuleId) ? "checked" : null)" />
+                                                    <span>
+                                                        <strong>@module.ModuleCode</strong>
+                                                        <small>@module.ModuleName</small>
+                                                    </span>
+                                                </label>
+                                            }
+                                            <p class="tutor-renewal-empty" data-renewal-module-empty hidden>No modules match your search.</p>
+                                        </div>
+                                        <p class="tutor-renewal-module-help">
+                                            Additional modules are added to your tutor profile only after this application is approved.
+                                        </p>
+                                    }
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="tutor-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="tutor-modal-primary">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
 
 @await Html.PartialAsync("_TutorSessionConfirmationModal", new BC_CampusLearn.Models.ViewModels.TutorSessionConfirmationViewModel(Model.TeamsMeetingCreationEnabled, Url.Page("/Tutors/TutorDashboard", "GenerateTeamsLink")!))
 

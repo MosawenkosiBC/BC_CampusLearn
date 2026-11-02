@@ -150,6 +150,21 @@ builder.Services.AddScoped<IClaimsTransformation, BcUserClaimsTransformation>();
 builder.Services.Configure<TeamsMeetingOptions>(
     builder.Configuration.GetSection(TeamsMeetingOptions.SectionName));
 builder.Services.AddSingleton<ITeamsGraphTokenProvider, TeamsGraphTokenProvider>();
+builder.Services.Configure<EmailNotificationOptions>(
+    builder.Configuration.GetSection(EmailNotificationOptions.SectionName));
+builder.Services.AddHttpClient<IEmailNotificationClient, GraphEmailNotificationClient>(client =>
+    {
+        client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
+        client.Timeout = TimeSpan.FromSeconds(30);
+        client.MaxResponseContentBufferSize = 64 * 1024;
+    })
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AllowAutoRedirect = false
+    });
+builder.Services.AddHostedService<EmailNotificationWorker>();
+builder.Services.AddHostedService<CampusEventNotificationWorker>();
+builder.Services.AddHostedService<SuperAdminReviewThresholdWorker>();
 builder.Services.AddHttpClient<ITeamsCalendarClient, TeamsCalendarClient>(client =>
     {
         client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");

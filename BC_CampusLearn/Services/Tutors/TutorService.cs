@@ -7,6 +7,8 @@ namespace BC_CampusLearn.Services.Tutors;
 
 public class TutorService : ITutorService
 {
+    private static readonly int[] HiddenTestTutorIds = [2, 3, 5];
+
     private readonly ApplicationDbContext _context;
 
     public TutorService(ApplicationDbContext context)
@@ -26,7 +28,8 @@ public class TutorService : ITutorService
                 .AsNoTracking()
                 .Where(tutor =>
                     tutor.Status == TutorStatus.Approved &&
-                    tutor.IsActive);
+                    tutor.IsActive &&
+                    !HiddenTestTutorIds.Contains(tutor.TutorId));
 
         if (programmeModuleId.HasValue)
         {
@@ -204,7 +207,10 @@ public class TutorService : ITutorService
     {
         string[] campuses = await _context.Tutors
             .AsNoTracking()
-            .Where(tutor => tutor.Status == TutorStatus.Approved && tutor.IsActive)
+            .Where(tutor =>
+                tutor.Status == TutorStatus.Approved &&
+                tutor.IsActive &&
+                !HiddenTestTutorIds.Contains(tutor.TutorId))
             .Select(tutor => tutor.CampusOfStudy)
             .ToArrayAsync(cancellationToken);
 

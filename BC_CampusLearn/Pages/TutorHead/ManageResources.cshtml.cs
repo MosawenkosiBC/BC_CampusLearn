@@ -2,6 +2,7 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
+using BC_CampusLearn.Services.Notifications;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -133,6 +134,20 @@ public class ManageResourcesModel(
             LinkUrl = "/Tutors/ManageResources",
             CreatedAt = now
         });
+        string nominatedModule = NotificationEmailQueue.FormatModule(
+            assignment.ProgrammeModule.ModuleCode,
+            assignment.ProgrammeModule.ModuleName);
+        NotificationEmailQueue.Add(
+            context,
+            $"resource-nomination:{tutorId}:{programmeModuleId}:{now.ToUnixTimeMilliseconds()}:added",
+            assignment.Tutor.BcUser.Email,
+            assignment.Tutor.BcUser.DisplayName,
+            "You can now create learning resources",
+            $"{NotificationEmailQueue.Greeting(assignment.Tutor.BcUser.DisplayName)}" +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            $"You can now create learning resources for {nominatedModule}.",
+            "/Tutors/ManageResources",
+            now);
         await context.SaveChangesAsync(cancellationToken);
 
         ResourceMessage = $"{GetTutorName(assignment.Tutor)} was nominated " +
@@ -176,6 +191,21 @@ public class ManageResourcesModel(
             LinkUrl = "/Tutors/ManageResources",
             CreatedAt = now
         });
+        string removedModule = NotificationEmailQueue.FormatModule(
+            nomination.ProgrammeModule.ModuleCode,
+            nomination.ProgrammeModule.ModuleName);
+        NotificationEmailQueue.Add(
+            context,
+            $"resource-nomination:{tutorId}:{programmeModuleId}:{now.ToUnixTimeMilliseconds()}:removed",
+            nomination.Tutor.BcUser.Email,
+            nomination.Tutor.BcUser.DisplayName,
+            "Your learning resource access was updated",
+            $"{NotificationEmailQueue.Greeting(nomination.Tutor.BcUser.DisplayName)}" +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            $"You can no longer create learning resources for {removedModule}. " +
+            "Resources you already published will remain available.",
+            "/Tutors/ManageResources",
+            now);
         await context.SaveChangesAsync(cancellationToken);
 
         ResourceMessage = $"{GetTutorName(nomination.Tutor)} was de-nominated " +

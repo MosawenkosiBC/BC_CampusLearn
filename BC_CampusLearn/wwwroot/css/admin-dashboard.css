@@ -774,6 +774,35 @@
     min-width: 0;
 }
 
+.admin-tutor-performance-profile-link {
+    align-items: center;
+    color: #2b3237;
+    display: inline-flex;
+    gap: 0.35rem;
+    min-width: 0;
+    text-decoration: none;
+}
+
+.admin-tutor-performance-profile-link:hover,
+.admin-tutor-performance-profile-link:focus-visible {
+    color: #000;
+    text-decoration: underline;
+}
+
+.admin-tutor-identity .admin-tutor-performance-profile-link:hover strong,
+.admin-tutor-identity .admin-tutor-performance-profile-link:focus-visible strong {
+    color: #000;
+}
+
+.admin-tutor-performance-profile-link svg {
+    flex-shrink: 0;
+    visibility: hidden;
+}
+
+.admin-tutor-performance-profile-link:hover svg {
+    visibility: visible;
+}
+
 .admin-tutor-rank {
     color: #8a9398;
     flex: 0 0 1.1rem;

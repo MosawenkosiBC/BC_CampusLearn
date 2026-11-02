@@ -117,7 +117,8 @@ public class IndexModel(
             .AsNoTracking()
             .Where(application =>
                 application.Status != TutorAccountRequestStatus.Approved ||
-                application.Tutor.BcUser.Role == BcUserRole.SeniorTutor);
+                application.Tutor.BcUser.Role == BcUserRole.SeniorTutor ||
+                application.Tutor.BcUser.Role == BcUserRole.HeadOfTutors);
 
         ApplicationSearch = string.IsNullOrWhiteSpace(ApplicationSearch)
             ? null

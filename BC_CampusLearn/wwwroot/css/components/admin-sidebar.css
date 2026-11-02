@@ -218,6 +218,23 @@ body.administrator-area > .admin-topbar {
     font-size: 0.82rem;
     justify-content: space-between;
     padding: 0.65rem 1rem;
+    text-decoration: none;
+}
+
+.admin-notification-item:hover,
+.admin-notification-item:focus-visible {
+    background: #f1f4f4;
+    color: #202425;
+}
+
+.admin-notification-label {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.35rem;
+}
+
+.admin-notification-label svg {
+    flex-shrink: 0;
 }
 
 .admin-notification-item strong {

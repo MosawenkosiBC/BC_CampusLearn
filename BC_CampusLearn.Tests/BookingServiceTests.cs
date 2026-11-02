@@ -65,7 +65,9 @@ public class BookingServiceTests
         Assert.Equal(2, notifications.Count);
         Assert.Contains(notifications, item =>
             item.RecipientBcUserId == 21 &&
-            item.Title == "Booking submitted");
+            item.Title == "Booking request pending" &&
+            item.Message.Contains("pending") &&
+            item.Message.Contains("tutor must confirm"));
         Assert.Contains(notifications, item =>
             item.RecipientBcUserId == 31 &&
             item.Title == "New booking request");
@@ -81,6 +83,19 @@ public class BookingServiceTests
         Assert.All(notifications, item => Assert.Contains(
             $"/{result.BookingId}",
             item.LinkUrl));
+
+        List<EmailNotificationOutbox> emails = await context
+            .EmailNotificationOutbox
+            .OrderBy(item => item.RecipientEmail)
+            .ToListAsync();
+        Assert.Equal(2, emails.Count);
+        Assert.Contains(emails, item =>
+            item.RecipientEmail == "student@example.com" &&
+            item.Subject.Contains("pending") &&
+            item.Body.Contains("pending until the tutor confirms"));
+        Assert.Contains(emails, item =>
+            item.RecipientEmail == "tutor@example.com" &&
+            item.Subject.Contains("New tutoring request"));
     }
 
     [Fact]
@@ -519,6 +534,7 @@ public class BookingServiceTests
             BcUserId = 31,
             PersonnelNumber = "TUTOR31",
             DisplayName = "Tutor Name",
+            Email = "tutor@example.com",
             CreatedAt = DateTime.UtcNow
         };
         var tutor = new Tutor

@@ -901,7 +901,7 @@ public class AdminSettingsTests
     }
 
     [Fact]
-    public async Task DemotingSeniorTutorDeletesTheirApplicationHistory()
+    public async Task DemotingHeadOfTutorsPreservesTheirApplicationHistory()
     {
         await using ApplicationDbContext context = CreateContext();
         AddBaseData(context, BcUserRole.SuperAdmin);
@@ -909,9 +909,9 @@ public class AdminSettingsTests
         context.BcUsers.Add(new BcUser
         {
             BcUserId = 2,
-            Email = "senior@campus.test",
-            DisplayName = "Senior Tutor",
-            Role = BcUserRole.SeniorTutor,
+            Email = "head@campus.test",
+            DisplayName = "Head of Tutor",
+            Role = BcUserRole.HeadOfTutors,
             Tutor = tutor
         });
         context.SeniorTutorApplications.AddRange(
@@ -943,8 +943,10 @@ public class AdminSettingsTests
         Assert.Equal(
             BcUserRole.Tutor,
             (await context.BcUsers.FindAsync(2))!.Role);
-        Assert.Empty(await context.SeniorTutorApplications.ToListAsync());
-        Assert.Contains("application was removed", page.SuccessMessage);
+        Assert.Equal(2, await context.SeniorTutorApplications.CountAsync());
+        Assert.Contains(await context.SeniorTutorApplications.ToListAsync(),
+            application => application.Status == TutorAccountRequestStatus.Declined);
+        Assert.Contains("history has been preserved", page.SuccessMessage);
     }
 
     [Theory]
@@ -1010,9 +1012,9 @@ public class AdminSettingsTests
         UserNotification notification = Assert.Single(
             await context.UserNotifications.ToListAsync());
         Assert.Equal(2, notification.RecipientBcUserId);
-        Assert.Equal("Promoted to Head of Tutors", notification.Title);
-        Assert.Contains("promoted to Head of Tutors", notification.Message);
-        Assert.Contains("navigation drawer", notification.Message);
+        Assert.Equal("Head of Tutors access granted", notification.Title);
+        Assert.Contains("updated to Head of Tutors", notification.Message);
+        Assert.Contains("review completed sessions", notification.Message);
         Assert.Equal("/TutorHead/SessionReviews", notification.LinkUrl);
     }
 

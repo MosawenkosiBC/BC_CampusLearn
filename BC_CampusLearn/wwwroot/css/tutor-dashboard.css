@@ -22,7 +22,9 @@
     border: 1px solid #4ac1c1;
     border-radius: 0.3rem;
     color: #fff;
+    cursor: pointer;
     display: inline-flex;
+    font-family: inherit;
     font-size: 1.15rem;
     font-weight: 600;
     gap: 0.55rem;

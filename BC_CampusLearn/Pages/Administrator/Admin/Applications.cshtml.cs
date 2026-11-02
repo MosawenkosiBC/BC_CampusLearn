@@ -385,7 +385,7 @@ public class ApplicationsModel : ManualTutorPageModel
              seniorOpenDate.Value.Date > seniorCloseDate.Value.Date ||
              seniorCloseDate.Value.Date < DateTime.UtcNow.Date))
         {
-            PageError = "Enter valid Senior Tutor application opening and closing dates.";
+            PageError = "Enter valid Senior Tutor and Head of Tutor application opening and closing dates.";
             ShowApplicationSettingsModal = true;
             return RedirectToPage(new { Stage, Search });
         }

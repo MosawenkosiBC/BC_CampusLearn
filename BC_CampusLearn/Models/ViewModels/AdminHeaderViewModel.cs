@@ -14,9 +14,6 @@ public class AdminHeaderViewModel
 
     public int PendingModuleRequests { get; set; }
 
-    public int PendingDeregistrationRequests { get; set; }
-
     public int NotificationCount => (IsSuperAdmin ? PendingTutorApplications : 0) +
-        PendingModuleRequests +
-        PendingDeregistrationRequests;
+        PendingModuleRequests;
 }

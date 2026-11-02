@@ -14,6 +14,7 @@ public class CampusEvent
     public string BannerImagePath { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? NotificationsQueuedAt { get; set; }
 
     public ICollection<CampusEventDetail> Details { get; set; }
         = new List<CampusEventDetail>();

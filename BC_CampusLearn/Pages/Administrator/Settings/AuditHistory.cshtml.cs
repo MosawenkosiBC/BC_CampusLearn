@@ -1,9 +1,12 @@
 using BC_CampusLearn.Data;
+using BC_CampusLearn.Models.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Pages.Administrator.Settings;
 
+[Authorize(Roles = nameof(BcUserRole.SuperAdmin))]
 public class AuditHistoryModel(ApplicationDbContext context) : PageModel
 {
     public IReadOnlyList<AuditRow> AuditRows { get; private set; } = [];

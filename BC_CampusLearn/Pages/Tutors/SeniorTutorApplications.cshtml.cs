@@ -42,26 +42,53 @@ public class SeniorTutorApplicationsModel : PageModel
     [BindProperty]
     public SeniorTutorApplicationInput Input { get; set; } = new();
 
+    [BindProperty(SupportsGet = true)]
+    public int? ApplicationId { get; set; }
+
     public bool OpenApplicationModal { get; private set; }
     public bool ShowClosedApplicationsModal { get; private set; }
     public bool ApplicationsOpen { get; private set; }
     public bool IsSeniorTutor { get; private set; }
+    public bool IsHeadOfTutors { get; private set; }
 
     public SeniorTutorApplication? LatestApplication { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
-        return await LoadPageAsync(cancellationToken) ? Page() : Forbid();
+        if (!await LoadPageAsync(cancellationToken))
+        {
+            return Forbid();
+        }
+
+        OpenApplicationModal = ApplicationId.HasValue &&
+            LatestApplication is
+            {
+                Status: TutorAccountRequestStatus.Pending,
+                IsHeadOfTutorApplication: false
+            } &&
+            LatestApplication.SeniorTutorApplicationId == ApplicationId.Value &&
+            LatestApplication.AcademicAverage >= 72m;
+        return Page();
     }
 
-    public async Task<IActionResult> OnPostApplyAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostApplySeniorAsync(
+        string? academicAverage,
+        CancellationToken cancellationToken,
+        List<int>? programmeModuleIds = null,
+        bool? applyForHeadOfTutor = null)
         => await _context.Database.CreateExecutionStrategy().ExecuteAsync(
-            () => ApplyCoreAsync(cancellationToken));
+            () => ApplySeniorCoreAsync(
+                academicAverage,
+                programmeModuleIds,
+                applyForHeadOfTutor,
+                cancellationToken));
 
-    private async Task<IActionResult> ApplyCoreAsync(CancellationToken cancellationToken)
+    private async Task<IActionResult> ApplySeniorCoreAsync(
+        string? academicAverage,
+        List<int>? programmeModuleIds,
+        bool? applyForHeadOfTutor,
+        CancellationToken cancellationToken)
     {
-        OpenApplicationModal = true;
-
         await using var transaction = _context.Database.IsRelational()
             ? await _context.Database.BeginTransactionAsync(
                 System.Data.IsolationLevel.Serializable,
@@ -74,14 +101,23 @@ public class SeniorTutorApplicationsModel : PageModel
                 item.BcUserId == currentUser.BcUserId &&
                 item.Status == TutorStatus.Approved &&
                 item.IsActive)
-            .Select(item => new { item.TutorId, item.BcUser.Role })
+            .Select(item => new
+            {
+                item.TutorId,
+                item.BcUser.Role,
+                ActiveModuleIds = item.TutorCourseModules
+                    .Where(module => module.IsActive)
+                    .Select(module => module.ProgrammeModuleId)
+                    .ToList()
+            })
             .SingleOrDefaultAsync(cancellationToken);
 
         if (tutor is null)
         {
             return Forbid();
         }
-        if (tutor.Role != BcUserRole.Tutor)
+        if (tutor.Role is not (BcUserRole.Tutor or BcUserRole.SeniorTutor or
+            BcUserRole.HeadOfTutors))
         {
             return Forbid();
         }
@@ -94,75 +130,122 @@ public class SeniorTutorApplicationsModel : PageModel
             .IsAcceptingSeniorTutorApplications(DateTime.UtcNow) ?? false;
         if (!applicationsOpen)
         {
-            OpenApplicationModal = false;
-            ShowClosedApplicationsModal = true;
-            return await LoadPageAsync(cancellationToken) ? Page() : Forbid();
+            TempData["SeniorTutorApplicationError"] =
+                "Senior Tutor applications are currently closed.";
+            return RedirectToPage("/Tutors/TutorDashboard");
         }
 
-        ValidateInput();
+        List<int> requestedModuleIds = (programmeModuleIds ?? [])
+            .Where(moduleId => moduleId > 0)
+            .Distinct()
+            .ToList();
+        TempData["SeniorTutorApplicationModuleIds"] =
+            string.Join(',', requestedModuleIds);
+        if (applyForHeadOfTutor.HasValue)
+        {
+            TempData["SeniorTutorApplicationHeadChoice"] =
+                applyForHeadOfTutor.Value.ToString();
+        }
 
-        bool hasPendingApplication = await _context.SeniorTutorApplications
-            .AnyAsync(application =>
+        string averageText = academicAverage?.Trim() ?? string.Empty;
+        if (!decimal.TryParse(
+                averageText,
+                NumberStyles.Number,
+                CultureInfo.InvariantCulture,
+                out decimal average) || average < 0m || average > 100m)
+        {
+            TempData["SeniorTutorApplicationError"] =
+                "Enter an academic average from 0 to 100.";
+            TempData["SeniorTutorApplicationAverage"] = averageText;
+            return RedirectToPage(
+                "/Tutors/TutorDashboard",
+                new { openSeniorApplication = true });
+        }
+
+        if (requestedModuleIds.Intersect(tutor.ActiveModuleIds).Any() ||
+            await _context.ProgrammeModules.CountAsync(
+                module => requestedModuleIds.Contains(module.ProgrammeModuleId),
+                cancellationToken) != requestedModuleIds.Count)
+        {
+            TempData["SeniorTutorApplicationError"] =
+                "Select valid additional modules that are not already assigned to you.";
+            TempData["SeniorTutorApplicationAverage"] = averageText;
+            return RedirectToPage(
+                "/Tutors/TutorDashboard",
+                new { openSeniorApplication = true });
+        }
+
+        SeniorTutorApplication? pendingApplication = await _context
+            .SeniorTutorApplications
+            .OrderByDescending(application => application.SubmittedAt)
+            .FirstOrDefaultAsync(application =>
                 application.TutorId == tutor.TutorId &&
                 application.Status == TutorAccountRequestStatus.Pending,
                 cancellationToken);
-        if (hasPendingApplication)
+        if (pendingApplication is not null)
         {
-            ModelState.AddModelError(
-                string.Empty,
-                "You already have a senior tutor application awaiting review.");
+            TempData["SeniorTutorApplicationError"] =
+                "You already have a Senior Tutor application awaiting review.";
+            return RedirectToPage("/Tutors/TutorDashboard");
         }
 
-        if (!ModelState.IsValid)
+        if (average >= 72m &&
+            tutor.Role != BcUserRole.HeadOfTutors &&
+            !applyForHeadOfTutor.HasValue)
         {
-            return await LoadPageAsync(cancellationToken) ? Page() : Forbid();
+            TempData["SeniorTutorApplicationError"] =
+                "Choose whether you want to apply for Head of Tutor.";
+            TempData["SeniorTutorApplicationAverage"] = averageText;
+            return RedirectToPage(
+                "/Tutors/TutorDashboard",
+                new { openSeniorApplication = true });
         }
 
-        decimal academicAverage = decimal.Parse(
-            Input.AcademicAverage!.Trim(),
-            NumberStyles.Number,
-            CultureInfo.InvariantCulture);
-
-        _context.SeniorTutorApplications.Add(new SeniorTutorApplication
+        var application = new SeniorTutorApplication
         {
             TutorId = tutor.TutorId,
-            AcademicAverage = academicAverage,
-            BestDescription = Input.BestDescription!,
-            SuitabilityReason = Input.SuitabilityReason!.Trim(),
+            AcademicAverage = average,
+            IsHeadOfTutorApplication = false,
             Status = TutorAccountRequestStatus.Pending,
             SubmittedAt = DateTime.UtcNow
-        });
+        };
+        foreach (int moduleId in requestedModuleIds)
+        {
+            application.RequestedModules.Add(new SeniorTutorApplicationModule
+            {
+                ProgrammeModuleId = moduleId
+            });
+        }
+        _context.SeniorTutorApplications.Add(application);
 
         await _context.SaveChangesAsync(cancellationToken);
+        TempData.Remove("SeniorTutorApplicationModuleIds");
+        TempData.Remove("SeniorTutorApplicationHeadChoice");
         if (transaction is not null)
         {
             await transaction.CommitAsync(cancellationToken);
         }
 
-        TempData["SeniorTutorApplicationSaved"] = true;
-        return RedirectToPage();
+        if (average >= 72m &&
+            tutor.Role != BcUserRole.HeadOfTutors &&
+            applyForHeadOfTutor == true)
+        {
+            TempData["SeniorTutorApplicationSaved"] = true;
+            return RedirectToPage(new
+            {
+                applicationId = application.SeniorTutorApplicationId
+            });
+        }
+
+        TempData["SuccessMessage"] =
+            "Your Senior Tutor application has been submitted for review.";
+        return RedirectToPage("/Tutors/TutorDashboard");
     }
 
-    private void ValidateInput()
+    public async Task<IActionResult> OnPostApplyForHeadAsync(
+        int applicationId,
+        CancellationToken cancellationToken)
     {
-        string averageText = Input.AcademicAverage?.Trim() ?? string.Empty;
-        if (averageText.Length == 0)
-        {
-            ModelState.AddModelError(
-                "Input.AcademicAverage",
-                "Enter your academic average.");
-        }
-        else if (!decimal.TryParse(
-            averageText,
-            NumberStyles.Number,
-            CultureInfo.InvariantCulture,
-            out decimal average) || average < 72m || average > 100m)
-        {
-            ModelState.AddModelError(
-                "Input.AcademicAverage",
-                "Enter an academic average from 72 to 100.");
-        }
-
         if (string.IsNullOrWhiteSpace(Input.BestDescription) ||
             !AllowedDescriptions.Contains(Input.BestDescription))
         {
@@ -176,7 +259,7 @@ public class SeniorTutorApplicationsModel : PageModel
         {
             ModelState.AddModelError(
                 "Input.SuitabilityReason",
-                "Explain why you are suitable for the senior tutor role.");
+                "Explain why you are suitable for the Head of Tutor role.");
         }
         else if (reason.Length > 2000)
         {
@@ -184,6 +267,37 @@ public class SeniorTutorApplicationsModel : PageModel
                 "Input.SuitabilityReason",
                 "Keep your answer to 2,000 characters or fewer.");
         }
+
+        CurrentUser currentUser = _currentUserService.GetRequiredUser();
+        SeniorTutorApplication? application = await _context
+            .SeniorTutorApplications
+            .Include(item => item.Tutor)
+            .SingleOrDefaultAsync(item =>
+                item.SeniorTutorApplicationId == applicationId &&
+                item.Tutor.BcUserId == currentUser.BcUserId &&
+                item.Tutor.BcUser.Role != BcUserRole.HeadOfTutors &&
+                item.Status == TutorAccountRequestStatus.Pending &&
+                item.AcademicAverage >= 72m,
+                cancellationToken);
+        if (application is null)
+        {
+            return NotFound();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            ApplicationId = applicationId;
+            OpenApplicationModal = true;
+            return await LoadPageAsync(cancellationToken) ? Page() : Forbid();
+        }
+
+        application.IsHeadOfTutorApplication = true;
+        application.BestDescription = Input.BestDescription;
+        application.SuitabilityReason = Input.SuitabilityReason!.Trim();
+        await _context.SaveChangesAsync(cancellationToken);
+
+        TempData["HeadOfTutorApplicationSaved"] = true;
+        return RedirectToPage();
     }
 
     private async Task<bool> LoadPageAsync(CancellationToken cancellationToken)
@@ -218,6 +332,7 @@ public class SeniorTutorApplicationsModel : PageModel
         StudentNumber = tutor.PersonnelNumber ?? currentUser.PersonnelNumber ?? string.Empty;
         ProfileImagePath = tutor.ProfileImagePath;
         IsSeniorTutor = tutor.Role == BcUserRole.SeniorTutor;
+        IsHeadOfTutors = tutor.Role == BcUserRole.HeadOfTutors;
         TutorApplicationSettings? applicationSettings = await _context
             .TutorApplicationSettings
             .AsNoTracking()
@@ -239,7 +354,8 @@ public class SeniorTutorApplicationsModel : PageModel
             .Where(application =>
                 application.TutorId == tutor.TutorId &&
                 (application.Status != TutorAccountRequestStatus.Approved ||
-                    tutor.Role == BcUserRole.SeniorTutor))
+                    tutor.Role == BcUserRole.SeniorTutor ||
+                    tutor.Role == BcUserRole.HeadOfTutors))
             .OrderByDescending(application => application.SubmittedAt)
             .FirstOrDefaultAsync(cancellationToken);
         return true;

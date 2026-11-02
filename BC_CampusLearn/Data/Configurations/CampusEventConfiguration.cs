@@ -16,6 +16,8 @@ public class CampusEventConfiguration : IEntityTypeConfiguration<CampusEvent>
         builder.Property(item => item.Location).HasMaxLength(300).IsRequired();
         builder.Property(item => item.BannerImagePath).HasMaxLength(500).IsRequired();
         builder.Property(item => item.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+        builder.Property(item => item.NotificationsQueuedAt)
+            .HasColumnType("datetimeoffset");
         builder.HasIndex(item => new { item.IsPublished, item.PublishAt, item.EndsAt });
     }
 }

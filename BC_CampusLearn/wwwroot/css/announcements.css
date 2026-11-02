@@ -1,4 +1,8 @@
 .announcement-message { margin-top: 1.5rem; }
+.announcement-send-progress { margin-top: 1rem; }
+.announcement-send-progress[hidden] { display: none; }
+.announcement-send-progress label { display: block; margin-bottom: .5rem; }
+.announcement-send-progress progress { width: 100%; accent-color: #218f8f; }
 .announcement-message .ql-toolbar { border-radius: .5rem .5rem 0 0; }
 .announcement-message .ql-container { border-radius: 0 0 .5rem .5rem; font: inherit; }
 .announcement-message .ql-editor { min-height: 16rem; }

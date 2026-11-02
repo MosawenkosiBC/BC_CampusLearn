@@ -1370,9 +1370,9 @@ public class AdminApplicationsTests
             new BcUser
             {
                 BcUserId = 4,
-                DisplayName = "Existing Senior Tutor",
+                DisplayName = "Existing Head of Tutor",
                 PersonnelNumber = "ST5204",
-                Role = BcUserRole.SeniorTutor
+                Role = BcUserRole.HeadOfTutors
             });
         Tutor eligible = CreateTutor(1, TutorStatus.Approved);
         eligible.ApplicationStage = TutorApplicationStage.Placement;

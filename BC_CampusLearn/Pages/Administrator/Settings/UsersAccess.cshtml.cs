@@ -127,7 +127,6 @@ public class UsersAccessModel(
         EnsureAdminProfile(target);
         RecordAccessAudit(target, "Administrative role", previous,
             target.Role.ToString(), currentUser, Input.Reason);
-        AddHeadOfTutorsPromotionNotification(target, previous);
         await context.SaveChangesAsync(cancellationToken);
         SuccessMessage = $"{target.DisplayName} now has {RoleLabel(target.Role)} access.";
         return RedirectToPage();
@@ -164,7 +163,6 @@ public class UsersAccessModel(
         EnsureAdminProfile(target);
         RecordAccessAudit(target, "Administrative role", previous,
             role.ToString(), currentUser, reason);
-        AddHeadOfTutorsPromotionNotification(target, previous);
         await context.SaveChangesAsync(cancellationToken);
         SuccessMessage = $"{target.DisplayName}'s role was updated.";
         return RedirectToPage();
@@ -193,7 +191,6 @@ public class UsersAccessModel(
         target.IsAdministrativeAccessActive = true;
         EnsureAdminProfile(target);
         RecordAccessAudit(target, "Administrative role", previous, role.ToString(), currentUser, reason);
-        AddHeadOfTutorsPromotionNotification(target, previous);
         await context.SaveChangesAsync(cancellationToken);
         SuccessMessage = $"{target.DisplayName} was promoted to {RoleLabel(role)}.";
         return RedirectToPage();
@@ -220,24 +217,16 @@ public class UsersAccessModel(
             await IsLastActiveSuperAdminAsync(target.BcUserId, cancellationToken))
             return AccessError("The last active Super Admin cannot be demoted.");
 
-        bool removingSeniorTutorRole = target.Role == BcUserRole.SeniorTutor;
+        bool removingApplicationRole = target.Role is
+            BcUserRole.SeniorTutor or BcUserRole.HeadOfTutors;
         string previous = target.Role.ToString();
         target.Role = DemotionRole(target.Role, IsApprovedTutor(target));
         target.IsAdministrativeAccessActive = true;
-        if (removingSeniorTutorRole)
-        {
-            List<SeniorTutorApplication> applications = await context
-                .SeniorTutorApplications
-                .Where(application =>
-                    application.Tutor.BcUserId == target.BcUserId)
-                .ToListAsync(cancellationToken);
-            context.SeniorTutorApplications.RemoveRange(applications);
-        }
         EnsureAdminProfile(target);
         RecordAccessAudit(target, "Administrative role", previous, target.Role.ToString(), currentUser, reason);
         await context.SaveChangesAsync(cancellationToken);
-        SuccessMessage = removingSeniorTutorRole
-            ? $"{target.DisplayName} was demoted to Tutor. Their Senior Tutor application was removed."
+        SuccessMessage = removingApplicationRole
+            ? $"{target.DisplayName} was demoted to Tutor. Their application history has been preserved."
             : $"{target.DisplayName} was demoted to {RoleLabel(target.Role)}.";
         return RedirectToPage();
     }
@@ -438,27 +427,6 @@ public class UsersAccessModel(
                 CreatedAt = timeProvider.GetUtcNow().UtcDateTime
             };
         }
-    }
-
-    private void AddHeadOfTutorsPromotionNotification(
-        BcUser target,
-        string previousRole)
-    {
-        if (target.Role != BcUserRole.HeadOfTutors ||
-            previousRole == nameof(BcUserRole.HeadOfTutors))
-        {
-            return;
-        }
-
-        context.UserNotifications.Add(new UserNotification
-        {
-            RecipientBcUserId = target.BcUserId,
-            Title = "Promoted to Head of Tutors",
-            Message = "You have been promoted to Head of Tutors. " +
-                "You can now access your Head of Tutors pages from the navigation drawer.",
-            LinkUrl = "/TutorHead/SessionReviews",
-            CreatedAt = timeProvider.GetUtcNow()
-        });
     }
 
     private void RecordAccessAudit(

@@ -38,11 +38,6 @@ public class AdminHeaderViewComponent : ViewComponent
             PendingModuleRequests = await _context.TutorModuleChangeRequests
                 .AsNoTracking()
                 .CountAsync(request =>
-                    request.Status == TutorAccountRequestStatus.Pending),
-            PendingDeregistrationRequests = await _context
-                .TutorDeregistrationRequests
-                .AsNoTracking()
-                .CountAsync(request =>
                     request.Status == TutorAccountRequestStatus.Pending)
         };
 

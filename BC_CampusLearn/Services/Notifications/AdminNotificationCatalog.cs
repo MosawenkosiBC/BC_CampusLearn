@@ -41,17 +41,17 @@ public static class AdminNotificationCatalog
             "The Mzala Connect Tutor Team sent you an email about your tutor application. Please check {email address} for the full message."),
         new(SeniorApplicationsOpen, "Senior tutor applications", "⭐ Senior Tutor applications are open",
             "Active, approved tutors", "The administrator opens Senior Tutor applications.",
-            "Ready to take the next step in your tutoring journey? Apply to become a Senior Tutor and help lead the peer-tutoring programme.\n\n" +
+            "Ready to take the next step in your tutoring journey? Apply to become a Senior Tutor. Applicants with an average of 72% or higher can also apply for the Head of Tutor role.\n\n" +
             "Requirements:\n\n" +
             "• At least one year of tutoring at Belgium Campus\n" +
             "• Active, approved tutor\n" +
             "• Pretoria contact student\n" +
             "• Academic average of 72% or higher\n\n" +
             "Applications close: {closing date}"),
-        new("senior-approved", "Senior tutor applications", "Senior tutor application update", "Tutor",
-            "A senior tutor application is accepted.", "Your senior tutor application was accepted."),
-        new("senior-rejected", "Senior tutor applications", "Senior tutor application update", "Tutor",
-            "A senior tutor application is rejected.", "Your senior tutor application was rejected. {review note}"),
+        new("senior-approved", "Senior tutor applications", "Senior Tutor application update", "Tutor",
+            "A Senior Tutor application is accepted.", "Your Senior Tutor application was accepted."),
+        new("senior-rejected", "Senior tutor applications", "Senior Tutor application update", "Tutor",
+            "A Senior Tutor application is rejected.", "Your Senior Tutor application was rejected. {review note}"),
         new("module-assignment", "Tutor management", "Module assignment update", "Tutor",
             "An administrator changes a module assignment or reviews a module change request.",
             "{module code} — {module name}: {assignment or review decision}"),

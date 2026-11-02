@@ -259,6 +259,10 @@ public class SessionDetailsModel : PageModel
         CurrentUser student = _currentUserService.GetRequiredUser();
         Booking? booking = await StudentBookings(student)
             .Include(item => item.StudentEvaluation)
+            .Include(item => item.ProgrammeModule)
+            .Include(item => item.TutorCourseModule)
+                .ThenInclude(item => item.Tutor)
+                .ThenInclude(item => item.BcUser)
             .SingleOrDefaultAsync(
                 item => item.BookingId == bookingId,
                 cancellationToken);
@@ -320,6 +324,32 @@ public class SessionDetailsModel : PageModel
             TutorHelp = EvaluationInput.TutorHelp,
             PlatformRating = EvaluationInput.PlatformRating!.Value
         });
+        BcUser tutorUser = booking.TutorCourseModule.Tutor.BcUser;
+        DateTimeOffset reviewSubmittedAt = DateTimeOffset.UtcNow;
+        string module = NotificationEmailQueue.FormatModule(
+            booking.ProgrammeModule.ModuleCode,
+            booking.ProgrammeModule.ModuleName);
+        _context.UserNotifications.Add(new UserNotification
+        {
+            RecipientBcUserId = tutorUser.BcUserId,
+            Title = "Student review received",
+            Message = $"{booking.StudentName} submitted their review for your {module} session.",
+            LinkUrl = $"/Tutors/SessionDetails/{booking.BookingId}",
+            CreatedAt = reviewSubmittedAt
+        });
+        NotificationEmailQueue.Add(
+            _context,
+            $"booking:{booking.BookingId}:student-review:tutor",
+            tutorUser.Email,
+            tutorUser.DisplayName,
+            "A student review has been submitted",
+            $"{NotificationEmailQueue.Greeting(tutorUser.DisplayName)}" +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            $"{booking.StudentName} submitted their review for your " +
+            $"{module} session held on " +
+            $"{NotificationEmailQueue.FormatTime(booking.ScheduledStartTime)} SAST.",
+            $"/Tutors/SessionDetails/{booking.BookingId}",
+            reviewSubmittedAt);
         await _context.SaveChangesAsync(cancellationToken);
         if (_reviewNotifier is not null)
         {

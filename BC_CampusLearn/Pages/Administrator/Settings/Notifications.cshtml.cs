@@ -55,8 +55,11 @@ public class NotificationsModel(ApplicationDbContext context,
         if (Input.Audience == AnnouncementAudience.TutorsOnly)
             recipients = recipients.Where(user => user.Tutor != null &&
                 user.Tutor.Status == TutorStatus.Approved && user.Tutor.IsActive);
-        var recipientIds = await recipients.Select(user => user.BcUserId).ToListAsync(cancellationToken);
-        if (recipientIds.Count == 0)
+        var selectedRecipients = await recipients.Select(user => new
+        {
+            user.BcUserId, user.Email, user.DisplayName
+        }).ToListAsync(cancellationToken);
+        if (selectedRecipients.Count == 0)
         {
             ModelState.AddModelError(string.Empty, "There are no recipients for the selected audience.");
             await LoadTemplatesAsync(cancellationToken);
@@ -70,17 +73,31 @@ public class NotificationsModel(ApplicationDbContext context,
             SentAt = timeProvider.GetUtcNow()
         };
         string preview = text.Length > 300 ? text[..300] + "…" : text;
-        foreach (int recipientId in recipientIds)
+        string announcementUrl = $"/Announcements/Details?announcementId={announcement.AnnouncementId}";
+        string emailMessage = text.Length > 7000
+            ? text[..7000] + "…\n\nSign in to read the full announcement."
+            : text;
+        int emailCountBefore = context.EmailNotificationOutbox.Local.Count;
+        foreach (var recipient in selectedRecipients)
+        {
             announcement.Notifications.Add(new UserNotification
             {
-                RecipientBcUserId = recipientId, Title = announcement.Title,
+                RecipientBcUserId = recipient.BcUserId, Title = announcement.Title,
                 Message = preview, CreatedAt = announcement.SentAt,
-                LinkUrl = $"/Announcements/Details?announcementId={announcement.AnnouncementId}"
+                LinkUrl = announcementUrl
             });
+            NotificationEmailQueue.Add(context,
+                $"announcement:{announcement.AnnouncementId}:{recipient.BcUserId}",
+                recipient.Email, recipient.DisplayName, announcement.Title,
+                $"{NotificationEmailQueue.Greeting(recipient.DisplayName)}\n\n{emailMessage}",
+                announcementUrl, announcement.SentAt);
+        }
+        int queuedEmails = context.EmailNotificationOutbox.Local.Count - emailCountBefore;
         context.Announcements.Add(announcement);
         // The existing interceptor sends ReceiveUserNotification through SignalR after saving.
         await context.SaveChangesAsync(cancellationToken);
-        SuccessMessage = $"Announcement sent to {recipientIds.Count} recipient{(recipientIds.Count == 1 ? "" : "s")}.";
+        SuccessMessage = $"Announcement sent to {selectedRecipients.Count} recipient{(selectedRecipients.Count == 1 ? "" : "s")}. " +
+            $"{queuedEmails} email{(queuedEmails == 1 ? "" : "s")} queued for delivery.";
         return RedirectToPage();
     }
 

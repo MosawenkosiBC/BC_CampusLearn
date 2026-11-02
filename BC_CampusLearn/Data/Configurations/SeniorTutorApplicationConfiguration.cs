@@ -14,11 +14,9 @@ public class SeniorTutorApplicationConfiguration
             .HasPrecision(5, 2)
             .IsRequired();
         builder.Property(application => application.BestDescription)
-            .HasMaxLength(50)
-            .IsRequired();
+            .HasMaxLength(50);
         builder.Property(application => application.SuitabilityReason)
-            .HasMaxLength(2000)
-            .IsRequired();
+            .HasMaxLength(2000);
         builder.Property(application => application.Status)
             .HasConversion<int>()
             .HasDefaultValue(TutorAccountRequestStatus.Pending)

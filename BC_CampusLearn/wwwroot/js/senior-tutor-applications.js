@@ -36,12 +36,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    const average = form.querySelector("[data-senior-average]");
     const descriptions = Array.from(
         form.querySelectorAll("[data-senior-description]"));
     const reason = form.querySelector("[data-senior-reason]");
     const reasonCounter = form.querySelector("[data-senior-reason-counter]");
-    const averageError = form.querySelector("[data-senior-average-error]");
     const descriptionError = form.querySelector("[data-senior-description-error]");
     const reasonError = form.querySelector("[data-senior-reason-error]");
 
@@ -50,18 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
             error.textContent = message;
         }
         field?.setAttribute("aria-invalid", String(Boolean(message)));
-    };
-
-    const validateAverage = () => {
-        const value = average?.value.trim() ?? "";
-        const parsedValue = Number(value);
-        const message = value.length === 0
-            ? "Enter your academic average."
-            : !Number.isFinite(parsedValue) || parsedValue < 72 || parsedValue > 100
-                ? "Enter an academic average from 72 to 100."
-                : "";
-        setError(average, averageError, message);
-        return !message;
     };
 
     const validateDescription = () => {
@@ -81,7 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const validateReason = () => {
         const value = reason?.value.trim() ?? "";
         const message = value.length === 0
-            ? "Explain why you are suitable for the senior tutor role."
+            ? "Explain why you are suitable for the Head of Tutor role."
             : value.length > 2000
                 ? "Keep your answer to 2,000 characters or fewer."
                 : "";
@@ -104,7 +90,6 @@ document.addEventListener("DOMContentLoaded", () => {
             `${remaining.toLocaleString()} characters remaining`;
     };
 
-    average?.addEventListener("input", validateAverage);
     descriptions.forEach((option) => option.addEventListener(
         "change",
         validateDescription));
@@ -116,20 +101,17 @@ document.addEventListener("DOMContentLoaded", () => {
     updateReasonCounter();
 
     form.addEventListener("submit", (event) => {
-        const isAverageValid = validateAverage();
         const isDescriptionValid = validateDescription();
         const isReasonValid = validateReason();
 
-        if (isAverageValid && isDescriptionValid && isReasonValid) {
+        if (isDescriptionValid && isReasonValid) {
             return;
         }
 
         event.preventDefault();
-        const firstInvalidField = !isAverageValid
-            ? average
-            : !isDescriptionValid
-                ? descriptions[0]
-                : reason;
+        const firstInvalidField = !isDescriptionValid
+            ? descriptions[0]
+            : reason;
         firstInvalidField?.focus();
     });
 });

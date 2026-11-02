@@ -241,7 +241,9 @@ public class CreateModel : PageModel
         }
 
         TempData["SuccessMessage"] =
-            "Your tutoring session was booked successfully.";
+            "Your booking request was sent and is pending. " +
+            "The tutor must confirm it before the session is booked. " +
+            "We will notify you when the tutor responds.";
         TempData.Remove(MobileTermsAcceptanceKey);
 
         return RedirectToPage("/Bookings/Index");
