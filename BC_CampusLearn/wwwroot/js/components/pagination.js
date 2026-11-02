@@ -34,6 +34,31 @@
         const getEligibleRows = () => rows.filter((row) =>
             row.dataset.paginationExcluded !== "true");
 
+        const scrollToTarget = () => {
+            const behavior = window.matchMedia(
+                "(prefers-reduced-motion: reduce)").matches
+                ? "auto"
+                : "smooth";
+
+            // Wait until hidden rows and pagination controls have been laid out.
+            // This also prevents browser scroll anchoring from undoing the move.
+            window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => {
+                    const fixedHeader = document.querySelector("body > header");
+                    const headerHeight = fixedHeader &&
+                        window.getComputedStyle(fixedHeader).position === "fixed"
+                        ? fixedHeader.getBoundingClientRect().height
+                        : 0;
+                    const top = target.getBoundingClientRect().top +
+                        window.scrollY - headerHeight - 16;
+                    window.scrollTo({
+                        top: Math.max(0, top),
+                        behavior
+                    });
+                });
+            });
+        };
+
         const getPageNumbers = (pageCount) => {
             if (pageCount <= 7) {
                 return Array.from(
@@ -115,13 +140,7 @@
                 : `Page ${currentPage} of ${pageCount}. Showing items ${firstRowIndex + 1} through ${lastRowIndex} of ${eligibleRows.length}.`;
 
             if (shouldScroll) {
-                target.scrollIntoView({
-                    behavior: window.matchMedia(
-                        "(prefers-reduced-motion: reduce)").matches
-                        ? "auto"
-                        : "smooth",
-                    block: "start"
-                });
+                scrollToTarget();
             }
         };
 

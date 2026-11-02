@@ -46,6 +46,13 @@ public class SessionDetailsModel(
     [BindProperty]
     public TutorHeadSessionReviewInput TutorHeadReviewInput { get; set; } = new();
 
+    [BindProperty(SupportsGet = true)]
+    public string? ReturnUrl { get; set; }
+
+    public string SessionReviewsReturnUrl => IsSessionReviewsReturnUrl(ReturnUrl)
+        ? ReturnUrl!
+        : "/TutorHead/SessionReviews";
+
     [TempData]
     public string? TutorHeadReviewMessage { get; set; }
 
@@ -145,7 +152,7 @@ public class SessionDetailsModel(
 
         await context.SaveChangesAsync(cancellationToken);
         TutorHeadReviewMessage = "Tutor Head review saved.";
-        return RedirectToPage(new { id });
+        return RedirectToPage(new { id, returnUrl = SessionReviewsReturnUrl });
     }
 
     public async Task<IActionResult> OnPostGenerateAiAssessmentAsync(
@@ -659,6 +666,17 @@ public class SessionDetailsModel(
         "Satisfactory" => 3,
         _ => 2
     };
+
+    private static bool IsSessionReviewsReturnUrl(string? returnUrl)
+    {
+        const string path = "/TutorHead/SessionReviews";
+        return !string.IsNullOrWhiteSpace(returnUrl) &&
+            !returnUrl.Any(char.IsControl) &&
+            !returnUrl.Contains('\\') &&
+            (returnUrl.Equals(path, StringComparison.OrdinalIgnoreCase) ||
+             returnUrl.StartsWith($"{path}?", StringComparison.OrdinalIgnoreCase) ||
+             returnUrl.StartsWith($"{path}#", StringComparison.OrdinalIgnoreCase));
+    }
 
     private static IReadOnlyList<ReviewAnswer> BuildStudentReviewAnswers(
         Booking session) =>

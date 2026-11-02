@@ -231,6 +231,7 @@
                     <div class="tutor-sessions">
                         <div class="tutor-sessions-table-wrap">
                             <table id="tutor-head-session-reviews-table"
+                                   data-pagination-page-parameter="reviewPage"
                                    class="tutor-sessions-table bookings-table tutor-head-session-reviews-table">
                         <thead>
                             <tr>
@@ -291,6 +292,10 @@
                                             <form method="get"
                                                   asp-page="/TutorHead/SessionDetails"
                                                   asp-route-id="@session.BookingId">
+                                                <input type="hidden"
+                                                       name="returnUrl"
+                                                       value="@(Request.PathBase + Request.Path + Request.QueryString)"
+                                                       data-session-review-return-url />
                                                 <button type="submit"
                                                         class="tutor-head-view-session"
                                                         aria-label="View session for @session.StudentName with @session.TutorDisplayName">

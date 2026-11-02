@@ -18,6 +18,34 @@ namespace BC_CampusLearn.Tests;
 public class TutorHeadSessionReviewsTests
 {
     [Theory]
+    [InlineData("/TutorHead/SessionReviews?TutorFilter=Taylor&reviewPage=3")]
+    [InlineData("/TutorHead/SessionReviews#tutor-head-session-reviews-table")]
+    public void SessionDetailsAcceptsSessionReviewReturnUrl(string returnUrl)
+    {
+        using ApplicationDbContext context = CreateContext();
+        SessionDetailsModel page = CreateDetailsPage(context);
+        page.ReturnUrl = returnUrl;
+
+        Assert.Equal(returnUrl, page.SessionReviewsReturnUrl);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("https://example.com/TutorHead/SessionReviews")]
+    [InlineData("/TutorHead/SessionReviews\\evil")]
+    [InlineData("/TutorHead/SessionReviewsExtra?reviewPage=3")]
+    public void SessionDetailsRejectsUnsafeOrUnrelatedReturnUrl(
+        string? returnUrl)
+    {
+        using ApplicationDbContext context = CreateContext();
+        SessionDetailsModel page = CreateDetailsPage(context);
+        page.ReturnUrl = returnUrl;
+
+        Assert.Equal("/TutorHead/SessionReviews", page.SessionReviewsReturnUrl);
+    }
+
+    [Theory]
     [InlineData(2)]
     [InlineData(3)]
     public async Task EveryTutorHeadLoadsTeamsEvidenceWhenEnabled(int reviewerId)
@@ -829,6 +857,8 @@ public class TutorHeadSessionReviewsTests
         await context.SaveChangesAsync();
 
         SessionDetailsModel page = CreateDetailsPage(context);
+        page.ReturnUrl =
+            "/TutorHead/SessionReviews?TutorFilter=Taylor&reviewPage=3";
         page.TutorHeadReviewInput = new TutorHeadSessionReviewInput
         {
             StudentEngagement = "Partially",
@@ -844,6 +874,7 @@ public class TutorHeadSessionReviewsTests
 
         RedirectToPageResult redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(1, redirect.RouteValues?["id"]);
+        Assert.Equal(page.ReturnUrl, redirect.RouteValues?["returnUrl"]);
         SessionReview review = Assert.Single(context.SessionReviews);
         Assert.Equal(2, review.ReviewerBcUserId);
         Assert.Equal(assignment.Tutor.BcUserId, review.RevieweeBcUserId);

@@ -4,6 +4,7 @@
     var breadcrumbs = new List<(string Label, string? Page)>();
     var compensationReturnUrl = ViewData["CompensationReturnUrl"] as string;
     var modulesReturnUrl = ViewData["ModulesReturnUrl"] as string;
+    var sessionReviewsReturnUrl = ViewData["SessionReviewsReturnUrl"] as string;
     var hasAdminRole = User.IsInRole(nameof(BcUserRole.Admin)) ||
         User.IsInRole(nameof(BcUserRole.SuperAdmin)) ||
         User.IsInRole(nameof(BcUserRole.Dev));
@@ -270,6 +271,13 @@
                             pagePath == "/Tutors/Details")
                         {
                             <a asp-page="@breadcrumb.Page" data-tutor-directory-return
+                               title="@breadcrumb.Label">@breadcrumb.Label</a>
+                        }
+                        else if (breadcrumb.Page == "/TutorHead/SessionReviews" &&
+                            pagePath == "/TutorHead/SessionDetails" &&
+                            sessionReviewsReturnUrl is not null)
+                        {
+                            <a href="@sessionReviewsReturnUrl"
                                title="@breadcrumb.Label">@breadcrumb.Label</a>
                         }
                         else

@@ -1,4 +1,10 @@
 (() => {
+    document.querySelectorAll("[data-session-review-return-url]").forEach(input => {
+        input.closest("form")?.addEventListener("submit", () => {
+            input.value = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        });
+    });
+
     const performanceModal = document.getElementById("tutor-performance-modal");
     const customize = performanceModal?.querySelector("[data-performance-customize]");
     const datesModal = document.getElementById("tutor-performance-dates-modal");

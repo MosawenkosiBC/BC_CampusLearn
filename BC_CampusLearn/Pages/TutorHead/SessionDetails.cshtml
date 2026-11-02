@@ -4,6 +4,7 @@
 
 @{
     ViewData["Title"] = "Session Review Details";
+    ViewData["SessionReviewsReturnUrl"] = Model.SessionReviewsReturnUrl;
     Booking session = Model.Session;
     BcUser tutorUser = session.TutorCourseModule.Tutor.BcUser;
     string tutorName = string.IsNullOrWhiteSpace(tutorUser.DisplayName)
@@ -67,6 +68,7 @@
             </div>
                 <form method="post" asp-page-handler="GenerateAiAssessment"
                       asp-route-id="@session.BookingId"
+                      asp-route-returnUrl="@Model.SessionReviewsReturnUrl"
                       data-ai-assessment-form>
                     <button type="submit" class="tutor-head-ai-assessment-button"
                             disabled="@(!Model.HasGeminiApiKey)">
@@ -164,6 +166,7 @@
                     {
                         <form method="post" asp-page-handler="TutorHeadReview"
                               asp-route-id="@session.BookingId"
+                              asp-route-returnUrl="@Model.SessionReviewsReturnUrl"
                               class="admin-session-review-form tutor-head-review-form"
                               data-tutor-head-review-form novalidate>
                             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
