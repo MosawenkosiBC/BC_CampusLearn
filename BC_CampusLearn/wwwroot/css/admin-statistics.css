@@ -2,7 +2,7 @@
 .admin-statistics-header { align-items: end; display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: space-between; margin-bottom: 1rem; }
 .admin-statistics-header h1 { color: #121318; font-size: clamp(1.8rem, 3vw, 2.35rem); font-weight: 700; letter-spacing: -.03em; margin: 0; }
 .admin-statistics-kpis { display: grid; gap: 1rem; grid-template-columns: repeat(4, minmax(0,1fr)); }
-.admin-statistics-kpi, .admin-statistics-panel { background: #fff; border: 1px solid #e8ecef; border-radius: .8rem; box-shadow: 0 .4rem 1.25rem rgba(25,30,38,.055); }
+.admin-statistics-kpi, .admin-statistics-panel { background: #fff; border: 1px solid #f1f3f4; border-radius: .8rem; box-shadow: 0 .4rem 1.25rem rgba(25,30,38,.055); }
 .admin-statistics-kpi { align-items: flex-start; display: flex; gap: .9rem; min-width: 0; padding: 1.2rem; }
 .admin-statistics-kpi-icon { align-items: center; display: flex; flex: 0 0 2.75rem; font-size: 1.25rem; height: 2.75rem; justify-content: center; }
 .admin-statistics-kpi-icon svg { fill: none; height: 1.5rem; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; width: 1.5rem; }
@@ -15,6 +15,7 @@
 .admin-statistics-kpi strong span { color: #879098; font-size: 1.05rem; font-weight: 500; }
 .admin-statistics-panels { display: grid; gap: 1.5rem; grid-template-columns: minmax(0,1.25fr) minmax(0,1fr); margin: 1.5rem 0; }
 .admin-statistics-panel { min-width: 0; padding: 1.35rem; }
+#review-progress-card { scroll-margin-top: 6rem; }
 .admin-statistics-panel-heading { align-items: start; display: flex; flex-wrap: wrap; gap: .65rem; justify-content: space-between; margin-bottom: 1.3rem; }
 .admin-statistics-panel-heading h2 { color: #22282e; font-size: 1.1rem; font-weight: 650; margin: 0; }
 .admin-statistics-panel-heading p { color: #69727b; font-size: .8rem; margin: .35rem 0 0; }
@@ -128,6 +129,12 @@
 .admin-statistics-review-queue span { color: #39454d; display: block; font-size: .78rem; }
 .admin-statistics-review-queue span strong { color: #252b30; font-size: 1rem; margin-right: .35rem; }
 .admin-statistics-review-queue small { color: #748089; display: block; font-size: .68rem; line-height: 1.35; margin-top: .18rem; }
+html.admin-statistics-page { scrollbar-gutter: stable; }
+html.admin-statistics-page body.modal-open { padding-right: 0 !important; }
+html.admin-statistics-page body.modal-open .fixed-top,
+html.admin-statistics-page body.modal-open .fixed-bottom,
+html.admin-statistics-page body.modal-open .is-fixed,
+html.admin-statistics-page body.modal-open .sticky-top { padding-right: 0 !important; }
 @media (max-width: 1199.98px) { .admin-statistics-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 991.98px) { .admin-statistics-panels, .admin-statistics-assignment-overview, .admin-statistics-booked-overview, .admin-statistics-progress-row { grid-template-columns: 1fr; } .admin-statistics-booked-browser { grid-column: 1; grid-row: 1; } .admin-statistics-top-tutors { border-left: 0; border-top: 1px solid #e7ebee; grid-column: 1; grid-row: 2; padding-left: 0; padding-top: 1.5rem; } .admin-statistics-outcomes { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 575.98px) { .admin-statistics-header { align-items: stretch; } .admin-statistics-kpis, .admin-statistics-review-overview, .admin-statistics-outcomes, .admin-statistics-tutor-pie-layout, .admin-statistics-custom-dates { grid-template-columns: 1fr; } .admin-statistics-panel { padding: 1rem; } .admin-statistics-ranked-modules li, .admin-statistics-ranked-modules--all li { gap: .45rem .65rem; grid-template-columns: minmax(0,1fr) 4rem; } .admin-statistics-ranked-value { grid-column: 2; grid-row: 1; } .admin-statistics-ranked-track { grid-column: 1 / 3; grid-row: 2; } .admin-statistics-tutor-pie { margin: auto; } .admin-statistics-filter-button { font-size: .74rem; } }

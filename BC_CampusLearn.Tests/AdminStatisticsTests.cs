@@ -26,6 +26,12 @@ public class AdminStatisticsTests
         Tutor inactive = CreateTutor(2, TutorStatus.Approved, false);
         Tutor pending = CreateTutor(3, TutorStatus.Pending, false);
         context.Tutors.AddRange(active, inactive, pending);
+        context.PlatformSettings.Add(new PlatformSettings
+        {
+            AdminSessionReviewPeriodStartDate = new DateOnly(2026, 9, 1),
+            AdminSessionReviewDeadline = new DateOnly(2026, 9, 30),
+            IsAdminSessionReviewDeadlineRecurring = false
+        });
         context.BcUsers.AddRange(
             new BcUser { BcUserId = 101, PersonnelNumber = "S101", Role = BcUserRole.Student },
             new BcUser { BcUserId = 102, PersonnelNumber = "S102", Role = BcUserRole.Student },
@@ -44,6 +50,7 @@ public class AdminStatisticsTests
                 new AdminSessionReview { ReviewerBcUserId = 900 }),
             NewBooking(assignments[0], Today.AddDays(-3), BookingStatus.Completed, 102),
             NewBooking(assignments[1], Today.AddDays(-2), BookingStatus.Cancelled, 103),
+            NewBooking(assignments[0], Today.AddDays(-1), BookingStatus.Confirmed, 106),
             NewBooking(assignments[2], Today.AddDays(3), BookingStatus.Confirmed, 104),
             NewBooking(assignments[0], Today.AddDays(-120), BookingStatus.Completed, 105));
         await context.SaveChangesAsync();
@@ -60,12 +67,14 @@ public class AdminStatisticsTests
         Assert.Equal(1, page.PendingApplicationCount);
         Assert.Equal(3, page.TotalModuleCount);
         Assert.Equal(1, page.CoveredModuleCount);
-        Assert.Equal(4, page.TotalSessionCount);
-        Assert.Equal(4, page.OutcomeSessionCount);
+        Assert.Equal(5, page.TotalSessionCount);
+        Assert.Equal(5, page.OutcomeSessionCount);
         Assert.DoesNotContain(page.SessionStatuses,
             status => status.Status == BookingStatus.Pending);
         Assert.Equal("#7fbe8c", page.SessionStatuses
             .Single(status => status.Status == BookingStatus.Confirmed).Color);
+        Assert.Equal(1, page.SessionStatuses
+            .Single(status => status.Status == BookingStatus.Confirmed).Count);
         Assert.Equal("#75add0", page.SessionStatuses
             .Single(status => status.Status == BookingStatus.Completed).Color);
         Assert.Equal("#d85c5c", page.SessionStatuses
@@ -86,11 +95,12 @@ public class AdminStatisticsTests
         Assert.Equal(3, page.TotalStudentCount);
         Assert.Equal("A101", Assert.Single(page.AssignedModules).Code);
         Assert.Equal(1, page.BothReviewsCompleteCount);
-        Assert.Equal(2, page.PendingStudentReviewCount);
-        Assert.Equal(2, page.PendingTutorReviewCount);
+        Assert.Equal("superadmin", page.ReviewPeriod);
+        Assert.Equal(1, page.PendingStudentReviewCount);
+        Assert.Equal(1, page.PendingTutorReviewCount);
         Assert.Equal(0, page.PendingTutorHeadReviewCount);
         Assert.Equal(1, page.AwaitingAdminReviewCount);
-        Assert.Equal(3, page.UniqueBookingStudentCount);
+        Assert.Equal(2, page.UniqueBookingStudentCount);
         Assert.Equal(5d, page.AverageTutorRating);
         Assert.Equal(4d, page.AveragePlatformRating);
         Assert.Equal(3d / 4d * 100d, page.CompletionRate, 3);

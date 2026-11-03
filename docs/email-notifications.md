@@ -38,6 +38,16 @@ business action.
 
 Graph tokens and raw Microsoft response bodies are never written to logs.
 
+## Announcements
+
+Settings announcements create in-app notifications and queue emails for the same
+selected audience in one save. Recipients without a valid email address still
+receive their in-app notification. Emails contain a plain-text version of the
+announcement and a link to the full announcement; long messages are shortened to
+fit the email outbox. The sending progress indicator covers saving the announcement
+and queuing its emails. The success message reports the number queued, while the
+existing background worker handles delivery and retries.
+
 ## Booking wording
 
 When a student submits the booking form, both the success message and the

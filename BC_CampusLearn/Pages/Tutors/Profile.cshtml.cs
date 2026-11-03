@@ -2,6 +2,7 @@ using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
+using BC_CampusLearn.Services.Notifications;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -159,10 +160,18 @@ public class ProfileModel : PageModel
         }
 
         TutorModuleChangeRequestType requestType = ModuleRequestInput.RequestType!.Value;
-        List<int> programmeModuleIds = await _context.ProgrammeModules
+        var programmeModules = await _context.ProgrammeModules
             .Where(module => moduleIds.Contains(module.ProgrammeModuleId))
-            .Select(module => module.ProgrammeModuleId)
+            .Select(module => new
+            {
+                module.ProgrammeModuleId,
+                module.ModuleCode,
+                module.ModuleName
+            })
             .ToListAsync(cancellationToken);
+        List<int> programmeModuleIds = programmeModules
+            .Select(module => module.ProgrammeModuleId)
+            .ToList();
         List<int> assignedModuleIds = await _context.TutorCourseModules
             .Where(assignment => assignment.IsActive &&
                 assignment.TutorId == tutor.TutorId &&
@@ -221,6 +230,41 @@ public class ProfileModel : PageModel
                 Reason = reason,
                 SubmittedAt = submittedAt
             }));
+
+        List<BcUser> administrators = await _context.BcUsers
+            .AsNoTracking()
+            .Where(user => user.IsAdministrativeAccessActive &&
+                (user.Role == BcUserRole.Admin ||
+                 user.Role == BcUserRole.SuperAdmin))
+            .ToListAsync(cancellationToken);
+        string requestAction = requestType == TutorModuleChangeRequestType.Add
+            ? "add"
+            : "remove";
+        string moduleList = string.Join(
+            Environment.NewLine,
+            programmeModules
+                .OrderBy(module => module.ModuleCode)
+                .Select(module => $"• {NotificationEmailQueue.FormatModule(module.ModuleCode, module.ModuleName)}"));
+        DateTimeOffset notificationTime = new(submittedAt, TimeSpan.Zero);
+        foreach (BcUser administrator in administrators)
+        {
+            NotificationEmailQueue.Add(
+                _context,
+                $"module-change-request:{tutor.TutorId}:{submittedAt.Ticks}:{administrator.BcUserId}",
+                administrator.Email,
+                administrator.DisplayName,
+                "Module change request submitted",
+                $"{NotificationEmailQueue.Greeting(administrator.DisplayName)}" +
+                $"{Environment.NewLine}{Environment.NewLine}" +
+                $"{currentUser.DisplayName} submitted a request to {requestAction} " +
+                $"{programmeModules.Count} module{(programmeModules.Count == 1 ? string.Empty : "s")}." +
+                $"{Environment.NewLine}{Environment.NewLine}{moduleList}" +
+                (reason is null
+                    ? string.Empty
+                    : $"{Environment.NewLine}{Environment.NewLine}Reason: {reason}"),
+                "/Administrator/Modules?Tab=requests",
+                notificationTime);
+        }
         await _context.SaveChangesAsync(cancellationToken);
 
         TempData["ModuleRequestSaved"] = true;

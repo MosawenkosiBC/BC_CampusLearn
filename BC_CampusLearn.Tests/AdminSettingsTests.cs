@@ -856,6 +856,16 @@ public class AdminSettingsTests
         var audit = await context.SettingAuditLogs.SingleAsync();
         Assert.Equal(role.ToString(), audit.PreviousValue);
         Assert.Equal(expected.ToString(), audit.NewValue);
+        if (role is BcUserRole.Admin or BcUserRole.SuperAdmin)
+        {
+            EmailNotificationOutbox email = await context
+                .EmailNotificationOutbox
+                .SingleAsync(item => item.RecipientEmail == "target@campus.test");
+            Assert.Equal("Administrative access updated", email.Subject);
+            Assert.Contains($"{UsersAccessModel.RoleLabel(role)} access has been removed", email.Body);
+            Assert.Contains("account remains active", email.Body);
+            Assert.DoesNotContain("active as", email.Body);
+        }
         await page.OnGetAsync(CancellationToken.None);
         if (expected != BcUserRole.Admin) Assert.DoesNotContain(page.AccessUsers, user => user.BcUserId == 2);
     }
@@ -971,7 +981,14 @@ public class AdminSettingsTests
     {
         await using ApplicationDbContext context = CreateContext();
         AddBaseData(context, BcUserRole.SuperAdmin);
-        context.BcUsers.Add(new BcUser { BcUserId = 2, DisplayName = "Tutor", Role = BcUserRole.Tutor, Tutor = AccessTutor(2) });
+        context.BcUsers.Add(new BcUser
+        {
+            BcUserId = 2,
+            DisplayName = "Tutor",
+            Email = "target@campus.test",
+            Role = BcUserRole.Tutor,
+            Tutor = AccessTutor(2)
+        });
         await context.SaveChangesAsync();
         var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
         await page.OnPostPromoteAsync(2, BcUserRole.Tutor, null, CancellationToken.None);
@@ -981,8 +998,16 @@ public class AdminSettingsTests
         var target = await context.BcUsers.Include(user => user.Admin).SingleAsync(user => user.BcUserId == 2);
         Assert.Equal(BcUserRole.Admin, target.Role);
         Assert.NotNull(target.Admin);
+        EmailNotificationOutbox adminEmail = await context
+            .EmailNotificationOutbox
+            .SingleAsync(item => item.RecipientEmail == "target@campus.test");
+        Assert.Equal("Admin access granted", adminEmail.Subject);
         await page.OnPostPromoteAsync(2, BcUserRole.SuperAdmin, null, CancellationToken.None);
         Assert.Equal(BcUserRole.SuperAdmin, target.Role);
+        Assert.Contains(
+            await context.EmailNotificationOutbox.ToListAsync(),
+            email => email.RecipientEmail == "target@campus.test" &&
+                email.Subject == "Super Admin access granted");
         await page.OnPostPromoteAsync(2, BcUserRole.Admin, null, CancellationToken.None);
         Assert.Equal(BcUserRole.SuperAdmin, target.Role);
         Assert.Equal(2, await context.SettingAuditLogs.CountAsync());

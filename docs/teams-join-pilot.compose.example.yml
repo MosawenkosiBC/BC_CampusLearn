@@ -1,0 +1,8 @@
+# Merge into the EXISTING app service. Keep its existing environment and mounts.
+# Copy the protected setup output to the server first. Do not commit these secrets.
+services:
+  app:
+    env_file:
+      - ./.local-secrets/teams-join-pilot/deployment.env
+    volumes:
+      - ./.local-secrets/teams-join-pilot/teams-join-notifications.pfx:/run/secrets/teams-join-notifications.pfx:ro

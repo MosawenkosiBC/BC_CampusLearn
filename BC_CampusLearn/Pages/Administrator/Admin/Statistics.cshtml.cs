@@ -1,5 +1,6 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Settings;
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -22,7 +23,7 @@ public class StatisticsModel(ApplicationDbContext context, TimeProvider timeProv
     public bool ShowBookedModules { get; set; }
 
     [BindProperty(SupportsGet = true)]
-    public string ReviewPeriod { get; set; } = "all";
+    public string ReviewPeriod { get; set; } = "superadmin";
 
     [BindProperty(SupportsGet = true)]
     public DateOnly? ReviewStartDate { get; set; }
@@ -85,9 +86,9 @@ public class StatisticsModel(ApplicationDbContext context, TimeProvider timeProv
         {
             (BookingStartDate, BookingEndDate) = (BookingEndDate, BookingStartDate);
         }
-        ReviewPeriod = ReviewPeriod is "all" or "monthly" or "weekly" or "daily" or "custom"
+        ReviewPeriod = ReviewPeriod is "superadmin" or "all" or "monthly" or "weekly" or "daily" or "custom"
             ? ReviewPeriod
-            : "all";
+            : "superadmin";
         if (ReviewStartDate.HasValue && ReviewEndDate.HasValue &&
             ReviewStartDate > ReviewEndDate)
         {
@@ -153,6 +154,46 @@ public class StatisticsModel(ApplicationDbContext context, TimeProvider timeProv
         IQueryable<Booking> reviewCompleted = completed;
         switch (ReviewPeriod)
         {
+            case "superadmin":
+                var reviewSettings = await context.PlatformSettings.AsNoTracking()
+                    .Where(settings => settings.PlatformSettingsId ==
+                        PlatformSettings.SingletonId)
+                    .Select(settings => new
+                    {
+                        settings.AdminSessionReviewPeriodStartDate,
+                        settings.AdminSessionReviewDeadline,
+                        settings.IsAdminSessionReviewDeadlineRecurring,
+                        settings.UseLastDayOfMonthForAdminSessionReviewDeadline
+                    })
+                    .SingleOrDefaultAsync(cancellationToken);
+                DateOnly today = DateOnly.FromDateTime(now.ToOffset(TimeSpan.FromHours(2)).Date);
+                ReviewPeriodWindow currentReviewPeriod = reviewSettings switch
+                {
+                    null => new ReviewPeriodWindow(
+                        new DateOnly(today.Year, today.Month, 1),
+                        new DateOnly(today.Year, today.Month, 1).AddMonths(1).AddDays(-1),
+                        new DateOnly(today.Year, today.Month, 1).AddMonths(1).AddDays(-1)),
+                    { IsAdminSessionReviewDeadlineRecurring: true } =>
+                        MonthlyReviewPeriod.Resolve(
+                            reviewSettings.AdminSessionReviewPeriodStartDate,
+                            reviewSettings.AdminSessionReviewDeadline,
+                            reviewSettings.UseLastDayOfMonthForAdminSessionReviewDeadline,
+                            today),
+                    _ => new ReviewPeriodWindow(
+                        reviewSettings.AdminSessionReviewPeriodStartDate,
+                        reviewSettings.AdminSessionReviewDeadline,
+                        reviewSettings.AdminSessionReviewDeadline)
+                };
+                DateTimeOffset reviewStart = new(
+                    currentReviewPeriod.StartDate.ToDateTime(TimeOnly.MinValue),
+                    TimeSpan.FromHours(2));
+                DateTimeOffset reviewEndExclusive = new(
+                    currentReviewPeriod.EndDate.AddDays(1).ToDateTime(TimeOnly.MinValue),
+                    TimeSpan.FromHours(2));
+                reviewCompleted = reviewCompleted.Where(booking =>
+                    (booking.CompletedAt ?? booking.ScheduledStartTime) >= reviewStart &&
+                    (booking.CompletedAt ?? booking.ScheduledStartTime) < reviewEndExclusive);
+                break;
             case "daily":
                 reviewCompleted = reviewCompleted
                     .Where(booking => booking.ScheduledStartTime >= now.AddDays(-1));
@@ -306,6 +347,9 @@ public class StatisticsModel(ApplicationDbContext context, TimeProvider timeProv
             .GroupBy(booking => booking.Status)
             .Select(group => new { Status = group.Key, Count = group.Count() })
             .ToDictionaryAsync(item => item.Status, item => item.Count, cancellationToken);
+        statuses[BookingStatus.Confirmed] = await context.Bookings.AsNoTracking()
+            .CountAsync(booking => booking.Status == BookingStatus.Confirmed &&
+                booking.ScheduledStartTime > now, cancellationToken);
         SessionStatuses = Enum.GetValues<BookingStatus>()
             .Where(status => status != BookingStatus.Pending)
             .Select(status => new SessionStatusStatistics(status,

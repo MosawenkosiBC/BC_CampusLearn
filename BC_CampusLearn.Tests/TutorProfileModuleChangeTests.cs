@@ -43,6 +43,63 @@ public class TutorProfileModuleChangeTests
         });
     }
 
+    [Fact]
+    public async Task RequestModuleChangeEmailsActiveAdminsAndSuperAdmins()
+    {
+        await using ApplicationDbContext context = await CreateContextAsync();
+        context.BcUsers.AddRange(
+            new BcUser
+            {
+                BcUserId = 2, DisplayName = "Active Admin",
+                Email = "admin@campus.test", Role = BcUserRole.Admin,
+                IsAdministrativeAccessActive = true
+            },
+            new BcUser
+            {
+                BcUserId = 3, DisplayName = "Active Super Admin",
+                Email = "superadmin@campus.test", Role = BcUserRole.SuperAdmin,
+                IsAdministrativeAccessActive = true
+            },
+            new BcUser
+            {
+                BcUserId = 4, DisplayName = "Inactive Admin",
+                Email = "inactive@campus.test", Role = BcUserRole.Admin,
+                IsAdministrativeAccessActive = false
+            },
+            new BcUser
+            {
+                BcUserId = 5, DisplayName = "Tutor Head",
+                Email = "head@campus.test", Role = BcUserRole.HeadOfTutors,
+                IsAdministrativeAccessActive = true
+            });
+        await context.SaveChangesAsync();
+        ProfileModel page = SetupPage(context);
+        page.ModuleRequestInput = new TutorModuleChangeRequestInput
+        {
+            RequestType = TutorModuleChangeRequestType.Add,
+            ProgrammeModuleIds = [1, 2],
+            Reason = "I am qualified to tutor both modules."
+        };
+
+        await page.OnPostRequestModuleChangeAsync(CancellationToken.None);
+
+        List<EmailNotificationOutbox> emails = await context
+            .EmailNotificationOutbox
+            .Where(email => email.Subject == "Module change request submitted")
+            .OrderBy(email => email.RecipientEmail)
+            .ToListAsync();
+        Assert.Equal(
+            ["admin@campus.test", "superadmin@campus.test"],
+            emails.Select(email => email.RecipientEmail));
+        Assert.All(emails, email =>
+        {
+            Assert.Contains("Test Tutor submitted a request to add 2 modules", email.Body);
+            Assert.Contains("PRG101 - Programming", email.Body);
+            Assert.Contains("DBS201 - Databases", email.Body);
+            Assert.Equal("/Administrator/Modules?Tab=requests", email.ActionPath);
+        });
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

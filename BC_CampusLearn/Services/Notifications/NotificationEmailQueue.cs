@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net.Mail;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Services.Notifications;
 
@@ -23,6 +24,17 @@ public static class NotificationEmailQueue
         string email = recipientEmail?.Trim() ?? string.Empty;
         if (!MailAddress.TryCreate(email, out MailAddress? address) ||
             !string.Equals(address.Address, email, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        // A notification can already exist even if a booking has been restored
+        // to an earlier status. Preserve its delivery state instead of inserting
+        // the same event again and rolling back the accompanying status change.
+        if (context.EmailNotificationOutbox.Local.Any(item =>
+                item.EventKey == eventKey) ||
+            context.EmailNotificationOutbox.AsNoTracking().Any(item =>
+                item.EventKey == eventKey))
         {
             return;
         }

@@ -49,6 +49,12 @@ public sealed class TutorApplicationAvailabilityService(
                     settings,
                     utcNow,
                     cancellationToken);
+            int closingReminderCount = await
+                TutorApplicationClosingReminderDispatcher.AddDueEmailsAsync(
+                    context,
+                    settings,
+                    utcNow,
+                    cancellationToken);
 
             if (availabilityChanged || context.ChangeTracker.HasChanges())
             {
@@ -63,6 +69,12 @@ public sealed class TutorApplicationAvailabilityService(
                     logger.LogInformation(
                         "Sent {NotificationCount} application opening notifications.",
                         notificationCount);
+                }
+                if (closingReminderCount > 0)
+                {
+                    logger.LogInformation(
+                        "Queued {ReminderCount} tutor application closing reminders.",
+                        closingReminderCount);
                 }
             }
         }
