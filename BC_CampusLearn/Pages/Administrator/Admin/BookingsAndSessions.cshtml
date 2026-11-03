@@ -168,8 +168,8 @@
                             <th scope="col" class="session-decision-column">Tutor Head decision</th>
                             @if (Model.IsSuperAdmin)
                             {
-                                <th scope="col">Superadmin review</th>
-                                <th scope="col">Final validity</th>
+                                <th scope="col">Decision recorded by</th>
+                                <th scope="col">Super Admin decision</th>
                             }
                             <th scope="col" class="session-action-heading">Action</th>
                         </tr>
@@ -230,10 +230,8 @@
                                     </td>
                                     @if (Model.IsSuperAdmin)
                                     {
-                                        <td>
-                                            <span class="session-approval @session.AdminApprovalCssClass">
-                                                @session.AdminApprovalLabel
-                                            </span>
+                                        <td class="@(string.IsNullOrWhiteSpace(session.SuperAdminDecisionMaker) ? "text-center" : null)">
+                                            @(string.IsNullOrWhiteSpace(session.SuperAdminDecisionMaker) ? "—" : session.SuperAdminDecisionMaker)
                                         </td>
                                         <td>
                                             <span class="session-approval @session.SuperAdminDecisionCssClass">

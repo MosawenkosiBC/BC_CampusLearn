@@ -296,7 +296,10 @@ public class BookingsAndSessionsModel(
                     : booking.AdminSessionReview.EvidenceSupportsApproval,
                 booking.SuperAdminSessionReview == null
                     ? null
-                    : booking.SuperAdminSessionReview.IsAccepted))
+                    : booking.SuperAdminSessionReview.IsAccepted,
+                booking.SuperAdminSessionReview == null
+                    ? null
+                    : booking.SuperAdminSessionReview.Reviewer.DisplayName))
             .ToListAsync(cancellationToken);
 
         var matches = SearchableSessions.Where(MatchesSearch).ToList();
@@ -407,7 +410,8 @@ public class BookingsAndSessionsModel(
         string? TutorHeadDecision,
         bool HasTutorHeadConcern,
         bool? IsAdminApproved,
-        bool? IsSuperAdminAccepted)
+        bool? IsSuperAdminAccepted,
+        string? SuperAdminDecisionMaker)
     {
         public string TutorDisplayName => string.IsNullOrWhiteSpace(TutorName)
             ? TutorPersonnelNumber

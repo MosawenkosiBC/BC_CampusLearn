@@ -7,7 +7,7 @@
 .admin-session-summary-button:hover { background: #fff; box-shadow: 0 .5rem 1.1rem rgba(25,30,32,.16); }
 .admin-session-summary-button:focus-visible { background: #fff; box-shadow: 0 .5rem 1.1rem rgba(25,30,32,.18); outline: 0; }
 .admin-session-top-actions { align-items: center; display: flex; gap: 1rem; justify-content: space-between; }
-.admin-session-final-actions { display: flex; gap: .75rem; margin-left: auto; }
+.admin-session-final-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .65rem; }
 .admin-session-final-action { border: 0; border-radius: .45rem; color: #fff; font-size: .85rem; font-weight: 700; min-height: 2.25rem; min-width: 5.75rem; padding: .4rem .95rem; }
 .admin-session-final-action.is-accept { background: #237a45; }
 .admin-session-final-action.is-accept:hover { background: #196137; }
@@ -81,9 +81,6 @@
 .admin-session-review-options { display: flex; flex-wrap: wrap; gap: .85rem; justify-content: flex-start; }
 .admin-session-review-options label { align-items: center; color: #111; display: inline-flex; font-family: var(--campus-font-family); font-size: 1rem; font-weight: 400; gap: .4rem; min-height: 1.5rem; }
 .admin-session-review-options input { accent-color: #363c3d; }
-.admin-session-review-form > button { background: #363c3d; border: 0; border-radius: .5rem; color: #fff; font-weight: 600; justify-self: start; margin-top: .65rem; min-height: 2.5rem; padding: .5rem 1.25rem; }
-.admin-session-review-form > button:hover { background: #242a2b; }
-.admin-session-review-form > button:focus-visible { box-shadow: 0 0 0 3px rgba(79,135,165,.35); outline: none; }
 .admin-session-status { display: inline-block; border-radius: 1rem; background: #eef2f7; padding: .2rem .6rem; }
 .admin-session-status.is-cancelled { color: #b42318; background: #fde8e8; }
 .admin-session-final-status { border-radius: .5rem; font-weight: 700; margin: 1rem 0 0; padding: .85rem 1rem; text-align: left; }
@@ -92,7 +89,6 @@
 .admin-session-final-status.is-rejected { background: #f8e8e8; color: #9d2b25; }
 @media (max-width:767.98px) {
     .admin-session-top-actions { align-items: stretch; flex-direction: column; }
-    .admin-session-final-actions { margin-left: 0; }
     .admin-session-final-action { flex: 1; }
     .admin-session-summary-grid { grid-template-columns: 1fr; }
     .admin-session-review-tabs { gap: .75rem; grid-template-columns: 1fr; }
