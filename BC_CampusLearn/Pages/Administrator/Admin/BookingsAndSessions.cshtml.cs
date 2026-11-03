@@ -17,7 +17,8 @@ public class BookingsAndSessionsModel(
     private static readonly string[] ValidApprovalFilters =
         ["all", "pending", "approved", "rejected"];
     private static readonly string[] ValidStatFilters =
-        ["all", "carried-over", "flagged", "tutor-head-rejected", "awaiting"];
+        ["all", "carried-over", "flagged", "tutor-head-rejected", "awaiting",
+         "pending-admin", "super-admin-approved", "super-admin-rejected"];
     private static readonly string[] ValidPeriods =
         ["month", "week", "day", "custom"];
     private static readonly TimeSpan CampusOffset = TimeSpan.FromHours(2);
@@ -57,22 +58,27 @@ public class BookingsAndSessionsModel(
     public AdminReviewStats ReviewStats { get; private set; } =
         AdminReviewStats.Empty;
     public IReadOnlyList<CompletedSessionItem> Sessions { get; private set; } = [];
+    public IReadOnlyList<CompletedSessionItem> SearchableSessions { get; private set; } = [];
     public bool IsSuperAdmin { get; private set; }
+    public int PendingTutorHeadCount { get; private set; }
+    public int PendingAdminCount { get; private set; }
+    public int SuperAdminApprovedCount { get; private set; }
+    public int SuperAdminRejectedCount { get; private set; }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         IsSuperAdmin = currentUserService?.GetRequiredUser().Role ==
             BcUserRole.SuperAdmin;
-        if (IsSuperAdmin)
-        {
-            Stat = "all";
-        }
         Approval = ValidApprovalFilters.Contains(Approval, StringComparer.OrdinalIgnoreCase)
             ? Approval.ToLowerInvariant()
             : "all";
         Stat = ValidStatFilters.Contains(Stat, StringComparer.OrdinalIgnoreCase)
             ? Stat.ToLowerInvariant()
             : "all";
+        if (IsSuperAdmin && Stat is ("carried-over" or "flagged" or "tutor-head-rejected" or "awaiting"))
+        {
+            Stat = "all";
+        }
         if (!IsSuperAdmin)
         {
             Approval = "all";
@@ -88,6 +94,10 @@ public class BookingsAndSessionsModel(
         if (AwaitingTutorHead)
         {
             Stat = "all";
+            Approval = "all";
+        }
+        else if (Stat is "pending-admin" or "super-admin-approved" or "super-admin-rejected")
+        {
             Approval = "all";
         }
 
@@ -157,31 +167,34 @@ public class BookingsAndSessionsModel(
             RejectedByTutorHead: rejectedByTutorHead,
             AwaitingAdminReview: awaitingAdminReview);
 
-        IQueryable<Booking> filtered = AwaitingTutorHead
-            ? evaluatedSessions.Where(booking => !booking.SessionReviews.Any(review =>
-                review.Reviewer.Role == BcUserRole.HeadOfTutors))
-            : reviewedSessions;
+        var pendingTutorHead = evaluatedSessions.Where(booking =>
+            !booking.SessionReviews.Any(review => review.Reviewer.Role == BcUserRole.HeadOfTutors) &&
+            (booking.CompletedAt ?? booking.ScheduledStartTime) >= periodStart &&
+            (booking.CompletedAt ?? booking.ScheduledStartTime) < periodEnd);
+        bool includeCarriedOver = Period == "month" && deadlineSettings is not null;
+        var reviewedInPeriod = reviewedSessions.Where(booking =>
+            (booking.CompletedAt ?? booking.ScheduledStartTime) < periodEnd &&
+            ((booking.CompletedAt ?? booking.ScheduledStartTime) >= periodStart ||
+             (includeCarriedOver && booking.AdminSessionReview == null)));
+        var pendingAdmin = reviewedInPeriod.Where(booking =>
+            booking.AdminSessionReview == null && booking.SuperAdminSessionReview == null);
+        var superAdminApproved = reviewedInPeriod.Where(booking =>
+            booking.SuperAdminSessionReview != null && booking.SuperAdminSessionReview.IsAccepted);
+        var superAdminRejected = reviewedInPeriod.Where(booking =>
+            booking.SuperAdminSessionReview != null && !booking.SuperAdminSessionReview.IsAccepted);
 
-        if (!AwaitingTutorHead && Period == "month" && deadlineSettings is not null)
-        {
-            filtered = filtered.Where(booking =>
-                (booking.CompletedAt ?? booking.ScheduledStartTime) <
-                    periodEnd &&
-                ((booking.CompletedAt ?? booking.ScheduledStartTime) >=
-                    periodStart ||
-                 booking.AdminSessionReview == null));
-        }
-        else
-        {
-            filtered = filtered.Where(booking =>
-                (booking.CompletedAt ?? booking.ScheduledStartTime) >=
-                    periodStart &&
-                (booking.CompletedAt ?? booking.ScheduledStartTime) <
-                    periodEnd);
-        }
+        PendingTutorHeadCount = await pendingTutorHead.CountAsync(cancellationToken);
+        PendingAdminCount = await pendingAdmin.CountAsync(cancellationToken);
+        SuperAdminApprovedCount = await superAdminApproved.CountAsync(cancellationToken);
+        SuperAdminRejectedCount = await superAdminRejected.CountAsync(cancellationToken);
+
+        IQueryable<Booking> filtered = AwaitingTutorHead ? pendingTutorHead : reviewedInPeriod;
 
         filtered = Stat switch
         {
+            "pending-admin" => pendingAdmin,
+            "super-admin-approved" => superAdminApproved,
+            "super-admin-rejected" => superAdminRejected,
             "carried-over" => filtered.Where(booking =>
                 (booking.CompletedAt ?? booking.ScheduledStartTime) <
                     _currentReviewPeriodStart &&
@@ -205,16 +218,6 @@ public class BookingsAndSessionsModel(
             _ => filtered
         };
 
-        if (Search is not null)
-        {
-            string search = Search;
-            filtered = filtered.Where(booking =>
-                booking.StudentName.Contains(search) ||
-                booking.Location.Contains(search) ||
-                booking.TutorCourseModule.Tutor.BcUser.DisplayName.Contains(search) ||
-                booking.TutorCourseModule.Tutor.BcUser.PersonnelNumber.Contains(search));
-        }
-
         filtered = Approval switch
         {
             "pending" => filtered.Where(booking =>
@@ -228,12 +231,7 @@ public class BookingsAndSessionsModel(
             _ => filtered
         };
 
-        FilteredSessionCount = await filtered.CountAsync(cancellationToken);
-        TotalPages = Math.Max(1,
-            (int)Math.Ceiling(FilteredSessionCount / (double)PageSize));
-        SessionPage = Math.Clamp(SessionPage, 1, TotalPages);
-
-        Sessions = await filtered
+        SearchableSessions = await filtered
             .OrderBy(booking => booking.AdminSessionReview != null)
             .ThenBy(booking =>
                 booking.SessionReviews
@@ -270,8 +268,6 @@ public class BookingsAndSessionsModel(
             .ThenByDescending(booking =>
                 booking.CompletedAt ?? booking.ScheduledStartTime)
             .ThenByDescending(booking => booking.BookingId)
-            .Skip((SessionPage - 1) * PageSize)
-            .Take(PageSize)
             .Select(booking => new CompletedSessionItem(
                 booking.BookingId,
                 booking.TutorCourseModule.Tutor.BcUser.DisplayName,
@@ -302,7 +298,20 @@ public class BookingsAndSessionsModel(
                     ? null
                     : booking.SuperAdminSessionReview.IsAccepted))
             .ToListAsync(cancellationToken);
+
+        var matches = SearchableSessions.Where(MatchesSearch).ToList();
+        FilteredSessionCount = matches.Count;
+        TotalPages = Math.Max(1, (int)Math.Ceiling(FilteredSessionCount / (double)PageSize));
+        SessionPage = Math.Clamp(SessionPage, 1, TotalPages);
+        Sessions = matches.Skip((SessionPage - 1) * PageSize).Take(PageSize).ToList();
     }
+
+    public bool MatchesSearch(CompletedSessionItem session) =>
+        Search is not { } search ||
+        session.TutorName?.Contains(search, StringComparison.OrdinalIgnoreCase) == true ||
+        session.TutorPersonnelNumber?.Contains(search, StringComparison.OrdinalIgnoreCase) == true ||
+        session.StudentName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+        session.Location.Contains(search, StringComparison.OrdinalIgnoreCase);
 
     private (DateTimeOffset Start, DateTimeOffset End) ResolvePeriod(
         AdminReviewDeadlineSettings? deadlineSettings)
