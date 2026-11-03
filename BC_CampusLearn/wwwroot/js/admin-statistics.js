@@ -1,4 +1,6 @@
 (() => {
+    document.documentElement.classList.add("admin-statistics-page");
+
     const initializeSearch = (inputSelector, rowSelector, emptySelector) => {
         const searchInput = document.querySelector(inputSelector);
         if (!searchInput) return;

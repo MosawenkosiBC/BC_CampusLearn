@@ -123,7 +123,7 @@
     </div>
 
     <div class="admin-statistics-progress-row">
-        <section class="admin-statistics-panel admin-statistics-review-panel" aria-labelledby="review-progress-title">
+        <section id="review-progress-card" class="admin-statistics-panel admin-statistics-review-panel" aria-labelledby="review-progress-title">
             <div class="admin-statistics-panel-heading">
                 <h2 id="review-progress-title">Review progress</h2>
                 <button type="button" class="admin-statistics-filter-button"
@@ -457,7 +457,7 @@
      aria-labelledby="review-progress-filter-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content admin-statistics-modal">
-            <form method="get">
+            <form method="get" asp-fragment="review-progress-card">
                 <input type="hidden" name="BookingPeriod" value="@Model.BookingPeriod" />
                 <input type="hidden" name="BookingStartDate" value="@Model.BookingStartDate?.ToString("yyyy-MM-dd")" />
                 <input type="hidden" name="BookingEndDate" value="@Model.BookingEndDate?.ToString("yyyy-MM-dd")" />
@@ -469,6 +469,7 @@
                     <div>
                         <label asp-for="ReviewPeriod">Period</label>
                         <select asp-for="ReviewPeriod" data-review-period-select>
+                            <option value="superadmin">Current Superadmin review period</option>
                             <option value="all">All</option>
                             <option value="monthly">Monthly</option>
                             <option value="weekly">Weekly</option>
