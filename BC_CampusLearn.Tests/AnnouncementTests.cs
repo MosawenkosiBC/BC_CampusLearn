@@ -41,7 +41,45 @@ public class AnnouncementTests
         });
         if (audience == AnnouncementAudience.TutorsOnly)
             Assert.Equal(new[] { 3, 6 }, notifications.Select(item => item.RecipientBcUserId).Order().ToArray());
+        var emails = await context.EmailNotificationOutbox.ToListAsync();
+        Assert.Equal(expectedCount, emails.Count);
+        Assert.Equal(expectedCount, emails.Select(item => item.EventKey).Distinct().Count());
+        Assert.All(notifications, notification => Assert.Contains(emails, email =>
+            email.EventKey == $"announcement:{announcement.AnnouncementId}:{notification.RecipientBcUserId}" &&
+            email.RecipientEmail == $"user{notification.RecipientBcUserId}@example.com"));
+        Assert.All(emails, email =>
+        {
+            Assert.Equal("Workshop", email.Subject);
+            Assert.Contains("Tutor workshop\nJoin us on Friday.", email.Body);
+            Assert.DoesNotContain("\"ops\"", email.Body);
+            Assert.Contains(announcement.AnnouncementId.ToString(), email.ActionPath);
+            Assert.Null(email.SentAt);
+        });
         Assert.IsType<PageResult>(await page.OnGetAsync(default));
+    }
+
+    [Fact]
+    public async Task MissingEmailDoesNotPreventPlatformDeliveryAndLongEmailFitsOutbox()
+    {
+        await using var context = CreateContext();
+        await SeedAsync(context);
+        (await context.BcUsers.FindAsync(3))!.Email = "invalid";
+        (await context.BcUsers.FindAsync(6))!.Email = null;
+        await context.SaveChangesAsync();
+        var page = CreatePage(context);
+        page.Input = new() { Title = "Long update", Content = new string('a', 10000) };
+
+        Assert.IsType<RedirectToPageResult>(await page.OnPostAsync(default));
+
+        Assert.Equal(5, await context.UserNotifications.CountAsync());
+        var emails = await context.EmailNotificationOutbox.ToListAsync();
+        Assert.Equal(3, emails.Count);
+        Assert.All(emails, email =>
+        {
+            Assert.True(email.Body.Length <= 8000);
+            Assert.Contains("Sign in to read the full announcement.", email.Body);
+        });
+        Assert.Contains("3 emails queued", page.SuccessMessage);
     }
 
     [Theory]
@@ -76,6 +114,7 @@ public class AnnouncementTests
         Assert.False(page.ModelState.IsValid);
         Assert.Empty(await context.Announcements.ToListAsync());
         Assert.Empty(await context.UserNotifications.ToListAsync());
+        Assert.Empty(await context.EmailNotificationOutbox.ToListAsync());
     }
 
     [Fact]
@@ -143,6 +182,8 @@ public class AnnouncementTests
             new BcUser { BcUserId = 4, DisplayName = "Inactive tutor" },
             new BcUser { BcUserId = 5, DisplayName = "Pending tutor" },
             new BcUser { BcUserId = 6, DisplayName = "Senior tutor", Role = BcUserRole.SeniorTutor });
+        foreach (var user in context.BcUsers.Local)
+            user.Email = $"user{user.BcUserId}@example.com";
         foreach (var (id, status, active) in new[]
         {
             (3, TutorStatus.Approved, true), (4, TutorStatus.Approved, false),
