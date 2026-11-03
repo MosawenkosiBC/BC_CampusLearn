@@ -1,8 +1,10 @@
 @page
 @model BC_CampusLearn.Pages.Administrator.Admin.BookingsAndSessionsModel
+@using BC_CampusLearn.Pages.Administrator.Admin
 
 @{
     ViewData["Title"] = "Bookings and Sessions";
+    var visibleSessionIds = Model.Sessions.Select(session => session.BookingId).ToHashSet();
 }
 
 @section Styles {
@@ -22,40 +24,58 @@
         <h1 id="bookings-sessions-title">Bookings and Sessions</h1>
     </header>
 
-    @if (!Model.IsSuperAdmin)
-    {
-    <section class="admin-stat-grid admin-session-stats" aria-label="Administrator session review statistics">
-        <a asp-page="/Administrator/Admin/BookingsAndSessions"
-           asp-route-Stat="flagged"
-           class="admin-stat-card admin-stat-card-link @(Model.Stat == "flagged" ? "is-active" : null)"
-           aria-current="@(Model.Stat == "flagged" ? "true" : null)"
-           aria-label="Show @Model.ReviewStats.FlaggedConcerns sessions with flagged concerns">
-            <div class="admin-stat-icon" aria-hidden="true">
-                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-                    <path d="M0 0h24v24H0z" fill="none" />
-                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M12 8v4m.125 3.75H12m.25 0a.25.25 0 1 1-.5 0a.25.25 0 0 1 .5 0" />
-                    </g>
-                </svg>
-            </div>
-            <div class="admin-stat-content"><h2>Flagged concerns</h2><p>@Model.ReviewStats.FlaggedConcerns</p></div>
-        </a>
-        <a asp-page="/Administrator/Admin/BookingsAndSessions"
-           asp-route-Stat="tutor-head-rejected"
-           class="admin-stat-card admin-stat-card-link @(Model.Stat == "tutor-head-rejected" ? "is-active" : null)"
-           aria-current="@(Model.Stat == "tutor-head-rejected" ? "true" : null)"
-           aria-label="Show @Model.ReviewStats.RejectedByTutorHead sessions rejected by the Tutor Head">
-            <div class="admin-stat-icon" aria-hidden="true">
-                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-                    <path d="M0 0h24v24H0z" fill="none" />
-                    <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 2v4M8 2v4m13 7v-1c0-3.771 0-5.657-1.172-6.828S16.771 4 13 4h-2C7.229 4 5.343 4 4.172 5.172S3 8.229 3 12v2c0 3.771 0 5.657 1.172 6.828S7.229 22 11 22h1M3 10h18m0 6l-3 3m0 0l-3 3m3-3l3 3m-3-3l-3-3" />
-                </svg>
-            </div>
-            <div class="admin-stat-content"><h2>Rejected by Tutor Head</h2><p>@Model.ReviewStats.RejectedByTutorHead</p></div>
-        </a>
+    <section class="admin-stat-grid admin-session-stats" aria-label="Session review statistics">
+        @{
+            var cards = new[]
+            {
+                (Label: "Pending Tutor Head review", Count: Model.PendingTutorHeadCount, Stat: "all", AwaitingTutorHead: true),
+                (Label: "Pending admin review", Count: Model.PendingAdminCount, Stat: "pending-admin", AwaitingTutorHead: false),
+                (Label: "Approved by Super Admin", Count: Model.SuperAdminApprovedCount, Stat: "super-admin-approved", AwaitingTutorHead: false),
+                (Label: "Rejected by Super Admin", Count: Model.SuperAdminRejectedCount, Stat: "super-admin-rejected", AwaitingTutorHead: false)
+            };
+        }
+        @foreach (var card in cards)
+        {
+            bool isActive = card.AwaitingTutorHead ? Model.AwaitingTutorHead : Model.Stat == card.Stat;
+            <a asp-page="/Administrator/Admin/BookingsAndSessions"
+               asp-route-Stat="@card.Stat"
+               asp-route-AwaitingTutorHead="@card.AwaitingTutorHead"
+               asp-route-Period="@Model.Period"
+               asp-route-From="@Model.From?.ToString("yyyy-MM-dd")"
+               asp-route-To="@Model.To?.ToString("yyyy-MM-dd")"
+               class="admin-stat-card admin-stat-card-link @(isActive ? "is-active" : null)"
+               aria-current="@(isActive ? "true" : null)">
+                <div class="admin-stat-icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        @switch (card.Stat)
+                        {
+                            case "all":
+                                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                    <path d="M18.01 7.49L19.5 6m1 7.5a8.5 8.5 0 1 1-17 0a8.5 8.5 0 0 1 17 0" />
+                                    <path d="M12 19a5.5 5.5 0 1 1 0-11m2.5-6h-5M12 13.5l3.5-3.5" />
+                                </g>
+                                break;
+                            case "pending-admin":
+                                <g fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.75 11v-1c0-3.771 0-5.657-1.171-6.828S15.52 2 11.75 2h-1C6.98 2 5.093 2 3.922 3.172S2.75 6.229 2.75 10v4c0 3.771 0 5.657 1.172 6.828S6.979 22 10.75 22" />
+                                    <path stroke-linecap="round" d="M7.25 7h8m-8 5h8" />
+                                    <path stroke-linejoin="round" d="M13.25 20.827V22h1.174c.409 0 .614 0 .798-.076s.329-.221.618-.51l4.824-4.825c.273-.273.41-.41.482-.556c.139-.28.139-.61 0-.89c-.073-.147-.21-.283-.482-.556c-.274-.273-.41-.41-.557-.483a1 1 0 0 0-.89 0c-.147.073-.284.21-.556.483l-4.824 4.824c-.29.289-.434.434-.51.618s-.077.388-.077.798Z" />
+                                </g>
+                                break;
+                            case "super-admin-approved":
+                                <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 3H6.6c-2.168 0-3.252 0-3.926.674C2 4.347 2 5.43 2 7.6v5.3c0 2.168 0 3.253.674 3.926c.673.674 1.757.674 3.926.674h2.35A3.11 3.11 0 0 1 12 20V5c-.944-1.259-2-2-4-2m4 17V5c.944-1.259 2-2 4-2h1.4c2.168 0 3.252 0 3.926.674C22 4.347 22 5.43 22 7.6V13m-6.5 6s1 .5 1.625 2c0 0 2.58-3.75 4.875-4.5" />
+                                break;
+                            case "super-admin-rejected":
+                                <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 6L6 18m12 0L6 6" />
+                                break;
+                        }
+                    </svg>
+                </div>
+                <div class="admin-stat-content"><h2>@card.Label</h2><p>@card.Count</p></div>
+            </a>
+        }
     </section>
-    }
 
     <div class="sessions-workspace">
         <aside class="session-filters" aria-labelledby="session-filters-title">
@@ -78,12 +98,22 @@
                         <input asp-for="Search"
                                type="search"
                                placeholder="Tutor, student or location"
+                               data-session-search
                                autocomplete="off" />
                         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>
                     </span>
                 </label>
 
-                @if (Model.IsSuperAdmin)
+                <label class="session-filter-field">
+                    <span>Reviews submitted</span>
+                    <select asp-for="AwaitingTutorHead">
+                        <option value="false">Student, Tutor and Tutor Head</option>
+                        <option value="true">Student and Tutor only</option>
+                    </select>
+                </label>
+
+                @if (Model.IsSuperAdmin && !Model.AwaitingTutorHead &&
+                    Model.Stat is not ("pending-admin" or "super-admin-approved" or "super-admin-rejected"))
                 {
                 <label class="session-filter-field">
                     <span>Final session validity</span>
@@ -123,7 +153,7 @@
 
         <div class="sessions-main-column">
             <p class="session-result-count" role="status">
-                Showing <strong>@Model.FilteredSessionCount</strong> sessions
+                Showing <strong data-session-result-count>@Model.FilteredSessionCount</strong> sessions
             </p>
 
             <section class="completed-sessions" aria-label="Completed sessions">
@@ -138,26 +168,27 @@
                             <th scope="col" class="session-decision-column">Tutor Head decision</th>
                             @if (Model.IsSuperAdmin)
                             {
-                                <th scope="col">Superadmin review</th>
-                                <th scope="col">Final validity</th>
+                                <th scope="col">Decision recorded by</th>
+                                <th scope="col">Super Admin decision</th>
                             }
                             <th scope="col" class="session-action-heading">Action</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @if (Model.Sessions.Count == 0)
-                        {
-                            <tr>
+                    <tbody id="admin-session-results" data-pagination-page-parameter="SessionPage">
+                            <tr data-session-empty hidden="@(Model.FilteredSessionCount != 0)">
                                 <td colspan="@(Model.IsSuperAdmin ? 8 : 6)" class="completed-session-empty">
                                     No completed sessions match the selected filters.
                                 </td>
                             </tr>
-                        }
-                        else
-                        {
-                            @foreach (var session in Model.Sessions)
+                            @foreach (var session in Model.SearchableSessions)
                             {
-                                <tr>
+                                <tr data-pagination-row
+                                    data-pagination-excluded="@(!Model.MatchesSearch(session) ? "true" : "false")"
+                                    data-tutor-name="@session.TutorDisplayName"
+                                    data-tutor-number="@session.TutorPersonnelNumber"
+                                    data-student-name="@session.StudentName"
+                                    data-session-location="@session.Location"
+                                    hidden="@(!visibleSessionIds.Contains(session.BookingId))">
                                     <th scope="row">@session.TutorDisplayName</th>
                                     <td>@session.StudentName</td>
                                     <td>@session.Location</td>
@@ -166,7 +197,7 @@
                                             @session.SessionDate.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
                                         </time>
                                     </td>
-                                    <td>
+                                    <td class="@(session.TutorHeadDecisionCssClass == "is-unavailable" ? "text-center" : null)">
                                         <span class="session-tutor-head-decision @session.TutorHeadDecisionCssClass"
                                               aria-label="Tutor Head decision: @session.TutorHeadDecisionLabel"
                                               title="@session.TutorHeadDecisionLabel">
@@ -194,19 +225,13 @@
                                                     </g>
                                                 </svg>
                                             }
-                                            else
-                                            {
-                                                <span aria-hidden="true">—</span>
-                                            }
                                             <span>@session.TutorHeadDecisionLabel</span>
                                         </span>
                                     </td>
                                     @if (Model.IsSuperAdmin)
                                     {
-                                        <td>
-                                            <span class="session-approval @session.AdminApprovalCssClass">
-                                                @session.AdminApprovalLabel
-                                            </span>
+                                        <td class="@(string.IsNullOrWhiteSpace(session.SuperAdminDecisionMaker) ? "text-center" : null)">
+                                            @(string.IsNullOrWhiteSpace(session.SuperAdminDecisionMaker) ? "—" : session.SuperAdminDecisionMaker)
                                         </td>
                                         <td>
                                             <span class="session-approval @session.SuperAdminDecisionCssClass">
@@ -243,12 +268,17 @@
                                     </td>
                                 </tr>
                             }
-                        }
                     </tbody>
                 </table>
             </div>
-            @if (Model.TotalPages > 1)
+            @await Component.InvokeAsync("Pagination", new
             {
+                targetId = "admin-session-results",
+                mobilePageSize = BookingsAndSessionsModel.PageSize,
+                defaultPageSize = BookingsAndSessionsModel.PageSize,
+                ariaLabel = "Completed session pages"
+            })
+            <noscript>
                 @await Component.InvokeAsync("Pagination", new
                 {
                     currentPage = Model.SessionPage,
@@ -256,13 +286,15 @@
                     pageRouteValueName = "SessionPage",
                     ariaLabel = "Completed session pages"
                 })
-            }
+            </noscript>
             </section>
         </div>
     </div>
 </section>
 
 @section Scripts {
+    <script src="~/js/admin-session-search.js" asp-append-version="true"></script>
+    <script src="~/js/components/pagination.js" asp-append-version="true"></script>
     <script>
         (() => {
             const period = document.querySelector('[data-session-period]');

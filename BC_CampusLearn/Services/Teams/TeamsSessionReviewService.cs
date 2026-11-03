@@ -50,10 +50,9 @@ public sealed class TeamsSessionReviewService(
         Booking? booking = await context.Bookings.AsNoTracking()
             .Include(b => b.MeetingLink).Include(b => b.StudentBcUser)
             .Include(b => b.TutorCourseModule).ThenInclude(a => a.Tutor).ThenInclude(t => t.BcUser)
-            .SingleOrDefaultAsync(b => b.BookingId == bookingId && b.Status == BookingStatus.Completed &&
-                b.TutorEvaluation != null && b.StudentEvaluation != null, ct);
+            .SingleOrDefaultAsync(b => b.BookingId == bookingId && b.Status == BookingStatus.Completed, ct);
         if (booking is null)
-            throw new TeamsMeetingException("Teams evidence requires a completed session with both the student and tutor reviews submitted.");
+            throw new TeamsMeetingException("Teams evidence requires a completed session.");
         if (!options.Value.Enabled)
             throw new TeamsMeetingException("Automatic Teams evidence is disabled on this server. Ask the administrator to check the Teams integration setting.");
         MeetingLink? link = booking.MeetingLink;

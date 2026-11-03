@@ -22,6 +22,35 @@ public class TeamsSessionReviewTests
     private const string Tenant = "11111111-1111-1111-1111-111111111111";
     private const string Organizer = "22222222-2222-2222-2222-222222222222";
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task CompletedSessionEvidenceAndPlaybackDoNotRequireReviews(bool studentReview, bool tutorReview)
+    {
+        await using var db = await CreateContextAsync();
+        var booking = await db.Bookings
+            .Include(b => b.StudentEvaluation).Include(b => b.TutorEvaluation).SingleAsync();
+        if (!studentReview) db.Remove(booking.StudentEvaluation!);
+        if (!tutorReview) db.Remove(booking.TutorEvaluation!);
+        await db.SaveChangesAsync();
+        var service = CreateService(db, new Handler(request =>
+        {
+            string path = request.RequestUri!.AbsolutePath;
+            if (path.EndsWith("/onlineMeetings")) return Json("""{"value":[{"id":"meeting-1"}]}""");
+            if (path.EndsWith("/recordings")) return Json("""{"value":[{"id":"recording-1"}]}""");
+            if (path.EndsWith("/content")) return new(HttpStatusCode.OK) { Content = new ByteArrayContent([1, 2]) };
+            if (path.EndsWith("/attendanceReports")) return Json("""{"value":[{"id":"report-1","meetingStartDateTime":"2026-10-19T08:00:00Z","meetingEndDateTime":"2026-10-19T09:00:00Z"}]}""");
+            return Json("""{"value":[]}""");
+        }));
+
+        var evidence = await service.GetAsync(1, default);
+        Assert.Single(evidence.Recordings);
+        Assert.Equal(TimeSpan.FromHours(1), evidence.Duration);
+        using var recording = await service.OpenRecordingAsync(1, "recording-1", null, default);
+        Assert.Equal(new byte[] { 1, 2 }, await recording.Content.ReadAsByteArrayAsync());
+    }
+
     [Fact]
     public async Task SharedRecordingLookupUsesSavedAccountWithoutDependingOnTutorsCurrentIdentity()
     {

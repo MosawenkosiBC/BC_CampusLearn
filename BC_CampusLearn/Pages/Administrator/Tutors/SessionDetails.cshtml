@@ -47,19 +47,6 @@
                     </button>
                 }
             </div>
-            @if (Model.CanRecordFinalValidity)
-            {
-                <form method="post" asp-page-handler="SuperAdminReview"
-                      asp-route-id="@session.BookingId"
-                      class="admin-session-final-actions">
-                    <button type="submit" name="accepted" value="true"
-                            class="admin-session-final-action is-accept"
-                            aria-label="Mark this session as valid">Mark valid</button>
-                    <button type="submit" name="accepted" value="false"
-                            class="admin-session-final-action is-reject"
-                            aria-label="Mark this session as invalid">Mark invalid</button>
-                </form>
-            }
         </div>
 
         <div class="modal fade admin-session-summary-modal" id="session-summary-modal"
@@ -193,9 +180,9 @@
                 </button>
             </div>
 
-            <div class="@(Model.HasTeamsRecording ? "tutor-head-evidence-layout" : "tutor-head-standard-review-layout")"
+            <div class="@(Model.HasTeamsEvidence ? "tutor-head-evidence-layout" : "tutor-head-standard-review-layout")"
                  data-review-layout>
-            <div class="@(Model.HasTeamsRecording ? "tutor-head-review-panels" : "tutor-head-standard-review-panels")">
+            <div class="@(Model.HasTeamsEvidence ? "tutor-head-review-panels" : "tutor-head-standard-review-panels")">
 
             @foreach (var review in new[] {
                 new { Id = "student-review", Title = "Student Review", Answers = Model.StudentReviewAnswers, IsActive = false },
@@ -292,7 +279,7 @@
                 <header class="admin-session-review-panel-heading">
                     <div>
                         <h2>Superadmin Review</h2>
-                        <p>One Superadmin assesses the evidence; a different Superadmin records the final validity.</p>
+                        <p>Review the evidence and record the final decision.</p>
                     </div>
                     @if (session.AdminSessionReview is { } savedReview)
                     {
@@ -323,52 +310,51 @@
                             </div>
                         </dl>
                     }
-                    else if (Model.CanRecordSuperAdminAssessment)
-                    {
-                        <form method="post" asp-page-handler="SuperAdminAssessment" asp-route-id="@session.BookingId"
-                              class="admin-session-review-form">
-                            <div asp-validation-summary="All" class="text-danger"></div>
-                            @foreach (var question in new[] {
-                                new { Number = 1, Name = "HeadConfirmedQuality", Text = "Has the Tutor Head confirmed that the tutoring met the expected standard for explanation, participation, and support?", Answer = Model.AdminReviewInput.HeadConfirmedQuality },
-                                new { Number = 2, Name = "ReviewEvidenceIsConsistent", Text = "Do the student, tutor, and Tutor Head reviews provide a consistent account of the session?", Answer = Model.AdminReviewInput.ReviewEvidenceIsConsistent },
-                                new { Number = 3, Name = "ConcernsResolvedOrDocumented", Text = "Have concerns raised in any of the three reviews been resolved or documented for follow-up?", Answer = Model.AdminReviewInput.ConcernsResolvedOrDocumented }
-                            })
-                            {
-                                <fieldset>
-                                    <legend>@question.Number. @question.Text</legend>
-                                    <div class="admin-session-review-options">
-                                        <label><input type="radio" name="AdminReviewInput.@question.Name" value="true"
-                                                      checked="@(question.Answer == true)" required /> Yes</label>
-                                        <label><input type="radio" name="AdminReviewInput.@question.Name" value="false"
-                                                      checked="@(question.Answer == false)" /> No</label>
-                                    </div>
-                                </fieldset>
-                            }
-                            <fieldset>
-                                <legend>4. What validity outcome do you recommend for this session?</legend>
-                                <div class="admin-session-review-options">
-                                    <label><input type="radio" name="AdminReviewInput.EvidenceSupportsApproval" value="true"
-                                                  checked="@(Model.AdminReviewInput.EvidenceSupportsApproval == true)" required /> Valid</label>
-                                    <label><input type="radio" name="AdminReviewInput.EvidenceSupportsApproval" value="false"
-                                                  checked="@(Model.AdminReviewInput.EvidenceSupportsApproval == false)" /> Invalid</label>
-                                </div>
-                            </fieldset>
-                            <button type="submit">Save Superadmin review</button>
-                        </form>
-                    }
-                    else
+                    else if (!Model.CanRecordFinalValidity)
                     {
                         <p class="admin-session-review-empty">The Superadmin review is available after the completed session has student, tutor, and Tutor Head reviews.</p>
+                    }
+                    @if (Model.CanRecordFinalValidity)
+                    {
+                        <form id="super-admin-decision-form" method="post" asp-page-handler="SuperAdminReview"
+                              asp-route-id="@session.BookingId" class="admin-session-review-form">
+                            <div asp-validation-summary="All" class="text-danger"></div>
+                            @if (Model.CanRecordSuperAdminAssessment)
+                            {
+                                @foreach (var question in new[] {
+                                    new { Number = 1, Name = "HeadConfirmedQuality", Text = "Has the Tutor Head confirmed that the tutoring met the expected standard for explanation, participation, and support?", Answer = Model.AdminReviewInput.HeadConfirmedQuality },
+                                    new { Number = 2, Name = "ReviewEvidenceIsConsistent", Text = "Do the student, tutor, and Tutor Head reviews provide a consistent account of the session?", Answer = Model.AdminReviewInput.ReviewEvidenceIsConsistent },
+                                    new { Number = 3, Name = "ConcernsResolvedOrDocumented", Text = "Have concerns raised in any of the three reviews been resolved or documented for follow-up?", Answer = Model.AdminReviewInput.ConcernsResolvedOrDocumented }
+                                })
+                                {
+                                    <fieldset>
+                                        <legend>@question.Number. @question.Text</legend>
+                                        <div class="admin-session-review-options">
+                                            <label><input type="radio" name="AdminReviewInput.@question.Name" value="true"
+                                                          checked="@(question.Answer == true)" required /> Yes</label>
+                                            <label><input type="radio" name="AdminReviewInput.@question.Name" value="false"
+                                                          checked="@(question.Answer == false)" /> No</label>
+                                        </div>
+                                    </fieldset>
+                                }
+                            }
+                            <div class="admin-session-final-actions">
+                                <button type="submit" name="accepted" value="true"
+                                        class="admin-session-final-action is-accept">Mark as valid</button>
+                                <button type="button" class="admin-session-final-action is-reject"
+                                        data-bs-toggle="modal" data-bs-target="#reject-session-modal">Mark as rejected</button>
+                            </div>
+                        </form>
                     }
                 </div>
             </section>
             }
             </div>
 
-            @if (Model.HasTeamsRecording)
+            @if (Model.HasTeamsEvidence)
             {
                 <aside class="tutor-head-video-card" aria-labelledby="session-video-title"
-                       data-review-evidence-for="tutor-head-review-panel">
+                       data-review-evidence-for="tutor-review-panel" hidden>
                     <header class="tutor-head-video-heading">
                         <div>
                             <h2 id="session-video-title">Session recording</h2>
@@ -377,8 +363,16 @@
                                 <p class="tutor-head-recording-range">@teamsRecordingRange</p>
                             }
                         </div>
+                        @if (Model.RecordingUrl is { } recordingUrl)
+                        {
+                            <a class="tutor-head-recording-link" href="@recordingUrl" target="_blank" rel="noopener noreferrer">Open submitted recording ↗</a>
+                        }
                     </header>
                     <div class="tutor-head-recordings">
+                        @if (Model.TeamsEvidence.Recordings.Count == 0)
+                        {
+                            <div class="tutor-head-video-empty">Teams video preview is unavailable for this session. See the details below.</div>
+                        }
                         @foreach (var recording in Model.TeamsEvidence.Recordings)
                         {
                             <div class="tutor-head-recording-part">
@@ -397,6 +391,45 @@
                             </div>
                         }
                     </div>
+                    <section class="tutor-head-attendance" aria-labelledby="session-attendance-title">
+                        <h3 id="session-attendance-title">Teams session details</h3>
+                        @if (Model.TeamsEvidence.Duration is { } measuredDuration)
+                        {
+                            <p>Meeting duration: <strong>@measuredDuration.ToString(@"hh\:mm\:ss")</strong></p>
+                        }
+                        else
+                        {
+                            <p>Meeting duration unavailable.</p>
+                        }
+                        <div class="tutor-head-attendance-grid">
+                            @foreach (var participant in new[] { Model.TeamsEvidence.Tutor, Model.TeamsEvidence.Student })
+                            {
+                                <div class="tutor-head-attendance-person">
+                                    <h4>@participant.Label</h4>
+                                    @if (participant.Intervals.Count == 0)
+                                    {
+                                        <p>No matched attendance record available.</p>
+                                    }
+                                    else
+                                    {
+                                        <p>Total attendance: <strong>@participant.Duration.ToString(@"hh\:mm\:ss")</strong></p>
+                                        <ul class="tutor-head-attendance-intervals" tabindex="0" aria-label="@($"{participant.Label} join and leave times")">
+                                            @foreach (var interval in participant.Intervals)
+                                            {
+                                                <li>Joined @interval.Join.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM, HH:mm:ss") · Left @interval.Leave.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM, HH:mm:ss") SAST</li>
+                                            }
+                                        </ul>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </section>
+                    <div class="tutor-head-evidence-notices">
+                        @foreach (string notice in Model.TeamsEvidence.Notices)
+                        {
+                            <p class="tutor-head-evidence-notice">@notice</p>
+                        }
+                    </div>
                 </aside>
             }
             </div>
@@ -409,16 +442,32 @@
                     <span>Recorded @finalReview.RecordedAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")</span>
                 </p>
             }
-            else if (Model.AwaitingIndependentFinalReview)
-            {
-                <p class="admin-session-final-status" role="status">
-                    Awaiting final validity approval from a different Superadmin.
-                </p>
-            }
         </section>
     </div>
 </section>
 @section Modals {
+    @if (Model.CanRecordFinalValidity)
+    {
+        <div class="modal fade" id="reject-session-modal" tabindex="-1"
+             aria-labelledby="reject-session-title" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5" id="reject-session-title">Reject this session?</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        This records the final decision as invalid.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" form="super-admin-decision-form" name="accepted" value="false"
+                                class="btn btn-danger" formnovalidate>Confirm rejection</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
     @if (Model.AiAssessment is { } assessment)
     {
         <div class="modal fade" id="ai-assessment-modal" tabindex="-1"
