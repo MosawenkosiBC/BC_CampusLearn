@@ -83,7 +83,15 @@
                     </span>
                 </label>
 
-                @if (Model.IsSuperAdmin)
+                <label class="session-filter-field">
+                    <span>Reviews submitted</span>
+                    <select asp-for="AwaitingTutorHead">
+                        <option value="false">Student, Tutor and Tutor Head</option>
+                        <option value="true">Student and Tutor only</option>
+                    </select>
+                </label>
+
+                @if (Model.IsSuperAdmin && !Model.AwaitingTutorHead)
                 {
                 <label class="session-filter-field">
                     <span>Final session validity</span>
@@ -166,7 +174,7 @@
                                             @session.SessionDate.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")
                                         </time>
                                     </td>
-                                    <td>
+                                    <td class="@(session.TutorHeadDecisionCssClass == "is-unavailable" ? "text-center" : null)">
                                         <span class="session-tutor-head-decision @session.TutorHeadDecisionCssClass"
                                               aria-label="Tutor Head decision: @session.TutorHeadDecisionLabel"
                                               title="@session.TutorHeadDecisionLabel">
@@ -193,10 +201,6 @@
                                                         <path d="M12 9v7m3.5-4.5S12.922 8 12 8s-3.5 3.5-3.5 3.5" />
                                                     </g>
                                                 </svg>
-                                            }
-                                            else
-                                            {
-                                                <span aria-hidden="true">—</span>
                                             }
                                             <span>@session.TutorHeadDecisionLabel</span>
                                         </span>

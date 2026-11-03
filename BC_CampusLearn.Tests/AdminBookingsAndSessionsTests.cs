@@ -13,7 +13,7 @@ public class AdminBookingsAndSessionsTests
     [Theory]
     [InlineData(BcUserRole.Admin)]
     [InlineData(BcUserRole.SuperAdmin)]
-    public async Task CompletedTeamsSessionsAreReachableBeforeReviewsAreSubmitted(BcUserRole role)
+    public async Task ReviewFilterSeparatesFullyReviewedSessionsFromThoseAwaitingTutorHead(BcUserRole role)
     {
         await using var context = CreateContext();
         var assignment = CreateAssignment();
@@ -23,14 +23,29 @@ public class AdminBookingsAndSessionsTests
             Url = "https://teams.microsoft.com/l/meetup-join/test",
             TeamsEventId = "event-1", TeamsOrganizerIdentityHash = "verified-organizer"
         };
-        context.Bookings.Add(booking);
+        context.Bookings.AddRange(
+            booking,
+            CreateBooking(2, assignment, "Awaiting Tutor Head", "Online",
+                studentReview: new StudentEvaluation(),
+                tutorReview: new TutorStudentEvaluation()),
+            CreateBooking(3, assignment, "Fully reviewed", "Online",
+                studentReview: new StudentEvaluation(),
+                tutorReview: new TutorStudentEvaluation(),
+                tutorHeadReviewer: CreateTutorHead()));
         await context.SaveChangesAsync();
         var page = new BookingsAndSessionsModel(context, new FixedTimeProvider(), new RoleCurrentUserService(role));
 
         await page.OnGetAsync(default);
 
-        Assert.Equal("Awaiting reviews", Assert.Single(page.Sessions).StudentName);
-        Assert.Equal(0, page.ReviewStats.AwaitingAdminReview);
+        Assert.Equal("Fully reviewed", Assert.Single(page.Sessions).StudentName);
+
+        page.AwaitingTutorHead = true;
+        await page.OnGetAsync(default);
+
+        var session = Assert.Single(page.Sessions);
+        Assert.Equal("Awaiting Tutor Head", session.StudentName);
+        Assert.False(session.HasTutorHeadReview);
+        Assert.Equal(1, page.ReviewStats.AwaitingAdminReview);
     }
 
     [Fact]

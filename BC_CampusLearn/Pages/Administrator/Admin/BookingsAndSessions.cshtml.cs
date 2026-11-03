@@ -32,6 +32,9 @@ public class BookingsAndSessionsModel(
     public string Approval { get; set; } = "all";
 
     [BindProperty(SupportsGet = true)]
+    public bool AwaitingTutorHead { get; set; }
+
+    [BindProperty(SupportsGet = true)]
     public string Stat { get; set; } = "all";
 
     [BindProperty(SupportsGet = true)]
@@ -82,6 +85,11 @@ public class BookingsAndSessionsModel(
             ? Period.ToLowerInvariant()
             : "month";
         Search = string.IsNullOrWhiteSpace(Search) ? null : Search.Trim();
+        if (AwaitingTutorHead)
+        {
+            Stat = "all";
+            Approval = "all";
+        }
 
         AdminReviewDeadlineSettings? deadlineSettings =
             await context.PlatformSettings
@@ -97,14 +105,15 @@ public class BookingsAndSessionsModel(
         (DateTimeOffset periodStart, DateTimeOffset periodEnd) =
             ResolvePeriod(deadlineSettings);
 
-        IQueryable<Booking> reviewedSessions = context.Bookings
+        IQueryable<Booking> evaluatedSessions = context.Bookings
             .AsNoTracking()
             .Where(booking =>
                 booking.Status == BookingStatus.Completed &&
                 booking.StudentEvaluation != null &&
-                booking.TutorEvaluation != null &&
-                booking.SessionReviews.Any(review =>
-                    review.Reviewer.Role == BcUserRole.HeadOfTutors));
+                booking.TutorEvaluation != null);
+        IQueryable<Booking> reviewedSessions = evaluatedSessions.Where(booking =>
+            booking.SessionReviews.Any(review =>
+                review.Reviewer.Role == BcUserRole.HeadOfTutors));
 
         int carriedOver = await reviewedSessions.CountAsync(booking =>
             (booking.CompletedAt ?? booking.ScheduledStartTime) <
@@ -148,20 +157,14 @@ public class BookingsAndSessionsModel(
             RejectedByTutorHead: rejectedByTutorHead,
             AwaitingAdminReview: awaitingAdminReview);
 
-        // Make Teams sessions reachable before reviews are submitted. Review queue
-        // statistics above still count only sessions ready for assessment.
-        reviewedSessions = reviewedSessions.Union(context.Bookings
-            .AsNoTracking()
-            .Where(booking => booking.Status == BookingStatus.Completed &&
-                booking.MeetingLink != null &&
-                booking.MeetingLink.TeamsEventId != null &&
-                booking.MeetingLink.TeamsEventId != "" &&
-                booking.MeetingLink.TeamsOrganizerIdentityHash != null &&
-                !booking.MeetingLink.TeamsManualFallbackAllowed));
+        IQueryable<Booking> filtered = AwaitingTutorHead
+            ? evaluatedSessions.Where(booking => !booking.SessionReviews.Any(review =>
+                review.Reviewer.Role == BcUserRole.HeadOfTutors))
+            : reviewedSessions;
 
-        if (Period == "month" && deadlineSettings is not null)
+        if (!AwaitingTutorHead && Period == "month" && deadlineSettings is not null)
         {
-            reviewedSessions = reviewedSessions.Where(booking =>
+            filtered = filtered.Where(booking =>
                 (booking.CompletedAt ?? booking.ScheduledStartTime) <
                     periodEnd &&
                 ((booking.CompletedAt ?? booking.ScheduledStartTime) >=
@@ -170,14 +173,12 @@ public class BookingsAndSessionsModel(
         }
         else
         {
-            reviewedSessions = reviewedSessions.Where(booking =>
+            filtered = filtered.Where(booking =>
                 (booking.CompletedAt ?? booking.ScheduledStartTime) >=
                     periodStart &&
                 (booking.CompletedAt ?? booking.ScheduledStartTime) <
                     periodEnd);
         }
-
-        IQueryable<Booking> filtered = reviewedSessions;
 
         filtered = Stat switch
         {
@@ -425,7 +426,7 @@ public class BookingsAndSessionsModel(
                 StringComparison.OrdinalIgnoreCase) => "Rejected",
             string decision when decision.Equals("Escalate",
                 StringComparison.OrdinalIgnoreCase) => "Escalated",
-            _ => "Decision unavailable"
+            _ => "—"
         };
 
         public string TutorHeadDecisionCssClass => TutorHeadDecision switch
