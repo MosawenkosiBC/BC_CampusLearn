@@ -809,6 +809,7 @@ public class AdminApplicationsTests
             Name = "Bachelor of Computing"
         });
         BcUser user = CreateUser(1, "Interview Candidate", "ST3956");
+        user.Email = "interview.candidate@example.com";
         context.BcUsers.Add(user);
         Tutor candidate = CreateTutor(1, TutorStatus.Pending);
         candidate.ApplicationStage = TutorApplicationStage.Interview;
@@ -832,6 +833,12 @@ public class AdminApplicationsTests
         Assert.Equal(
             "Congratulations! We’re delighted to let you know that your tutor application has been approved. Welcome to the Mzala Connect Tutor Team! We’re excited to have you join us and look forward to the positive impact you’ll make by supporting and inspiring fellow students. Your tutoring journey starts here. Well done! 🎓",
             notification.Message);
+        EmailNotificationOutbox email = await context.EmailNotificationOutbox
+            .SingleAsync();
+        Assert.Equal(user.Email, email.RecipientEmail);
+        Assert.Equal(notification.Title, email.Subject);
+        Assert.Contains(notification.Message, email.Body);
+        Assert.Equal(notification.LinkUrl, email.ActionPath);
     }
 
     [Fact]

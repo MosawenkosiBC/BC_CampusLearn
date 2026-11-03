@@ -155,15 +155,26 @@ public class ApplicationDbContext : DbContext
             BcUserRole previous = entry.Property(user => user.Role).OriginalValue;
             BcUserRole current = entry.Entity.Role;
             string changeKey = $"{entry.Entity.BcUserId}:{previous}:{current}";
+            bool demotedFromAdministrator =
+                previous is BcUserRole.Admin or BcUserRole.SuperAdmin &&
+                current != BcUserRole.SuperAdmin;
             if (previous == current || current == BcUserRole.Dev ||
-                current == BcUserRole.Student ||
+                (current == BcUserRole.Student && !demotedFromAdministrator) ||
                 !_queuedRoleChanges.Add(changeKey))
             {
                 continue;
             }
 
             DateTimeOffset now = DateTimeOffset.UtcNow;
-            (string title, string message, string link) = current switch
+            (string title, string message, string link) =
+                demotedFromAdministrator
+                ? (
+                    "Administrative access updated",
+                    $"Your {RoleLabel(previous)} access has been removed. " +
+                    "Your account remains active, and the Mzala Connect tools available to you " +
+                    "have been updated.",
+                    RoleHome(current))
+                : current switch
             {
                 BcUserRole.Tutor => (
                     "Tutor access granted",
@@ -191,35 +202,61 @@ public class ApplicationDbContext : DbContext
                     "/Student/Dashboard")
             };
 
-            bool alreadyHasPlatformNotification = ChangeTracker
+            UserNotification? platformNotification = ChangeTracker
                 .Entries<UserNotification>()
-                .Any(notification =>
+                .Where(notification =>
                     notification.State == EntityState.Added &&
                     notification.Entity.RecipientBcUserId ==
-                        entry.Entity.BcUserId);
-            if (!alreadyHasPlatformNotification)
+                        entry.Entity.BcUserId)
+                .Select(notification => notification.Entity)
+                .FirstOrDefault();
+            if (platformNotification is null)
             {
-                UserNotifications.Add(new UserNotification
+                platformNotification = new UserNotification
                 {
                     RecipientBcUserId = entry.Entity.BcUserId,
                     Title = title,
                     Message = message,
                     LinkUrl = link,
                     CreatedAt = now
-                });
+                };
+                UserNotifications.Add(platformNotification);
             }
+
+            // When the role change is part of a workflow that already created
+            // a notification (for example, approving a tutor for placement),
+            // send that same message by email instead of a second generic role
+            // update. This keeps both channels in sync for the recipient.
             NotificationEmailQueue.Add(
                 this,
                 $"role-change:{entry.Entity.BcUserId}:{previous}:{current}:{now.ToUnixTimeMilliseconds()}",
                 entry.Entity.Email,
                 entry.Entity.DisplayName,
-                title,
+                platformNotification.Title,
                 $"{NotificationEmailQueue.Greeting(entry.Entity.DisplayName)}" +
-                $"{Environment.NewLine}{Environment.NewLine}{message}",
-                link,
+                $"{Environment.NewLine}{Environment.NewLine}{platformNotification.Message}",
+                platformNotification.LinkUrl,
                 now);
         }
     }
+
+    private static string RoleLabel(BcUserRole role) => role switch
+    {
+        BcUserRole.SuperAdmin => "Super Admin",
+        BcUserRole.HeadOfTutors => "Head of Tutors",
+        BcUserRole.SeniorTutor => "Senior Tutor",
+        _ => role.ToString()
+    };
+
+    private static string RoleHome(BcUserRole role) => role switch
+    {
+        BcUserRole.Admin or BcUserRole.SuperAdmin =>
+            "/Administrator/Admin/Dashboard",
+        BcUserRole.HeadOfTutors => "/TutorHead/SessionReviews",
+        BcUserRole.Tutor or BcUserRole.SeniorTutor =>
+            "/Tutors/TutorDashboard",
+        _ => "/"
+    };
 
     private void SynchronizeTutorRoles()
     {
