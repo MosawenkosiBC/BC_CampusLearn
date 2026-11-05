@@ -61,8 +61,17 @@ public class CompensationModel(
             return Page();
         }
 
+        var tutorIds = Tutors.Select(tutor => tutor.TutorId).ToList();
+        var banking = await context.TutorBankingDetails.AsNoTracking()
+            .Where(details => tutorIds.Contains(details.TutorId))
+            .ToDictionaryAsync(details => details.TutorId, cancellationToken);
+        var exportTutors = Tutors.Select(tutor => tutor with
+        {
+            BankingDetails = banking.GetValueOrDefault(tutor.TutorId)
+        }).ToList();
+
         return File(CompensationWorkbook.Create(PeriodStart, PeriodEnd, CurrencyCode,
-            Tutors, Sessions, timeProvider.GetUtcNow()),
+            exportTutors, Sessions, timeProvider.GetUtcNow()),
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             $"Tutor-compensation_{PeriodStart:yyyy-MM-dd}_to_{PeriodEnd:yyyy-MM-dd}.xlsx");
     }
@@ -136,6 +145,7 @@ public class CompensationModel(
     public sealed record TutorEarnings(int TutorId, string Name, string PersonnelNumber,
         string Email, string Campus, int ApprovedSessions, decimal? Earnings, BcUserRole TutorRole = BcUserRole.Tutor)
     {
+        public TutorBankingDetails? BankingDetails { get; init; }
         public string RoleLabel => TutorRole switch
         {
             BcUserRole.HeadOfTutors => "Head of Tutor",

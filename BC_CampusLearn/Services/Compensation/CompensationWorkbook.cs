@@ -20,25 +20,31 @@ public static class CompensationWorkbook
         var summary = Metadata("Tutor compensation", from, to, generatedAt);
         summary.Add(Row(6, Text("Approved sessions"), Number(sessions.Count)));
         summary.Add(Row(7, Text("Total tutors"), Number(tutors.Count)));
-        summary.Add(Row(10, Headers("Number", "Tutor", "Personnel number", "Email", "Campus", "Approved sessions", $"Amount earned ({currency})")));
+        summary.Add(Row(10, Headers("Tutor", "Student number", "Email", "Account holder",
+            "Recipient account number", "Account type", "Branch code", "Bank name", "Own reference", "Recipient reference",
+            "Approved sessions", $"Amount earned ({currency})")));
         int row = 11;
         foreach (var tutor in tutors)
-            summary.Add(Row(row++, Number(tutor.TutorId), Text(tutor.Name), Text(tutor.PersonnelNumber),
-                Text(tutor.Email), Text(tutor.Campus), Number(tutor.ApprovedSessions), Number(tutor.Earnings ?? 0m, 3)));
-        summary.Add(Row(row + 2, Text("Total", 6), Text(""), Text(""), Text(""), Text(""),
-            Formula(tutors.Count == 0 ? "0" : $"SUM(F11:F{row - 1})", sessions.Count),
-            Formula(tutors.Count == 0 ? "0" : $"SUM(G11:G{row - 1})", sessions.Sum(session => session.Amount!.Value), 3)));
+            summary.Add(Row(row++, Text(tutor.Name), Text(tutor.PersonnelNumber), Text(tutor.Email),
+                Text(tutor.BankingDetails?.AccountHolder ?? ""), Text(tutor.BankingDetails?.RecipientAccountNumber ?? ""),
+                Text(tutor.BankingDetails?.AccountType ?? ""), Text(tutor.BankingDetails?.BranchCode ?? ""),
+                Text(tutor.BankingDetails?.BankName ?? ""), Text(tutor.Name), Text("BC Tutor FEE Nov 2026"),
+                Number(tutor.ApprovedSessions), Number(tutor.Earnings ?? 0m, 3)));
+        summary.Add(Row(row + 2, Text("Total", 6), Text(""), Text(""), Text(""), Text(""), Text(""), Text(""), Text(""),
+            Text(""), Text(""),
+            Formula(tutors.Count == 0 ? "0" : $"SUM(K11:K{row - 1})", sessions.Count),
+            Formula(tutors.Count == 0 ? "0" : $"SUM(L11:L{row - 1})", sessions.Sum(session => session.Amount!.Value), 3)));
 
         var details = Metadata("Approved session details", from, to, generatedAt);
-        details.Add(Row(10, Headers("Session ID", "Number", "Tutor", "Personnel number", "Campus", "Module", "Session date (SAST)", "Super admin approved (SAST)", $"Amount earned ({currency})")));
+        details.Add(Row(10, Headers("Session ID", "Tutor", "Student number", "Module", "Session date (SAST)", "Super admin approved (SAST)", $"Amount earned ({currency})")));
         row = 11;
         foreach (var session in sessions)
-            details.Add(Row(row++, Number(session.BookingId), Number(session.TutorId), Text(session.TutorName),
-                Text(session.PersonnelNumber), Text(session.Campus), Text(session.ModuleCode),
+            details.Add(Row(row++, Number(session.BookingId), Text(session.TutorName),
+                Text(session.PersonnelNumber), Text(session.ModuleCode),
                 Date(session.SessionDate.ToOffset(CampusOffset).DateTime, 5),
                 Date(session.ApprovedAt.ToOffset(CampusOffset).DateTime, 5), Number(session.Amount!.Value, 3)));
-        details.Add(Row(row + 2, Text("Total", 6), Text(""), Text(""), Text(""), Text(""), Text(""), Text(""), Text(""),
-            Formula(sessions.Count == 0 ? "0" : $"SUM(I11:I{row - 1})", sessions.Sum(session => session.Amount!.Value), 3)));
+        details.Add(Row(row + 2, Text("Total", 6), Text(""), Text(""), Text(""), Text(""), Text(""),
+            Formula(sessions.Count == 0 ? "0" : $"SUM(G11:G{row - 1})", sessions.Sum(session => session.Amount!.Value), 3)));
 
         using var output = new MemoryStream();
         using (var zip = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true))
@@ -58,8 +64,8 @@ public static class CompensationWorkbook
             Write(zip, "xl/_rels/workbook.xml.rels", Relationships(
                 ("rId1", "worksheet", "worksheets/sheet1.xml"), ("rId2", "worksheet", "worksheets/sheet2.xml"), ("rId3", "styles", "styles.xml")));
             Write(zip, "xl/styles.xml", Styles());
-            Write(zip, "xl/worksheets/sheet1.xml", Worksheet(summary, [28, 28, 22, 36, 24, 20, 26], tutors.Count));
-            Write(zip, "xl/worksheets/sheet2.xml", Worksheet(details, [28, 28, 28, 22, 24, 18, 28, 28, 26], sessions.Count));
+            Write(zip, "xl/worksheets/sheet1.xml", Worksheet(summary, [28, 22, 36, 30, 28, 22, 18, 26, 30, 30, 20, 26], tutors.Count));
+            Write(zip, "xl/worksheets/sheet2.xml", Worksheet(details, [18, 28, 22, 18, 28, 28, 26], sessions.Count));
         }
         return output.ToArray();
     }

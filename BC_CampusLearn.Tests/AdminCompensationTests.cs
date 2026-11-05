@@ -63,7 +63,7 @@ public class AdminCompensationTests
         Assert.Equal(1200m, page.TotalEarnings);
         var export = Assert.IsType<FileContentResult>(await page.OnGetDownloadAsync(CancellationToken.None));
         using var zip = new ZipArchive(new MemoryStream(export.FileContents));
-        Assert.Equal("1200", Cell(Read(zip, "xl/worksheets/sheet1.xml"), "G25").Element(S + "v")?.Value);
+        Assert.Equal("1200", Cell(Read(zip, "xl/worksheets/sheet1.xml"), "L25").Element(S + "v")?.Value);
 
         page.TutorPage = 999;
         await page.OnGetAsync(CancellationToken.None);
@@ -162,20 +162,29 @@ public class AdminCompensationTests
         }
         var summary = Read(zip, "xl/worksheets/sheet1.xml");
         var details = Read(zip, "xl/worksheets/sheet2.xml");
-        Assert.Equal("inlineStr", Cell(summary, "B11").Attribute("t")?.Value);
-        Assert.Equal("=SUM(1,2) & Tutor", Cell(summary, "B11").Descendants(S + "t").Single().Value);
-        Assert.Equal("125.50", Cell(summary, "G11").Element(S + "v")?.Value);
-        Assert.Equal("SUM(G11:G11)", Cell(summary, "G14").Element(S + "f")?.Value);
-        Assert.Equal("125.50", Cell(summary, "G14").Element(S + "v")?.Value);
-        Assert.Equal("125.50", Cell(details, "I14").Element(S + "v")?.Value);
+        Assert.Equal("inlineStr", Cell(summary, "A11").Attribute("t")?.Value);
+        Assert.Equal("=SUM(1,2) & Tutor", Cell(summary, "A11").Descendants(S + "t").Single().Value);
+        Assert.Equal("125.50", Cell(summary, "L11").Element(S + "v")?.Value);
+        Assert.Equal("SUM(L11:L11)", Cell(summary, "L14").Element(S + "f")?.Value);
+        Assert.Equal("125.50", Cell(summary, "L14").Element(S + "v")?.Value);
+        Assert.Equal("125.50", Cell(details, "G14").Element(S + "v")?.Value);
+        Assert.Equal("SUM(K11:K11)", Cell(summary, "K14").Element(S + "f")?.Value);
+        Assert.Equal("SUM(G11:G11)", Cell(details, "G14").Element(S + "f")?.Value);
         foreach (var sheet in new[] { summary, details })
         {
             Assert.DoesNotContain(sheet.Descendants(S + "row"), row => new[] { "2", "12", "13" }.Contains(row.Attribute("r")?.Value));
-            Assert.DoesNotContain(sheet.Descendants(S + "t"), text => text.Value is "Currency" or "Period basis" or "Tutor ID");
+            Assert.DoesNotContain(sheet.Descendants(S + "t"), text => text.Value is "Currency" or "Period basis" or "Tutor ID" or "Number" or "Campus" or "Personnel number");
             Assert.Equal("6", Cell(sheet, "A14").Attribute("s")?.Value);
         }
-        Assert.Equal("Number", Cell(summary, "A10").Descendants(S + "t").Single().Value);
-        Assert.Equal("Number", Cell(details, "B10").Descendants(S + "t").Single().Value);
+        Assert.Equal("Student number", Cell(summary, "B10").Descendants(S + "t").Single().Value);
+        Assert.Equal("Student number", Cell(details, "C10").Descendants(S + "t").Single().Value);
+        Assert.Equal("A10:L11", summary.Root!.Element(S + "autoFilter")!.Attribute("ref")?.Value);
+        Assert.Equal("Own reference", Cell(summary, "I10").Descendants(S + "t").Single().Value);
+        Assert.Equal("Recipient reference", Cell(summary, "J10").Descendants(S + "t").Single().Value);
+        Assert.Equal("=SUM(1,2) & Tutor", Cell(summary, "I11").Descendants(S + "t").Single().Value);
+        Assert.Equal("inlineStr", Cell(summary, "I11").Attribute("t")?.Value);
+        Assert.Equal("BC Tutor FEE Nov 2026", Cell(summary, "J11").Descendants(S + "t").Single().Value);
+        Assert.Equal("A10:G11", details.Root!.Element(S + "autoFilter")!.Attribute("ref")?.Value);
         var styles = Read(zip, "xl/styles.xml");
         var totalStyle = styles.Root!.Element(S + "cellXfs")!.Elements().ElementAt(6);
         Assert.Equal("2", totalStyle.Attribute("fontId")?.Value);
@@ -185,9 +194,45 @@ public class AdminCompensationTests
         double startDate = double.Parse(Cell(summary, "B3").Element(S + "v")!.Value, CultureInfo.InvariantCulture);
         Assert.Equal(new DateTime(2026, 9, 1), DateTime.FromOADate(startDate));
         Assert.Equal(Cell(summary, "B3").Element(S + "v")!.Value, Cell(summary, "B4").Element(S + "v")!.Value);
-        Assert.Equal("5", Cell(details, "G11").Attribute("s")?.Value);
+        Assert.Equal("5", Cell(details, "E11").Attribute("s")?.Value);
         Assert.Equal(new DateTime(2026, 9, 1, 10, 0, 0), DateTime.FromOADate(
-            double.Parse(Cell(details, "G11").Element(S + "v")!.Value, CultureInfo.InvariantCulture)));
+            double.Parse(Cell(details, "E11").Element(S + "v")!.Value, CultureInfo.InvariantCulture)));
+    }
+
+    [Fact]
+    public async Task ExportUsesLatestBankingDetailsAsTextAndLeavesMissingBankingBlank()
+    {
+        await using var context = CreateContext();
+        var first = Assignment(1);
+        var second = Assignment(2);
+        first.Tutor.BankingDetails = new TutorBankingDetails
+        {
+            AccountHolder = "=Holder & Name", RecipientAccountNumber = "001234567890",
+            AccountType = "Savings", BranchCode = "001234", BankName = "Test Bank"
+        };
+        context.TutorCourseModules.AddRange(first, second);
+        context.Bookings.AddRange(Booking(1, first, "2026-10-01T08:00:00Z", 100m),
+            Booking(2, second, "2026-10-01T08:00:00Z", 200m));
+        await context.SaveChangesAsync();
+        var page = Page(context);
+        // Load the screen before an update; the download must still read current banking data.
+        await page.OnGetAsync(CancellationToken.None);
+        first.Tutor.BankingDetails.BankName = "Updated Bank";
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+        var export = Assert.IsType<FileContentResult>(await page.OnGetDownloadAsync(CancellationToken.None));
+        using var zip = new ZipArchive(new MemoryStream(export.FileContents));
+        var summary = Read(zip, "xl/worksheets/sheet1.xml");
+        Assert.Equal(new[] { "Account holder", "Recipient account number", "Account type", "Branch code", "Bank name" },
+            new[] { "D10", "E10", "F10", "G10", "H10" }.Select(address => Cell(summary, address).Descendants(S + "t").Single().Value));
+        Assert.Equal(new[] { "=Holder & Name", "001234567890", "Savings", "001234", "Updated Bank" },
+            new[] { "D11", "E11", "F11", "G11", "H11" }.Select(address => Cell(summary, address).Descendants(S + "t").Single().Value));
+        foreach (var column in new[] { "D", "E", "F", "G", "H" })
+        {
+            Assert.Equal("inlineStr", Cell(summary, column + "11").Attribute("t")?.Value);
+            Assert.Null(Cell(summary, column + "11").Element(S + "f"));
+            Assert.Equal("", Cell(summary, column + "12").Descendants(S + "t").Single().Value);
+        }
     }
 
     [Fact]
