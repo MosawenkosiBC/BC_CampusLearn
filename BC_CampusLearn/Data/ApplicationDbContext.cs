@@ -18,6 +18,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Announcement> Announcements => Set<Announcement>();
 
     public DbSet<Tutor> Tutors => Set<Tutor>();
+    public DbSet<TutorBankingDetails> TutorBankingDetails => Set<TutorBankingDetails>();
+    public DbSet<TutorContract> TutorContracts => Set<TutorContract>();
     public DbSet<TutorInterviewMeeting> TutorInterviewMeetings => Set<TutorInterviewMeeting>();
     public DbSet<TutorDeregistrationEvent> TutorDeregistrationEvents => Set<TutorDeregistrationEvent>();
     public DbSet<Admin> Admins => Set<Admin>();

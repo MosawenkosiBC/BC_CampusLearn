@@ -47,6 +47,8 @@ public class Tutor
 
     public BcUser BcUser { get; set; } = null!;
     public ProgrammeOfStudy Programme { get; set; } = null!;
+    public TutorBankingDetails? BankingDetails { get; set; }
+    public TutorContract? Contract { get; set; }
     public ICollection<TutorDocument> TutorDocuments { get; set; } = new List<TutorDocument>();
     public ICollection<TutorApplicationReviewDecision> ApplicationReviewDecisions
     { get; set; } = new List<TutorApplicationReviewDecision>();

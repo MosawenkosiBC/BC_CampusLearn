@@ -1153,6 +1153,120 @@ public class AdminTutorsTests
         Assert.Equal(1, page.TutorPage);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ProfileLoadsCurrentBankingDetailsForOnlyRequestedTutor(bool hasBankingDetails)
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        if (hasBankingDetails)
+        {
+            context.TutorBankingDetails.Add(new TutorBankingDetails
+            {
+                TutorId = 1, AccountHolder = "Tutor One", BankName = "Test Bank",
+                RecipientAccountNumber = "0012345678", AccountType = "Savings", BranchCode = "001234"
+            });
+        }
+        context.TutorBankingDetails.Add(new TutorBankingDetails
+        {
+            TutorId = 2, AccountHolder = "Tutor Two", BankName = "Other Bank",
+            RecipientAccountNumber = "0098765432", AccountType = "Current", BranchCode = "009876"
+        });
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var page = new ProfileModel(context);
+        Assert.IsType<Microsoft.AspNetCore.Mvc.RazorPages.PageResult>(
+            await page.OnGetAsync(1, CancellationToken.None));
+        if (!hasBankingDetails)
+        {
+            Assert.Null(page.Tutor.BankingDetails);
+            return;
+        }
+        Assert.Equal("0012345678", page.Tutor.BankingDetails!.RecipientAccountNumber);
+        Assert.Equal("001234", page.Tutor.BankingDetails.BranchCode);
+        Assert.Equal("Tutor One", page.Tutor.BankingDetails.AccountHolder);
+
+        var banking = await context.TutorBankingDetails.SingleAsync(item => item.TutorId == 1);
+        banking.AccountHolder = "Updated Holder";
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+        await page.OnGetAsync(1, CancellationToken.None);
+        Assert.Equal("Updated Holder", page.Tutor.BankingDetails!.AccountHolder);
+    }
+
+    [Theory]
+    [InlineData(BcUserRole.Admin)]
+    [InlineData(BcUserRole.Tutor)]
+    [InlineData(BcUserRole.Student)]
+    [InlineData(BcUserRole.Dev)]
+    public async Task BankingSaveRejectsNonSuperAdmins(BcUserRole role)
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var page = new ProfileModel(context, new TestCurrentUserService(role));
+        Assert.False(page.CanEditBankingDetails);
+        Assert.IsType<ForbidResult>(await page.OnPostSaveBankingAsync(1, CancellationToken.None));
+        Assert.Empty(await context.TutorBankingDetails.ToListAsync());
+    }
+
+    [Fact]
+    public async Task SuperAdminCanCreateAndUpdateBankingDetailsWithoutDuplicates()
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var page = new ProfileModel(context, new TestCurrentUserService(BcUserRole.SuperAdmin))
+        {
+            BankingInput = new ProfileModel.BankingDetailsInput
+            {
+                AccountHolder = " First Holder ", RecipientAccountNumber = "00123456",
+                AccountType = "Savings", BranchCode = "001234", BankName = "Test Bank"
+            }
+        };
+        SetPageContext(page);
+        page.ModelState.AddModelError("DeregistrationReason", "Required");
+        page.Period = null;
+        page.ModelState.AddModelError("Period", "The Period field is required.");
+        Assert.True(page.CanEditBankingDetails);
+        Assert.IsType<RedirectToPageResult>(await page.OnPostSaveBankingAsync(1, CancellationToken.None));
+        Assert.Equal("month", page.Period);
+        var banking = Assert.Single(await context.TutorBankingDetails.ToListAsync());
+        Assert.Equal(1, banking.TutorId);
+        Assert.Equal("First Holder", banking.AccountHolder);
+        Assert.Equal("00123456", banking.RecipientAccountNumber);
+        Assert.Equal("001234", banking.BranchCode);
+
+        page.BankingInput.AccountHolder = "Updated Holder";
+        Assert.IsType<RedirectToPageResult>(await page.OnPostSaveBankingAsync(1, CancellationToken.None));
+        Assert.Equal("Updated Holder", Assert.Single(await context.TutorBankingDetails.ToListAsync()).AccountHolder);
+    }
+
+    [Fact]
+    public async Task BankingValidationFailurePreservesInputAndReopensModal()
+    {
+        await using var context = CreateContext();
+        await SeedTutors(context);
+        var page = new ProfileModel(context, new TestCurrentUserService(BcUserRole.SuperAdmin))
+        {
+            BankingInput = new ProfileModel.BankingDetailsInput { AccountHolder = "Keep this name" }
+        };
+        SetPageContext(page);
+        page.ModelState.AddModelError("BankingInput.BankName", "Bank name is required.");
+        Assert.IsType<PageResult>(await page.OnPostSaveBankingAsync(1, CancellationToken.None));
+        Assert.True(page.ShowBankingModal);
+        Assert.Equal("Keep this name", page.BankingInput.AccountHolder);
+        Assert.Empty(await context.TutorBankingDetails.ToListAsync());
+    }
+
+    [Fact]
+    public async Task BankingSaveReturnsNotFoundForMissingTutor()
+    {
+        await using var context = CreateContext();
+        var page = new ProfileModel(context, new TestCurrentUserService(BcUserRole.SuperAdmin));
+        Assert.IsType<NotFoundResult>(await page.OnPostSaveBankingAsync(999, CancellationToken.None));
+    }
+
     private static ApplicationDbContext CreateContext() => new(
         new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);

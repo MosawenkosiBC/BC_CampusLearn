@@ -1149,13 +1149,13 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<bool?>("HeadOfTutorApproved")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsArchived")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
-
-                    b.Property<bool?>("HeadOfTutorApproved")
-                        .HasColumnType("bit");
 
                     b.Property<bool>("IsHeadOfTutorApplication")
                         .HasColumnType("bit");
@@ -1933,6 +1933,82 @@ namespace BC_CampusLearn.Migrations
                         .IsUnique();
 
                     b.ToTable("TutorAvailabilities");
+                });
+
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorBankingDetails", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccountHolder")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("AccountType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("BranchCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("RecipientAccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("TutorId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TutorId")
+                        .IsUnique();
+
+                    b.ToTable("TutorBankingDetails", (string)null);
+                });
+
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorContract", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContractFile")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset?>("DateChanged")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("DateSubmitted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<int>("TutorId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TutorId")
+                        .IsUnique();
+
+                    b.ToTable("TutorContracts", (string)null);
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorCourseModule", b =>
@@ -2757,6 +2833,28 @@ namespace BC_CampusLearn.Migrations
                     b.Navigation("Tutor");
                 });
 
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorBankingDetails", b =>
+                {
+                    b.HasOne("BC_CampusLearn.Models.Entities.Tutor", "Tutor")
+                        .WithOne("BankingDetails")
+                        .HasForeignKey("BC_CampusLearn.Models.Entities.TutorBankingDetails", "TutorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tutor");
+                });
+
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorContract", b =>
+                {
+                    b.HasOne("BC_CampusLearn.Models.Entities.Tutor", "Tutor")
+                        .WithOne("Contract")
+                        .HasForeignKey("BC_CampusLearn.Models.Entities.TutorContract", "TutorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tutor");
+                });
+
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.TutorCourseModule", b =>
                 {
                     b.HasOne("BC_CampusLearn.Models.Entities.ProgrammeModule", "ProgrammeModule")
@@ -2956,6 +3054,10 @@ namespace BC_CampusLearn.Migrations
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.Tutor", b =>
                 {
                     b.Navigation("ApplicationReviewDecisions");
+
+                    b.Navigation("BankingDetails");
+
+                    b.Navigation("Contract");
 
                     b.Navigation("DeregistrationHistory");
 

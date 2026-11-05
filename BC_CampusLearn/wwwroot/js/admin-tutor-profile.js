@@ -1,3 +1,8 @@
+const bankingInfoModal = document.getElementById('tutor-banking-info-modal');
+if (bankingInfoModal?.dataset.openOnLoad === 'true') {
+    bootstrap.Modal.getOrCreateInstance(bankingInfoModal).show();
+}
+
 document.querySelectorAll('[data-copy-value]').forEach(button => {
     button.addEventListener('click', async () => {
         const status = document.querySelector('.admin-profile-copy-status');

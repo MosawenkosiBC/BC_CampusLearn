@@ -81,6 +81,10 @@
     {
         @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.DeregistrationError, CampusAlertVariant.Danger))
     }
+    @if (Model.BankingMessage is not null)
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.BankingMessage))
+    }
     <div class="admin-profile-layout">
         <div class="admin-profile-sidebar">
         <aside class="admin-profile-personal admin-profile-panel" aria-label="Tutor personal details">
@@ -117,6 +121,9 @@
             </dl>
             <p class="admin-profile-copy-status" role="status" aria-live="polite"></p>
             <span class="admin-tutor-status">@tutor.Status · @(tutor.IsActive ? "Active" : "Inactive")</span>
+            <button type="button" class="btn btn-secondary d-block w-100 mt-3" data-bs-toggle="modal" data-bs-target="#tutor-banking-info-modal">
+                Banking Info
+            </button>
         </aside>
         <section class="admin-deregistration-panel @(tutor.Status == TutorStatus.Deregistered ? "admin-profile-panel" : "admin-deregistration-action")" aria-label="Tutoring programme">
             @if (tutor.Status == TutorStatus.Deregistered)
@@ -283,6 +290,53 @@
         </div>
     </div>
 </section>
+<div class="modal fade" id="tutor-banking-info-modal" tabindex="-1" aria-labelledby="tutor-banking-info-title" aria-hidden="true" data-open-on-load="@(Model.ShowBankingModal ? "true" : "false")">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form method="post" asp-page-handler="SaveBanking" asp-route-id="@tutor.TutorId" class="modal-content">
+            <input type="hidden" asp-for="ReturnUrl" id="banking-return-url" />
+            <input type="hidden" asp-for="Period" id="banking-period" />
+            <input type="hidden" asp-for="StartDate" id="banking-start-date" />
+            <input type="hidden" asp-for="EndDate" id="banking-end-date" />
+            <input type="hidden" asp-for="SessionPage" id="banking-session-page" />
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="tutor-banking-info-title">Banking Info</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label asp-for="BankingInput!.AccountHolder" class="form-label"></label>
+                        <input asp-for="BankingInput!.AccountHolder" class="form-control" readonly="@(!Model.CanEditBankingDetails)" maxlength="200" required="@Model.CanEditBankingDetails" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="BankingInput!.RecipientAccountNumber" class="form-label"></label>
+                        <input asp-for="BankingInput!.RecipientAccountNumber" class="form-control" readonly="@(!Model.CanEditBankingDetails)" maxlength="50" required="@Model.CanEditBankingDetails" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="BankingInput!.AccountType" class="form-label"></label>
+                        <input asp-for="BankingInput!.AccountType" class="form-control" readonly="@(!Model.CanEditBankingDetails)" maxlength="50" required="@Model.CanEditBankingDetails" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="BankingInput!.BranchCode" class="form-label"></label>
+                        <input asp-for="BankingInput!.BranchCode" class="form-control" readonly="@(!Model.CanEditBankingDetails)" maxlength="20" required="@Model.CanEditBankingDetails" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="BankingInput!.BankName" class="form-label"></label>
+                        <input asp-for="BankingInput!.BankName" class="form-control" readonly="@(!Model.CanEditBankingDetails)" maxlength="150" required="@Model.CanEditBankingDetails" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                @if (Model.CanEditBankingDetails)
+                {
+                    <button type="submit" class="btn btn-secondary">Save banking details</button>
+                }
+            </div>
+        </form>
+    </div>
+</div>
 @if (tutor.Status is TutorStatus.Approved or TutorStatus.Suspended)
 {
     <div class="modal fade" id="deregister-tutor-modal" tabindex="-1" aria-labelledby="deregister-tutor-title" aria-hidden="true">

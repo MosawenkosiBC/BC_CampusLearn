@@ -12,6 +12,70 @@ namespace BC_CampusLearn.Pages.Administrator.Tutors;
 public class ProfileModel(ApplicationDbContext context, ICurrentUserService? currentUserService = null,
     TimeProvider? timeProvider = null) : PageModel
 {
+    // Temporary capture access for existing tutors; remove this and the save handler
+    // when banking details are managed exclusively by tutors.
+    public bool CanEditBankingDetails => currentUserService?.GetRequiredUser().Role == BcUserRole.SuperAdmin;
+    [BindProperty]
+    public BankingDetailsInput? BankingInput { get; set; }
+    [TempData]
+    public string? BankingMessage { get; set; }
+    public bool ShowBankingModal { get; private set; }
+
+    public sealed class BankingDetailsInput
+    {
+        [Required, StringLength(200), Display(Name = "Account holder")]
+        public string? AccountHolder { get; set; }
+        [Required, StringLength(50), Display(Name = "Recipient account number")]
+        public string? RecipientAccountNumber { get; set; }
+        [Required, StringLength(50), Display(Name = "Account type")]
+        public string? AccountType { get; set; }
+        [Required, StringLength(20), Display(Name = "Branch code")]
+        public string? BranchCode { get; set; }
+        [Required, StringLength(150), Display(Name = "Bank name")]
+        public string? BankName { get; set; }
+    }
+
+    public async Task<IActionResult> OnPostSaveBankingAsync(int id, CancellationToken cancellationToken)
+    {
+        if (!CanEditBankingDetails) return Forbid();
+        if (!await context.Tutors.AnyAsync(tutor => tutor.TutorId == id, cancellationToken))
+            return NotFound();
+
+        // Only validate this form; session filters and deregistration have
+        // separate inputs and must not prevent banking details from being saved.
+        foreach (var key in ModelState.Keys.Where(key =>
+            key != nameof(BankingInput) &&
+            !key.StartsWith(nameof(BankingInput) + ".", StringComparison.Ordinal)).ToList())
+            ModelState.Remove(key);
+        Period = Period?.ToLowerInvariant() is "day" or "week" or "month" or "custom"
+            ? Period.ToLowerInvariant() : "month";
+        if (BankingInput is null)
+            ModelState.AddModelError(nameof(BankingInput), "Enter the banking details.");
+        if (!ModelState.IsValid)
+        {
+            var result = await OnGetAsync(id, cancellationToken);
+            ShowBankingModal = true;
+            return result;
+        }
+
+        var banking = await context.TutorBankingDetails.SingleOrDefaultAsync(
+            details => details.TutorId == id, cancellationToken);
+        if (banking is null)
+        {
+            banking = new TutorBankingDetails { TutorId = id };
+            context.TutorBankingDetails.Add(banking);
+        }
+        banking.AccountHolder = BankingInput!.AccountHolder!.Trim();
+        banking.RecipientAccountNumber = BankingInput.RecipientAccountNumber!.Trim();
+        banking.AccountType = BankingInput.AccountType!.Trim();
+        banking.BranchCode = BankingInput.BranchCode!.Trim();
+        banking.BankName = BankingInput.BankName!.Trim();
+        await context.SaveChangesAsync(cancellationToken);
+        BankingMessage = "Banking details saved.";
+        return RedirectToPage(new { id, returnUrl = CompensationReturnUrl,
+            Period, StartDate, EndDate, SessionPage });
+    }
+
     [BindProperty(SupportsGet = true)]
     public string? ReturnUrl { get; set; }
 
@@ -45,7 +109,7 @@ public class ProfileModel(ApplicationDbContext context, ICurrentUserService? cur
     public int PendingStudentReviews { get; private set; }
     public int PendingTutorReviews { get; private set; }
     [BindProperty(SupportsGet = true)]
-    public string Period { get; set; } = "month";
+    public string? Period { get; set; } = "month";
     [BindProperty(SupportsGet = true)]
     public DateOnly? StartDate { get; set; }
     [BindProperty(SupportsGet = true)]
@@ -67,6 +131,7 @@ public class ProfileModel(ApplicationDbContext context, ICurrentUserService? cur
         var tutor = await context.Tutors
             .AsNoTracking()
             .Include(item => item.BcUser)
+            .Include(item => item.BankingDetails)
             .Include(item => item.Programme)
             .Include(item => item.DeregistrationHistory)
             .Include(item => item.TutorCourseModules.Where(a => a.IsActive))
@@ -79,6 +144,14 @@ public class ProfileModel(ApplicationDbContext context, ICurrentUserService? cur
         }
 
         Tutor = tutor;
+        BankingInput ??= new BankingDetailsInput
+        {
+            AccountHolder = tutor.BankingDetails?.AccountHolder,
+            RecipientAccountNumber = tutor.BankingDetails?.RecipientAccountNumber,
+            AccountType = tutor.BankingDetails?.AccountType,
+            BranchCode = tutor.BankingDetails?.BranchCode,
+            BankName = tutor.BankingDetails?.BankName
+        };
         DeregistrationReason = "The tutor has completed their tutoring term.";
         OpenSessions = await context.Bookings.CountAsync(b => b.TutorId == id &&
             (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.InProgress),
