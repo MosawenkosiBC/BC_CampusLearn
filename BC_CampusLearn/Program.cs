@@ -232,6 +232,9 @@ builder.Services.AddHttpClient<
 builder.Services.AddScoped<
     ITutorService,
     TutorService>();
+builder.Services.AddSingleton<
+    ITutorPersonalInformationPdf,
+    TutorPersonalInformationPdf>();
 
 builder.Services.Configure<TutorApplicationEmailOptions>(
     builder.Configuration.GetSection(
@@ -281,7 +284,8 @@ builder.Services.AddRazorPages(options =>
         "/Tutors/Profile",
         "/Tutors/PublicProfile",
         "/Tutors/StatisticsOverview",
-        "/Tutors/SeniorTutorApplications"
+        "/Tutors/SeniorTutorApplications",
+        "/Tutors/Documents"
     };
 
     foreach (string page in tutorOnlyPages)

@@ -1,0 +1,123 @@
+@page
+@model BC_CampusLearn.Pages.Tutors.DocumentsModel
+@{
+    ViewData["Title"] = "Personal information & documents";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/components/navigation-drawer.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/tutor-documents.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Pages/Shared/Components/NavigationDrawer/_NavigationDrawer.cshtml")
+
+<main class="documents-page">
+    <div class="documents-shell">
+        <h1 class="documents-page-title">Personal Information &amp; Documents</h1>
+
+        @if (TempData["SuccessMessage"] is string message)
+        {
+            @await Html.PartialAsync("_CampusAlert",
+                new CampusAlertViewModel(message))
+        }
+
+        <div class="documents-layout">
+            <nav class="documents-nav" aria-label="Document sections">
+                <a href="#personal-information" class="active"><i class="bi bi-person-vcard"></i> Personal information</a>
+                <span><i class="bi bi-file-earmark-text"></i> Contracts</span>
+            </nav>
+
+            <section class="documents-card" id="personal-information">
+                <div class="documents-card-heading">
+                    <h2>HR personal information form</h2>
+                </div>
+
+                <form method="post" class="documents-form" novalidate data-documents-form>
+                    <div asp-validation-summary="ModelOnly" class="text-danger validation-summary"></div>
+
+                    <fieldset>
+                        <legend>Personal details</legend>
+                        <div class="form-grid">
+                            <div class="form-field"><label asp-for="Input.Surname" class="required-label"></label><input asp-for="Input.Surname" data-required /><span asp-validation-for="Input.Surname"></span></div>
+                            <div class="form-field"><label asp-for="Input.FullNames" class="required-label"></label><input asp-for="Input.FullNames" data-required /><span asp-validation-for="Input.FullNames"></span></div>
+                            <div class="form-field form-field-wide"><label asp-for="Input.StreetAddress" class="required-label"></label><input asp-for="Input.StreetAddress" data-required /><span asp-validation-for="Input.StreetAddress"></span></div>
+                            <div class="form-field"><label asp-for="Input.Suburb" class="required-label"></label><input asp-for="Input.Suburb" data-required /><span asp-validation-for="Input.Suburb"></span></div>
+                            <div class="form-field"><label asp-for="Input.City" class="required-label"></label><input asp-for="Input.City" data-required /><span asp-validation-for="Input.City"></span></div>
+                            <div class="form-field"><label asp-for="Input.Province" class="required-label"></label><input asp-for="Input.Province" data-required /><span asp-validation-for="Input.Province"></span></div>
+                            <div class="form-field"><label asp-for="Input.Country" class="required-label"></label><input asp-for="Input.Country" data-required /><span asp-validation-for="Input.Country"></span></div>
+                            <div class="form-field"><label asp-for="Input.PostalCode" class="required-label"></label><input asp-for="Input.PostalCode" inputmode="numeric" data-required /><span asp-validation-for="Input.PostalCode"></span></div>
+                            <div class="form-field"><label asp-for="Input.IncomeTaxNumber" class="required-label"></label><input asp-for="Input.IncomeTaxNumber" data-required /><span asp-validation-for="Input.IncomeTaxNumber"></span></div>
+                            <div class="form-field"><label asp-for="Input.HomeLanguage" class="required-label"></label><input asp-for="Input.HomeLanguage" data-required /><span asp-validation-for="Input.HomeLanguage"></span></div>
+                            <div class="form-field"><label asp-for="Input.CellNumber" class="required-label"></label><input asp-for="Input.CellNumber" inputmode="tel" data-required data-phone /><span asp-validation-for="Input.CellNumber"></span></div>
+                            <div class="form-field"><label asp-for="Input.Gender" class="required-label"></label><input asp-for="Input.Gender" data-required /><span asp-validation-for="Input.Gender"></span></div>
+                            <div class="form-field"><label asp-for="Input.Nationality" class="required-label"></label><input asp-for="Input.Nationality" data-required /><span asp-validation-for="Input.Nationality"></span></div>
+                            <div class="form-field"><label asp-for="Input.IdentityOrPassportNumber" class="required-label"></label><input asp-for="Input.IdentityOrPassportNumber" data-required /><span asp-validation-for="Input.IdentityOrPassportNumber"></span></div>
+                            <div class="form-field"><label asp-for="Input.BirthDate" class="required-label"></label><input asp-for="Input.BirthDate" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy" data-required data-date /><span asp-validation-for="Input.BirthDate"></span></div>
+                            <div class="form-field"><label asp-for="Input.EmailAddress" class="required-label"></label><input asp-for="Input.EmailAddress" data-required data-email /><span asp-validation-for="Input.EmailAddress"></span></div>
+                            <div class="form-field"><label asp-for="Input.WorkPermitExpiryDate"></label><input asp-for="Input.WorkPermitExpiryDate" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy" data-date /><small>Only if applicable</small><span asp-validation-for="Input.WorkPermitExpiryDate"></span></div>
+                            <div class="form-field"><label asp-for="Input.AsylumNumber"></label><input asp-for="Input.AsylumNumber" /><small>Only if applicable</small><span asp-validation-for="Input.AsylumNumber"></span></div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Emergency contact</legend>
+                        <div class="form-grid form-grid-three">
+                            <div class="form-field"><label asp-for="Input.EmergencyContactName" class="required-label"></label><input asp-for="Input.EmergencyContactName" data-required /><span asp-validation-for="Input.EmergencyContactName"></span></div>
+                            <div class="form-field"><label asp-for="Input.EmergencyContactPrimaryPhone" class="required-label"></label><input asp-for="Input.EmergencyContactPrimaryPhone" inputmode="tel" data-required data-phone /><span asp-validation-for="Input.EmergencyContactPrimaryPhone"></span></div>
+                            <div class="form-field"><label asp-for="Input.EmergencyContactRelationship" class="required-label"></label><input asp-for="Input.EmergencyContactRelationship" data-required /><span asp-validation-for="Input.EmergencyContactRelationship"></span></div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Banking details</legend>
+                        <div class="form-grid">
+                            <div class="form-field"><label asp-for="Input.BankName" class="required-label"></label><input asp-for="Input.BankName" data-required /><span asp-validation-for="Input.BankName"></span></div>
+                            <div class="form-field"><label asp-for="Input.AccountNumber" class="required-label"></label><input asp-for="Input.AccountNumber" inputmode="numeric" data-required /><span asp-validation-for="Input.AccountNumber"></span></div>
+                            <div class="form-field"><label asp-for="Input.AccountHolderName" class="required-label"></label><input asp-for="Input.AccountHolderName" data-required /><span asp-validation-for="Input.AccountHolderName"></span></div>
+                            <div class="form-field"><label asp-for="Input.AccountType" class="required-label"></label><input asp-for="Input.AccountType" data-required /><span asp-validation-for="Input.AccountType"></span></div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="signature-panel">
+                        <legend>Electronic signature</legend>
+                        <p>Draw your signature, then type your full name exactly as it should appear on the PDF.</p>
+                        <div class="signature-drawing-field">
+                            <label for="tutor-signature-pad" class="required-label">Drawn signature</label>
+                            <div class="signature-pad-shell" data-signature-shell>
+                                <canvas id="tutor-signature-pad"
+                                        class="signature-pad"
+                                        width="800"
+                                        height="220"
+                                        tabindex="0"
+                                        aria-label="Draw your electronic signature"
+                                        data-signature-pad></canvas>
+                            </div>
+                            <input asp-for="Input.SignatureDataUrl" type="hidden" data-signature-data />
+                            <input asp-for="Input.SignatureCleared" type="hidden" data-signature-cleared />
+                            <button type="button" class="signature-clear" data-signature-clear>Clear signature</button>
+                            <span asp-validation-for="Input.SignatureDataUrl" class="text-danger" data-signature-error></span>
+                        </div>
+                        <div class="form-field"><label asp-for="Input.SignatureName" class="required-label"></label><input asp-for="Input.SignatureName" autocomplete="name" data-completion-required /><span asp-validation-for="Input.SignatureName"></span></div>
+                        <label class="signature-confirmation">
+                            <input asp-for="Input.SignatureConfirmed" data-completion-required />
+                            <span>I confirm that the drawn signature and typed name are my electronic signature and that the information supplied is correct.</span>
+                        </label>
+                        <span asp-validation-for="Input.SignatureConfirmed" class="text-danger"></span>
+                    </fieldset>
+
+                    <div class="documents-actions">
+                        <button type="submit" asp-page-handler="Save" class="btn-save">Save changes</button>
+                        <button type="submit" asp-page-handler="Complete" formtarget="_blank" class="btn-preview" data-complete>
+                            Save &amp; preview PDF
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+</main>
+
+@section Scripts {
+    <script src="~/js/tutor-documents.js" asp-append-version="true"></script>
+}
