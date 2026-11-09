@@ -14,7 +14,10 @@
 
 <main class="documents-page">
     <div class="documents-shell">
-        <h1 class="documents-page-title">Personal Information &amp; Documents</h1>
+        <h1 class="documents-page-title">
+            <span class="documents-page-title-full">Personal Information &amp; Documents</span>
+            <span class="documents-page-title-mobile">HR Information</span>
+        </h1>
 
         @if (TempData["SuccessMessage"] is string message)
         {
@@ -25,7 +28,6 @@
         <div class="documents-layout">
             <nav class="documents-nav" aria-label="Document sections">
                 <a href="#personal-information" class="active"><i class="bi bi-person-vcard"></i> Personal information</a>
-                <span><i class="bi bi-file-earmark-text"></i> Contracts</span>
             </nav>
 
             <section class="documents-card" id="personal-information">
