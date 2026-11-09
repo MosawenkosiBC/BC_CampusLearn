@@ -10,6 +10,12 @@ namespace BC_CampusLearn.Pages.Administrator.Tutors;
 public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
     : PageModel
 {
+    [BindProperty(SupportsGet = true)]
+    public string? ReturnUrl { get; set; }
+
+    public string? SeniorApplicationsReturnUrl =>
+        IsSeniorApplicationsReturnUrl(ReturnUrl) ? ReturnUrl : null;
+
     [BindProperty, StringLength(500)]
     public string? ReviewNote { get; set; }
 
@@ -80,7 +86,11 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
         if (application.Status != TutorAccountRequestStatus.Pending)
         {
             ReviewError = "This application has already been reviewed.";
-            return RedirectToPage(new { id });
+            return RedirectToPage(new
+            {
+                id,
+                returnUrl = SeniorApplicationsReturnUrl
+            });
         }
 
         if (approve && application.IsHeadOfTutorApplication &&
@@ -88,7 +98,11 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
              (approveHead == true && application.AcademicAverage < 72m)))
         {
             ReviewError = "Approve Senior Tutor before confirming a decision. Head of Tutor approval also requires an average of at least 72%.";
-            return RedirectToPage(new { id });
+            return RedirectToPage(new
+            {
+                id,
+                returnUrl = SeniorApplicationsReturnUrl
+            });
         }
 
         if (approveHead == true && !application.IsHeadOfTutorApplication)
@@ -100,7 +114,11 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
             application.Tutor.Status != TutorStatus.Approved))
         {
             ReviewError = "Only an active, approved tutor can be appointed. This application has not been changed.";
-            return RedirectToPage(new { id });
+            return RedirectToPage(new
+            {
+                id,
+                returnUrl = SeniorApplicationsReturnUrl
+            });
         }
 
         TutorAccountRequestStatus decision = approve
@@ -169,13 +187,41 @@ public class SeniorTutorApplicationDetailsModel(ApplicationDbContext context)
         catch (DbUpdateConcurrencyException)
         {
             ReviewError = "This application changed while it was being reviewed. Review the latest status and try again.";
-            return RedirectToPage(new { id });
+            return RedirectToPage(new
+            {
+                id,
+                returnUrl = SeniorApplicationsReturnUrl
+            });
         }
 
         TempData["PageMessage"] = approve
             ? "Senior Tutor application accepted. The tutor has been notified."
             : "Senior Tutor application rejected. The tutor has been notified.";
+        if (SeniorApplicationsReturnUrl is { } returnUrl)
+        {
+            return LocalRedirect(returnUrl);
+        }
         return RedirectToPage("Index", new { Tab = "senior-applications" });
+    }
+
+    private static bool IsSeniorApplicationsReturnUrl(string? returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl) ||
+            returnUrl.Any(char.IsControl) ||
+            returnUrl.Contains('\\'))
+        {
+            return false;
+        }
+
+        string[] tutorPaths =
+        [
+            "/Administrator/Tutors",
+            "/Administrator/Tutors/Index"
+        ];
+        return tutorPaths.Any(path =>
+            returnUrl.Equals(path, StringComparison.OrdinalIgnoreCase) ||
+            returnUrl.StartsWith($"{path}?", StringComparison.OrdinalIgnoreCase) ||
+            returnUrl.StartsWith($"{path}#", StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<bool> LoadAsync(

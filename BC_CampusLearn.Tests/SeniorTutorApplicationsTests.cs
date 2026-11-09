@@ -244,7 +244,8 @@ public class SeniorTutorApplicationsTests
         var page = new global::BC_CampusLearn.Pages.Administrator.Tutors
             .SeniorTutorApplicationDetailsModel(context)
         {
-            ReviewNote = "Strong tutoring record."
+            ReviewNote = "Strong tutoring record.",
+            ReturnUrl = "/Administrator/Tutors?Tab=senior-applications&ApplicationPage=2#senior-applications"
         };
         page.PageContext = new PageContext
         {
@@ -263,9 +264,8 @@ public class SeniorTutorApplicationsTests
             approveSenior: true,
             approveHead: approveHead);
 
-        RedirectToPageResult redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("Index", redirect.PageName);
-        Assert.Equal("senior-applications", redirect.RouteValues?["Tab"]);
+        LocalRedirectResult redirect = Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal(page.ReturnUrl, redirect.Url);
         Assert.Equal(TutorAccountRequestStatus.Approved, application.Status);
         Assert.True(application.IsArchived);
         Assert.Equal(
@@ -279,6 +279,28 @@ public class SeniorTutorApplicationsTests
         Assert.Contains("accepted", notification.Message, StringComparison.OrdinalIgnoreCase);
         Assert.StartsWith("Congratulations!", notification.Message);
         if (!approveHead) Assert.Contains("Head of Tutor application was not accepted", notification.Message);
+    }
+
+    [Theory]
+    [InlineData("/Administrator/Tutors?Tab=senior-applications&ApplicationPage=2#senior-applications", true)]
+    [InlineData("/Administrator/Tutors/Index?Tab=senior-applications&ApplicationSearch=Alex", true)]
+    [InlineData("https://example.com/Administrator/Tutors", false)]
+    [InlineData("//example.com/Administrator/Tutors", false)]
+    [InlineData("/Administrator/Admin/Dashboard", false)]
+    public async Task SeniorApplicationDetailsOnlyAcceptsLocalTutorReturnUrls(
+        string returnUrl,
+        bool accepted)
+    {
+        await using ApplicationDbContext context = await CreateContextAsync();
+        var page = new global::BC_CampusLearn.Pages.Administrator.Tutors
+            .SeniorTutorApplicationDetailsModel(context)
+        {
+            ReturnUrl = returnUrl
+        };
+
+        Assert.Equal(
+            accepted ? returnUrl : null,
+            page.SeniorApplicationsReturnUrl);
     }
 
     [Theory]
