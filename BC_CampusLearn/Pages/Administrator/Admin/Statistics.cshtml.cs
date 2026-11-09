@@ -374,7 +374,8 @@ public class StatisticsModel(ApplicationDbContext context, TimeProvider timeProv
         AwaitingAdminReviewCount = await reviewCompleted
             .CountAsync(booking => booking.StudentEvaluation != null &&
                 booking.TutorEvaluation != null &&
-                booking.AdminSessionReview != null, cancellationToken);
+                booking.AdminSessionReview != null &&
+                booking.SuperAdminSessionReview == null, cancellationToken);
         BothReviewsCompleteCount = await reviewCompleted
             .CountAsync(booking => booking.StudentEvaluation != null &&
                 booking.TutorEvaluation != null, cancellationToken);
