@@ -5,6 +5,8 @@
     var compensationReturnUrl = ViewData["CompensationReturnUrl"] as string;
     var modulesReturnUrl = ViewData["ModulesReturnUrl"] as string;
     var sessionReviewsReturnUrl = ViewData["SessionReviewsReturnUrl"] as string;
+    var seniorApplicationsReturnUrl =
+        ViewData["SeniorApplicationsReturnUrl"] as string;
     var hasAdminRole = User.IsInRole(nameof(BcUserRole.Admin)) ||
         User.IsInRole(nameof(BcUserRole.SuperAdmin)) ||
         User.IsInRole(nameof(BcUserRole.Dev));
@@ -263,9 +265,17 @@
                         else if (breadcrumb.Page == "/Administrator/Tutors/Index" &&
                             pagePath == "/Administrator/Tutors/SeniorTutorApplicationDetails")
                         {
-                            <a asp-page="@breadcrumb.Page"
-                               asp-route-Tab="senior-applications"
-                               title="@breadcrumb.Label">@breadcrumb.Label</a>
+                            if (seniorApplicationsReturnUrl is not null)
+                            {
+                                <a href="@seniorApplicationsReturnUrl"
+                                   title="@breadcrumb.Label">@breadcrumb.Label</a>
+                            }
+                            else
+                            {
+                                <a asp-page="@breadcrumb.Page"
+                                   asp-route-Tab="senior-applications"
+                                   title="@breadcrumb.Label">@breadcrumb.Label</a>
+                            }
                         }
                         else if (breadcrumb.Page == "/Tutors/Index" &&
                             pagePath == "/Tutors/Details")

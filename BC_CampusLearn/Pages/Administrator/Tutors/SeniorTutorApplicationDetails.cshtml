@@ -4,6 +4,7 @@
 @using System.Text.Json
 @{
     ViewData["Title"] = "Senior Tutor Application";
+    ViewData["SeniorApplicationsReturnUrl"] = Model.SeniorApplicationsReturnUrl;
     var application = Model.Application;
     var tutor = application.Tutor;
     var applicantName = string.IsNullOrWhiteSpace(tutor.BcUser.DisplayName)
@@ -250,6 +251,7 @@
                     <p>Review the application and performance statistics before making a final decision.</p>
                     <form id="senior-application-decision-form" method="post"
                           asp-page-handler="Review" asp-route-id="@application.SeniorTutorApplicationId">
+                        <input type="hidden" asp-for="ReturnUrl" />
                         <label asp-for="ReviewNote">
                             Internal decision note
                             <span>Required when rejecting</span>

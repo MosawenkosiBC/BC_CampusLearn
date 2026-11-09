@@ -164,6 +164,19 @@
     }
     else
     {
+        string? seniorApplicationsReturnUrl = Url.Page("Index", new
+        {
+            Tab = "senior-applications",
+            Model.ApplicationPage,
+            Model.ApplicationSearch,
+            Model.ApplicationStatus,
+            Model.ApplicationArchive
+        });
+        if (seniorApplicationsReturnUrl is not null)
+        {
+            seniorApplicationsReturnUrl =
+                $"{seniorApplicationsReturnUrl}#senior-applications";
+        }
         var firstVisibleApplication = Model.TotalApplications == 0
             ? 0
             : ((Model.ApplicationPage - 1) * IndexModel.ApplicationPageSize) + 1;
@@ -265,6 +278,7 @@
                                 <td>
                                     <a asp-page="SeniorTutorApplicationDetails"
                                        asp-route-id="@application.SeniorTutorApplicationId"
+                                       asp-route-returnUrl="@seniorApplicationsReturnUrl"
                                        class="admin-tutor-profile-link admin-senior-view-button">
                                         View application
                                     </a>
