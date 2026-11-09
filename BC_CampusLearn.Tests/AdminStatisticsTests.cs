@@ -192,6 +192,47 @@ public class AdminStatisticsTests
         Assert.Equal("none", page.TopPieGradient);
     }
 
+    [Fact]
+    public async Task FinalSuperAdminDecisionIsNotCountedAsAwaitingAdminReview()
+    {
+        await using var context = CreateContext();
+        ProgrammeOfStudy programme = new() { Id = 1, Name = "Computing" };
+        ProgrammeModule module = new()
+        {
+            ProgrammeModuleId = 1,
+            Programme = programme,
+            ModuleCode = "A101",
+            ModuleName = "Algorithms"
+        };
+        Tutor tutor = CreateTutor(1, TutorStatus.Approved, true);
+        TutorCourseModule assignment = new()
+        {
+            Tutor = tutor,
+            ProgrammeModule = module
+        };
+        Booking approvedBooking = NewBooking(
+            assignment,
+            Today.AddDays(-1),
+            BookingStatus.Completed,
+            101,
+            new StudentEvaluation { ModeRating = 5, PlatformRating = 5 },
+            new TutorStudentEvaluation(),
+            new AdminSessionReview { ReviewerBcUserId = 900 });
+        approvedBooking.SuperAdminSessionReview = new SuperAdminSessionReview
+        {
+            ReviewerBcUserId = 901,
+            IsAccepted = true
+        };
+        context.Bookings.Add(approvedBooking);
+        await context.SaveChangesAsync();
+
+        var page = new StatisticsModel(context, new FixedTimeProvider());
+        await page.OnGetAsync(CancellationToken.None);
+
+        Assert.Equal(0, page.AwaitingAdminReviewCount);
+        Assert.Equal(1, page.AdminReviewsRecordedCount);
+    }
+
     private static ApplicationDbContext CreateContext() => new(
         new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
