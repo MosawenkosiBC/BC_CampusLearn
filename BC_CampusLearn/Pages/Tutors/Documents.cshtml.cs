@@ -108,7 +108,7 @@ public class DocumentsModel : PageModel
             banking,
             tutor.BcUser.Email!,
             tutor.PhoneNumber!));
-        string fileName = BuildFileName(
+        string fileName = TutorPersonalInformationPdf.BuildFileName(
             tutor.BcUser.PersonnelNumber,
             tutor.BcUser.DisplayName);
         ContentDispositionHeaderValue disposition = new("inline")
@@ -355,24 +355,6 @@ public class DocumentsModel : PageModel
                     "Enter the work permit expiry date as dd/mm/yyyy.");
             }
         }
-    }
-
-    internal static string BuildFileName(string? studentNumber, string fullName)
-    {
-        static string Safe(string value)
-        {
-            char[] invalid = Path.GetInvalidFileNameChars();
-            string cleaned = new(value
-                .Where(character => !invalid.Contains(character))
-                .ToArray());
-            return string.Join('_', cleaned.Split(
-                ' ',
-                StringSplitOptions.RemoveEmptyEntries));
-        }
-
-        string number = Safe(studentNumber ?? "Tutor");
-        string name = Safe(fullName);
-        return $"HR_Personal_Info_{number}_{name}.pdf";
     }
 
     public sealed class PersonalInformationInput

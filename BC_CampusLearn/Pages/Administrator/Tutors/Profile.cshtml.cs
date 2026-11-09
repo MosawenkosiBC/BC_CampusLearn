@@ -6,6 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Net.Http.Headers;
 
 namespace BC_CampusLearn.Pages.Administrator.Tutors;
 
@@ -104,6 +105,7 @@ public class ProfileModel(ApplicationDbContext context, ICurrentUserService? cur
         return RedirectToPage(new { id, returnUrl = CompensationReturnUrl });
     }
     public Tutor Tutor { get; private set; } = null!;
+    public bool HasPersonalInformationForm { get; private set; }
     public int CompletedSessions { get; private set; }
     public int ModuleChangeRequests { get; private set; }
     public int PendingStudentReviews { get; private set; }
@@ -126,6 +128,34 @@ public class ProfileModel(ApplicationDbContext context, ICurrentUserService? cur
     public int TotalSessionPages { get; private set; }
     public const int SessionPageSize = 5;
 
+    public async Task<IActionResult> OnGetPersonalInformationPdfAsync(
+        int id, [FromServices] ITutorPersonalInformationPdf pdf, CancellationToken cancellationToken)
+    {
+        var document = await CompletedPersonalInformationForm(id)
+            .Select(tutor => new
+            {
+                tutor.BcUser.PersonnelNumber,
+                tutor.BcUser.DisplayName,
+                Data = new TutorPersonalInformationPdfData(
+                    tutor.PersonalInformation!, tutor.BankingDetails!,
+                    tutor.BcUser.Email ?? string.Empty, tutor.PhoneNumber ?? string.Empty)
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (document is null) return NotFound();
+
+        Response.Headers.CacheControl = "no-store";
+        Response.Headers.ContentDisposition = new ContentDispositionHeaderValue("inline")
+        {
+            FileNameStar = TutorPersonalInformationPdf.BuildFileName(document.PersonnelNumber, document.DisplayName)
+        }.ToString();
+        return File(pdf.Create(document.Data), "application/pdf");
+    }
+
+    private IQueryable<Tutor> CompletedPersonalInformationForm(int id) => context.Tutors
+        .AsNoTracking()
+        .Where(tutor => tutor.TutorId == id && tutor.BankingDetails != null &&
+            tutor.PersonalInformation != null && tutor.PersonalInformation.SignedAt != null);
+
     public async Task<IActionResult> OnGetAsync(int id, CancellationToken cancellationToken)
     {
         var tutor = await context.Tutors
@@ -144,6 +174,7 @@ public class ProfileModel(ApplicationDbContext context, ICurrentUserService? cur
         }
 
         Tutor = tutor;
+        HasPersonalInformationForm = await CompletedPersonalInformationForm(id).AnyAsync(cancellationToken);
         BankingInput ??= new BankingDetailsInput
         {
             AccountHolder = tutor.BankingDetails?.AccountHolder,
