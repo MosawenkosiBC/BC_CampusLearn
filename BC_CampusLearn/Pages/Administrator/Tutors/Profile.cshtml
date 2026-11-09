@@ -280,6 +280,33 @@
                 </div>
             </details>
             <details class="admin-profile-about admin-profile-panel">
+                <summary>Documents</summary>
+                @if (Model.HasPersonalInformationForm)
+                {
+                    <ul class="list-unstyled d-flex flex-wrap gap-3 mb-0">
+                        <li>
+                            <a asp-page-handler="PersonalInformationPdf" asp-route-id="@tutor.TutorId"
+                               target="_blank" rel="noopener" class="admin-profile-document text-black">
+                                <img src="~/images/hr-personal-information-thumbnail.png" asp-append-version="true"
+                                     alt="" width="120" height="170" loading="lazy" />
+                                <span class="admin-profile-document-name">
+                                    HR personal information form
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path fill="currentColor"
+                                              d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
+                                    </svg>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                }
+                else
+                {
+                    <h2>HR personal information form</h2>
+                    <p class="admin-profile-muted mb-0">This tutor hasn’t submitted their personal information form yet.</p>
+                }
+            </details>
+            <details class="admin-profile-about admin-profile-panel">
                 <summary>About this tutor</summary>
                 <h2>Biography</h2><p class="admin-tutor-bio">@(string.IsNullOrWhiteSpace(tutor.Biography) ? "No biography provided." : tutor.Biography)</p>
                 <h2>Teaching style</h2><p class="admin-tutor-bio">@tutor.TeachingStyle</p>

@@ -81,6 +81,45 @@ public class TutorDocumentsTests
     }
 
     [Fact]
+    public async Task AdminProfilePreviewsTheCompletedFormForTheRequestedTutor()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        Tutor tutor = SeedTutor(context);
+        await context.SaveChangesAsync();
+        FakePdf tutorPdf = new();
+        DocumentsModel tutorPage = CreatePage(context, tutor.BcUser, tutorPdf);
+        tutorPage.Input = CompleteInput();
+        Validate(tutorPage, tutorPage.Input);
+        Assert.IsType<FileContentResult>(await tutorPage.OnPostCompleteAsync(default));
+
+        var profile = new BC_CampusLearn.Pages.Administrator.Tutors.ProfileModel(context)
+        {
+            PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
+        };
+        FakePdf adminPdf = new();
+        Assert.IsType<PageResult>(await profile.OnGetAsync(tutor.TutorId, default));
+        Assert.True(profile.HasPersonalInformationForm);
+        FileContentResult result = Assert.IsType<FileContentResult>(
+            await profile.OnGetPersonalInformationPdfAsync(tutor.TutorId, adminPdf, default));
+
+        Assert.Equal("application/pdf", result.ContentType);
+        Assert.Equal(tutorPage.Response.Headers.ContentDisposition.ToString(),
+            profile.Response.Headers.ContentDisposition.ToString());
+        Assert.Equal("no-store", profile.Response.Headers.CacheControl.ToString());
+        Assert.Equal(tutorPdf.Data!.PersonalInformation.SignatureImage, adminPdf.Data!.PersonalInformation.SignatureImage);
+        Assert.Equal(tutorPdf.Data.BankingDetails.RecipientAccountNumber, adminPdf.Data.BankingDetails.RecipientAccountNumber);
+        Assert.Equal(tutorPdf.Data.EmailAddress, adminPdf.Data.EmailAddress);
+        Assert.Equal(tutorPdf.Data.CellNumber, adminPdf.Data.CellNumber);
+        Assert.IsType<NotFoundResult>(await profile.OnGetPersonalInformationPdfAsync(999, adminPdf, default));
+
+        tutor.PersonalInformation!.SignedAt = null;
+        await context.SaveChangesAsync();
+        await profile.OnGetAsync(tutor.TutorId, default);
+        Assert.False(profile.HasPersonalInformationForm);
+        Assert.IsType<NotFoundResult>(await profile.OnGetPersonalInformationPdfAsync(tutor.TutorId, adminPdf, default));
+    }
+
+    [Fact]
     public async Task CompleteRequiresSignatureConfirmation()
     {
         await using ApplicationDbContext context = CreateContext();

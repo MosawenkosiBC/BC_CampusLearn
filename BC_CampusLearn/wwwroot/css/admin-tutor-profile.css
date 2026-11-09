@@ -60,6 +60,24 @@
 .admin-profile-about[open] > summary,
 .admin-profile-ratings[open] > summary { margin-bottom: 1rem; }
 .admin-profile-about p, .admin-profile-about li { font-size: .9rem; overflow-wrap: anywhere; }
+.admin-profile-document {
+    display: grid;
+    justify-items: center;
+    gap: .5rem;
+    width: 11rem;
+    text-align: center;
+    text-decoration: none;
+}
+.admin-profile-document img {
+    object-fit: contain;
+    background: #fff;
+    border: 1px solid #d9dee2;
+    border-radius: .25rem;
+    box-shadow: 0 .15rem .4rem rgb(0 0 0 / 8%);
+}
+.admin-profile-document:hover .admin-profile-document-name,
+.admin-profile-document:focus-visible .admin-profile-document-name { text-decoration: underline; }
+.admin-profile-document-name svg { vertical-align: -.125em; }
 .admin-profile-page :is(a,button,summary):focus-visible { outline: 3px solid #4f87a5; outline-offset: 3px; }
 @media(max-width:1199.98px) { .admin-profile-layout { grid-template-columns: 230px minmax(0,1fr); gap: 1.25rem; } .admin-profile-stats { grid-template-columns: 1fr; gap: .75rem; } }
 @media(max-width:767.98px) { .admin-profile-layout { grid-template-columns: 1fr; } .admin-profile-content { padding-top: 0; } .admin-profile-heading { flex-wrap: wrap; } .admin-profile-sessions { padding: 1rem; } }
