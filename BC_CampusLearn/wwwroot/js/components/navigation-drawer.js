@@ -3,6 +3,10 @@
         "[data-navigation-drawer]");
 
     drawerComponents.forEach((component) => {
+        if (component.dataset.drawerInitialized === "true") {
+            return;
+        }
+
         // Pages render the drawer inside content wrappers that may create their
         // own stacking contexts. Move it to the body so its fixed backdrop and
         // panel can layer above the fixed site header.
@@ -18,6 +22,8 @@
         if (!openButton || !closeButton || !backdrop || !panel) {
             return;
         }
+
+        component.dataset.drawerInitialized = "true";
 
         let previouslyFocusedElement = null;
 
