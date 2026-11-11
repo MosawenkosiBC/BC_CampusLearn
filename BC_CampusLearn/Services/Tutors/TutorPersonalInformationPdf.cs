@@ -1,7 +1,7 @@
 using System.Reflection;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Pdf;
 using PdfSharp.Drawing;
-using PdfSharp.Fonts;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
 
@@ -23,12 +23,9 @@ public sealed class TutorPersonalInformationPdf : ITutorPersonalInformationPdf
     private const string TemplateResource =
         "BC_CampusLearn.Assets.Documents.HR Personal Info Form Tutors.pdf";
 
-    private static readonly object FontLock = new();
-    private static bool _fontConfigured;
-
     public TutorPersonalInformationPdf()
     {
-        EnsureFontResolver();
+        EmbeddedPdfFont.EnsureConfigured();
     }
 
     internal static string BuildFileName(string? studentNumber, string fullName)
@@ -208,38 +205,9 @@ public sealed class TutorPersonalInformationPdf : ITutorPersonalInformationPdf
         return lines.ToArray();
     }
 
-    private static void EnsureFontResolver()
-    {
-        if (_fontConfigured) return;
-        lock (FontLock)
-        {
-            if (_fontConfigured) return;
-            GlobalFontSettings.FontResolver = new EmbeddedFontResolver();
-            _fontConfigured = true;
-        }
-    }
-
     private static Stream Resource(string name) =>
         typeof(TutorPersonalInformationPdf).Assembly
             .GetManifestResourceStream(name)
         ?? throw new InvalidOperationException($"Embedded PDF resource '{name}' was not found.");
 
-    private sealed class EmbeddedFontResolver : IFontResolver
-    {
-        private const string FontResource =
-            "BC_CampusLearn.Assets.Fonts.DejaVuSans.ttf";
-
-        public byte[] GetFont(string faceName)
-        {
-            using Stream stream = Resource(FontResource);
-            using MemoryStream buffer = new();
-            stream.CopyTo(buffer);
-            return buffer.ToArray();
-        }
-
-        public FontResolverInfo ResolveTypeface(
-            string familyName,
-            bool isBold,
-            bool isItalic) => new("DejaVuSans");
-    }
 }

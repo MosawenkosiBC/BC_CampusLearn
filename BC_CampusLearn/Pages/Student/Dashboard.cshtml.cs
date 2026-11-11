@@ -7,10 +7,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using BC_CampusLearn.Services.Sessions;
+using BC_CampusLearn.Services.Surveys;
 
 namespace BC_CampusLearn.Pages.Student;
 
 [Authorize]
+[RequestFormLimits(ValueCountLimit = 4096)]
 public class DashboardModel : PageModel
 {
     private readonly ApplicationDbContext _context;
@@ -25,6 +27,31 @@ public class DashboardModel : PageModel
         _context = context;
         _currentUserService = currentUserService;
         _lifecycleService = lifecycleService;
+        Surveys = new DashboardSurveys(context, SurveyAudience.Students);
+    }
+
+    public DashboardSurveys Surveys { get; }
+
+    public async Task<IActionResult> OnPostSubmitSurveyAsync(Guid surveyId, Guid revision, CancellationToken cancellationToken)
+    {
+        CurrentUser user = _currentUserService.GetRequiredUser();
+        if (user.Role != BcUserRole.Student)
+            return Forbid();
+
+        var result = await Surveys.SubmitAsync(user.BcUserId, surveyId, revision,
+            await Request.ReadFormAsync(cancellationToken), cancellationToken);
+        if (result == DashboardSurveys.SubmissionResult.Invalid)
+        {
+            await OnGetAsync(cancellationToken);
+            return Page();
+        }
+
+        if (result == DashboardSurveys.SubmissionResult.Submitted)
+            TempData["SurveySuccessMessage"] = DashboardSurveys.SubmittedMessage;
+        else
+            TempData["SurveyErrorMessage"] = DashboardSurveys.ChangedMessage;
+
+        return RedirectToPage();
     }
 
     public CurrentUser CurrentUser { get; private set; }
@@ -70,6 +97,9 @@ public class DashboardModel : PageModel
     {
         CurrentUser =
             _currentUserService.GetRequiredUser();
+
+        if (CurrentUser.Role == BcUserRole.Student)
+            await Surveys.LoadAsync(CurrentUser.BcUserId, cancellationToken);
 
         DateTimeOffset now = DateTimeOffset.UtcNow;
 

@@ -86,6 +86,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<SettingAuditLog> SettingAuditLogs =>
         Set<SettingAuditLog>();
+    public DbSet<FeedbackSurvey> FeedbackSurveys => Set<FeedbackSurvey>();
+    public DbSet<FeedbackSurveyResponse> FeedbackSurveyResponses => Set<FeedbackSurveyResponse>();
 
     public DbSet<SessionReview> SessionReviews =>
         Set<SessionReview>();
