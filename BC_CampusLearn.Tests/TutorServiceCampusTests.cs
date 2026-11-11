@@ -113,6 +113,51 @@ public class TutorServiceCampusTests
         Assert.Equal(2, available.TutorAvailabilityId);
     }
 
+    [Fact]
+    public async Task StudentViewsHideSlotsInsideTutorLeadTime()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        await using var context = new ApplicationDbContext(options);
+        var programme = new ProgrammeOfStudy
+        {
+            Id = 1,
+            Name = "Bachelor of Computing"
+        };
+        Tutor tutor = CreateTutor(
+            1,
+            "Pretoria Tutor",
+            "Pretoria Campus",
+            programme);
+        tutor.MinimumBookingLeadTimeMinutes = 24 * 60;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        tutor.TutorAvailabilities.Add(new TutorAvailability
+        {
+            TutorAvailabilityId = 1,
+            AvailableTime = now.AddHours(12)
+        });
+        tutor.TutorAvailabilities.Add(new TutorAvailability
+        {
+            TutorAvailabilityId = 2,
+            AvailableTime = now.AddHours(30)
+        });
+        context.Tutors.Add(tutor);
+        await context.SaveChangesAsync();
+        var service = new TutorService(context);
+
+        TutorDetailsViewModel details =
+            (await service.GetTutorDetailsAsync(tutor.TutorId))!;
+        TutorCardViewModel card = Assert.Single(
+            await service.GetTutorsAsync(programmeModuleId: null));
+
+        AvailabilitySlotViewModel visibleSlot =
+            Assert.Single(details.AvailabilitySlots);
+        Assert.Equal(2, visibleSlot.TutorAvailabilityId);
+        Assert.Equal(1, card.UpcomingAvailabilityCount);
+        Assert.Equal(now.AddHours(30), card.NextAvailableAt);
+    }
+
     private static Tutor CreateTutor(
         int id,
         string displayName,

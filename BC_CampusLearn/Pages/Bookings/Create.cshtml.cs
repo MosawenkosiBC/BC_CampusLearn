@@ -69,17 +69,31 @@ public class CreateModel : PageModel
 
         if (preview is null)
         {
-            bool slotHasExpired = await _context.TutorAvailabilities
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            var slotState = await _context.TutorAvailabilities
                 .AsNoTracking()
-                .AnyAsync(
-                    slot =>
-                        slot.TutorAvailabilityId == slotId &&
-                        slot.AvailableTime <= DateTimeOffset.UtcNow,
-                    cancellationToken);
+                .Where(slot => slot.TutorAvailabilityId == slotId)
+                .Select(slot => new
+                {
+                    slot.AvailableTime,
+                    slot.Tutor.MinimumBookingLeadTimeMinutes
+                })
+                .SingleOrDefaultAsync(cancellationToken);
+
+            string reason = slotState is null
+                ? "unavailable"
+                : slotState.AvailableTime <= now
+                    ? "expired"
+                    : !BookingLeadTimePolicy.IsBookable(
+                        slotState.AvailableTime,
+                        slotState.MinimumBookingLeadTimeMinutes,
+                        now)
+                        ? "lead-time"
+                        : "unavailable";
 
             return RedirectToPage(
                 "/Bookings/Unavailable",
-                new { reason = slotHasExpired ? "expired" : "unavailable" });
+                new { reason });
         }
 
         if (preview.TutorBcUserId ==
@@ -114,6 +128,7 @@ public class CreateModel : PageModel
                     BookingReservationStatus.Expired => "expired",
                     BookingReservationStatus.ReservedByAnotherStudent =>
                         "reserved",
+                    BookingReservationStatus.LeadTime => "lead-time",
                     _ => "unavailable"
                 };
 

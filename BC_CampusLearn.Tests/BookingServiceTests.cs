@@ -201,6 +201,71 @@ public class BookingServiceTests
     }
 
     [Fact]
+    public async Task TryReserveSlotAsync_RejectsSlotInsideTutorLeadTime()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorAvailability availability = AddTutorAvailability(
+            context,
+            DateTimeOffset.UtcNow.AddHours(12));
+        availability.Tutor.MinimumBookingLeadTimeMinutes = 24 * 60;
+        await context.SaveChangesAsync();
+
+        var service = new BookingService(
+            context,
+            new TestCurrentUserService(new CurrentUser(
+                21,
+                "STUDENT21",
+                "Student Name",
+                "student@example.com")),
+            new TestWebHostEnvironment());
+
+        BookingReservationResult result =
+            await service.TryReserveSlotAsync(
+                availability.TutorAvailabilityId);
+
+        Assert.Equal(BookingReservationStatus.LeadTime, result.Status);
+        Assert.Null(availability.ReservationToken);
+    }
+
+    [Fact]
+    public async Task TryReserveSlotAsync_HonoursExistingHoldInsideLeadTime()
+    {
+        await using ApplicationDbContext context = CreateContext();
+        TutorAvailability availability = AddTutorAvailability(
+            context,
+            DateTimeOffset.UtcNow.AddHours(12));
+        availability.Tutor.MinimumBookingLeadTimeMinutes = 24 * 60;
+        Guid existingToken = Guid.NewGuid();
+        DateTimeOffset existingExpiry = DateTimeOffset.UtcNow.AddMinutes(20);
+        availability.ReservedByBcUserId = 21;
+        availability.ReservationToken = existingToken;
+        availability.ReservationExpiresAt = existingExpiry;
+        await context.SaveChangesAsync();
+
+        var service = new BookingService(
+            context,
+            new TestCurrentUserService(new CurrentUser(
+                21,
+                "STUDENT21",
+                "Student Name",
+                "student@example.com")),
+            new TestWebHostEnvironment());
+
+        BookingReservationResult result =
+            await service.TryReserveSlotAsync(
+                availability.TutorAvailabilityId);
+
+        Assert.Equal(BookingReservationStatus.Acquired, result.Status);
+        Assert.Equal(existingToken, result.ReservationToken);
+        Assert.Equal(existingExpiry, result.ReservationExpiresAt);
+
+        BookingPreviewViewModel? preview =
+            await service.GetBookingPreviewAsync(
+                availability.TutorAvailabilityId);
+        Assert.NotNull(preview);
+    }
+
+    [Fact]
     public async Task ReleaseSlotReservationAsync_ReleasesOnlyOwnersHold()
     {
         await using ApplicationDbContext context = CreateContext();

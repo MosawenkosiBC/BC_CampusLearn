@@ -1,6 +1,9 @@
 (() => {
+    document.documentElement.classList.add("manage-availability-document");
+
     document.querySelectorAll(
         ".specific-availability-modal, " +
+        ".booking-calendar-settings-modal, " +
         ".availability-edit-modal, " +
         ".availability-delete-modal")
         .forEach((modal) => {
@@ -8,6 +11,179 @@
                 document.body.append(modal);
             }
         });
+
+    const bookingSettingsModal = document.querySelector(
+        "[data-booking-calendar-settings-modal]");
+    const leadTimeValue = document.querySelector(
+        "[data-booking-lead-time]");
+    const leadTimeHours = document.querySelector(
+        "[data-booking-lead-time-hours]");
+    const leadTimeMinutes = document.querySelector(
+        "[data-booking-lead-time-minutes]");
+    const leadTimeEntry = document.querySelector(
+        "[data-booking-lead-time-entry]");
+    const leadTimeExplanation = document.querySelector(
+        "[data-booking-lead-time-explanation]");
+    const leadTimeClientError = document.querySelector(
+        "[data-booking-lead-time-client-error]");
+    const bookingSettingsForm = bookingSettingsModal?.querySelector("form");
+    const bookingSettingsSave = document.querySelector(
+        "[data-booking-settings-save]");
+    const maximumLeadTimeMinutes = 365 * 24 * 60;
+    let initialLeadTimeMinutes = null;
+
+    const formatLeadTime = (minutes) => {
+        if (minutes % 1440 === 0) {
+            const days = minutes / 1440;
+            return `${days} ${days === 1 ? "day" : "days"}`;
+        }
+
+        if (minutes % 60 === 0) {
+            const hours = minutes / 60;
+            return `${hours} ${hours === 1 ? "hour" : "hours"}`;
+        }
+
+        return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+    };
+
+    const validateLeadTime = () => {
+        if (!leadTimeValue || !leadTimeHours || !leadTimeMinutes ||
+            !leadTimeExplanation) {
+            return true;
+        }
+
+        const hours = Number(leadTimeHours.value || "0");
+        const minutes = Number(leadTimeMinutes.value || "0");
+        const totalMinutes = (hours * 60) + minutes;
+        let hoursMessage = "";
+        let minutesMessage = "";
+
+        if (!Number.isInteger(hours) || !Number.isInteger(minutes)) {
+            hoursMessage = "Use numbers only.";
+            minutesMessage = hoursMessage;
+        } else if (minutes > 59) {
+            minutesMessage = "Minutes must be between 00 and 59.";
+        } else if (totalMinutes > maximumLeadTimeMinutes) {
+            hoursMessage = "Lead time cannot exceed 8,760 hours.";
+        }
+
+        const message = hoursMessage || minutesMessage;
+
+        leadTimeHours.setCustomValidity(hoursMessage);
+        leadTimeMinutes.setCustomValidity(minutesMessage);
+        leadTimeHours.setAttribute(
+            "aria-invalid",
+            String(Boolean(hoursMessage)));
+        leadTimeMinutes.setAttribute(
+            "aria-invalid",
+            String(Boolean(minutesMessage)));
+        leadTimeEntry?.classList.toggle("is-invalid", Boolean(message));
+        if (leadTimeClientError) {
+            leadTimeClientError.textContent = message;
+        }
+
+        if (message) {
+            leadTimeValue.value = "";
+            leadTimeExplanation.textContent =
+                "Enter a valid lead time to see how it will be applied.";
+            if (bookingSettingsSave) {
+                bookingSettingsSave.disabled = true;
+            }
+            return false;
+        }
+
+        leadTimeValue.value = String(totalMinutes);
+        leadTimeExplanation.textContent = totalMinutes === 0
+            ? "Students can book any future open slot."
+            : "Students can only book an open slot at least " +
+              `${formatLeadTime(totalMinutes)} before it starts.`;
+        if (bookingSettingsSave) {
+            bookingSettingsSave.disabled =
+                initialLeadTimeMinutes === totalMinutes;
+        }
+        return true;
+    };
+
+    const acceptDigitsOnly = (event) => {
+        if (event.key.length === 1 && !/\d/.test(event.key)) {
+            event.preventDefault();
+        }
+    };
+
+    const sanitizeLeadTimePart = (event) => {
+        event.currentTarget.value = event.currentTarget.value.replace(/\D/g, "");
+        validateLeadTime();
+    };
+
+    const adjustLeadTimePart = (event) => {
+        if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
+            return;
+        }
+
+        event.preventDefault();
+        const input = event.currentTarget;
+        const maximum = input === leadTimeMinutes ? 59 : 8760;
+        const direction = event.key === "ArrowUp" ? 1 : -1;
+        const value = Math.min(
+            maximum,
+            Math.max(0, Number(input.value || "0") + direction));
+        input.value = String(value).padStart(2, "0");
+        validateLeadTime();
+    };
+
+    [leadTimeHours, leadTimeMinutes].forEach((input) => {
+        input?.addEventListener("keydown", acceptDigitsOnly);
+        input?.addEventListener("keydown", adjustLeadTimePart);
+        input?.addEventListener("input", sanitizeLeadTimePart);
+        input?.addEventListener("focus", () => input.select());
+        input?.addEventListener("blur", () => {
+            input.value = String(
+                Number(input.value || "0")).padStart(2, "0");
+            validateLeadTime();
+        });
+    });
+
+    if (leadTimeValue && leadTimeHours && leadTimeMinutes) {
+        const initialTotal = Number(leadTimeValue.value) || 0;
+        initialLeadTimeMinutes = initialTotal;
+        leadTimeHours.value = String(Math.floor(initialTotal / 60)).padStart(2, "0");
+        leadTimeMinutes.value = String(initialTotal % 60).padStart(2, "0");
+        validateLeadTime();
+    }
+
+    bookingSettingsForm?.addEventListener("submit", (event) => {
+        if (!validateLeadTime() || bookingSettingsSave?.disabled) {
+            event.preventDefault();
+            const invalidInput = leadTimeEntry?.querySelector(
+                '[aria-invalid="true"]');
+            invalidInput?.focus();
+            return;
+        }
+
+        if (bookingSettingsSave) {
+            bookingSettingsSave.disabled = true;
+            bookingSettingsSave.textContent = "Saving…";
+        }
+    });
+
+    bookingSettingsModal?.addEventListener("hidden.bs.modal", () => {
+        if (initialLeadTimeMinutes === null ||
+            !leadTimeHours || !leadTimeMinutes) {
+            return;
+        }
+
+        leadTimeHours.value = String(
+            Math.floor(initialLeadTimeMinutes / 60)).padStart(2, "0");
+        leadTimeMinutes.value = String(
+            initialLeadTimeMinutes % 60).padStart(2, "0");
+        validateLeadTime();
+    });
+
+    if (bookingSettingsModal?.dataset.openOnLoad === "true" &&
+        window.bootstrap?.Modal) {
+        window.bootstrap.Modal.getOrCreateInstance(
+            bookingSettingsModal).show();
+    }
 
     const calendar = document.querySelector(
         "[data-availability-calendar]");

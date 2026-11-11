@@ -45,14 +45,19 @@ public class BookingService : IBookingService
             int tutorAvailabilityId,
             CancellationToken cancellationToken = default)
     {
+        CurrentUser student = _currentUserService.GetRequiredUser();
+        DateTimeOffset now = DateTimeOffset.UtcNow;
         BookingPreviewViewModel? preview =
             await _context.TutorAvailabilities
             .AsNoTracking()
             .Where(slot =>
                 slot.TutorAvailabilityId ==
                     tutorAvailabilityId &&
-                slot.AvailableTime >
-                    DateTimeOffset.UtcNow)
+                (slot.AvailableTime >= now.AddMinutes(
+                     slot.Tutor.MinimumBookingLeadTimeMinutes) ||
+                 (slot.ReservedByBcUserId == student.BcUserId &&
+                  slot.ReservationToken != null &&
+                  slot.ReservationExpiresAt > now)))
             .Select(slot =>
                 new BookingPreviewViewModel
                 {
@@ -118,7 +123,8 @@ public class BookingService : IBookingService
             updatedCount = await _context.TutorAvailabilities
                 .Where(slot =>
                     slot.TutorAvailabilityId == tutorAvailabilityId &&
-                    slot.AvailableTime > now &&
+                    slot.AvailableTime >= now.AddMinutes(
+                        slot.Tutor.MinimumBookingLeadTimeMinutes) &&
                     (slot.ReservedByBcUserId == null ||
                      slot.ReservationExpiresAt <= now))
                 .ExecuteUpdateAsync(
@@ -142,7 +148,10 @@ public class BookingService : IBookingService
                     cancellationToken);
 
             bool canReserve = slot is not null &&
-                slot.AvailableTime > now &&
+                BookingLeadTimePolicy.IsBookable(
+                    slot.AvailableTime,
+                    slot.Tutor.MinimumBookingLeadTimeMinutes,
+                    now) &&
                 (slot.ReservedByBcUserId is null ||
                  slot.ReservationExpiresAt <= now);
 
@@ -173,6 +182,7 @@ public class BookingService : IBookingService
             .Select(slot => new
             {
                 slot.AvailableTime,
+                slot.Tutor.MinimumBookingLeadTimeMinutes,
                 slot.ReservedByBcUserId,
                 slot.ReservationToken,
                 slot.ReservationExpiresAt
@@ -200,6 +210,15 @@ public class BookingService : IBookingService
             return BookingReservationResult.Acquired(
                 availability.ReservationToken.Value,
                 availability.ReservationExpiresAt.Value);
+        }
+
+        if (!BookingLeadTimePolicy.IsBookable(
+                availability.AvailableTime,
+                availability.MinimumBookingLeadTimeMinutes,
+                now))
+        {
+            return BookingReservationResult.Failed(
+                BookingReservationStatus.LeadTime);
         }
 
         return BookingReservationResult.Failed(

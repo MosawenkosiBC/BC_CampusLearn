@@ -1,6 +1,7 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Models.ViewModels;
+using BC_CampusLearn.Services.Bookings;
 using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Services.Tutors;
@@ -73,14 +74,23 @@ public class TutorService : ITutorService
                 CampusOfStudy = tutor.CampusOfStudy,
                 PreferredTutoringMode = tutor.PreferredTutoringMode,
                 UpcomingAvailabilityCount = tutor.TutorAvailabilities.Count(slot =>
-                    slot.AvailableTime > now),
+                    BookingLeadTimePolicy.IsBookable(
+                        slot.AvailableTime,
+                        tutor.MinimumBookingLeadTimeMinutes,
+                        now)),
                 NextAvailableAt = tutor.TutorAvailabilities
-                    .Where(slot => slot.AvailableTime > now)
+                    .Where(slot => BookingLeadTimePolicy.IsBookable(
+                        slot.AvailableTime,
+                        tutor.MinimumBookingLeadTimeMinutes,
+                        now))
                     .Select(slot => (DateTimeOffset?)slot.AvailableTime)
                     .OrderBy(value => value)
                     .FirstOrDefault(),
                 UpcomingAvailabilityDates = tutor.TutorAvailabilities
-                    .Where(slot => slot.AvailableTime > now)
+                    .Where(slot => BookingLeadTimePolicy.IsBookable(
+                        slot.AvailableTime,
+                        tutor.MinimumBookingLeadTimeMinutes,
+                        now))
                     .Select(slot => DateOnly.FromDateTime(
                         slot.AvailableTime.Date))
                     .Distinct()
@@ -164,8 +174,10 @@ public class TutorService : ITutorService
             AvailabilitySlots =
                 tutor.TutorAvailabilities
                     .Where(slot =>
-                        slot.AvailableTime >
-                        now)
+                        BookingLeadTimePolicy.IsBookable(
+                            slot.AvailableTime,
+                            tutor.MinimumBookingLeadTimeMinutes,
+                            now))
                     .OrderBy(slot => slot.AvailableTime)
                     .Select(slot =>
                         new AvailabilitySlotViewModel

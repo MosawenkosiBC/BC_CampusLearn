@@ -10,6 +10,7 @@ public class UnavailableModel : PageModel
     public bool HasExpired { get; private set; }
     public bool IsReserved { get; private set; }
     public bool ReservationExpired { get; private set; }
+    public bool LeadTimeClosed { get; private set; }
 
     public void OnGet(string? reason)
     {
@@ -28,6 +29,10 @@ public class UnavailableModel : PageModel
         ReservationExpired = string.Equals(
             reason,
             "reservation-expired",
+            StringComparison.OrdinalIgnoreCase);
+        LeadTimeClosed = string.Equals(
+            reason,
+            "lead-time",
             StringComparison.OrdinalIgnoreCase);
     }
 }

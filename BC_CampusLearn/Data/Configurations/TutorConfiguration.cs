@@ -1,4 +1,5 @@
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Bookings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -17,6 +18,9 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
             table.HasCheckConstraint(
                 "CK_Tutors_InterviewDurationMinutes",
                 "[InterviewDurationMinutes] IS NULL OR [InterviewDurationMinutes] BETWEEN 15 AND 240");
+            table.HasCheckConstraint(
+                "CK_Tutors_MinimumBookingLeadTimeMinutes",
+                $"[MinimumBookingLeadTimeMinutes] BETWEEN 0 AND {BookingLeadTimePolicy.MaximumMinutes}");
         });
         builder.HasIndex(tutor => tutor.BcUserId).IsUnique();
         builder.Property(tutor => tutor.OverallAverage).HasPrecision(5, 2).IsRequired();
@@ -40,6 +44,8 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
         builder.Property(tutor => tutor.InterviewLocation)
             .HasMaxLength(2048);
         builder.Property(tutor => tutor.IsActive).HasDefaultValue(false);
+        builder.Property(tutor => tutor.MinimumBookingLeadTimeMinutes)
+            .HasDefaultValue(0);
         builder.Property(tutor => tutor.DeregisteredAt).HasColumnType("datetimeoffset");
         builder.Property(tutor => tutor.DeregisteredByName).HasMaxLength(200);
         builder.Property(tutor => tutor.DeregistrationReason).HasMaxLength(1000);

@@ -4,6 +4,7 @@ public enum BookingReservationStatus
 {
     Acquired,
     ReservedByAnotherStudent,
+    LeadTime,
     Unavailable,
     Expired
 }

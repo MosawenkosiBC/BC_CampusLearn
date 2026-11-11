@@ -39,106 +39,221 @@
     margin: 0 0 0.28rem;
 }
 
+html.manage-availability-document {
+    scrollbar-gutter: stable;
+}
+
+html.manage-availability-document body.modal-open {
+    padding-right: 0 !important;
+}
+
+html.manage-availability-document body.modal-open .fixed-top,
+html.manage-availability-document body.modal-open .fixed-bottom,
+html.manage-availability-document body.modal-open .is-fixed,
+html.manage-availability-document body.modal-open .sticky-top {
+    padding-right: 0 !important;
+}
+
 .booking-calendar-settings-button {
     align-items: center;
-    background: #ffffff;
-    border: 1px solid #ad0151;
-    border-radius: 0.4rem;
-    color: #ad0151;
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+    color: #747b85;
     display: inline-flex;
     flex: 0 0 auto;
-    font-size: max(12px, 0.72rem);
-    font-weight: 650;
-    gap: 0.35rem;
+    height: 2.75rem;
+    justify-content: center;
     margin-left: auto;
-    padding: 0.5rem 0.7rem;
-    white-space: nowrap;
+    padding: 0;
+    position: relative;
+    width: 2.75rem;
 }
 
 .booking-calendar-settings-button:hover,
 .booking-calendar-settings-button:focus-visible {
-    background: #ad0151;
+    background: #f0f1f3;
+    color: #596168;
+}
+
+.booking-calendar-settings-button:focus-visible {
+    box-shadow: none;
+    outline: 2px solid #8b929a;
+    outline-offset: 2px;
+}
+
+.booking-calendar-settings-button svg {
+    fill: currentColor;
+    height: 1.65rem;
+    width: 1.65rem;
+}
+
+.booking-settings-tooltip {
+    background: #363c3d;
+    border-radius: 0.35rem;
     color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0;
+    padding: 0.4rem 0.6rem;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.45rem);
+    transform: translateY(-0.2rem);
+    transition: opacity 120ms ease, transform 120ms ease;
+    visibility: hidden;
+    white-space: nowrap;
+    z-index: 10;
 }
 
-.booking-calendar-settings-button iconify-icon {
-    font-size: 0.95rem;
+.booking-calendar-settings-button:hover .booking-settings-tooltip,
+.booking-calendar-settings-button:focus-visible .booking-settings-tooltip {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
 }
 
-.calendar-settings-saved {
+.availability-lead-time-warning {
     align-items: center;
-    background: #edf9f3;
-    border: 1px solid #ccebdc;
+    background: #fff7e8;
+    border: 1px solid #f2d39a;
     border-radius: 0.45rem;
-    color: #22734d;
+    color: #79520a;
     display: flex;
-    font-size: max(12px, 0.76rem);
-    gap: 0.4rem;
+    gap: 0.5rem;
     margin: -0.5rem 0 1rem;
-    padding: 0.6rem 0.75rem;
+    padding: 0.7rem 0.8rem;
+}
+
+.availability-lead-time-warning iconify-icon {
+    flex: 0 0 auto;
+    font-size: 1.1rem;
 }
 
 .booking-calendar-settings-modal .modal-dialog {
-    max-width: 31rem;
+    max-width: 28rem;
 }
 
 .booking-calendar-settings-modal .modal-content {
-    border: 0;
-    border-radius: 0.8rem;
-    box-shadow: 0 1.25rem 4rem rgba(18, 24, 35, 0.2);
+    border: 1px solid #e1e4e8;
+    border-radius: 1rem;
+    box-shadow: 0 0.75rem 2rem rgba(18, 24, 35, 0.12);
     overflow: hidden;
 }
 
 .booking-calendar-settings-modal .modal-header {
     align-items: flex-start;
-    border-bottom: 1px solid #eceef1;
-    padding: 1.35rem 1.5rem 1.1rem;
+    border-bottom: 0;
+    padding: 1.6rem 1.75rem 0.75rem;
 }
 
 .booking-calendar-settings-modal h2 {
     color: #20242a;
-    font-size: 1.15rem;
-    margin: 0 0 0.25rem;
-}
-
-.booking-calendar-settings-modal .modal-header p {
-    color: #747b85;
-    font-size: max(12px, 0.76rem);
+    font-size: 1.3rem;
+    font-weight: 700;
     margin: 0;
 }
 
 .booking-calendar-settings-modal .modal-body {
     display: grid;
-    gap: 1.15rem;
-    padding: 1.35rem 1.5rem;
+    padding: 1rem 1.75rem 1.25rem;
 }
 
 .booking-calendar-setting-field {
     display: grid;
-    gap: 0.35rem;
+    gap: 0.55rem;
 }
 
 .booking-calendar-setting-field label,
 .booking-calendar-weekend-setting strong {
     color: #2b3037;
-    font-size: max(12px, 0.78rem);
-    font-weight: 650;
+    font-size: max(13px, 0.82rem);
+    font-weight: 500;
 }
 
-.booking-calendar-setting-field select {
-    background: #ffffff;
-    border: 1px solid #d9dde2;
-    border-radius: 0.4rem;
+.booking-calendar-setting-field input {
+    background: #fbfbfc;
+    border: 1px solid #cfd4da;
+    border-radius: 0.6rem;
     color: #303640;
-    font-size: max(12px, 0.78rem);
-    min-height: 2.5rem;
-    padding: 0.45rem 0.65rem;
+    font-size: max(13px, 0.82rem);
+    min-height: 3rem;
+    padding: 0.65rem 0.8rem;
 }
 
-.booking-calendar-setting-field select:focus {
+.booking-calendar-setting-field input:focus {
     border-color: #ad0151;
-    box-shadow: 0 0 0 0.18rem rgba(173, 1, 81, 0.12);
+    box-shadow: none;
     outline: 0;
+}
+
+.booking-lead-time-entry {
+    align-items: center;
+    background: #fbfbfc;
+    border: 1px solid #cfd4da;
+    border-radius: 0.7rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 0.35rem;
+    padding: 0.65rem 0.8rem 0.6rem;
+    transition: border-color 150ms ease;
+}
+
+.booking-lead-time-entry:focus-within {
+    border-color: #8f969f;
+}
+
+.booking-lead-time-entry.is-invalid {
+    border-color: #b42318;
+}
+
+.booking-lead-time-segment {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.booking-calendar-settings-modal .booking-lead-time-entry input {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    color: #252a31;
+    font-size: 1.65rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    min-height: 2.25rem;
+    padding: 0;
+    text-align: center;
+    width: 100%;
+}
+
+.booking-calendar-settings-modal .booking-lead-time-entry input:focus {
+    border: 0;
+    box-shadow: none;
+    outline: 0;
+}
+
+.booking-calendar-settings-modal .booking-lead-time-entry input[aria-invalid="true"] {
+    color: #b42318;
+}
+
+.booking-lead-time-segment > span {
+    color: #7a818b;
+    font-size: max(11px, 0.68rem);
+    line-height: 1.2;
+    margin-top: 0.15rem;
+}
+
+.booking-lead-time-separator {
+    color: #5d646d;
+    font-size: 1.55rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 1rem;
 }
 
 .booking-calendar-setting-field small,
@@ -156,6 +271,20 @@
     gap: 1rem;
     justify-content: space-between;
     padding: 0.8rem;
+}
+
+
+.availability-booking-closed-status {
+    color: #9a6300;
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.35;
+    margin-top: 0.25rem;
+}
+
+.availability-time-details {
+    display: grid;
 }
 
 .booking-calendar-weekend-setting > span {
@@ -202,17 +331,18 @@
 }
 
 .booking-calendar-settings-modal .modal-footer {
-    border-top: 1px solid #eceef1;
-    gap: 0.6rem;
-    padding: 0.9rem 1.5rem 1.1rem;
+    border-top: 0;
+    gap: 0.75rem;
+    padding: 0.75rem 1.75rem 1.6rem;
 }
 
 .booking-calendar-settings-modal .modal-footer button {
-    border-radius: 0.4rem;
-    font-size: max(12px, 0.76rem);
-    font-weight: 650;
-    min-width: 6.5rem;
-    padding: 0.55rem 0.85rem;
+    border-radius: 0.55rem;
+    font-size: max(13px, 0.8rem);
+    font-weight: 700;
+    min-height: 2.65rem;
+    min-width: 7rem;
+    padding: 0.6rem 1rem;
 }
 
 .booking-calendar-settings-cancel {
@@ -231,6 +361,13 @@
 .booking-calendar-settings-save:focus-visible {
     background: #8e0043;
     border-color: #8e0043;
+}
+
+.booking-calendar-settings-save:disabled {
+    background: #d8dbe0;
+    border-color: #d8dbe0;
+    color: #777e87;
+    cursor: not-allowed;
 }
 
 .manage-availability-section-heading p {
@@ -2350,7 +2487,7 @@
 .manage-availability-time-input,
 .recurring-editor-time-input,
 .recurring-schedule-time-field input,
-.booking-calendar-setting-field select {
+.booking-calendar-setting-field input {
     min-height: 48px;
 }
 
@@ -2553,7 +2690,7 @@
         width: 100%;
     }
 
-    .availability-time-cell > span {
+    .availability-time-details > span {
         align-self: center;
         color: #656b74;
         display: inline-block;

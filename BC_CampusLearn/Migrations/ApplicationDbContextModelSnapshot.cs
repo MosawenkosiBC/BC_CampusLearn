@@ -1705,6 +1705,11 @@ namespace BC_CampusLearn.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int>("MinimumBookingLeadTimeMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<decimal>("OverallAverage")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
@@ -1772,6 +1777,8 @@ namespace BC_CampusLearn.Migrations
                     b.ToTable("Tutors", null, t =>
                         {
                             t.HasCheckConstraint("CK_Tutors_InterviewDurationMinutes", "[InterviewDurationMinutes] IS NULL OR [InterviewDurationMinutes] BETWEEN 15 AND 240");
+
+                            t.HasCheckConstraint("CK_Tutors_MinimumBookingLeadTimeMinutes", "[MinimumBookingLeadTimeMinutes] BETWEEN 0 AND 525600");
 
                             t.HasCheckConstraint("CK_Tutors_OverallAverage", "[OverallAverage] BETWEEN 0 AND 100");
 

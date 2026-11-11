@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using BC_CampusLearn.Services.Bookings;
 using BC_CampusLearn.Services.Sessions;
 
 namespace BC_CampusLearn.Pages.Tutors;
@@ -35,6 +36,10 @@ public class ManageAvailabilityModel : PageModel
 
     [BindProperty]
     public TimeOnly? SessionTime { get; set; }
+
+    [BindProperty]
+    public string MinimumBookingLeadTime { get; set; } =
+        "0";
 
     [BindProperty]
     public List<DateOnly> SelectedDates { get; set; } = new();
@@ -81,9 +86,33 @@ public class ManageAvailabilityModel : PageModel
     [TempData]
     public string? UpdateSuccessMessage { get; set; }
 
+    [TempData]
+    public bool BookingSettingsUpdated { get; set; }
+
+    [TempData]
+    public string? BookingSettingsSuccessMessage { get; set; }
+
+    [TempData]
+    public string? LeadTimeWarningMessage { get; set; }
+
     public bool CustomAvailabilityModalOpen { get; private set; }
 
     public bool EditAvailabilityModalOpen { get; private set; }
+
+    public bool BookingSettingsModalOpen { get; private set; }
+
+    public int MinimumBookingLeadTimeMinutes { get; private set; }
+
+    public string BookingLeadTimeExplanation =>
+        MinimumBookingLeadTimeMinutes == 0
+            ? "Students can book any future open slot."
+            : $"Students can only book an open slot at least " +
+              $"{BookingLeadTimePolicy.Format(MinimumBookingLeadTimeMinutes)} " +
+              "before it starts.";
+
+    public string BookingLeadTimeAdjective =>
+        BookingLeadTimePolicy.FormatAdjective(
+            MinimumBookingLeadTimeMinutes);
 
     public string EditAvailabilityDateLabel { get; private set; } =
         string.Empty;
@@ -261,6 +290,7 @@ public class ManageAvailabilityModel : PageModel
         AvailabilityCreated = true;
         SuccessMessage =
             $"Your availability for {availableTime:dd MMMM yyyy 'at' HH:mm} was created successfully.";
+        SetLeadTimeWarningIfNeeded([availableTime], DateTimeOffset.UtcNow);
 
         return RedirectToPage();
     }
@@ -380,6 +410,50 @@ public class ManageAvailabilityModel : PageModel
         SuccessMessage = candidateTimes.Count == 1
             ? "1 availability slot was created successfully."
             : $"{candidateTimes.Count} availability slots were created successfully.";
+        SetLeadTimeWarningIfNeeded(candidateTimes, now);
+
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostUpdateBookingSettingsAsync(
+        CancellationToken cancellationToken)
+    {
+        int? tutorId = await GetCurrentTutorIdAsync(cancellationToken);
+
+        if (!tutorId.HasValue)
+        {
+            return Forbid();
+        }
+
+        if (!int.TryParse(
+                MinimumBookingLeadTime,
+                out int minimumBookingLeadTimeMinutes) ||
+            minimumBookingLeadTimeMinutes < 0 ||
+            minimumBookingLeadTimeMinutes > BookingLeadTimePolicy.MaximumMinutes)
+        {
+            ModelState.AddModelError(
+                nameof(MinimumBookingLeadTime),
+                "Enter a valid lead time up to 8,760 hours.");
+            BuildRecurringScheduleDays();
+            await LoadAvailabilityInsightsAsync(
+                tutorId.Value,
+                cancellationToken);
+            BookingSettingsModalOpen = true;
+            return Page();
+        }
+
+        Tutor tutor = await _context.Tutors.SingleAsync(
+            item => item.TutorId == tutorId.Value,
+            cancellationToken);
+        tutor.MinimumBookingLeadTimeMinutes = minimumBookingLeadTimeMinutes;
+        tutor.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync(cancellationToken);
+
+        BookingSettingsUpdated = true;
+        BookingSettingsSuccessMessage = minimumBookingLeadTimeMinutes == 0
+            ? "Minimum booking lead time removed. Students can book any future open slot."
+            : $"Minimum booking lead time updated to " +
+              $"{BookingLeadTimePolicy.Format(minimumBookingLeadTimeMinutes)}.";
 
         return RedirectToPage();
     }
@@ -581,6 +655,7 @@ public class ManageAvailabilityModel : PageModel
         AvailabilityUpdated = true;
         UpdateSuccessMessage =
             $"Availability time updated to {updatedTime:HH:mm}.";
+        SetLeadTimeWarningIfNeeded([updatedTime], DateTimeOffset.UtcNow);
 
         return RedirectToAvailabilityList();
     }
@@ -686,6 +761,9 @@ public class ManageAvailabilityModel : PageModel
         SuccessMessage = candidateTimes.Count == 1
             ? "1 availability slot was created successfully."
             : $"{candidateTimes.Count} availability slots were created successfully.";
+        SetLeadTimeWarningIfNeeded(
+            candidateTimes,
+            DateTimeOffset.UtcNow);
 
         return RedirectToPage();
     }
@@ -706,6 +784,13 @@ public class ManageAvailabilityModel : PageModel
         CancellationToken cancellationToken)
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;
+        MinimumBookingLeadTimeMinutes = await _context.Tutors
+            .AsNoTracking()
+            .Where(tutor => tutor.TutorId == tutorId)
+            .Select(tutor => tutor.MinimumBookingLeadTimeMinutes)
+            .SingleAsync(cancellationToken);
+        MinimumBookingLeadTime =
+            MinimumBookingLeadTimeMinutes.ToString();
         List<TutorAvailability> futureAvailability =
             await _context.TutorAvailabilities
                 .AsNoTracking()
@@ -785,7 +870,11 @@ public class ManageAvailabilityModel : PageModel
             .Select(slot => new AvailabilityListItem
             {
                 AvailabilityId = slot.TutorAvailabilityId,
-                LocalTime = slot.AvailableTime.ToOffset(SouthAfricaOffset)
+                LocalTime = slot.AvailableTime.ToOffset(SouthAfricaOffset),
+                IsInsideLeadTime = !BookingLeadTimePolicy.IsBookable(
+                    slot.AvailableTime,
+                    MinimumBookingLeadTimeMinutes,
+                    now)
             })
             .ToList();
 
@@ -1012,6 +1101,28 @@ public class ManageAvailabilityModel : PageModel
             Number: 2601 or 2627
         };
     }
+
+    private void SetLeadTimeWarningIfNeeded(
+        IEnumerable<DateTimeOffset> sessionStarts,
+        DateTimeOffset now)
+    {
+        if (MinimumBookingLeadTimeMinutes == 0 ||
+            !sessionStarts.Any(start => !BookingLeadTimePolicy.IsBookable(
+                start,
+                MinimumBookingLeadTimeMinutes,
+                now)))
+        {
+            return;
+        }
+
+        LeadTimeWarningMessage =
+            $"Students will not be able to book " +
+            $"{(sessionStarts.Count() == 1 ? "this slot" : "slots inside the lead-time window")} " +
+            $"because the {(sessionStarts.Count() == 1 ? "slot starts" : "slots start")} " +
+            $"within your " +
+            $"{BookingLeadTimePolicy.FormatAdjective(MinimumBookingLeadTimeMinutes)} " +
+            "lead time.";
+    }
 }
 
 public class RecurringScheduleDay
@@ -1026,4 +1137,6 @@ public class AvailabilityListItem
     public int AvailabilityId { get; set; }
 
     public DateTimeOffset LocalTime { get; set; }
+
+    public bool IsInsideLeadTime { get; set; }
 }

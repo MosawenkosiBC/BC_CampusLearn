@@ -8,6 +8,8 @@
             ? "Reservation expired"
         : Model.HasExpired
         ? "Session time has passed"
+        : Model.LeadTimeClosed
+            ? "Booking window closed"
         : Model.WasBooked
             ? "Session already booked"
             : "Session unavailable";
@@ -90,6 +92,15 @@
                 be completed. No booking was created for you.
             </p>
         }
+        else if (Model.LeadTimeClosed)
+        {
+            <h1 id="booking-unavailable-title">The booking window has closed</h1>
+            <p>
+                This session is too close to its start time to accept a new
+                booking. Please choose a later session from the tutor's
+                available times.
+            </p>
+        }
         else
         {
             <h1 id="booking-unavailable-title">This session is no longer available</h1>
@@ -102,11 +113,11 @@
         <div class="booking-unavailable-actions">
             <a asp-page="/Tutors/Index"
                class="booking-unavailable-primary">
-                @(Model.HasExpired || Model.IsReserved || Model.ReservationExpired
+                @(Model.HasExpired || Model.IsReserved || Model.ReservationExpired || Model.LeadTimeClosed
                     ? "View available tutors"
                     : "Choose another session")
             </a>
-            @if (!Model.HasExpired && !Model.IsReserved && !Model.ReservationExpired)
+            @if (!Model.HasExpired && !Model.IsReserved && !Model.ReservationExpired && !Model.LeadTimeClosed)
             {
                 <a asp-page="/Bookings/Index"
                    class="booking-unavailable-secondary">
