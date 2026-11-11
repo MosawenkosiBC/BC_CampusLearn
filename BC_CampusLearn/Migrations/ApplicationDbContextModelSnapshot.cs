@@ -580,6 +580,72 @@ namespace BC_CampusLearn.Migrations
                     b.ToTable("EmailNotificationOutbox", (string)null);
                 });
 
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.FeedbackSurvey", b =>
+                {
+                    b.Property<Guid>("FeedbackSurveyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Audience")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly?>("ClosingDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("IsDashboardPopupHidden")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("PublishedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("QuestionsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.HasKey("FeedbackSurveyId");
+
+                    b.HasIndex("Audience", "Title");
+
+                    b.ToTable("FeedbackSurveys");
+                });
+
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.FeedbackSurveyResponse", b =>
+                {
+                    b.Property<Guid>("FeedbackSurveyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("BcUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AnswersJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("SubmittedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("SurveyRevision")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("FeedbackSurveyId", "BcUserId");
+
+                    b.HasIndex("BcUserId");
+
+                    b.ToTable("FeedbackSurveyResponses");
+                });
+
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.LearningResource", b =>
                 {
                     b.Property<int>("LearningResourceId")
@@ -2626,6 +2692,21 @@ namespace BC_CampusLearn.Migrations
                         .IsRequired();
 
                     b.Navigation("CampusEvent");
+                });
+
+            modelBuilder.Entity("BC_CampusLearn.Models.Entities.FeedbackSurveyResponse", b =>
+                {
+                    b.HasOne("BC_CampusLearn.Models.Entities.BcUser", null)
+                        .WithMany()
+                        .HasForeignKey("BcUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BC_CampusLearn.Models.Entities.FeedbackSurvey", null)
+                        .WithMany()
+                        .HasForeignKey("FeedbackSurveyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("BC_CampusLearn.Models.Entities.LearningResource", b =>

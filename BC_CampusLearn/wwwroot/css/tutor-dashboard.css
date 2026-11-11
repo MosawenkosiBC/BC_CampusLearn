@@ -2109,3 +2109,6 @@
         padding-inline: 0;
     }
 }
+#dashboard-survey-modal input:is([type="radio"], [type="checkbox"]) {
+    min-height: 0;
+}

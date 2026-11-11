@@ -1,0 +1,182 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Settings.SurveyResultsModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@Model.SurveyTitle - Survey results</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-settings.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/survey-settings.css" asp-append-version="true" />
+</head>
+<body class="survey-report-body">
+<main class="survey-report survey-settings" aria-labelledby="results-title">
+    <header class="survey-report-header">
+        <div class="survey-report-actions">
+            <a class="settings-primary-button text-decoration-none" asp-page="./Survey" asp-route-audience="@Model.Audience">Back to surveys</a>
+            <a class="settings-primary-button text-decoration-none" asp-page="./SurveyResults" asp-page-handler="Pdf"
+               asp-route-surveyId="@Model.SurveyId" asp-route-audience="@Model.Audience">Download PDF</a>
+        </div>
+        <h1 id="results-title">@Model.SurveyTitle</h1>
+    </header>
+    <div class="survey-report-card">
+        <section aria-labelledby="overview-title">
+            <header class="survey-report-overview-heading">
+                <h2 id="overview-title">Responses overview</h2>
+                <span class="survey-report-status" data-status="@Model.SurveyStatus">@Model.SurveyStatus</span>
+            </header>
+            <dl class="survey-report-metrics">
+                <div><dt>Responses</dt><dd>@Model.ResponseCount</dd></div>
+                <div><dt>Average time</dt><dd><span aria-label="Unavailable">—</span></dd></div>
+                <div><dt>Duration</dt><dd>@Model.DurationDays <small>@(Model.DurationDays == 1 ? "day" : "days")</small></dd></div>
+            </dl>
+        </section>
+
+        @for (int index = 0; index < Model.Questions.Count; index++)
+        {
+            var question = Model.Questions[index];
+            string questionId = $"result-question-{index + 1}";
+            <section class="survey-report-question" aria-labelledby="@questionId">
+                <header class="survey-report-question-heading">
+                    <h2 id="@questionId">@(index + 1). @question.Prompt</h2>
+                    <a class="survey-results-link" asp-page="./SurveyResults" asp-route-audience="@Model.Audience"
+                       asp-route-surveyId="@Model.SurveyId" asp-route-questionId="@question.Key.Id"
+                       asp-route-questionType="@question.Key.Type" asp-route-legacyPrompt="@question.Key.LegacyPrompt"
+                       asp-fragment="@questionId" aria-haspopup="dialog" aria-label="More details for question @(index + 1)">More details</a>
+                </header>
+                @if (question.IsChoice)
+                {
+                    var rows = question.ChartRows;
+                    int total = rows.Sum(row => row.Count);
+                    int runningCount = 0;
+                    var segments = new List<string>();
+                    foreach (var row in rows.Where(row => row.Count > 0))
+                    {
+                        double from = 100.0 * runningCount / total;
+                        runningCount += row.Count;
+                        segments.Add(FormattableString.Invariant($"{row.Color} {from:F4}% {100.0 * runningCount / total:F4}%"));
+                    }
+                    <div class="survey-report-distribution">
+                        <ul class="survey-report-legend" aria-label="Answer distribution">
+                            @foreach (var row in rows)
+                            {
+                                <li>
+                                    <span class="survey-report-dot" style="--chart-color: @row.Color" aria-hidden="true"></span>
+                                    <span>@row.Label</span>
+                                    <strong>@row.Count</strong>
+                                    <small>@(total > 0 ? (100.0 * row.Count / total).ToString("0.#") : "0")%</small>
+                                </li>
+                            }
+                        </ul>
+                        @if (total > 0)
+                        {
+                            <div class="survey-report-donut" style="--chart-fill: conic-gradient(@string.Join(", ", segments))" aria-hidden="true"></div>
+                        }
+                        else
+                        {
+                            <p class="survey-report-no-answers">No responses submitted</p>
+                        }
+                    </div>
+                }
+                else if (question.IsRating)
+                {
+                    var rows = question.ChartRows;
+                    int maxCount = rows.Max(row => row.Count);
+                    <div class="survey-report-rating">
+                        <strong>@(question.AverageRating?.ToString("0.00") ?? "—")</strong>
+                        <span>Average rating</span>
+                        @if (question.AverageRating is double average)
+                        {
+                            int filled = (int)Math.Round(average, MidpointRounding.AwayFromZero);
+                            <div class="survey-report-stars" aria-hidden="true">@(new string('★', filled))@(new string('☆', question.RatingLevels - filled))</div>
+                        }
+                    </div>
+                    <ul class="survey-report-rating-bars" aria-label="Rating distribution">
+                        @foreach (var row in rows)
+                        {
+                            string width = FormattableString.Invariant($"{(maxCount == 0 ? 0 : 100.0 * row.Count / maxCount):F4}%");
+                            <li><span>Level @row.Label</span><span class="survey-report-bar" style="--bar-width: @width" aria-hidden="true"></span><strong>@row.Count</strong></li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="survey-report-text">
+                        <div><strong>@question.ResponseCount</strong><span>@(question.ResponseCount == 1 ? "Response" : "Responses")</span></div>
+                        <div>
+                            @if (question.Latest.Count == 0)
+                            {
+                                <p class="survey-report-no-answers">No responses submitted</p>
+                            }
+                            else
+                            {
+                                <h3>Latest responses</h3>
+                                <ul>@foreach (var answer in question.Latest) { <li>@answer</li> }</ul>
+                            }
+                        </div>
+                    </div>
+                }
+            </section>
+        }
+
+    </div>
+</main>
+@if (Model.Details is { } details)
+{
+    string questionFragment = $"result-question-{details.Number}";
+    var detailRoute = new Dictionary<string, string?>
+    {
+        ["surveyId"] = Model.SurveyId.ToString(),
+        ["audience"] = Model.Audience.ToString(),
+        ["questionId"] = details.Question.Key.Id.ToString(),
+        ["questionType"] = details.Question.Key.Type?.ToString(),
+        ["legacyPrompt"] = details.Question.Key.LegacyPrompt
+    };
+    <dialog class="survey-question-details" id="survey-question-details" aria-labelledby="survey-details-title" open>
+        <header>
+            <a class="btn-close" aria-label="Close question details" data-close-details asp-page="./SurveyResults"
+               asp-route-surveyId="@Model.SurveyId" asp-route-audience="@Model.Audience" asp-fragment="@questionFragment" autofocus></a>
+            <h2 id="survey-details-title">@details.Number. @details.Question.Prompt</h2>
+            <p><strong>@details.ResponseCount</strong> @(details.ResponseCount == 1 ? "Response" : "Responses")</p>
+        </header>
+        @if (details.Rows.Count > 0)
+        {
+            <table>
+                <thead><tr><th scope="col">ID ↑</th><th scope="col">Name</th><th scope="col">Responses</th></tr></thead>
+                <tbody>
+                    @foreach (var row in details.Rows)
+                    {
+                        <tr><td>@row.Number</td><td>@row.Name</td><td>@row.Answer</td></tr>
+                    }
+                </tbody>
+            </table>
+            @if (details.PageCount > 1)
+            {
+                <nav class="survey-details-pagination" aria-label="Question response pages">
+                    @if (details.Page > 1)
+                    {
+                        <a asp-page="./SurveyResults" asp-all-route-data="@detailRoute" asp-route-detailPage="@(details.Page - 1)" asp-fragment="@questionFragment">Previous</a>
+                    }
+                    <span>Page @details.Page of @details.PageCount</span>
+                    @if (details.Page < details.PageCount)
+                    {
+                        <a asp-page="./SurveyResults" asp-all-route-data="@detailRoute" asp-route-detailPage="@(details.Page + 1)" asp-fragment="@questionFragment">Next</a>
+                    }
+                </nav>
+            }
+        }
+        else
+        {
+            <p class="survey-report-no-answers">No responses submitted</p>
+        }
+    </dialog>
+    <script src="~/js/survey-results.js" asp-append-version="true"></script>
+}
+</body>
+</html>

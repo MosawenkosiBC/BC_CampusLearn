@@ -1,0 +1,137 @@
+@model BC_CampusLearn.Services.Surveys.DashboardSurveys.SurveyForm
+
+<form method="post" asp-page-handler="SubmitSurvey" enctype="multipart/form-data">
+    <input type="hidden" name="surveyId" value="@Model.Id" />
+    <input type="hidden" name="revision" value="@Model.Revision" />
+
+    @if (!string.IsNullOrWhiteSpace(Model.Description))
+    {
+        <p class="text-break">@Model.Description</p>
+    }
+    @if (Model.PreviousAnswers?.Files.Count > 0)
+    {
+        <p class="form-text">Choose any attachments again before resubmitting.</p>
+    }
+
+    @{ int questionNumber = 0; }
+    @foreach (var question in Model.Questions)
+    {
+        if (question.Type == SurveyQuestionType.Section)
+        {
+            <h4 class="h6 mt-4 text-break">@question.Prompt</h4>
+            @if (!string.IsNullOrWhiteSpace(question.Description))
+            {
+                <p class="text-break">@question.Description</p>
+            }
+            continue;
+        }
+
+        string name = $"answer-{question.Id:N}";
+        string id = $"survey-{Model.Id:N}-{question.Id:N}";
+        var selected = Model.PreviousAnswers?[name] ?? default;
+        var options = question.Options ?? [];
+        <fieldset class="mb-3">
+            <legend class="fs-6 fw-semibold text-break mb-2">
+                @(++questionNumber). @question.Prompt
+                @if (question.Required)
+                {
+                    <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
+                }
+            </legend>
+            @switch (question.Type)
+            {
+                case SurveyQuestionType.Text when question.LongAnswer:
+                    <textarea class="form-control" name="@name" aria-label="Answer" rows="4" maxlength="4000" required="@question.Required">@selected.ToString()</textarea>
+                    break;
+                case SurveyQuestionType.Text:
+                    <input class="form-control" name="@name" aria-label="Answer" value="@selected.ToString()" maxlength="4000" required="@question.Required" />
+                    break;
+                case SurveyQuestionType.Date:
+                    <input class="form-control" type="date" name="@name" aria-label="Date" value="@selected.ToString()" required="@question.Required" />
+                    break;
+                case SurveyQuestionType.FileUpload:
+                    <input class="form-control" type="file" name="@name" aria-label="Attachment" required="@question.Required" />
+                    <div class="form-text">Maximum 5 MB per file and 10 MB per survey.</div>
+                    break;
+                case SurveyQuestionType.Choice:
+                    string inputType = question.MultipleAnswers ? "checkbox" : "radio";
+                    bool requireChoice = question.Required && !question.MultipleAnswers;
+                    @for (int index = 0; index < options.Length; index++)
+                    {
+                        string optionValue = index.ToString();
+                        <label class="form-check text-break">
+                            <input class="form-check-input" type="@inputType" name="@name" value="@optionValue" checked="@selected.Contains(optionValue)" required="@requireChoice" />
+                            <span class="form-check-label">@options[index]</span>
+                        </label>
+                    }
+                    @if (question.HasOtherOption)
+                    {
+                        string otherName = $"{name}-other";
+                        <label class="form-check">
+                            <input class="form-check-input" type="@inputType" name="@name" value="other" checked="@selected.Contains("other")" required="@requireChoice" />
+                            <span class="form-check-label">Other</span>
+                        </label>
+                        <input class="form-control mt-1" name="@otherName" aria-label="Specify Other" placeholder="If you selected Other, enter your answer" maxlength="4000" value="@(Model.PreviousAnswers?[otherName].ToString())" />
+                    }
+                    break;
+                case SurveyQuestionType.Rating:
+                case SurveyQuestionType.NetPromoterScore:
+                    bool isNps = question.Type == SurveyQuestionType.NetPromoterScore;
+                    bool useStars = !isNps && question.RatingSymbol != SurveyRatingSymbol.Number;
+                    <div class="d-flex flex-wrap gap-1">
+                        @for (int score = isNps ? 0 : 1; score <= (isNps ? 10 : question.RatingLevels ?? 5); score++)
+                        {
+                            string scoreId = $"{id}-{score}";
+                            string value = score.ToString();
+                            <input class="btn-check" type="radio" name="@name" value="@value" id="@scoreId" checked="@selected.Contains(value)" required="@question.Required" />
+                            <label class="btn btn-outline-secondary btn-sm" for="@scoreId">
+                                @if (useStars)
+                                {
+                                    <span aria-hidden="true">☆</span><span class="visually-hidden">@score of @(question.RatingLevels ?? 5)</span>
+                                }
+                                else
+                                {
+                                    @score
+                                }
+                            </label>
+                        }
+                    </div>
+                    @if (isNps)
+                    {
+                        <div class="d-flex justify-content-between gap-2 form-text text-break">
+                            <span>@(question.LowScoreLabel ?? "Not at all likely")</span>
+                            <span>@(question.HighScoreLabel ?? "Extremely likely")</span>
+                        </div>
+                    }
+                    break;
+                case SurveyQuestionType.Ranking:
+                case SurveyQuestionType.Likert:
+                    bool isRanking = question.Type == SurveyQuestionType.Ranking;
+                    var rows = isRanking ? options : question.Statements ?? [];
+                    @if (isRanking)
+                    {
+                        <p class="form-text mb-2">Assign a different rank to each option. Rank 1 is your first choice.</p>
+                    }
+                    @for (int row = 0; row < rows.Length; row++)
+                    {
+                        string rowName = $"{name}-{row}";
+                        string rowValue = Model.PreviousAnswers?[rowName].ToString() ?? "";
+                        <label class="d-block mb-2 text-break">
+                            <span class="form-label">@rows[row]</span>
+                            <select class="form-select" name="@rowName" required="@question.Required">
+                                <option value="">@(isRanking ? "Select a rank" : "Select an answer")</option>
+                                @for (int option = 0; option < options.Length; option++)
+                                {
+                                    string value = option.ToString();
+                                    <option value="@value" selected="@(value == rowValue)">@(isRanking ? (option + 1).ToString() : options[option])</option>
+                                }
+                            </select>
+                        </label>
+                    }
+                    break;
+            }
+        </fieldset>
+    }
+
+    <button type="submit" class="btn btn-primary tutor-modal-primary">Submit survey</button>
+</form>

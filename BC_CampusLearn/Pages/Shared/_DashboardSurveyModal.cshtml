@@ -1,0 +1,40 @@
+@model BC_CampusLearn.Services.Surveys.DashboardSurveys
+
+@if (Model.Forms.Count > 0)
+{
+    bool isTutorSurvey = Model.Audience == SurveyAudience.Tutors;
+    <div class="modal fade @(isTutorSurvey ? "tutor-account-modal" : null)" id="dashboard-survey-modal" tabindex="-1"
+         aria-labelledby="dashboard-survey-title" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="dashboard-survey-title">@(isTutorSurvey ? "Tutor feedback surveys" : "Student feedback surveys")</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    @if (Model.ValidationError is string surveyError)
+                    {
+                        <div class="alert alert-danger" role="alert">@surveyError</div>
+                    }
+                    @for (int index = 0; index < Model.Forms.Count; index++)
+                    {
+                        var survey = Model.Forms[index];
+                        if (Model.Forms.Count == 1)
+                        {
+                            <h3 class="h5 text-break">@survey.Title</h3>
+                            <partial name="_DashboardSurveyForm" model="survey" />
+                        }
+                        else
+                        {
+                            bool isOpen = Model.InvalidSurveyId is Guid invalidId ? survey.Id == invalidId : index == 0;
+                            <details class="border-bottom pb-3 mb-3" open="@isOpen">
+                                <summary class="fw-semibold text-break mb-2">@survey.Title</summary>
+                                <partial name="_DashboardSurveyForm" model="survey" />
+                            </details>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}

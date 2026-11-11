@@ -6,11 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using BC_CampusLearn.Services.Sessions;
+using BC_CampusLearn.Services.Surveys;
 using BC_CampusLearn.Services.Teams;
 using Microsoft.Extensions.Options;
 
 namespace BC_CampusLearn.Pages.Tutors;
 
+[RequestFormLimits(ValueCountLimit = 4096)]
 public class TutorDashboardModel : PageModel
 {
     private readonly ApplicationDbContext _context;
@@ -31,9 +33,29 @@ public class TutorDashboardModel : PageModel
         _lifecycleService = lifecycleService;
         _teamsOptions = teamsOptions?.Value ?? new TeamsMeetingOptions();
         _teamsMeetings = teamsMeetings;
+        Surveys = new DashboardSurveys(context, SurveyAudience.Tutors);
     }
 
     public bool TeamsMeetingCreationEnabled => _teamsOptions.Enabled;
+    public DashboardSurveys Surveys { get; }
+
+    public async Task<IActionResult> OnPostSubmitSurveyAsync(Guid surveyId, Guid revision, CancellationToken cancellationToken)
+    {
+        if (await GetCurrentTutorIdAsync(cancellationToken) is null)
+            return Forbid();
+
+        var result = await Surveys.SubmitAsync(_currentUserService.GetRequiredUser().BcUserId, surveyId, revision,
+            await Request.ReadFormAsync(cancellationToken), cancellationToken);
+        if (result == DashboardSurveys.SubmissionResult.Invalid)
+            return await OnGetAsync(cancellationToken);
+
+        if (result == DashboardSurveys.SubmissionResult.Submitted)
+            TempData["SuccessMessage"] = DashboardSurveys.SubmittedMessage;
+        else
+            TempData["ErrorMessage"] = DashboardSurveys.ChangedMessage;
+
+        return RedirectToPage();
+    }
 
     public async Task<IActionResult> OnPostGenerateTeamsLinkAsync(int bookingId, CancellationToken cancellationToken)
     {
@@ -107,6 +129,8 @@ public class TutorDashboardModel : PageModel
         await _lifecycleService.ProcessDueTransitionsAsync(cancellationToken);
         CurrentUser currentUser = _currentUserService.GetRequiredUser();
         CanApplyForHeadOfTutor = currentUser.Role != BcUserRole.HeadOfTutors;
+        await Surveys.LoadAsync(currentUser.BcUserId, cancellationToken);
+
         TutorApplicationSettings? applicationSettings = await _context
             .TutorApplicationSettings
             .AsNoTracking()

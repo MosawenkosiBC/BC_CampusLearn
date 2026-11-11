@@ -1,0 +1,356 @@
+@page
+@model BC_CampusLearn.Pages.Administrator.Settings.SurveyModel
+@{
+    ViewData["Title"] = "Survey settings";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-settings.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/survey-settings.css" asp-append-version="true" />
+}
+
+<main class="admin-settings" aria-labelledby="settings-title">
+    <header class="admin-dashboard-header"><h1 id="settings-title">Settings</h1></header>
+    <div class="settings-layout">
+        <partial name="_SettingsNavigation" />
+        <section class="settings-section survey-settings" aria-labelledby="survey-title">
+            <header class="settings-section-heading">
+                <div>
+                    <h2 id="survey-title">Survey</h2>
+                    <p>Build feedback surveys for students and tutors.</p>
+                </div>
+            </header>
+            <nav class="survey-audiences" aria-label="Survey audiences">
+                @foreach (var audience in Enum.GetValues<SurveyAudience>())
+                {
+                    <a asp-page="./Survey" asp-route-audience="@audience"
+                       aria-current="@(Model.Audience == audience ? "page" : null)">@audience</a>
+                }
+            </nav>
+
+            @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+            {
+                @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.SuccessMessage))
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.ListErrorMessage))
+            {
+                @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(Model.ListErrorMessage, CampusAlertVariant.Danger))
+            }
+
+            @if (!Model.IsEditing)
+            {
+                <div class="survey-workspace">
+                    <div class="survey-toolbar survey-toolbar--list">
+                        <a class="settings-primary-button" asp-page="./Survey"
+                           asp-route-audience="@Model.Audience" asp-route-create="true">Create survey</a>
+                    </div>
+                    @if (Model.Surveys.Count == 0)
+                    {
+                        <div class="settings-empty">
+                            <i class="bi bi-card-checklist" aria-hidden="true"></i>
+                            <h3>No surveys yet</h3>
+                            <p>Create a survey to start adding questions for this group.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <ol class="survey-list" role="list">
+                            @for (int index = 0; index < Model.Surveys.Count; index++)
+                            {
+                                var survey = Model.Surveys[index];
+                                <li>
+                                    <div class="survey-list-details">
+                                        <span class="survey-list-number" aria-hidden="true">@(index + 1)</span>
+                                        <div class="survey-list-copy">
+                                            <a class="survey-list-edit" asp-page="./Survey" asp-route-audience="@Model.Audience" asp-route-surveyId="@survey.Id">
+                                                <div class="survey-list-heading">
+                                                    <strong>@survey.Title</strong>
+                                                    @if (survey.ClosingDate is DateOnly closingDate)
+                                                    {
+                                                        <span>Closes <time datetime="@closingDate.ToString("yyyy-MM-dd")">@closingDate.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture)</time></span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>No closing date</span>
+                                                    }
+                                                </div>
+                                                <div class="survey-list-meta">
+                                                    @if (survey.PublishedAt is DateTimeOffset publishedAt)
+                                                    {
+                                                        <span>Published</span>
+                                                        <span aria-hidden="true"> | </span>
+                                                        <time datetime="@publishedAt.ToString("O")">@publishedAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm") SAST</time>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>Draft</span>
+                                                    }
+                                                </div>
+                                            </a>
+                                            @if (survey.PublishedAt.HasValue)
+                                            {
+                                                <a class="survey-results-link survey-list-results" asp-page="./SurveyResults" asp-route-audience="@Model.Audience"
+                                                   asp-route-surveyId="@survey.Id" target="_blank" rel="noopener"
+                                                   aria-label="Results for @survey.Title (opens in a new tab)">
+                                                    Results
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path fill="currentColor" d="M18 7.05a1 1 0 0 0-1-1L9 6a1 1 0 0 0 0 2h5.56l-8.27 8.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0L16 9.42V15a1 1 0 0 0 1 1a1 1 0 0 0 1-1Z" />
+                                                    </svg>
+                                                </a>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(survey.Description))
+                                            {
+                                                <div class="survey-list-description">@survey.Description</div>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="survey-list-actions">
+                                        <button type="button" class="survey-delete-button" aria-label="Delete @survey.Title"
+                                                data-bs-toggle="modal" data-bs-target="#survey-delete-modal"
+                                                data-survey-id="@survey.Id" data-survey-revision="@survey.Revision"
+                                                data-survey-title="@survey.Title">Delete</button>
+                                        @if (Model.Audience == SurveyAudience.Tutors && survey.PublishedAt.HasValue)
+                                        {
+                                            <form method="post" asp-page-handler="DashboardPopup">
+                                                <input type="hidden" name="surveyId" value="@survey.Id" />
+                                                <input type="hidden" name="revision" value="@survey.Revision" />
+                                                <input type="hidden" name="showPopup" value="@(survey.ShowDashboardPopup ? "false" : "true")" />
+                                                <button type="submit" class="settings-switch survey-popup-switch" role="switch"
+                                                        aria-label="Dashboard popup for @survey.Title"
+                                                        aria-checked="@(survey.ShowDashboardPopup ? "true" : "false")">
+                                                    <span aria-hidden="true"></span>
+                                                    <small aria-hidden="true">@(survey.ShowDashboardPopup ? "On" : "Off")</small>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </li>
+                            }
+                        </ol>
+                    }
+                </div>
+            }
+            else
+            {
+                <form method="post" asp-page-handler="Save" class="survey-workspace" data-survey-editor
+                      data-max-items="@SurveyModel.MaxQuestions" data-max-entries="@SurveyModel.MaxEntries">
+                    <input asp-for="Audience" type="hidden" />
+                    <input asp-for="Input.SurveyId" type="hidden" />
+                    <input asp-for="Input.Revision" type="hidden" />
+                    <input asp-for="Input.QuestionsJson" type="hidden" data-survey-questions />
+
+                    <header class="survey-toolbar">
+                        <h3>@(Model.Input.Revision is null ? "Create survey" : "Edit survey")</h3>
+                        <a class="settings-primary-button" asp-page="./Survey" asp-route-audience="@Model.Audience">Back to surveys</a>
+                    </header>
+                    <div asp-validation-summary="ModelOnly" class="settings-validation" role="alert"></div>
+                    <div class="settings-field-grid">
+                        <div class="settings-field">
+                            <label asp-for="Input.Title">Survey title</label>
+                            <input asp-for="Input.Title" aria-describedby="survey-title-error" />
+                            <span asp-validation-for="Input.Title" id="survey-title-error"></span>
+                        </div>
+                        <div class="settings-field">
+                            <label asp-for="Input.ClosingDate">Closing date (optional)</label>
+                            <input asp-for="Input.ClosingDate" type="text" placeholder="dd/mm/yyyy" autocomplete="off" />
+                            <span asp-validation-for="Input.ClosingDate"></span>
+                            <small>Responses close at midnight SAST after this date.</small>
+                        </div>
+                    </div>
+                    <div class="settings-field">
+                        <label asp-for="Input.Description">Survey description (optional)</label>
+                        <textarea asp-for="Input.Description" rows="2" maxlength="2000"></textarea>
+                        <span asp-validation-for="Input.Description"></span>
+                    </div>
+
+                    <noscript><p>Enable JavaScript to edit and save survey questions.</p></noscript>
+                    <div class="survey-builder" data-survey-builder hidden>
+                        <h4>Questions</h4>
+                        <div class="survey-questions" data-question-list></div>
+                        <p class="survey-limit" data-question-limit hidden>You've reached the limit of @SurveyModel.MaxQuestions items.</p>
+                        <details class="survey-picker" data-question-picker>
+                            <summary><i class="bi bi-plus-circle" aria-hidden="true"></i> Add new question</summary>
+                            <div class="survey-types">
+                                <button type="button" data-question-type="Choice"><i class="bi bi-ui-radios" aria-hidden="true"></i> Choice</button>
+                                <button type="button" data-question-type="Text"><i class="bi bi-fonts" aria-hidden="true"></i> Text</button>
+                                <button type="button" data-question-type="Rating"><i class="bi bi-star" aria-hidden="true"></i> Rating</button>
+                                <button type="button" data-question-type="Date"><i class="bi bi-calendar3" aria-hidden="true"></i> Date</button>
+                                <button type="button" data-question-type="Ranking"><i class="bi bi-arrow-down-up" aria-hidden="true"></i> Ranking</button>
+                                <button type="button" data-question-type="Likert"><i class="bi bi-grid-3x3" aria-hidden="true"></i> Likert</button>
+                                <button type="button" data-question-type="FileUpload"><i class="bi bi-upload" aria-hidden="true"></i> Upload file</button>
+                                <button type="button" data-question-type="NetPromoterScore"><i class="bi bi-speedometer2" aria-hidden="true"></i> Net Promoter Score</button>
+                                <button type="button" data-question-type="Section"><i class="bi bi-layout-text-window" aria-hidden="true"></i> Section</button>
+                            </div>
+                        </details>
+                        <p class="visually-hidden" role="status" data-editor-status></p>
+                        <footer class="survey-actions">
+                            @if (Model.IsPublished)
+                            {
+                                <button type="submit" class="settings-primary-button" data-requires-question disabled>Save changes</button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="settings-secondary-button" disabled>Save draft</button>
+                                <button type="submit" asp-page-handler="Publish" class="settings-primary-button" data-requires-question disabled>Publish</button>
+                            }
+                        </footer>
+                    </div>
+
+                    <template data-question-template>
+                        <fieldset class="survey-question">
+                            <legend class="visually-hidden" data-question-heading></legend>
+                            <button type="button" class="survey-question-summary" data-question-summary>
+                                <span data-question-number aria-hidden="true"></span>
+                                <span>
+                                    <span class="visually-hidden">Edit </span><span data-summary-prompt></span>
+                                    <span class="survey-required-mark" data-summary-required hidden>
+                                        <span aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
+                                    </span>
+                                </span>
+                            </button>
+                            <div class="survey-question-actions">
+                                <button type="button" data-action="duplicate" aria-label="Duplicate item" title="Duplicate item"><i class="bi bi-files" aria-hidden="true"></i></button>
+                                <button type="button" data-action="remove" aria-label="Remove item" title="Remove item"><i class="bi bi-trash" aria-hidden="true"></i></button>
+                                <button type="button" data-action="down" aria-label="Move item down" title="Move item down"><i class="bi bi-arrow-down" aria-hidden="true"></i></button>
+                                <button type="button" data-action="up" aria-label="Move item up" title="Move item up"><i class="bi bi-arrow-up" aria-hidden="true"></i></button>
+                            </div>
+                            <label class="survey-prompt">
+                                <span data-question-number aria-hidden="true"></span>
+                                <span class="visually-hidden" data-prompt-label>Question</span>
+                                <input class="survey-input" data-field="prompt" placeholder="Question" maxlength="500" required />
+                            </label>
+                            <div class="survey-question-body" inert>
+                                <div data-for-types="Choice Ranking" hidden>
+                                    <div class="survey-option-list" data-option-list></div>
+                                    <div class="survey-entry-actions">
+                                        <button class="survey-add" type="button" data-action="add-option"><i class="bi bi-plus-lg" aria-hidden="true"></i> Add option</button>
+                                        <button class="survey-add" type="button" data-action="add-other" data-for-types="Choice" hidden>Add “Other” option</button>
+                                    </div>
+                                </div>
+                                <div data-for-types="Text" hidden>
+                                    <input class="survey-preview" data-short-answer placeholder="Enter your answer" aria-label="Short answer preview" disabled />
+                                    <textarea class="survey-preview" data-long-answer rows="3" placeholder="Enter your answer" aria-label="Long answer preview" disabled hidden></textarea>
+                                </div>
+                                <div data-for-types="Rating" hidden>
+                                    <div class="survey-rating-preview" data-rating-preview role="img"></div>
+                                    <div class="survey-entry-actions survey-rating-controls">
+                                        <label>Levels
+                                            <select class="survey-input" data-field="ratingLevels">
+                                                @for (int levels = 2; levels <= 10; levels++)
+                                                {
+                                                    <option value="@levels">@levels</option>
+                                                }
+                                            </select>
+                                        </label>
+                                        <label>Symbol
+                                            <select class="survey-input" data-field="ratingSymbol">
+                                                <option value="Star">Star</option>
+                                                <option value="Number">Number</option>
+                                            </select>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="survey-date-preview" data-for-types="Date" hidden>
+                                    <input class="survey-preview" placeholder="Please input date (dd/mm/yyyy)" aria-label="Date answer preview" disabled />
+                                    <i class="bi bi-calendar3" aria-hidden="true"></i>
+                                </div>
+                                <div data-for-types="Likert" hidden>
+                                    <div class="survey-matrix-scroll" role="region" aria-label="Likert scale editor" tabindex="0">
+                                        <table class="survey-matrix" data-likert-table></table>
+                                    </div>
+                                    <button class="survey-add" type="button" data-action="add-statement"><i class="bi bi-plus-lg" aria-hidden="true"></i> Add statement</button>
+                                </div>
+                                <div data-for-types="NetPromoterScore" hidden>
+                                    <div class="survey-score-preview" aria-label="Score scale from 0 to 10" role="img">
+                                        @for (int score = 0; score <= 10; score++)
+                                        {
+                                            <span aria-hidden="true">@score</span>
+                                        }
+                                    </div>
+                                    <div class="survey-score-labels">
+                                        <input class="survey-input" data-field="lowScoreLabel" maxlength="160" aria-label="Label for score 0" />
+                                        <input class="survey-input" data-field="highScoreLabel" maxlength="160" aria-label="Label for score 10" />
+                                    </div>
+                                </div>
+                                <label class="settings-field" data-for-types="Section" hidden>
+                                    <span>Section description (optional)</span>
+                                    <textarea data-field="description" rows="2" maxlength="2000"></textarea>
+                                </label>
+                                <p class="survey-question-note" data-for-types="FileUpload" hidden>This draft item marks where respondents will be asked to upload a file.</p>
+                            </div>
+                            <div class="survey-question-flags">
+                                <label class="settings-switch" data-for-types="Choice" hidden><input type="checkbox" data-field="multipleAnswers" /><span aria-hidden="true"></span><strong>Multiple answers</strong></label>
+                                <label class="settings-switch" data-for-types="Text" hidden><input type="checkbox" data-field="longAnswer" /><span aria-hidden="true"></span><strong>Long answer</strong></label>
+                                <label class="settings-switch"><input type="checkbox" data-field="required" /><span aria-hidden="true"></span><strong>Required</strong></label>
+                            </div>
+                        </fieldset>
+                    </template>
+                    <template data-entry-template>
+                        <div class="survey-entry">
+                            <input class="survey-input" maxlength="160" required />
+                            <button type="button" class="survey-entry-remove" data-action="remove-entry"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                        </div>
+                    </template>
+                </form>
+            }
+        </section>
+    </div>
+</main>
+
+@section Modals {
+    @if (Model.IsEditing)
+    {
+        <div class="modal fade" id="survey-missing-question-modal" tabindex="-1" aria-hidden="true"
+             aria-labelledby="survey-missing-question-title" aria-describedby="survey-missing-question-warning"
+             data-open-on-load="@(Model.ShowMissingQuestionWarning ? "true" : "false")">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5" id="survey-missing-question-title">Add a question</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0" id="survey-missing-question-warning">A published survey needs at least one question.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="settings-primary-button" data-bs-dismiss="modal">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    @if (Model.Surveys.Count > 0)
+    {
+        <div class="modal fade" id="survey-delete-modal" tabindex="-1" aria-hidden="true"
+             aria-labelledby="survey-delete-title" aria-describedby="survey-delete-warning">
+            <div class="modal-dialog modal-dialog-centered">
+                <form class="modal-content" method="post" asp-page-handler="Delete">
+                    <input type="hidden" name="audience" value="@Model.Audience" />
+                    <input type="hidden" name="surveyId" />
+                    <input type="hidden" name="revision" />
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5" id="survey-delete-title">Delete survey?</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0 text-break" id="survey-delete-warning">
+                            You are about to permanently delete <strong data-survey-delete-name></strong>, its questions, and any submitted responses.
+                            This action cannot be undone.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="settings-secondary-button" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="settings-danger-button" disabled>Delete survey</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+}
+
+@section Scripts {
+    @if (Model.IsEditing || Model.Surveys.Count > 0)
+    {
+        <script src="~/js/survey-settings.js" asp-append-version="true"></script>
+    }
+}

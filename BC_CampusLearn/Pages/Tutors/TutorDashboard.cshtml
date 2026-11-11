@@ -67,7 +67,7 @@
             new CampusAlertViewModel(message))
     }
 
-    @if (TempData["ErrorMessage"] is string errorMessage)
+    @if ((Model.Surveys.AvailabilityError ?? TempData["ErrorMessage"] as string) is string errorMessage)
     {
         @await Html.PartialAsync("_CampusAlert",
             new CampusAlertViewModel(
@@ -895,6 +895,8 @@
 @section Modals {
 <partial name="_JoinMeetingUnavailableModal" />
 
+<partial name="_DashboardSurveyModal" model="Model.Surveys" />
+
 @if (Model.ShowSeniorTutorApplicationButton)
 {
     <div class="modal fade tutor-account-modal"
@@ -1242,4 +1244,8 @@
     <script src="~/js/tutor-sessions.js"
             asp-append-version="true"></script>
     <script src="~/js/session-confirmation.js" asp-append-version="true"></script>
+    @if (Model.Surveys.Forms.Count > 0)
+    {
+        <script src="~/js/dashboard-surveys.js" asp-append-version="true"></script>
+    }
 }

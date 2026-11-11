@@ -31,6 +31,15 @@
 <section class="container py-4 dashboard-page">
     <h1 class="text-center">Dashboard</h1>
 
+    @if (TempData["SurveySuccessMessage"] is string surveyMessage)
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(surveyMessage))
+    }
+    @if ((Model.Surveys.AvailabilityError ?? TempData["SurveyErrorMessage"] as string) is string surveyError)
+    {
+        @await Html.PartialAsync("_CampusAlert", new CampusAlertViewModel(surveyError, CampusAlertVariant.Danger))
+    }
+
     @if (!string.IsNullOrWhiteSpace(Model.SessionActionMessage))
     {
         @await Html.PartialAsync("_CampusAlert",
@@ -744,6 +753,7 @@
 </aside>
 
 @section Modals {
+    <partial name="_DashboardSurveyModal" model="Model.Surveys" />
     <partial name="_JoinMeetingUnavailableModal" />
 
     @foreach (var booking in Model.Sessions.Where(item =>
@@ -819,4 +829,8 @@
             asp-append-version="true"></script>
     <script src="~/js/student-dashboard.js"
             asp-append-version="true"></script>
+    @if (Model.Surveys.Forms.Count > 0)
+    {
+        <script src="~/js/dashboard-surveys.js" asp-append-version="true"></script>
+    }
 }
