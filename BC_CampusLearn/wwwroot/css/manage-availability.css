@@ -263,6 +263,11 @@ html.manage-availability-document body.modal-open .sticky-top {
     line-height: 1.45;
 }
 
+.booking-calendar-setting-field .booking-lead-time-supporting-text {
+    color: #6f7680;
+    margin-bottom: 0.15rem;
+}
+
 .booking-calendar-weekend-setting {
     align-items: center;
     border: 1px solid #eceef1;
