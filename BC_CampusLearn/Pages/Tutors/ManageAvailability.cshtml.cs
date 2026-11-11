@@ -38,7 +38,7 @@ public class ManageAvailabilityModel : PageModel
     public TimeOnly? SessionTime { get; set; }
 
     [BindProperty]
-    public string MinimumBookingLeadTime { get; set; } =
+    public string? MinimumBookingLeadTime { get; set; } =
         "0";
 
     [BindProperty]
@@ -425,11 +425,13 @@ public class ManageAvailabilityModel : PageModel
             return Forbid();
         }
 
-        if (!int.TryParse(
+        int minimumBookingLeadTimeMinutes = 0;
+        if (!string.IsNullOrWhiteSpace(MinimumBookingLeadTime) &&
+            (!int.TryParse(
                 MinimumBookingLeadTime,
-                out int minimumBookingLeadTimeMinutes) ||
-            minimumBookingLeadTimeMinutes < 0 ||
-            minimumBookingLeadTimeMinutes > BookingLeadTimePolicy.MaximumMinutes)
+                out minimumBookingLeadTimeMinutes) ||
+             minimumBookingLeadTimeMinutes < 0 ||
+             minimumBookingLeadTimeMinutes > BookingLeadTimePolicy.MaximumMinutes))
         {
             ModelState.AddModelError(
                 nameof(MinimumBookingLeadTime),

@@ -129,9 +129,13 @@
         today.getFullYear(),
         today.getMonth() + 12,
         1);
-    let selectedDateKey = toDateKey(today);
-    let visibleMonth = today.getMonth();
-    let visibleYear = today.getFullYear();
+    const firstAvailableSlot = availability.find((slot) => !slot.isBooked);
+    const initialCalendarDate = firstAvailableSlot?.date ?? today;
+    let selectedDateKey = firstAvailableSlot
+        ? toDateKey(firstAvailableSlot.date)
+        : toDateKey(today);
+    let visibleMonth = initialCalendarDate.getMonth();
+    let visibleYear = initialCalendarDate.getFullYear();
 
     function selectModule(module) {
         selectedModule = module;
@@ -669,9 +673,13 @@
             today.getFullYear(), today.getMonth(), 1);
         const finalVisibleMonth = new Date(
             today.getFullYear(), today.getMonth() + 12, 1);
-        let visibleMonth = today.getMonth();
-        let visibleYear = today.getFullYear();
-        let selectedDateKey = null;
+        const firstAvailableSlot = availability[0] ?? null;
+        const initialCalendarDate = firstAvailableSlot?.date ?? today;
+        let visibleMonth = initialCalendarDate.getMonth();
+        let visibleYear = initialCalendarDate.getFullYear();
+        let selectedDateKey = firstAvailableSlot
+            ? toDateKey(firstAvailableSlot.date)
+            : null;
 
         const renderTimes = () => {
             timeOptions.replaceChildren();
