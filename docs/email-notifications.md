@@ -23,6 +23,9 @@ not put Microsoft credentials in source control.
    direct link.
 5. Confirm that the existing app registration has its institution-approved
    `Mail.Send` application access. No separate app registration is used.
+6. Optionally tune `EmailNotifications__BatchSize` (default `100`, maximum
+   `500`) and `EmailNotifications__PollingIntervalSeconds` (default `30`,
+   minimum `5`) for the expected announcement volume.
 
 Development email delivery is disabled in `appsettings.Development.json`.
 

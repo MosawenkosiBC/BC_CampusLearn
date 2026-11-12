@@ -6,6 +6,7 @@ using BC_CampusLearn.Services.Announcements;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using AnnouncementDetailsModel = BC_CampusLearn.Pages.Announcements.DetailsModel;
 
@@ -165,7 +166,8 @@ public class AnnouncementTests
     private static ApplicationDbContext CreateContext() => new(
         new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
     private static NotificationsModel CreatePage(ApplicationDbContext context, BcUserRole role = BcUserRole.Admin) =>
-        new(context, User(1, role), TimeProvider.System);
+        new(context, User(1, role), TimeProvider.System,
+            NullLogger<NotificationsModel>.Instance);
     private static ICurrentUserService User(int id, BcUserRole role) => new TestUser(new(id, null, "Test user", null, role));
     private sealed class TestUser(CurrentUser user) : ICurrentUserService
     {

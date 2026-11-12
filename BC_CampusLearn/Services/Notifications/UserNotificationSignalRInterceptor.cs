@@ -40,41 +40,46 @@ public sealed class UserNotificationSignalRInterceptor(
             _pendingNotifications;
         _pendingNotifications = Array.Empty<UserNotification>();
 
-        foreach (UserNotification notification in notifications)
+        foreach (UserNotification[] batch in notifications.Chunk(100))
         {
-            try
-            {
-                await hubContext.Clients
-                    .Group(SessionHub.GetUserGroupName(
-                        notification.RecipientBcUserId))
-                    .SendAsync(
-                        "ReceiveUserNotification",
-                        new
-                        {
-                            notification.UserNotificationId,
-                            notification.Title,
-                            notification.Message,
-                            notification.CreatedAt,
-                            OpenUrl =
-                                $"/Notifications?notificationId={notification.UserNotificationId}"
-                        },
-                        CancellationToken.None);
-            }
-            catch (Exception exception)
-            {
-                logger.LogWarning(
-                    exception,
-                    "Could not deliver notification {NotificationId} " +
-                    "to user {RecipientBcUserId} in real time.",
-                    notification.UserNotificationId,
-                    notification.RecipientBcUserId);
-            }
+            await Task.WhenAll(batch.Select(SendNotificationAsync));
         }
 
         return await base.SavedChangesAsync(
             eventData,
             result,
             cancellationToken);
+    }
+
+    private async Task SendNotificationAsync(UserNotification notification)
+    {
+        try
+        {
+            await hubContext.Clients
+                .Group(SessionHub.GetUserGroupName(
+                    notification.RecipientBcUserId))
+                .SendAsync(
+                    "ReceiveUserNotification",
+                    new
+                    {
+                        notification.UserNotificationId,
+                        notification.Title,
+                        notification.Message,
+                        notification.CreatedAt,
+                        OpenUrl =
+                            $"/Notifications?notificationId={notification.UserNotificationId}"
+                    },
+                    CancellationToken.None);
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(
+                exception,
+                "Could not deliver notification {NotificationId} " +
+                "to user {RecipientBcUserId} in real time.",
+                notification.UserNotificationId,
+                notification.RecipientBcUserId);
+        }
     }
 
     public override Task SaveChangesFailedAsync(

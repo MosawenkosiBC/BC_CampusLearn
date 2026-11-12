@@ -57,7 +57,8 @@ public class UserNotificationSignalRInterceptorTests
             new BcUser { BcUserId = 3, DisplayName = "Tutor", Role = BcUserRole.SeniorTutor });
         await context.SaveChangesAsync();
         var page = new BC_CampusLearn.Pages.Administrator.Settings.NotificationsModel(
-            context, new AnnouncementUser(), TimeProvider.System);
+            context, new AnnouncementUser(), TimeProvider.System,
+            NullLogger<BC_CampusLearn.Pages.Administrator.Settings.NotificationsModel>.Instance);
         page.Input = new()
         {
             Title = "Workshop", Content = "Join the workshop.",

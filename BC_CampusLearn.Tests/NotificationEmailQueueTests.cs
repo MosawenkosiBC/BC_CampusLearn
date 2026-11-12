@@ -79,4 +79,23 @@ public class NotificationEmailQueueTests
         Assert.Contains(emails, email => email.RecipientEmail == "student@example.com");
         Assert.Contains(emails, email => email.RecipientEmail == "tutor@example.com");
     }
+
+    [Fact]
+    public async Task NewEvents_QueueWithoutDuplicateLookupAndIgnoreInvalidAddresses()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+        await using var context = new ApplicationDbContext(options);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+
+        NotificationEmailQueue.AddNewEvent(context, "announcement:new:1",
+            "student@example.com", "Student", "Announcement", "Body", null, now);
+        NotificationEmailQueue.AddNewEvent(context, "announcement:new:2",
+            "not-an-email", "Student", "Announcement", "Body", null, now);
+        await context.SaveChangesAsync();
+
+        EmailNotificationOutbox email = await context.EmailNotificationOutbox.SingleAsync();
+        Assert.Equal("announcement:new:1", email.EventKey);
+        Assert.Equal("student@example.com", email.RecipientEmail);
+    }
 }

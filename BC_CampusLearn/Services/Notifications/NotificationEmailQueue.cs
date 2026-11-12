@@ -21,9 +21,7 @@ public static class NotificationEmailQueue
         string? actionPath,
         DateTimeOffset createdAt)
     {
-        string email = recipientEmail?.Trim() ?? string.Empty;
-        if (!MailAddress.TryCreate(email, out MailAddress? address) ||
-            !string.Equals(address.Address, email, StringComparison.OrdinalIgnoreCase))
+        if (!TryNormalizeEmail(recipientEmail, out _))
         {
             return;
         }
@@ -39,6 +37,27 @@ public static class NotificationEmailQueue
             return;
         }
 
+        AddNewEvent(context, eventKey, recipientEmail, recipientName, subject,
+            body, actionPath, createdAt);
+    }
+
+    // Use only when the caller creates a fresh event key that cannot already
+    // exist, such as an event containing a newly generated announcement ID.
+    public static void AddNewEvent(
+        ApplicationDbContext context,
+        string eventKey,
+        string? recipientEmail,
+        string? recipientName,
+        string subject,
+        string body,
+        string? actionPath,
+        DateTimeOffset createdAt)
+    {
+        if (!TryNormalizeEmail(recipientEmail, out string email))
+        {
+            return;
+        }
+
         context.EmailNotificationOutbox.Add(new EmailNotificationOutbox
         {
             EventKey = eventKey,
@@ -50,6 +69,13 @@ public static class NotificationEmailQueue
             CreatedAt = createdAt,
             NextAttemptAt = createdAt
         });
+    }
+
+    private static bool TryNormalizeEmail(string? recipientEmail, out string email)
+    {
+        email = recipientEmail?.Trim() ?? string.Empty;
+        return MailAddress.TryCreate(email, out MailAddress? address) &&
+            string.Equals(address.Address, email, StringComparison.OrdinalIgnoreCase);
     }
 
     public static string Greeting(string? name) =>

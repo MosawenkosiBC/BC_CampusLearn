@@ -14,6 +14,8 @@ public sealed class EmailNotificationOptions
     public string SenderMailbox { get; set; } =
         "mzalaconnect@belgiumcampus.ac.za";
     public string PublicBaseUrl { get; set; } = string.Empty;
+    public int BatchSize { get; set; } = 100;
+    public int PollingIntervalSeconds { get; set; } = 30;
 }
 
 public sealed class EmailDeliveryException(

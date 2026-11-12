@@ -14,9 +14,10 @@ public sealed class EmailNotificationWorker(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        int pollingIntervalSeconds = Math.Clamp(
+            options.Value.PollingIntervalSeconds, 5, 300);
         using PeriodicTimer timer = new(
-            TimeSpan.FromMinutes(1),
-            timeProvider);
+            TimeSpan.FromSeconds(pollingIntervalSeconds), timeProvider);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -39,6 +40,7 @@ public sealed class EmailNotificationWorker(
             IEmailNotificationClient client = scope.ServiceProvider
                 .GetRequiredService<IEmailNotificationClient>();
             DateTimeOffset now = timeProvider.GetUtcNow();
+            int batchSize = Math.Clamp(options.Value.BatchSize, 1, 500);
             List<EmailNotificationOutbox> pending = await context
                 .EmailNotificationOutbox
                 .Where(item =>
@@ -46,8 +48,15 @@ public sealed class EmailNotificationWorker(
                     item.FailedAt == null &&
                     item.NextAttemptAt <= now)
                 .OrderBy(item => item.CreatedAt)
-                .Take(10)
+                .Take(batchSize)
                 .ToListAsync(cancellationToken);
+
+            if (pending.Count > 0)
+            {
+                logger.LogInformation(
+                    "Processing {EmailCount} pending email notifications.",
+                    pending.Count);
+            }
 
             foreach (EmailNotificationOutbox email in pending)
             {

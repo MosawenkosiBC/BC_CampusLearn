@@ -7,6 +7,7 @@ using BC_CampusLearn.Services.Tutors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace BC_CampusLearn.Tests;
@@ -173,7 +174,8 @@ public class AdminNotificationSettingsTests
         new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
     private static NotificationsModel Page(ApplicationDbContext context, BcUserRole role = BcUserRole.Admin) =>
-        new(context, new UserService(role), TimeProvider.System);
+        new(context, new UserService(role), TimeProvider.System,
+            NullLogger<NotificationsModel>.Instance);
     private sealed class UserService(BcUserRole role) : ICurrentUserService
     {
         public bool IsAuthenticated => true;

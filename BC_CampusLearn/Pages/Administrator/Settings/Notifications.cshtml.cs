@@ -12,7 +12,8 @@ using Microsoft.EntityFrameworkCore;
 namespace BC_CampusLearn.Pages.Administrator.Settings;
 
 public class NotificationsModel(ApplicationDbContext context,
-    ICurrentUserService currentUserService, TimeProvider timeProvider) : PageModel
+    ICurrentUserService currentUserService, TimeProvider timeProvider,
+    ILogger<NotificationsModel> logger) : PageModel
 {
     [BindProperty] public AnnouncementInput Input { get; set; } = new();
     [BindProperty(SupportsGet = true)] public string Tab { get; set; } = "announcements";
@@ -49,56 +50,79 @@ public class NotificationsModel(ApplicationDbContext context,
             return Page();
         }
 
-        var recipients = context.BcUsers.AsNoTracking().Where(user =>
-            user.Role == BcUserRole.Student || user.Role == BcUserRole.Tutor ||
-            user.Role == BcUserRole.SeniorTutor || user.Role == BcUserRole.HeadOfTutors);
-        if (Input.Audience == AnnouncementAudience.TutorsOnly)
-            recipients = recipients.Where(user => user.Tutor != null &&
-                user.Tutor.Status == TutorStatus.Approved && user.Tutor.IsActive);
-        var selectedRecipients = await recipients.Select(user => new
+        try
         {
-            user.BcUserId, user.Email, user.DisplayName
-        }).ToListAsync(cancellationToken);
-        if (selectedRecipients.Count == 0)
+            var recipients = context.BcUsers.AsNoTracking().Where(user =>
+                user.Role == BcUserRole.Student || user.Role == BcUserRole.Tutor ||
+                user.Role == BcUserRole.SeniorTutor || user.Role == BcUserRole.HeadOfTutors);
+            if (Input.Audience == AnnouncementAudience.TutorsOnly)
+                recipients = recipients.Where(user => user.Tutor != null &&
+                    user.Tutor.Status == TutorStatus.Approved && user.Tutor.IsActive);
+            var selectedRecipients = await recipients.Select(user => new
+            {
+                user.BcUserId, user.Email, user.DisplayName
+            }).ToListAsync(cancellationToken);
+            if (selectedRecipients.Count == 0)
+            {
+                ModelState.AddModelError(string.Empty, "There are no recipients for the selected audience.");
+                await LoadTemplatesAsync(cancellationToken);
+                return Page();
+            }
+
+            var announcement = new Announcement
+            {
+                Title = Input.Title, Content = Input.Content, Audience = Input.Audience,
+                SenderBcUserId = currentUserService.GetRequiredUser().BcUserId,
+                SentAt = timeProvider.GetUtcNow()
+            };
+            string preview = text.Length > 300 ? text[..300] + "…" : text;
+            string announcementUrl = $"/Announcements/Details?announcementId={announcement.AnnouncementId}";
+            string emailMessage = text.Length > 7000
+                ? text[..7000] + "…\n\nSign in to read the full announcement."
+                : text;
+            int emailCountBefore = context.EmailNotificationOutbox.Local.Count;
+            foreach (var recipient in selectedRecipients)
+            {
+                announcement.Notifications.Add(new UserNotification
+                {
+                    RecipientBcUserId = recipient.BcUserId, Title = announcement.Title,
+                    Message = preview, CreatedAt = announcement.SentAt,
+                    LinkUrl = announcementUrl
+                });
+                NotificationEmailQueue.AddNewEvent(context,
+                    $"announcement:{announcement.AnnouncementId}:{recipient.BcUserId}",
+                    recipient.Email, recipient.DisplayName, announcement.Title,
+                    $"{NotificationEmailQueue.Greeting(recipient.DisplayName)}\n\n{emailMessage}",
+                    announcementUrl, announcement.SentAt);
+            }
+            int queuedEmails = context.EmailNotificationOutbox.Local.Count - emailCountBefore;
+            context.Announcements.Add(announcement);
+            logger.LogInformation(
+                "Saving announcement {AnnouncementId} for {RecipientCount} recipients with {EmailCount} queued emails.",
+                announcement.AnnouncementId, selectedRecipients.Count, queuedEmails);
+            // The existing interceptor sends ReceiveUserNotification through SignalR after saving.
+            await context.SaveChangesAsync(cancellationToken);
+            logger.LogInformation(
+                "Saved announcement {AnnouncementId} for {RecipientCount} recipients.",
+                announcement.AnnouncementId, selectedRecipients.Count);
+            SuccessMessage = $"Announcement sent to {selectedRecipients.Count} recipient{(selectedRecipients.Count == 1 ? "" : "s")}. " +
+                $"{queuedEmails} email{(queuedEmails == 1 ? "" : "s")} queued for delivery.";
+            return RedirectToPage();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            ModelState.AddModelError(string.Empty, "There are no recipients for the selected audience.");
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception,
+                "Announcement delivery failed for audience {Audience}.", Input.Audience);
+            context.ChangeTracker.Clear();
+            ModelState.AddModelError(string.Empty,
+                "The announcement could not be sent. Nothing was delivered. Please try again or contact support if the problem continues.");
             await LoadTemplatesAsync(cancellationToken);
             return Page();
         }
-
-        var announcement = new Announcement
-        {
-            Title = Input.Title, Content = Input.Content, Audience = Input.Audience,
-            SenderBcUserId = currentUserService.GetRequiredUser().BcUserId,
-            SentAt = timeProvider.GetUtcNow()
-        };
-        string preview = text.Length > 300 ? text[..300] + "…" : text;
-        string announcementUrl = $"/Announcements/Details?announcementId={announcement.AnnouncementId}";
-        string emailMessage = text.Length > 7000
-            ? text[..7000] + "…\n\nSign in to read the full announcement."
-            : text;
-        int emailCountBefore = context.EmailNotificationOutbox.Local.Count;
-        foreach (var recipient in selectedRecipients)
-        {
-            announcement.Notifications.Add(new UserNotification
-            {
-                RecipientBcUserId = recipient.BcUserId, Title = announcement.Title,
-                Message = preview, CreatedAt = announcement.SentAt,
-                LinkUrl = announcementUrl
-            });
-            NotificationEmailQueue.Add(context,
-                $"announcement:{announcement.AnnouncementId}:{recipient.BcUserId}",
-                recipient.Email, recipient.DisplayName, announcement.Title,
-                $"{NotificationEmailQueue.Greeting(recipient.DisplayName)}\n\n{emailMessage}",
-                announcementUrl, announcement.SentAt);
-        }
-        int queuedEmails = context.EmailNotificationOutbox.Local.Count - emailCountBefore;
-        context.Announcements.Add(announcement);
-        // The existing interceptor sends ReceiveUserNotification through SignalR after saving.
-        await context.SaveChangesAsync(cancellationToken);
-        SuccessMessage = $"Announcement sent to {selectedRecipients.Count} recipient{(selectedRecipients.Count == 1 ? "" : "s")}. " +
-            $"{queuedEmails} email{(queuedEmails == 1 ? "" : "s")} queued for delivery.";
-        return RedirectToPage();
     }
 
     public async Task<IActionResult> OnPostSaveTemplateAsync(
