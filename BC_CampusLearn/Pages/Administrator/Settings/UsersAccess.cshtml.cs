@@ -329,11 +329,9 @@ public class UsersAccessModel(
                     IsAdministrativeRole(selected.Role), selected.IsAdministrativeAccessActive);
         }
         IQueryable<BcUser> query = context.BcUsers.AsNoTracking()
-            .Where(user => user.Role == BcUserRole.SeniorTutor ||
-                user.Role == BcUserRole.HeadOfTutors ||
+            .Where(user => user.Role == BcUserRole.HeadOfTutors ||
                 user.Role == BcUserRole.Admin ||
-                user.Role == BcUserRole.SuperAdmin ||
-                user.Role == BcUserRole.Dev);
+                user.Role == BcUserRole.SuperAdmin);
         TotalAccessUsers = await query.CountAsync(cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(SearchTerm))

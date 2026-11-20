@@ -871,28 +871,56 @@ public class AdminSettingsTests
     }
 
     [Fact]
-    public async Task SeniorTutorIsListedInUsersAndAccessSettings()
+    public async Task UsersAccessOnlyListsAdministrativeRoles()
     {
         await using ApplicationDbContext context = CreateContext();
         AddBaseData(context, BcUserRole.SuperAdmin);
-        context.BcUsers.Add(new BcUser
-        {
-            BcUserId = 2,
-            Email = "senior@campus.test",
-            DisplayName = "Senior Tutor",
-            Role = BcUserRole.SeniorTutor,
-            Tutor = AccessTutor(2)
-        });
+        context.BcUsers.AddRange(
+            new BcUser
+            {
+                BcUserId = 2,
+                Email = "senior@campus.test",
+                DisplayName = "Senior Tutor",
+                Role = BcUserRole.SeniorTutor,
+                Tutor = AccessTutor(2)
+            },
+            new BcUser
+            {
+                BcUserId = 3,
+                Email = "head@campus.test",
+                DisplayName = "Head of Tutor",
+                Role = BcUserRole.HeadOfTutors,
+                Tutor = AccessTutor(3)
+            },
+            new BcUser
+            {
+                BcUserId = 4,
+                Email = "admin@campus.test",
+                DisplayName = "Admin",
+                Role = BcUserRole.Admin
+            },
+            new BcUser
+            {
+                BcUserId = 5,
+                Email = "developer@campus.test",
+                DisplayName = "Developer",
+                Role = BcUserRole.Dev
+            });
         await context.SaveChangesAsync();
         var page = CreateAccessPage(context, BcUserRole.SuperAdmin);
 
         await page.OnGetAsync(CancellationToken.None);
 
-        UsersAccessModel.AccessUserRow user = Assert.Single(
-            page.AccessUsers,
-            user => user.BcUserId == 2);
-        Assert.Equal(BcUserRole.SeniorTutor, user.Role);
-        Assert.Equal("Senior Tutor", UsersAccessModel.RoleLabel(user.Role));
+        Assert.Equal(3, page.AccessUsers.Count);
+        Assert.All(page.AccessUsers, user => Assert.Contains(user.Role,
+            new[]
+            {
+                BcUserRole.Admin,
+                BcUserRole.SuperAdmin,
+                BcUserRole.HeadOfTutors
+            }));
+        Assert.DoesNotContain(page.AccessUsers, user =>
+            user.Role is BcUserRole.SeniorTutor or BcUserRole.Dev);
     }
 
     [Fact]
