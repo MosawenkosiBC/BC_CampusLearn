@@ -39,6 +39,7 @@ public class TutorDocumentsTests
         Assert.Equal("lebo@example.test", page.Input.EmailAddress);
         Assert.Equal("0821234567", page.Input.CellNumber);
         Assert.Equal("Example Bank", page.Input.BankName);
+        Assert.Equal("250655", page.Input.BranchCode);
     }
 
     [Fact]
@@ -76,6 +77,7 @@ public class TutorDocumentsTests
         Assert.NotNull(saved.SignedAt);
         TutorBankingDetails banking = await context.TutorBankingDetails.SingleAsync();
         Assert.Equal("Example Bank", banking.BankName);
+        Assert.Equal("250655", banking.BranchCode);
         Assert.NotNull(pdf.Data);
         Assert.Same(saved, pdf.Data!.PersonalInformation);
     }
@@ -159,6 +161,7 @@ public class TutorDocumentsTests
         EmergencyContactPrimaryPhone = "0831234567",
         EmergencyContactRelationship = "Parent",
         BankName = "Example Bank",
+        BranchCode = "250655",
         AccountNumber = "1234567890",
         AccountHolderName = "Lebo Nkosi",
         AccountType = "Cheque",

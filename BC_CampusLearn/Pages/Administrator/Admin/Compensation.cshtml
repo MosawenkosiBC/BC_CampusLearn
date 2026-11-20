@@ -78,15 +78,15 @@
             <div class="compensation-table-scroll">
                 <table class="compensation-table">
                     <caption class="visually-hidden">Tutor earnings for @Model.PeriodLabel</caption>
-                    <thead><tr><th scope="col">Tutor</th><th scope="col">Role</th><th scope="col">Personnel number</th><th scope="col">Campus</th><th scope="col" class="numeric">Approved sessions</th><th scope="col" class="numeric">Amount earned</th></tr></thead>
+                    <thead><tr><th scope="col">Tutor</th><th scope="col">Role</th><th scope="col">Personnel number</th><th scope="col">Campus</th><th scope="col">Branch code</th><th scope="col" class="numeric">Approved sessions</th><th scope="col" class="numeric">Amount earned</th></tr></thead>
                     <tbody>
                         @if (Model.Tutors.Count == 0)
                         {
-                            <tr><td colspan="6" class="compensation-empty">No approved sessions in this period. Choose another date range to view earnings.</td></tr>
+                            <tr><td colspan="7" class="compensation-empty">No approved sessions in this period. Choose another date range to view earnings.</td></tr>
                         }
                         @foreach (var tutor in Model.PagedTutors)
                         {
-                            <tr><td><a asp-page="/Administrator/Tutors/Profile" asp-route-id="@tutor.TutorId" asp-route-returnUrl="@profileReturnUrl">@tutor.Name</a></td><td>@tutor.RoleLabel</td><td>@tutor.PersonnelNumber</td><td>@tutor.Campus</td><td class="numeric">@tutor.ApprovedSessions</td><td class="numeric">@Money(tutor.Earnings)</td></tr>
+                            <tr><td><a asp-page="/Administrator/Tutors/Profile" asp-route-id="@tutor.TutorId" asp-route-returnUrl="@profileReturnUrl">@tutor.Name</a></td><td>@tutor.RoleLabel</td><td>@tutor.PersonnelNumber</td><td>@tutor.Campus</td><td>@(string.IsNullOrWhiteSpace(tutor.BranchCode) ? "—" : tutor.BranchCode)</td><td class="numeric">@tutor.ApprovedSessions</td><td class="numeric">@Money(tutor.Earnings)</td></tr>
                         }
                     </tbody>
                 </table>

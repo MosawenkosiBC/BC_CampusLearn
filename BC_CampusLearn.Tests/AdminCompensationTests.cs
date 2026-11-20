@@ -217,6 +217,8 @@ public class AdminCompensationTests
         var page = Page(context);
         // Load the screen before an update; the download must still read current banking data.
         await page.OnGetAsync(CancellationToken.None);
+        Assert.Equal("001234", page.Tutors.Single(tutor => tutor.TutorId == 1).BranchCode);
+        Assert.Equal(string.Empty, page.Tutors.Single(tutor => tutor.TutorId == 2).BranchCode);
         first.Tutor.BankingDetails.BankName = "Updated Bank";
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();

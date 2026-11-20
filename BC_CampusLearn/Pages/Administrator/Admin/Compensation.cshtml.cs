@@ -137,6 +137,15 @@ public class CompensationModel(
                 group.Count(), group.Any(session => session.Amount is null)
                     ? null : group.Sum(session => session.Amount ?? 0m), group.First().TutorRole))
             .OrderBy(tutor => tutor.Name).ThenBy(tutor => tutor.TutorId).ToList();
+        var tutorIds = Tutors.Select(tutor => tutor.TutorId).ToList();
+        var branchCodes = await context.TutorBankingDetails.AsNoTracking()
+            .Where(details => tutorIds.Contains(details.TutorId))
+            .ToDictionaryAsync(details => details.TutorId, details => details.BranchCode,
+                cancellationToken);
+        Tutors = Tutors.Select(tutor => tutor with
+        {
+            BranchCode = branchCodes.GetValueOrDefault(tutor.TutorId) ?? string.Empty
+        }).ToList();
         TotalPages = Math.Max(1, (int)Math.Ceiling(Tutors.Count / (double)PageSize));
         TutorPage = Math.Clamp(TutorPage, 1, TotalPages);
         PagedTutors = Tutors.Skip((TutorPage - 1) * PageSize).Take(PageSize).ToList();
@@ -146,6 +155,7 @@ public class CompensationModel(
         string Email, string Campus, int ApprovedSessions, decimal? Earnings, BcUserRole TutorRole = BcUserRole.Tutor)
     {
         public TutorBankingDetails? BankingDetails { get; init; }
+        public string BranchCode { get; init; } = string.Empty;
         public string RoleLabel => TutorRole switch
         {
             BcUserRole.HeadOfTutors => "Head of Tutor",

@@ -75,6 +75,7 @@
                         <legend>Banking details</legend>
                         <div class="form-grid">
                             <div class="form-field"><label asp-for="Input.BankName" class="required-label"></label><input asp-for="Input.BankName" data-required /><span asp-validation-for="Input.BankName"></span></div>
+                            <div class="form-field"><label asp-for="Input.BranchCode" class="required-label"></label><input asp-for="Input.BranchCode" inputmode="numeric" data-required /><span asp-validation-for="Input.BranchCode"></span></div>
                             <div class="form-field"><label asp-for="Input.AccountNumber" class="required-label"></label><input asp-for="Input.AccountNumber" inputmode="numeric" data-required /><span asp-validation-for="Input.AccountNumber"></span></div>
                             <div class="form-field"><label asp-for="Input.AccountHolderName" class="required-label"></label><input asp-for="Input.AccountHolderName" data-required /><span asp-validation-for="Input.AccountHolderName"></span></div>
                             <div class="form-field"><label asp-for="Input.AccountType" class="required-label"></label><input asp-for="Input.AccountType" data-required /><span asp-validation-for="Input.AccountType"></span></div>

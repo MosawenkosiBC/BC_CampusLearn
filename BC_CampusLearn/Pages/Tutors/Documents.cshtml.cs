@@ -165,6 +165,7 @@ public class DocumentsModel : PageModel
             EmergencyContactPrimaryPhone = info?.EmergencyContactPrimaryPhone,
             EmergencyContactRelationship = info?.EmergencyContactRelationship,
             BankName = banking?.BankName,
+            BranchCode = banking?.BranchCode,
             AccountNumber = banking?.RecipientAccountNumber,
             AccountHolderName = banking?.AccountHolder,
             AccountType = banking?.AccountType,
@@ -195,8 +196,7 @@ public class DocumentsModel : PageModel
 
         TutorBankingDetails banking = tutor.BankingDetails ?? new()
         {
-            TutorId = tutor.TutorId,
-            BranchCode = string.Empty
+            TutorId = tutor.TutorId
         };
         if (tutor.BankingDetails is null)
         {
@@ -236,6 +236,7 @@ public class DocumentsModel : PageModel
         tutor.BcUser.Email = Input.EmailAddress!.Trim();
         tutor.UpdatedAt = DateTime.UtcNow;
         banking.BankName = Input.BankName!.Trim();
+        banking.BranchCode = Input.BranchCode!.Trim();
         banking.RecipientAccountNumber = Input.AccountNumber!.Trim();
         banking.AccountHolder = Input.AccountHolderName!.Trim();
         banking.AccountType = Input.AccountType!.Trim();
@@ -424,6 +425,9 @@ public class DocumentsModel : PageModel
 
         [Required, StringLength(150), Display(Name = "Bank name")]
         public string? BankName { get; set; }
+
+        [Required, StringLength(20), Display(Name = "Branch code")]
+        public string? BranchCode { get; set; }
 
         [Required, StringLength(50), Display(Name = "Account number")]
         public string? AccountNumber { get; set; }
