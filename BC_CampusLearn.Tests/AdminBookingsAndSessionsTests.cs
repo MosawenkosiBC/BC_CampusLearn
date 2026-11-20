@@ -223,7 +223,7 @@ public class AdminBookingsAndSessionsTests
         Assert.DoesNotContain(page.Sessions, session => session.StudentName == "Dana Student");
         Assert.DoesNotContain(page.Sessions, session => session.StudentName == "Alex Student");
         Assert.DoesNotContain(page.Sessions, session => session.StudentName == "Bianca Student");
-        Assert.Equal("Valid", page.Sessions
+        Assert.Equal("Approved", page.Sessions
             .Single(session => session.StudentName == "Chris Student")
             .AdminApprovalLabel);
         Assert.Equal("Approved", page.Sessions.Single().TutorHeadDecisionLabel);
@@ -381,13 +381,13 @@ public class AdminBookingsAndSessionsTests
         BookingsAndSessionsModel.CompletedSessionItem adminRejected =
             page.Sessions.Single(session =>
                 session.StudentName == "Tutor Head Approved");
-        Assert.Equal("Invalid", adminRejected.AdminApprovalLabel);
+        Assert.Equal("Rejected", adminRejected.AdminApprovalLabel);
         Assert.Equal("Approved", adminRejected.TutorHeadDecisionLabel);
 
         BookingsAndSessionsModel.CompletedSessionItem adminAccepted =
             page.Sessions.Single(session =>
                 session.StudentName == "Tutor Head Rejected");
-        Assert.Equal("Valid", adminAccepted.AdminApprovalLabel);
+        Assert.Equal("Approved", adminAccepted.AdminApprovalLabel);
         Assert.Equal("Rejected", adminAccepted.TutorHeadDecisionLabel);
     }
 
@@ -440,7 +440,7 @@ public class AdminBookingsAndSessionsTests
         BookingsAndSessionsModel.CompletedSessionItem pendingSession =
             Assert.Single(pending.Sessions);
         Assert.Equal("Chris Student", pendingSession.StudentName);
-        Assert.Equal("Valid", pendingSession.AdminApprovalLabel);
+        Assert.Equal("Approved", pendingSession.AdminApprovalLabel);
         Assert.Equal("is-reviewed", pendingSession.AdminApprovalCssClass);
         Assert.Equal(13, pending.ReviewStats.AwaitingAdminReviewPercentage);
 
@@ -453,7 +453,7 @@ public class AdminBookingsAndSessionsTests
         BookingsAndSessionsModel.CompletedSessionItem approvedSession =
             Assert.Single(approved.Sessions);
         Assert.Equal("Evan Student", approvedSession.StudentName);
-        Assert.Equal("Valid", approvedSession.AdminApprovalLabel);
+        Assert.Equal("Approved", approvedSession.AdminApprovalLabel);
         Assert.Equal("is-reviewed", approvedSession.AdminApprovalCssClass);
 
         var rejected = new BookingsAndSessionsModel(context, new FixedTimeProvider(), new RoleCurrentUserService(BcUserRole.SuperAdmin))
@@ -464,7 +464,7 @@ public class AdminBookingsAndSessionsTests
         BookingsAndSessionsModel.CompletedSessionItem rejectedSession =
             Assert.Single(rejected.Sessions);
         Assert.Equal("Dana Student", rejectedSession.StudentName);
-        Assert.Equal("Invalid", rejectedSession.AdminApprovalLabel);
+        Assert.Equal("Rejected", rejectedSession.AdminApprovalLabel);
         Assert.Equal("is-rejected", rejectedSession.AdminApprovalCssClass);
     }
 

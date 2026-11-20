@@ -418,8 +418,8 @@ public class BookingsAndSessionsModel(
 
         public string AdminApprovalLabel => IsAdminApproved switch
         {
-            true => "Valid",
-            false => "Invalid",
+            true => "Approved",
+            false => "Rejected",
             _ when !HasTutorHeadReview || SessionReviewWorkflow.IsTutorHeadApproval(TutorHeadDecision) => "Awaiting review",
             _ => TutorHeadDecisionLabel
         };
