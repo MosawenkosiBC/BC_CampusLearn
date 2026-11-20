@@ -21,16 +21,16 @@ public class AdminHeaderViewComponent : ViewComponent
             ?? UserClaimsPrincipal.Identity?.Name
             ?? "Administrator";
         string roleName = GetAdministratorRoleName();
-        bool isSuperAdmin = UserClaimsPrincipal.IsInRole(
-            nameof(BcUserRole.SuperAdmin));
+        bool canReviewApplications = UserClaimsPrincipal.IsInRole(nameof(BcUserRole.Admin)) ||
+            UserClaimsPrincipal.IsInRole(nameof(BcUserRole.SuperAdmin));
 
         var model = new AdminHeaderViewModel
         {
             DisplayName = displayName,
             Initials = GetInitials(displayName),
             RoleName = roleName,
-            IsSuperAdmin = isSuperAdmin,
-            PendingTutorApplications = isSuperAdmin
+            CanReviewApplications = canReviewApplications,
+            PendingTutorApplications = canReviewApplications
                 ? await _context.Tutors
                     .AsNoTracking()
                     .CountAsync(tutor => tutor.Status == TutorStatus.Pending)

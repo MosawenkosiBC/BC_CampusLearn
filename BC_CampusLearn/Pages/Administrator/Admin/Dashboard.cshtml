@@ -408,7 +408,7 @@
                     </span>
                     <strong>Manage tutors</strong>
                 </a>
-                @if (User.IsInRole(nameof(BcUserRole.SuperAdmin)))
+                @if (User.IsInRole(nameof(BcUserRole.Admin)) || User.IsInRole(nameof(BcUserRole.SuperAdmin)))
                 {
                 <a asp-page="/Administrator/Admin/Applications"
                    asp-route-Stage="applications"

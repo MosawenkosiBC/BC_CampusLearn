@@ -23,7 +23,7 @@ public abstract class ManualTutorPageModel(
 
     protected virtual IActionResult RedirectAfterAddTutor() => RedirectToPage();
 
-    public bool CanAddTutor => currentUserService is null ||
+    public virtual bool CanAddTutor => currentUserService is null ||
         (currentUserService.IsAuthenticated &&
          currentUserService.GetRequiredUser().Role == BcUserRole.SuperAdmin);
 

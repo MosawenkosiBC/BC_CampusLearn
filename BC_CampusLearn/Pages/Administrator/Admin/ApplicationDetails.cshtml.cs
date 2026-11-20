@@ -11,7 +11,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BC_CampusLearn.Pages.Administrator.Admin;
 
-[Authorize(Roles = nameof(BcUserRole.SuperAdmin))]
+[Authorize(Roles = nameof(BcUserRole.Admin) + "," + nameof(BcUserRole.SuperAdmin))]
 public class ApplicationDetailsModel(
     ApplicationDbContext context,
     IWebHostEnvironment environment,
