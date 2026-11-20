@@ -104,7 +104,7 @@ public class DashboardModel : PageModel
             .CountAsync(cancellationToken);
 
         bool canReviewApplications = _currentUserService is null ||
-            _currentUserService.GetRequiredUser().Role == BcUserRole.SuperAdmin;
+            _currentUserService.GetRequiredUser().Role is BcUserRole.Admin or BcUserRole.SuperAdmin;
         int pendingTutorApplications = canReviewApplications
             ? await _context.Tutors
                 .AsNoTracking()

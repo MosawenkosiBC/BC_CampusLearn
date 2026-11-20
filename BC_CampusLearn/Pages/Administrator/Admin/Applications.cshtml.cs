@@ -16,9 +16,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BC_CampusLearn.Pages.Administrator.Admin;
 
-[Authorize(Roles = nameof(BcUserRole.SuperAdmin))]
+[Authorize(Roles = nameof(BcUserRole.Admin) + "," + nameof(BcUserRole.SuperAdmin))]
 public class ApplicationsModel : ManualTutorPageModel
 {
+    public override bool CanAddTutor => _currentUserService is null ||
+        (_currentUserService.IsAuthenticated &&
+         _currentUserService.GetRequiredUser().Role is BcUserRole.Admin or BcUserRole.SuperAdmin);
+
     protected override IActionResult RedirectAfterAddTutor() =>
         RedirectToPage(new { Stage = "placement" });
 

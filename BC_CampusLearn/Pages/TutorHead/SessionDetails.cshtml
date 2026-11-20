@@ -162,7 +162,7 @@
                             <button type="button" data-review-next>Next</button>
                         </nav>
                     }
-                    else
+                    else if (Model.CanSubmitTutorHeadReview)
                     {
                         <form method="post" asp-page-handler="TutorHeadReview"
                               asp-route-id="@session.BookingId"
@@ -210,7 +210,7 @@
                                           class="text-danger"></span>
                                 </div>
                                 <div class="tutor-head-review-submit">
-                                    <button type="submit">Save review</button>
+                                    <button type="submit">Submit review</button>
                                 </div>
                             </div>
                             <nav class="admin-session-review-pagination" aria-label="Tutor Head review form pages" hidden>
@@ -219,6 +219,10 @@
                                 <button type="button" data-review-next>Next</button>
                             </nav>
                         </form>
+                    }
+                    else
+                    {
+                        <p class="admin-session-review-empty">A later review has already been recorded for this session.</p>
                     }
                 </div>
             </section>

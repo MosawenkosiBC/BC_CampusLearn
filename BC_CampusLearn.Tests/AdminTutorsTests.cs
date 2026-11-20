@@ -53,7 +53,7 @@ public class AdminTutorsTests
         Assert.Same(evidence, page.TeamsEvidence);
         Assert.Empty(page.StudentReviewAnswers);
         Assert.Empty(page.TutorReviewAnswers);
-        Assert.False(page.CanRecordSuperAdminAssessment);
+        Assert.False(page.CanRecordAdminReview);
         Assert.False(page.CanRecordFinalValidity);
     }
 
@@ -550,9 +550,11 @@ public class AdminTutorsTests
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task SuperAdminSavesAssessmentAndFinalDecisionTogether(bool accepted)
+    [InlineData("Approve", true)]
+    [InlineData("Approve", false)]
+    [InlineData("Reject", false)]
+    [InlineData("Escalate", false)]
+    public async Task ReviewWorkflowRequiresThreeSeparateSubmissions(string headDecision, bool accepted)
     {
         await using var context = CreateContext();
         await SeedTutors(context);
@@ -563,29 +565,30 @@ public class AdminTutorsTests
             TutorCourseModule = assignment,
             ProgrammeModuleId = assignment.ProgrammeModuleId,
             Status = BookingStatus.Completed,
-            StudentEvaluation = new StudentEvaluation(),
-            TutorEvaluation = new TutorStudentEvaluation(),
-            SessionReviews = [new SessionReview
-            {
-                ReviewerBcUserId = 50,
-                Reviewer = new BcUser
-                {
-                    BcUserId = 50,
-                    PersonnelNumber = "H50",
-                    DisplayName = "Tutor Head",
-                    Role = BcUserRole.HeadOfTutors
-                },
-                Rating = 5,
-                CreatedAt = new DateTimeOffset(2026, 9, 21, 9, 0, 0, TimeSpan.Zero)
-            }]
+            StudentEvaluation = new StudentEvaluation()
         };
+        context.BcUsers.AddRange(
+            new BcUser { BcUserId = 50, PersonnelNumber = "H50", Role = BcUserRole.HeadOfTutors },
+            new BcUser { BcUserId = 60, PersonnelNumber = "A60", Role = BcUserRole.Admin },
+            new BcUser { BcUserId = 70, PersonnelNumber = "SA70", Role = BcUserRole.SuperAdmin });
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
 
         DateTimeOffset recordedAt = new(2026, 9, 21, 10, 30, 0, TimeSpan.Zero);
-        var page = new SessionDetailsModel(
+        var headPage = new BC_CampusLearn.Pages.TutorHead.SessionDetailsModel(context,
+            new TestCurrentUserService(BcUserRole.HeadOfTutors, 50), new TestWebHostEnvironment(),
+            new TestTimeProvider(recordedAt.AddMinutes(-5)))
+        {
+            TutorHeadReviewInput = new TutorHeadSessionReviewInput
+            {
+                StudentEngagement = "Yes", ConcernLevel = "No Concerns",
+                OverallAssessment = "Good", Decision = headDecision
+            }
+        };
+        SetPageContext(headPage);
+        var adminPage = new SessionDetailsModel(
             context, new TestWebHostEnvironment(),
-            new TestCurrentUserService(BcUserRole.SuperAdmin),
+            new TestCurrentUserService(BcUserRole.Admin, 60),
             new TestTimeProvider(recordedAt))
         {
             AdminReviewInput = new AdminSessionReviewInput
@@ -595,25 +598,58 @@ public class AdminTutorsTests
                 ConcernsResolvedOrDocumented = true
             }
         };
-        SetPageContext(page);
+        SetPageContext(adminPage);
+        var finalPage = new SessionDetailsModel(context, new TestWebHostEnvironment(),
+            new TestCurrentUserService(BcUserRole.SuperAdmin, 70),
+            new TestTimeProvider(recordedAt.AddMinutes(5)));
+        SetPageContext(finalPage);
+
+        Assert.IsType<BadRequestResult>(await headPage.OnPostTutorHeadReviewAsync(booking.BookingId, default));
+        booking.TutorEvaluation = new TutorStudentEvaluation();
+        await context.SaveChangesAsync();
+        Assert.IsType<BadRequestResult>(await adminPage.OnPostAdminReviewAsync(booking.BookingId, true, default));
+
+        Assert.IsType<RedirectToPageResult>(await headPage.OnPostTutorHeadReviewAsync(booking.BookingId, default));
+        Assert.IsType<BadRequestResult>(await headPage.OnPostTutorHeadReviewAsync(booking.BookingId, default));
+        Assert.IsType<ForbidResult>(await finalPage.OnPostAdminReviewAsync(booking.BookingId, true, default));
+        Assert.IsType<BadRequestResult>(await finalPage.OnPostSuperAdminReviewAsync(booking.BookingId, accepted, default));
+        Assert.Empty(context.AdminSessionReviews);
+        Assert.Empty(context.SuperAdminSessionReviews);
+
+        Assert.IsType<PageResult>(await adminPage.OnGetAsync(booking.BookingId, default));
+        if (headDecision != "Approve")
+        {
+            Assert.False(adminPage.CanRecordAdminReview);
+            Assert.IsType<BadRequestResult>(await adminPage.OnPostAdminReviewAsync(booking.BookingId, true, default));
+            return;
+        }
+
+        Assert.True(adminPage.CanRecordAdminReview);
+        Assert.False(adminPage.CanRecordFinalValidity);
+        Assert.IsType<RedirectToPageResult>(await adminPage.OnPostAdminReviewAsync(booking.BookingId, !accepted, default));
+        Assert.IsType<BadRequestResult>(await adminPage.OnPostAdminReviewAsync(booking.BookingId, accepted, default));
+        Assert.Empty(context.SuperAdminSessionReviews);
+        Assert.IsType<PageResult>(await finalPage.OnGetAsync(booking.BookingId, default));
+        Assert.False(finalPage.CanRecordAdminReview);
+        Assert.True(finalPage.CanRecordFinalValidity);
 
         RedirectToPageResult result = Assert.IsType<RedirectToPageResult>(
-            await page.OnPostSuperAdminReviewAsync(
+            await finalPage.OnPostSuperAdminReviewAsync(
                 booking.BookingId, accepted, CancellationToken.None));
         Assert.Equal("/Administrator/Tutors/SessionDetails", result.PageName);
         Assert.Equal(booking.BookingId, result.RouteValues?["id"]);
         AdminSessionReview saved = await context.AdminSessionReviews.SingleAsync();
         Assert.Equal(booking.BookingId, saved.BookingId);
-        Assert.Equal(1, saved.ReviewerBcUserId);
+        Assert.Equal(60, saved.ReviewerBcUserId);
         Assert.False(saved.ReviewEvidenceIsConsistent);
         Assert.False(saved.HeadConfirmedQuality);
         Assert.True(saved.ConcernsResolvedOrDocumented);
-        Assert.Equal(accepted, saved.EvidenceSupportsApproval);
+        Assert.Equal(!accepted, saved.EvidenceSupportsApproval);
         Assert.Equal(recordedAt, saved.RecordedAt);
         var final = await context.SuperAdminSessionReviews.SingleAsync();
         Assert.Equal(accepted, final.IsAccepted);
-        Assert.Equal(saved.ReviewerBcUserId, final.ReviewerBcUserId);
-        Assert.Equal(recordedAt, final.RecordedAt);
+        Assert.Equal(70, final.ReviewerBcUserId);
+        Assert.Equal(recordedAt.AddMinutes(5), final.RecordedAt);
     }
 
     [Fact]
@@ -766,7 +802,8 @@ public class AdminTutorsTests
         Assert.IsType<PageResult>(
             await page.OnGetAsync(booking.BookingId, CancellationToken.None));
         Assert.Equal(review.SessionReviewId, page.TutorHeadReview?.SessionReviewId);
-        Assert.True(page.CanRecordSuperAdminAssessment);
+        Assert.False(page.CanRecordAdminReview);
+        Assert.False(page.CanRecordFinalValidity);
         Assert.True(page.HasVisibleTutorHeadConcern);
         Assert.Contains(page.TutorHeadReviewAnswers,
             answer => answer.Question == "4. Decision" && answer.Value == "Approve");

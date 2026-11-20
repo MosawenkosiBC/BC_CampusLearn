@@ -14,6 +14,14 @@
         ? "/Administrator/Admin/Dashboard"
         : "/Student/Dashboard";
     bool isDashboard = currentPage == dashboardPage;
+    bool canReviewApplications = User.IsInRole(nameof(BcUserRole.Admin)) ||
+        User.IsInRole(nameof(BcUserRole.SuperAdmin));
+    bool isApplications = currentPage.Equals(
+        "/Administrator/Admin/Applications",
+        StringComparison.OrdinalIgnoreCase) ||
+        currentPage.Equals(
+            "/Administrator/Admin/ApplicationDetails",
+            StringComparison.OrdinalIgnoreCase);
     bool isTutorDashboard = currentPage.Equals(
         "/Tutors/TutorDashboard",
         StringComparison.OrdinalIgnoreCase) ||
@@ -124,6 +132,15 @@
                aria-current="@(isDashboard ? "page" : null)">
                 <span>Dashboard</span>
             </a>
+
+            @if (canReviewApplications)
+            {
+                <a asp-page="/Administrator/Admin/Applications"
+                   class="navigation-drawer-link @(isApplications ? "is-active" : null)"
+                   aria-current="@(isApplications ? "page" : null)">
+                    <span>Applications</span>
+                </a>
+            }
 
             @if (isTutor)
             {

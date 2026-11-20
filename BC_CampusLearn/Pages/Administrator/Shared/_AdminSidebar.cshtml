@@ -13,7 +13,10 @@
             StringComparison.OrdinalIgnoreCase);
     bool isApplications = currentPage.Equals(
         "/Administrator/Admin/Applications",
-        StringComparison.OrdinalIgnoreCase);
+        StringComparison.OrdinalIgnoreCase) ||
+        currentPage.Equals(
+            "/Administrator/Admin/ApplicationDetails",
+            StringComparison.OrdinalIgnoreCase);
     bool isBookingsAndSessions = currentPage.Equals(
             "/Administrator/Admin/BookingsAndSessions",
             StringComparison.OrdinalIgnoreCase) ||
@@ -101,7 +104,7 @@
             </a>
         }
 
-        @if (User.IsInRole(nameof(BcUserRole.SuperAdmin)))
+        @if (User.IsInRole(nameof(BcUserRole.Admin)) || User.IsInRole(nameof(BcUserRole.SuperAdmin)))
         {
         <a asp-page="/Administrator/Admin/Applications"
            class="admin-sidebar-link @(isApplications ? "is-active" : null)"

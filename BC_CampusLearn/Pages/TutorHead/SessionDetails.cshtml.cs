@@ -43,6 +43,9 @@ public class SessionDetailsModel(
 
     public SessionReview? TutorHeadReview { get; private set; }
 
+    public bool CanSubmitTutorHeadReview => TutorHeadReview is null &&
+        Session.AdminSessionReview is null && Session.SuperAdminSessionReview is null;
+
     [BindProperty]
     public TutorHeadSessionReviewInput TutorHeadReviewInput { get; set; } = new();
 
@@ -95,10 +98,31 @@ public class SessionDetailsModel(
         int id,
         CancellationToken cancellationToken)
     {
+        CurrentUser currentUser = currentUserService.GetRequiredUser();
+        if (currentUser.Role != BcUserRole.HeadOfTutors) return Forbid();
+
+        return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+        {
+            // Serialize the handoff so concurrent submissions by different Tutor Heads cannot both win.
+            await using var transaction = context.Database.IsRelational()
+                ? await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
+                : null;
+            IActionResult result = await SaveTutorHeadReviewAsync(id, currentUser, cancellationToken);
+            if (transaction is not null) await transaction.CommitAsync(cancellationToken);
+            return result;
+        });
+    }
+
+    private async Task<IActionResult> SaveTutorHeadReviewAsync(
+        int id, CurrentUser currentUser, CancellationToken cancellationToken)
+    {
         Booking? booking = await context.Bookings
+            .AsNoTracking()
             .Include(item => item.StudentEvaluation)
             .Include(item => item.TutorEvaluation)
-            .Include(item => item.SessionReviews)
+            .Include(item => item.AdminSessionReview)
+            .Include(item => item.SuperAdminSessionReview)
+            .Include(item => item.SessionReviews).ThenInclude(review => review.Reviewer)
             .Include(item => item.TutorCourseModule)
                 .ThenInclude(item => item.Tutor)
             .SingleOrDefaultAsync(item => item.BookingId == id,
@@ -109,9 +133,9 @@ public class SessionDetailsModel(
             return NotFound();
         }
 
-        if (booking.Status != BookingStatus.Completed ||
-            booking.StudentEvaluation is null ||
-            booking.TutorEvaluation is null)
+        if (!SessionReviewWorkflow.HasParticipantReviews(booking) ||
+            booking.AdminSessionReview is not null || booking.SuperAdminSessionReview is not null ||
+            SessionReviewWorkflow.LatestTutorHeadReview(booking) is not null)
         {
             return BadRequest();
         }
@@ -124,34 +148,34 @@ public class SessionDetailsModel(
                 cancellationToken);
         }
 
-        CurrentUser currentUser = currentUserService.GetRequiredUser();
-        SessionReview review = booking.SessionReviews.FirstOrDefault(item =>
-            item.ReviewerBcUserId == currentUser.BcUserId) ?? new SessionReview
-            {
-                BookingId = booking.BookingId,
-                ReviewerBcUserId = currentUser.BcUserId,
-                RevieweeBcUserId = booking.TutorCourseModule.Tutor.BcUserId
-            };
-
-        review.StudentEngagement = TutorHeadReviewInput.StudentEngagement;
-        review.ConcernLevel = TutorHeadReviewInput.ConcernLevel;
-        review.OverallAssessment = TutorHeadReviewInput.OverallAssessment;
-        review.Decision = TutorHeadReviewInput.Decision;
-        review.Comment = string.IsNullOrWhiteSpace(
-            TutorHeadReviewInput.AdditionalComments)
-            ? null
-            : TutorHeadReviewInput.AdditionalComments.Trim();
-        review.Rating = AssessmentRating(
-            TutorHeadReviewInput.OverallAssessment!);
-        review.CreatedAt = timeProvider.GetUtcNow();
-
-        if (review.SessionReviewId == 0)
+        var review = new SessionReview
         {
-            context.SessionReviews.Add(review);
-        }
+            BookingId = id,
+            ReviewerBcUserId = currentUser.BcUserId,
+            RevieweeBcUserId = booking.TutorCourseModule.Tutor.BcUserId,
+            StudentEngagement = TutorHeadReviewInput.StudentEngagement,
+            ConcernLevel = TutorHeadReviewInput.ConcernLevel,
+            OverallAssessment = TutorHeadReviewInput.OverallAssessment,
+            Decision = TutorHeadReviewInput.Decision,
+            Comment = string.IsNullOrWhiteSpace(TutorHeadReviewInput.AdditionalComments)
+                ? null
+                : TutorHeadReviewInput.AdditionalComments.Trim(),
+            Rating = AssessmentRating(TutorHeadReviewInput.OverallAssessment!),
+            CreatedAt = timeProvider.GetUtcNow()
+        };
 
-        await context.SaveChangesAsync(cancellationToken);
-        TutorHeadReviewMessage = "Tutor Head review saved.";
+        context.SessionReviews.Add(review);
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        finally
+        {
+            context.Entry(review).State = EntityState.Detached;
+        }
+        TutorHeadReviewMessage = SessionReviewWorkflow.IsTutorHeadApproval(review.Decision)
+            ? "Tutor Head approval sent to Admin for review."
+            : "Tutor Head review saved.";
         return RedirectToPage(new { id, returnUrl = SessionReviewsReturnUrl });
     }
 
@@ -246,6 +270,8 @@ public class SessionDetailsModel(
             .Include(booking => booking.ProgrammeModule)
             .Include(booking => booking.StudentEvaluation)
             .Include(booking => booking.TutorEvaluation)
+            .Include(booking => booking.AdminSessionReview)
+            .Include(booking => booking.SuperAdminSessionReview)
             .Include(booking => booking.SessionReviews)
                 .ThenInclude(review => review.Reviewer)
             .Include(booking => booking.TutorCourseModule)
@@ -267,8 +293,7 @@ public class SessionDetailsModel(
         StudentReviewAnswers = BuildStudentReviewAnswers(session);
         TutorReviewAnswers = BuildTutorReviewAnswers(
             session.TutorEvaluation!);
-        TutorHeadReview = session.SessionReviews.FirstOrDefault(review =>
-            review.Reviewer.Role == BcUserRole.HeadOfTutors);
+        TutorHeadReview = SessionReviewWorkflow.LatestTutorHeadReview(session);
         if (populateInput && TutorHeadReview is { } savedReview)
         {
             TutorHeadReviewInput = new TutorHeadSessionReviewInput

@@ -34,7 +34,7 @@
                     <span>@Model.NotificationCount pending</span>
                 </div>
                 <div class="admin-notification-list">
-                    @if (Model.IsSuperAdmin)
+                    @if (Model.CanReviewApplications)
                     {
                     <a asp-page="/Administrator/Admin/Applications" class="admin-notification-item">
                         <span class="admin-notification-label">Tutor applications

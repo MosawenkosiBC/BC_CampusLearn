@@ -1,5 +1,6 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Bookings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -13,6 +14,7 @@ public sealed class SuperAdminReviewThresholdWorker(
     : BackgroundService
 {
     private const int Threshold = 5;
+    private const string PendingFinalReviewUrl = "/Administrator/Admin/BookingsAndSessions?Stat=pending-final";
     public const string EventKeyPrefix = "superadmin-review-threshold:";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -36,14 +38,11 @@ public sealed class SuperAdminReviewThresholdWorker(
                 .GetRequiredService<ApplicationDbContext>();
             int count = await context.Bookings
                 .AsNoTracking()
+                .Where(SessionReviewWorkflow.AwaitingFinalReview)
                 .CountAsync(booking =>
                     booking.Status == BookingStatus.Completed &&
                     booking.StudentEvaluation != null &&
-                    booking.TutorEvaluation != null &&
-                    booking.SessionReviews.Any(review =>
-                        review.Reviewer.Role == BcUserRole.HeadOfTutors) &&
-                    booking.AdminSessionReview == null &&
-                    booking.SuperAdminSessionReview == null,
+                    booking.TutorEvaluation != null,
                     cancellationToken);
             PlatformSettings settings = await context.PlatformSettings
                 .SingleAsync(item =>
@@ -84,7 +83,7 @@ public sealed class SuperAdminReviewThresholdWorker(
                     RecipientBcUserId = superAdmin.BcUserId,
                     Title = "Sessions awaiting review",
                     Message = $"{count} sessions are awaiting Super Admin review.",
-                    LinkUrl = "/Administrator/Admin/BookingsAndSessions",
+                    LinkUrl = PendingFinalReviewUrl,
                     CreatedAt = now
                 });
                 if (emailOptions.Value.SuperAdminReviewThresholdEmailEnabled)
@@ -98,7 +97,7 @@ public sealed class SuperAdminReviewThresholdWorker(
                         $"{NotificationEmailQueue.Greeting(superAdmin.DisplayName)}" +
                         $"{Environment.NewLine}{Environment.NewLine}" +
                         $"There are currently {count} sessions awaiting Super Admin review.",
-                        "/Administrator/Admin/BookingsAndSessions",
+                        PendingFinalReviewUrl,
                         now);
                 }
             }

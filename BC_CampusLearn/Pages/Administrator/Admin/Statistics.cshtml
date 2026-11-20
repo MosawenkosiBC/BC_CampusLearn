@@ -160,7 +160,11 @@
                 <div class="admin-statistics-review-queue">
                     <div>
                         <span><strong>@Model.AwaitingAdminReviewCount</strong> Awaiting admin review</span>
-                        <small>Student, tutor, and Tutor Head reviews are all submitted.</small>
+                        <small>Tutor Head approved the session.</small>
+                    </div>
+                    <div>
+                        <span><strong>@Model.AwaitingFinalReviewCount</strong> Awaiting Super Admin review</span>
+                        <small>Admin submitted a recommendation.</small>
                     </div>
                     <div>
                         <span><strong>@Model.PendingTutorReviewCount</strong> Awaiting tutor review</span>

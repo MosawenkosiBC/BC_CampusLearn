@@ -1,11 +1,13 @@
 @page "{id:int}"
 @model BC_CampusLearn.Pages.Administrator.Tutors.SessionDetailsModel
 @using BC_CampusLearn.Models.Entities
+@using BC_CampusLearn.Services.Bookings
 @{
     ViewData["Title"] = "Session Information";
     var session = Model.Session;
     var student = session.StudentEvaluation;
     var tutor = session.TutorEvaluation;
+    bool showAdminReview = Model.IsAdmin || Model.IsSuperAdmin;
     var tutorUser = session.TutorCourseModule.Tutor.BcUser;
     string tutorName = string.IsNullOrWhiteSpace(tutorUser.DisplayName)
         ? tutorUser.PersonnelNumber : tutorUser.DisplayName;
@@ -38,6 +40,23 @@
                         aria-controls="session-summary-modal">
                     <span>View Session Summary</span>
                 </button>
+                @if (Model.CanRecordFinalValidity)
+                {
+                    <form id="super-admin-decision-form" method="post" asp-page-handler="SuperAdminReview"
+                          asp-route-id="@session.BookingId" class="admin-session-final-actions">
+                        <button type="submit" name="accepted" value="true"
+                                class="admin-session-final-action is-accept">Mark as valid</button>
+                        <button type="button" class="admin-session-final-action is-reject"
+                                data-bs-toggle="modal" data-bs-target="#reject-session-modal">Mark as rejected</button>
+                    </form>
+                }
+                else if (showAdminReview && session.SuperAdminSessionReview is { } finalReview)
+                {
+                    <p class="admin-session-final-status @(finalReview.IsAccepted ? "is-accepted" : "is-rejected")">
+                        Final validity: @(finalReview.IsAccepted ? "Valid" : "Invalid")
+                        <span>Recorded @finalReview.RecordedAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")</span>
+                    </p>
+                }
                 @if (Model.AiAssessment is not null)
                 {
                     <button type="button" class="tutor-head-view-ai-button"
@@ -127,21 +146,21 @@
         <section class="admin-session-reviews" aria-labelledby="session-reviews-title">
             <h2 id="session-reviews-title" class="visually-hidden">Session reviews</h2>
             <div class="admin-session-review-tabs" role="tablist" aria-label="Session reviews">
-                @if (Model.IsSuperAdmin)
+                @if (showAdminReview)
                 {
                 <button type="button" class="admin-session-review-tab admin-session-review-tab--admin is-active" role="tab"
                         id="administrator-review-tab" aria-controls="administrator-review-tab-panel"
                         aria-selected="true" data-review-tab="administrator-review-tab-panel">
-                    <span>Superadmin Review</span>
+                    <span>Admin Review</span>
                     <strong class="@(session.AdminSessionReview is not null ? "is-submitted" : "is-missing")">
                         @(session.AdminSessionReview is not null ? "Submitted" : "Not submitted")
                     </strong>
                 </button>
                 }
-                <button type="button" class="admin-session-review-tab @(!Model.IsSuperAdmin ? "is-active" : null)" role="tab"
+                <button type="button" class="admin-session-review-tab @(!showAdminReview ? "is-active" : null)" role="tab"
                         id="tutor-head-review-tab" aria-controls="tutor-head-review-panel"
-                        aria-selected="@(!Model.IsSuperAdmin ? "true" : "false")"
-                        tabindex="@(Model.IsSuperAdmin ? "-1" : null)" data-review-tab="tutor-head-review-panel">
+                        aria-selected="@(showAdminReview ? "false" : "true")"
+                        tabindex="@(showAdminReview ? "-1" : null)" data-review-tab="tutor-head-review-panel">
                     <span>Tutor Head Review</span>
                     <strong class="@(Model.TutorHeadReview is not null ? "is-submitted" : "is-missing")">
                         @(Model.TutorHeadReview is not null ? "Submitted" : "Not submitted")
@@ -238,7 +257,7 @@
 
             <section class="admin-session-review-panel-card" id="tutor-head-review-panel"
                      role="tabpanel" aria-labelledby="tutor-head-review-tab"
-                     tabindex="0" hidden="@(Model.IsSuperAdmin)" data-review-panel>
+                     tabindex="0" hidden="@showAdminReview" data-review-panel>
                 <header class="admin-session-review-panel-heading">
                     <div>
                         <h2>Tutor Head Review</h2>
@@ -271,15 +290,15 @@
                 </div>
             </section>
 
-            @if (Model.IsSuperAdmin)
+            @if (showAdminReview)
             {
             <section class="admin-session-review-panel-card"
                      id="administrator-review-tab-panel" role="tabpanel"
                      aria-labelledby="administrator-review-tab" tabindex="0" data-review-panel>
                 <header class="admin-session-review-panel-heading">
                     <div>
-                        <h2>Superadmin Review</h2>
-                        <p>Review the evidence and record the final decision.</p>
+                        <h2>Admin Review</h2>
+                        <p>Review the evidence and send a recommendation to Super Admin.</p>
                     </div>
                     @if (session.AdminSessionReview is { } savedReview)
                     {
@@ -310,17 +329,11 @@
                             </div>
                         </dl>
                     }
-                    else if (!Model.CanRecordFinalValidity)
+                    else if (Model.CanRecordAdminReview)
                     {
-                        <p class="admin-session-review-empty">The Superadmin review is available after the completed session has student, tutor, and Tutor Head reviews.</p>
-                    }
-                    @if (Model.CanRecordFinalValidity)
-                    {
-                        <form id="super-admin-decision-form" method="post" asp-page-handler="SuperAdminReview"
+                        <form method="post" asp-page-handler="AdminReview"
                               asp-route-id="@session.BookingId" class="admin-session-review-form">
                             <div asp-validation-summary="All" class="text-danger"></div>
-                            @if (Model.CanRecordSuperAdminAssessment)
-                            {
                                 @foreach (var question in new[] {
                                     new { Number = 1, Name = "HeadConfirmedQuality", Text = "Has the Tutor Head confirmed that the tutoring met the expected standard for explanation, participation, and support?", Answer = Model.AdminReviewInput.HeadConfirmedQuality },
                                     new { Number = 2, Name = "ReviewEvidenceIsConsistent", Text = "Do the student, tutor, and Tutor Head reviews provide a consistent account of the session?", Answer = Model.AdminReviewInput.ReviewEvidenceIsConsistent },
@@ -337,18 +350,26 @@
                                         </div>
                                     </fieldset>
                                 }
-                            }
                             <div class="admin-session-final-actions">
-                                <button type="submit" name="accepted" value="true"
-                                        class="admin-session-final-action is-accept">Mark as valid</button>
-                                <button type="button" class="admin-session-final-action is-reject"
-                                        data-bs-toggle="modal" data-bs-target="#reject-session-modal">Mark as rejected</button>
+                                <button type="submit" name="recommended" value="true"
+                                        class="admin-session-final-action is-accept">Recommend valid</button>
+                                <button type="submit" name="recommended" value="false"
+                                        class="admin-session-final-action is-reject">Recommend invalid</button>
                             </div>
                         </form>
+                    }
+                    else
+                    {
+                        <p class="admin-session-review-empty">
+                            @(SessionReviewWorkflow.IsTutorHeadApproval(Model.TutorHeadReview?.Decision)
+                                ? "Awaiting the Admin review."
+                                : "Admin review opens after Tutor Head approval.")
+                        </p>
                     }
                 </div>
             </section>
             }
+
             </div>
 
             @if (Model.HasTeamsEvidence)
@@ -434,14 +455,6 @@
             }
             </div>
 
-            @if (Model.IsSuperAdmin && session.SuperAdminSessionReview is { } finalReview)
-            {
-                <p class="admin-session-final-status @(finalReview.IsAccepted ? "is-accepted" : "is-rejected")"
-                   role="status">
-                    Final validity: @(finalReview.IsAccepted ? "Valid" : "Invalid")
-                    <span>Recorded @finalReview.RecordedAt.ToOffset(TimeSpan.FromHours(2)).ToString("dd MMM yyyy, HH:mm")</span>
-                </p>
-            }
         </section>
     </div>
 </section>

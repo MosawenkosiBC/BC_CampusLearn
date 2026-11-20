@@ -1,5 +1,6 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Bookings;
 using BC_CampusLearn.Services.Settings;
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
@@ -47,6 +48,7 @@ public class StatisticsModel(ApplicationDbContext context, TimeProvider timeProv
     public int PendingTutorReviewCount { get; private set; }
     public int PendingTutorHeadReviewCount { get; private set; }
     public int AwaitingAdminReviewCount { get; private set; }
+    public int AwaitingFinalReviewCount { get; private set; }
     public int BothReviewsCompleteCount { get; private set; }
     public int AdminReviewsRecordedCount { get; private set; }
     public int UniqueBookingStudentCount { get; private set; }
@@ -367,15 +369,14 @@ public class StatisticsModel(ApplicationDbContext context, TimeProvider timeProv
             .CountAsync(booking => booking.StudentEvaluation == null, cancellationToken);
         PendingTutorReviewCount = await reviewCompleted
             .CountAsync(booking => booking.TutorEvaluation == null, cancellationToken);
-        PendingTutorHeadReviewCount = await reviewCompleted
-            .CountAsync(booking => booking.StudentEvaluation != null &&
-                booking.TutorEvaluation != null &&
-                booking.AdminSessionReview == null, cancellationToken);
-        AwaitingAdminReviewCount = await reviewCompleted
-            .CountAsync(booking => booking.StudentEvaluation != null &&
-                booking.TutorEvaluation != null &&
-                booking.AdminSessionReview != null &&
-                booking.SuperAdminSessionReview == null, cancellationToken);
+        var participantReviewsComplete = reviewCompleted.Where(booking =>
+            booking.StudentEvaluation != null && booking.TutorEvaluation != null);
+        PendingTutorHeadReviewCount = await participantReviewsComplete
+            .CountAsync(SessionReviewWorkflow.AwaitingTutorHeadReview, cancellationToken);
+        AwaitingAdminReviewCount = await participantReviewsComplete
+            .CountAsync(SessionReviewWorkflow.AwaitingAdminReview, cancellationToken);
+        AwaitingFinalReviewCount = await participantReviewsComplete
+            .CountAsync(SessionReviewWorkflow.AwaitingFinalReview, cancellationToken);
         BothReviewsCompleteCount = await reviewCompleted
             .CountAsync(booking => booking.StudentEvaluation != null &&
                 booking.TutorEvaluation != null, cancellationToken);

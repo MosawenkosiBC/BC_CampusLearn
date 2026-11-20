@@ -44,10 +44,16 @@ public class AdminStatisticsTests
             new() { Tutor = pending, ProgrammeModule = modules[2] }
         ];
         context.TutorCourseModules.AddRange(assignments);
-        context.Bookings.AddRange(
-            NewBooking(assignments[0], Today.AddDays(-5), BookingStatus.Completed, 101,
+        var awaitingFinal = NewBooking(assignments[0], Today.AddDays(-5), BookingStatus.Completed, 101,
                 new StudentEvaluation { ModeRating = 5, PlatformRating = 4 }, new TutorStudentEvaluation(),
-                new AdminSessionReview { ReviewerBcUserId = 900 }),
+                new AdminSessionReview { ReviewerBcUserId = 900 });
+        awaitingFinal.SessionReviews.Add(new SessionReview
+        {
+            Reviewer = new BcUser { BcUserId = 902, PersonnelNumber = "H902", Role = BcUserRole.HeadOfTutors },
+            Decision = "Approve", Rating = 4
+        });
+        context.Bookings.AddRange(
+            awaitingFinal,
             NewBooking(assignments[0], Today.AddDays(-3), BookingStatus.Completed, 102),
             NewBooking(assignments[1], Today.AddDays(-2), BookingStatus.Cancelled, 103),
             NewBooking(assignments[0], Today.AddDays(-1), BookingStatus.Confirmed, 106),
@@ -99,7 +105,8 @@ public class AdminStatisticsTests
         Assert.Equal(1, page.PendingStudentReviewCount);
         Assert.Equal(1, page.PendingTutorReviewCount);
         Assert.Equal(0, page.PendingTutorHeadReviewCount);
-        Assert.Equal(1, page.AwaitingAdminReviewCount);
+        Assert.Equal(0, page.AwaitingAdminReviewCount);
+        Assert.Equal(1, page.AwaitingFinalReviewCount);
         Assert.Equal(2, page.UniqueBookingStudentCount);
         Assert.Equal(5d, page.AverageTutorRating);
         Assert.Equal(4d, page.AveragePlatformRating);
@@ -119,7 +126,7 @@ public class AdminStatisticsTests
 
         Assert.Equal(2, page.UniqueBookingStudentCount);
         Assert.Equal(1, page.PendingTutorReviewCount);
-        Assert.Equal(1, page.AwaitingAdminReviewCount);
+        Assert.Equal(1, page.AwaitingFinalReviewCount);
     }
 
     [Fact]

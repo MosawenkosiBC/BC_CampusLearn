@@ -1,3 +1,4 @@
+using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using BC_CampusLearn.Pages.Administrator.Admin;
@@ -8,8 +9,11 @@ namespace BC_CampusLearn.Tests;
 
 public class AdminDashboardTests
 {
-    [Fact]
-    public async Task DashboardCountsCurrentAdministrativeWorkload()
+    [Theory]
+    [InlineData(BcUserRole.Admin, 2)]
+    [InlineData(BcUserRole.SuperAdmin, 2)]
+    [InlineData(BcUserRole.Dev, 1)]
+    public async Task DashboardCountsCurrentAdministrativeWorkload(BcUserRole role, int pendingCount)
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -50,15 +54,21 @@ public class AdminDashboardTests
                 isPublished: true, publishAt: now.AddHours(1)));
         await context.SaveChangesAsync();
 
-        var page = new DashboardModel(context);
+        var page = new DashboardModel(context, new TestCurrentUserService(role));
         await page.OnGetAsync(CancellationToken.None);
 
         Assert.Equal(1, page.ActiveTutorCount);
         Assert.Equal(2, page.TutorResourceCount);
-        Assert.Equal(2, page.PendingAdminRequestCount);
+        Assert.Equal(pendingCount, page.PendingAdminRequestCount);
         Assert.Equal(1, page.CompletedSessionCount);
         var currentEvent = Assert.Single(page.CurrentEvents);
         Assert.Equal("Current event", currentEvent.Title);
+    }
+
+    private sealed class TestCurrentUserService(BcUserRole role) : ICurrentUserService
+    {
+        public bool IsAuthenticated => true;
+        public CurrentUser GetRequiredUser() => new(1, null, "Test Admin", null, role);
     }
 
     private static Tutor CreateTutor(
