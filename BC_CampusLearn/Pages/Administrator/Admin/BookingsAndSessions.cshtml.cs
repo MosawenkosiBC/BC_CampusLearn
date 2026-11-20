@@ -1,6 +1,7 @@
 using BC_CampusLearn.Authentication;
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
+using BC_CampusLearn.Services.Bookings;
 using BC_CampusLearn.Services.Settings;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -18,7 +19,7 @@ public class BookingsAndSessionsModel(
         ["all", "pending", "approved", "rejected"];
     private static readonly string[] ValidStatFilters =
         ["all", "carried-over", "flagged", "tutor-head-rejected", "awaiting",
-         "pending-admin", "super-admin-approved", "super-admin-rejected"];
+         "pending-admin", "pending-final", "super-admin-approved", "super-admin-rejected"];
     private static readonly string[] ValidPeriods =
         ["month", "week", "day", "custom"];
     private static readonly TimeSpan CampusOffset = TimeSpan.FromHours(2);
@@ -82,10 +83,6 @@ public class BookingsAndSessionsModel(
         if (!IsSuperAdmin)
         {
             Approval = "all";
-            if (Stat is "carried-over" or "awaiting")
-            {
-                Stat = "all";
-            }
         }
         Period = ValidPeriods.Contains(Period, StringComparer.OrdinalIgnoreCase)
             ? Period.ToLowerInvariant()
@@ -96,7 +93,7 @@ public class BookingsAndSessionsModel(
             Stat = "all";
             Approval = "all";
         }
-        else if (Stat is "pending-admin" or "super-admin-approved" or "super-admin-rejected")
+        else if (Stat is "pending-admin" or "pending-final" or "super-admin-approved" or "super-admin-rejected")
         {
             Approval = "all";
         }
@@ -124,23 +121,23 @@ public class BookingsAndSessionsModel(
         IQueryable<Booking> reviewedSessions = evaluatedSessions.Where(booking =>
             booking.SessionReviews.Any(review =>
                 review.Reviewer.Role == BcUserRole.HeadOfTutors));
+        var awaitingAdmin = reviewedSessions.Where(SessionReviewWorkflow.AwaitingAdminReview);
+        var awaitingFinal = reviewedSessions.Where(SessionReviewWorkflow.AwaitingFinalReview);
 
-        int carriedOver = await reviewedSessions.CountAsync(booking =>
+        int carriedOver = await awaitingAdmin.CountAsync(booking =>
             (booking.CompletedAt ?? booking.ScheduledStartTime) <
-                _currentReviewPeriodStart &&
-            booking.AdminSessionReview == null,
+                _currentReviewPeriodStart,
             cancellationToken);
-        int awaitingAdminReview = await reviewedSessions.CountAsync(booking =>
+        int awaitingAdminReview = await awaitingAdmin.CountAsync(booking =>
             (booking.CompletedAt ?? booking.ScheduledStartTime) <
-                _currentReviewPeriodEnd &&
-            booking.AdminSessionReview == null,
+                _currentReviewPeriodEnd,
             cancellationToken);
         int flaggedConcerns = await reviewedSessions.CountAsync(booking =>
             (booking.CompletedAt ?? booking.ScheduledStartTime) <
                 _currentReviewPeriodEnd &&
             ((booking.CompletedAt ?? booking.ScheduledStartTime) >=
                 _currentReviewPeriodStart ||
-             booking.AdminSessionReview == null) &&
+             awaitingAdmin.Any(pending => pending.BookingId == booking.BookingId)) &&
             booking.SessionReviews
                 .Where(review =>
                     review.Reviewer.Role == BcUserRole.HeadOfTutors)
@@ -151,9 +148,8 @@ public class BookingsAndSessionsModel(
         int rejectedByTutorHead = await reviewedSessions.CountAsync(booking =>
             (booking.CompletedAt ?? booking.ScheduledStartTime) <
                 _currentReviewPeriodEnd &&
-            ((booking.CompletedAt ?? booking.ScheduledStartTime) >=
-                _currentReviewPeriodStart ||
-             booking.AdminSessionReview == null) &&
+            (booking.CompletedAt ?? booking.ScheduledStartTime) >=
+                _currentReviewPeriodStart &&
             booking.SessionReviews
                 .Where(review =>
                     review.Reviewer.Role == BcUserRole.HeadOfTutors)
@@ -167,17 +163,21 @@ public class BookingsAndSessionsModel(
             RejectedByTutorHead: rejectedByTutorHead,
             AwaitingAdminReview: awaitingAdminReview);
 
-        var pendingTutorHead = evaluatedSessions.Where(booking =>
-            !booking.SessionReviews.Any(review => review.Reviewer.Role == BcUserRole.HeadOfTutors) &&
+        var pendingTutorHead = evaluatedSessions.Where(SessionReviewWorkflow.AwaitingTutorHeadReview).Where(booking =>
             (booking.CompletedAt ?? booking.ScheduledStartTime) >= periodStart &&
             (booking.CompletedAt ?? booking.ScheduledStartTime) < periodEnd);
         bool includeCarriedOver = Period == "month" && deadlineSettings is not null;
+        var pendingAdmin = awaitingAdmin.Where(booking =>
+            (booking.CompletedAt ?? booking.ScheduledStartTime) < periodEnd &&
+            (Period == "month" || (booking.CompletedAt ?? booking.ScheduledStartTime) >= periodStart));
+        var pendingFinal = awaitingFinal.Where(booking =>
+            (booking.CompletedAt ?? booking.ScheduledStartTime) < periodEnd &&
+            (Period == "month" || (booking.CompletedAt ?? booking.ScheduledStartTime) >= periodStart));
         var reviewedInPeriod = reviewedSessions.Where(booking =>
             (booking.CompletedAt ?? booking.ScheduledStartTime) < periodEnd &&
             ((booking.CompletedAt ?? booking.ScheduledStartTime) >= periodStart ||
-             (includeCarriedOver && booking.AdminSessionReview == null)));
-        var pendingAdmin = reviewedInPeriod.Where(booking =>
-            booking.AdminSessionReview == null && booking.SuperAdminSessionReview == null);
+             (includeCarriedOver && pendingAdmin.Any(pending => pending.BookingId == booking.BookingId)) ||
+             (IsSuperAdmin && pendingFinal.Any(pending => pending.BookingId == booking.BookingId))));
         var superAdminApproved = reviewedInPeriod.Where(booking =>
             booking.SuperAdminSessionReview != null && booking.SuperAdminSessionReview.IsAccepted);
         var superAdminRejected = reviewedInPeriod.Where(booking =>
@@ -189,16 +189,21 @@ public class BookingsAndSessionsModel(
         SuperAdminRejectedCount = await superAdminRejected.CountAsync(cancellationToken);
 
         IQueryable<Booking> filtered = AwaitingTutorHead ? pendingTutorHead : reviewedInPeriod;
+        if (IsSuperAdmin && !AwaitingTutorHead)
+        {
+            filtered = filtered.Where(booking =>
+                booking.AdminSessionReview != null || booking.SuperAdminSessionReview != null);
+        }
 
         filtered = Stat switch
         {
             "pending-admin" => pendingAdmin,
+            "pending-final" => pendingFinal,
             "super-admin-approved" => superAdminApproved,
             "super-admin-rejected" => superAdminRejected,
-            "carried-over" => filtered.Where(booking =>
+            "carried-over" => pendingAdmin.Where(booking =>
                 (booking.CompletedAt ?? booking.ScheduledStartTime) <
-                    _currentReviewPeriodStart &&
-                booking.AdminSessionReview == null),
+                    _currentReviewPeriodStart),
             "flagged" => filtered.Where(booking =>
                 booking.SessionReviews
                     .Where(review =>
@@ -213,15 +218,13 @@ public class BookingsAndSessionsModel(
                     .OrderByDescending(review => review.CreatedAt)
                     .Select(review => review.Decision)
                     .FirstOrDefault() == "Reject"),
-            "awaiting" => filtered.Where(booking =>
-                booking.AdminSessionReview == null),
+            "awaiting" => pendingAdmin,
             _ => filtered
         };
 
         filtered = Approval switch
         {
-            "pending" => filtered.Where(booking =>
-                booking.SuperAdminSessionReview == null),
+            "pending" => pendingFinal,
             "approved" => filtered.Where(booking =>
                 booking.SuperAdminSessionReview != null &&
                 booking.SuperAdminSessionReview.IsAccepted),
@@ -296,10 +299,7 @@ public class BookingsAndSessionsModel(
                     : booking.AdminSessionReview.EvidenceSupportsApproval,
                 booking.SuperAdminSessionReview == null
                     ? null
-                    : booking.SuperAdminSessionReview.IsAccepted,
-                booking.SuperAdminSessionReview == null
-                    ? null
-                    : booking.SuperAdminSessionReview.Reviewer.DisplayName))
+                    : booking.SuperAdminSessionReview.IsAccepted))
             .ToListAsync(cancellationToken);
 
         var matches = SearchableSessions.Where(MatchesSearch).ToList();
@@ -410,8 +410,7 @@ public class BookingsAndSessionsModel(
         string? TutorHeadDecision,
         bool HasTutorHeadConcern,
         bool? IsAdminApproved,
-        bool? IsSuperAdminAccepted,
-        string? SuperAdminDecisionMaker)
+        bool? IsSuperAdminAccepted)
     {
         public string TutorDisplayName => string.IsNullOrWhiteSpace(TutorName)
             ? TutorPersonnelNumber
@@ -421,7 +420,8 @@ public class BookingsAndSessionsModel(
         {
             true => "Recommended valid",
             false => "Recommended invalid",
-            _ => "Awaiting review"
+            _ when SessionReviewWorkflow.IsTutorHeadApproval(TutorHeadDecision) => "Awaiting review",
+            _ => "Not queued"
         };
 
         public string AdminApprovalCssClass => IsAdminApproved switch
@@ -433,8 +433,7 @@ public class BookingsAndSessionsModel(
 
         public string TutorHeadDecisionLabel => TutorHeadDecision switch
         {
-            string decision when decision.Equals("Approve",
-                StringComparison.OrdinalIgnoreCase) => "Approved",
+            _ when SessionReviewWorkflow.IsTutorHeadApproval(TutorHeadDecision) => "Approved",
             string decision when decision.Equals("Reject",
                 StringComparison.OrdinalIgnoreCase) => "Rejected",
             string decision when decision.Equals("Escalate",
@@ -444,8 +443,7 @@ public class BookingsAndSessionsModel(
 
         public string TutorHeadDecisionCssClass => TutorHeadDecision switch
         {
-            string decision when decision.Equals("Approve",
-                StringComparison.OrdinalIgnoreCase) => "is-approved",
+            _ when SessionReviewWorkflow.IsTutorHeadApproval(TutorHeadDecision) => "is-approved",
             string decision when decision.Equals("Reject",
                 StringComparison.OrdinalIgnoreCase) => "is-rejected",
             string decision when decision.Equals("Escalate",
@@ -457,7 +455,9 @@ public class BookingsAndSessionsModel(
         {
             true => "Valid",
             false => "Invalid",
-            _ => "Awaiting approval"
+            _ when IsAdminApproved.HasValue => "Awaiting approval",
+            _ when SessionReviewWorkflow.IsTutorHeadApproval(TutorHeadDecision) => "Awaiting Admin review",
+            _ => "—"
         };
 
         public string SuperAdminDecisionCssClass => IsSuperAdminAccepted switch

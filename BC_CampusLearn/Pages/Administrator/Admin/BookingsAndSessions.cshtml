@@ -113,13 +113,13 @@
                 </label>
 
                 @if (Model.IsSuperAdmin && !Model.AwaitingTutorHead &&
-                    Model.Stat is not ("pending-admin" or "super-admin-approved" or "super-admin-rejected"))
+                    Model.Stat is not ("pending-admin" or "pending-final" or "super-admin-approved" or "super-admin-rejected"))
                 {
                 <label class="session-filter-field">
                     <span>Final session validity</span>
                     <select asp-for="Approval">
                         <option value="all">All approval statuses</option>
-                        <option value="pending">Awaiting review</option>
+                        <option value="pending">Awaiting final review</option>
                         <option value="approved">Accepted</option>
                         <option value="rejected">Rejected</option>
                     </select>
@@ -166,9 +166,9 @@
                             <th scope="col">Location</th>
                             <th scope="col">Session date</th>
                             <th scope="col" class="session-decision-column">Tutor Head decision</th>
+                            <th scope="col">Admin recommendation</th>
                             @if (Model.IsSuperAdmin)
                             {
-                                <th scope="col">Decision recorded by</th>
                                 <th scope="col">Super Admin decision</th>
                             }
                             <th scope="col" class="session-action-heading">Action</th>
@@ -176,7 +176,7 @@
                     </thead>
                     <tbody id="admin-session-results" data-pagination-page-parameter="SessionPage">
                             <tr data-session-empty hidden="@(Model.FilteredSessionCount != 0)">
-                                <td colspan="@(Model.IsSuperAdmin ? 8 : 6)" class="completed-session-empty">
+                                <td colspan="@(Model.IsSuperAdmin ? 8 : 7)" class="completed-session-empty">
                                     No completed sessions match the selected filters.
                                 </td>
                             </tr>
@@ -228,11 +228,11 @@
                                             <span>@session.TutorHeadDecisionLabel</span>
                                         </span>
                                     </td>
+                                    <td>
+                                        <span class="session-approval @session.AdminApprovalCssClass">@session.AdminApprovalLabel</span>
+                                    </td>
                                     @if (Model.IsSuperAdmin)
                                     {
-                                        <td class="@(string.IsNullOrWhiteSpace(session.SuperAdminDecisionMaker) ? "text-center" : null)">
-                                            @(string.IsNullOrWhiteSpace(session.SuperAdminDecisionMaker) ? "—" : session.SuperAdminDecisionMaker)
-                                        </td>
                                         <td>
                                             <span class="session-approval @session.SuperAdminDecisionCssClass">
                                                 @session.SuperAdminDecisionLabel

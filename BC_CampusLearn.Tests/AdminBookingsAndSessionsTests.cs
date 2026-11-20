@@ -37,7 +37,10 @@ public class AdminBookingsAndSessionsTests
 
         await page.OnGetAsync(default);
 
-        Assert.Equal("Fully reviewed", Assert.Single(page.Sessions).StudentName);
+        if (role == BcUserRole.SuperAdmin)
+            Assert.Empty(page.Sessions);
+        else
+            Assert.Equal("Fully reviewed", Assert.Single(page.Sessions).StudentName);
 
         page.AwaitingTutorHead = true;
         await page.OnGetAsync(default);
@@ -49,7 +52,7 @@ public class AdminBookingsAndSessionsTests
     }
 
     [Fact]
-    public async Task SuperAdminQueueReceivesEveryTutorHeadReviewedSession()
+    public async Task SuperAdminQueueReceivesOnlySessionsWithAnAdminRecommendation()
     {
         await using ApplicationDbContext context = CreateContext();
         TutorCourseModule assignment = CreateAssignment();
@@ -90,8 +93,9 @@ public class AdminBookingsAndSessionsTests
         await page.OnGetAsync(CancellationToken.None);
 
         Assert.True(page.IsSuperAdmin);
-        Assert.Equal(3, page.Sessions.Count);
-        Assert.Contains(page.Sessions,
+        Assert.Equal(1, page.PendingAdminCount);
+        Assert.Equal(2, page.Sessions.Count);
+        Assert.DoesNotContain(page.Sessions,
             session => session.StudentName == "Awaiting Admin");
         Assert.Contains(page.Sessions,
             session => session.StudentName == "Ready For Superadmin" &&
@@ -102,6 +106,14 @@ public class AdminBookingsAndSessionsTests
             session => Assert.Equal(
                 "Awaiting approval",
                 session.SuperAdminDecisionLabel));
+
+        page.Stat = "pending-admin";
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Equal("Awaiting Admin", Assert.Single(page.Sessions).StudentName);
+
+        page.Stat = "pending-final";
+        await page.OnGetAsync(CancellationToken.None);
+        Assert.Equal(2, page.Sessions.Count);
     }
 
     [Fact]
@@ -268,7 +280,7 @@ public class AdminBookingsAndSessionsTests
         BookingsAndSessionsModel.CompletedSessionItem pendingTutorHeadRejection =
             page.Sessions.Single(session =>
                 session.StudentName == "Rejected Student");
-        Assert.Equal("Awaiting review", pendingTutorHeadRejection.AdminApprovalLabel);
+        Assert.Equal("Not queued", pendingTutorHeadRejection.AdminApprovalLabel);
         Assert.Equal("is-awaiting", pendingTutorHeadRejection.AdminApprovalCssClass);
         Assert.Contains(page.Sessions, session =>
             session.TutorHeadDecisionLabel == "Escalated" &&
@@ -314,7 +326,7 @@ public class AdminBookingsAndSessionsTests
             Stat = "awaiting"
         };
         await awaitingPage.OnGetAsync(CancellationToken.None);
-        Assert.Equal(5, awaitingPage.FilteredSessionCount);
+        Assert.Equal(2, awaitingPage.FilteredSessionCount);
 
         Booking acceptedConcern = await context.Bookings
             .SingleAsync(booking => booking.BookingId == 2);
@@ -408,34 +420,40 @@ public class AdminBookingsAndSessionsTests
                 tutorReview: new TutorStudentEvaluation(),
                 adminReview: RejectedReview(),
                 superAdminReview: FinalReview(false),
+                tutorHeadReviewer: tutorHead),
+            CreateBooking(5, assignment, "Evan Student", "Online",
+                studentReview: new StudentEvaluation(),
+                tutorReview: new TutorStudentEvaluation(),
+                adminReview: ApprovedReview(),
+                superAdminReview: FinalReview(true),
                 tutorHeadReviewer: tutorHead));
         await context.SaveChangesAsync();
 
-        var pending = new BookingsAndSessionsModel(context, new FixedTimeProvider())
+        var pending = new BookingsAndSessionsModel(context, new FixedTimeProvider(), new RoleCurrentUserService(BcUserRole.SuperAdmin))
         {
             Approval = "pending"
         };
         await pending.OnGetAsync(CancellationToken.None);
         BookingsAndSessionsModel.CompletedSessionItem pendingSession =
             Assert.Single(pending.Sessions);
-        Assert.Equal("Alex Student", pendingSession.StudentName);
-        Assert.Equal("Awaiting review", pendingSession.AdminApprovalLabel);
-        Assert.Equal("is-awaiting", pendingSession.AdminApprovalCssClass);
+        Assert.Equal("Chris Student", pendingSession.StudentName);
+        Assert.Equal("Recommended valid", pendingSession.AdminApprovalLabel);
+        Assert.Equal("is-reviewed", pendingSession.AdminApprovalCssClass);
         Assert.Equal(13, pending.ReviewStats.AwaitingAdminReviewPercentage);
 
-        var approved = new BookingsAndSessionsModel(context, new FixedTimeProvider())
+        var approved = new BookingsAndSessionsModel(context, new FixedTimeProvider(), new RoleCurrentUserService(BcUserRole.SuperAdmin))
         {
-            Search = "Chris",
+            Search = "Evan",
             Approval = "approved"
         };
         await approved.OnGetAsync(CancellationToken.None);
         BookingsAndSessionsModel.CompletedSessionItem approvedSession =
             Assert.Single(approved.Sessions);
-        Assert.Equal("Chris Student", approvedSession.StudentName);
+        Assert.Equal("Evan Student", approvedSession.StudentName);
         Assert.Equal("Recommended valid", approvedSession.AdminApprovalLabel);
         Assert.Equal("is-reviewed", approvedSession.AdminApprovalCssClass);
 
-        var rejected = new BookingsAndSessionsModel(context, new FixedTimeProvider())
+        var rejected = new BookingsAndSessionsModel(context, new FixedTimeProvider(), new RoleCurrentUserService(BcUserRole.SuperAdmin))
         {
             Approval = "rejected"
         };
@@ -602,11 +620,8 @@ public class AdminBookingsAndSessionsTests
 
         await afterDeadline.OnGetAsync(CancellationToken.None);
 
-        BookingsAndSessionsModel.CompletedSessionItem pendingRejection =
-            afterDeadline.Sessions.Single(session =>
-                session.StudentName == "Historical Rejected Student");
-        Assert.Equal("Awaiting review", pendingRejection.AdminApprovalLabel);
-        Assert.Equal("is-awaiting", pendingRejection.AdminApprovalCssClass);
+        Assert.DoesNotContain(afterDeadline.Sessions, session =>
+            session.StudentName == "Historical Rejected Student");
         BookingsAndSessionsModel.CompletedSessionItem approvedPendingAtDeadline =
             afterDeadline.Sessions.Single(session =>
                 session.StudentName == "Carried Pending Student");
@@ -621,12 +636,12 @@ public class AdminBookingsAndSessionsTests
 
         Assert.Equal("21 Oct 2026 – 20 Nov 2026", page.PeriodLabel);
         Assert.Equal("21 Oct 2026 – 20 Nov 2026", page.CurrentReviewPeriodLabel);
-        Assert.Equal(2, page.ReviewStats.CarriedOver);
-        Assert.Equal(4, page.ReviewStats.AwaitingAdminReview);
-        Assert.Equal(50, page.ReviewStats.AwaitingAdminReviewPercentage);
+        Assert.Equal(1, page.ReviewStats.CarriedOver);
+        Assert.Equal(2, page.ReviewStats.AwaitingAdminReview);
+        Assert.Equal(25, page.ReviewStats.AwaitingAdminReviewPercentage);
         Assert.Equal(0, page.ReviewStats.FlaggedConcerns);
         Assert.Equal(1, page.ReviewStats.RejectedByTutorHead);
-        Assert.Equal(4, page.FilteredSessionCount);
+        Assert.Equal(3, page.FilteredSessionCount);
         Assert.Collection(
             page.Sessions,
             session => Assert.Equal(
@@ -638,13 +653,7 @@ public class AdminBookingsAndSessionsTests
             session =>
             {
                 Assert.Equal("Current Rejected Student", session.StudentName);
-                Assert.Equal("Awaiting review", session.AdminApprovalLabel);
-                Assert.Equal("is-awaiting", session.AdminApprovalCssClass);
-            },
-            session =>
-            {
-                Assert.Equal("Historical Rejected Student", session.StudentName);
-                Assert.Equal("Awaiting review", session.AdminApprovalLabel);
+                Assert.Equal("Not queued", session.AdminApprovalLabel);
                 Assert.Equal("is-awaiting", session.AdminApprovalCssClass);
             });
         Assert.DoesNotContain(page.Sessions, session =>
@@ -661,13 +670,20 @@ public class AdminBookingsAndSessionsTests
         await carriedOver.OnGetAsync(CancellationToken.None);
 
         Assert.Equal(
-            ["Carried Pending Student", "Historical Rejected Student"],
+            ["Carried Pending Student"],
             carriedOver.Sessions.Select(session => session.StudentName).ToArray());
+
+        var pendingFinal = new BookingsAndSessionsModel(
+            context, new FixedTimeProvider(new DateTimeOffset(2026, 11, 1, 10, 0, 0, TimeSpan.Zero)),
+            new RoleCurrentUserService(BcUserRole.SuperAdmin)) { Stat = "pending-final" };
+        await pendingFinal.OnGetAsync(CancellationToken.None);
+        Assert.Equal("Historical Approved Student", Assert.Single(pendingFinal.Sessions).StudentName);
 
         var rejected = new BookingsAndSessionsModel(
             context,
             new FixedTimeProvider(new DateTimeOffset(
-                2026, 11, 1, 10, 0, 0, TimeSpan.Zero)))
+                2026, 11, 1, 10, 0, 0, TimeSpan.Zero)),
+            new RoleCurrentUserService(BcUserRole.SuperAdmin))
         {
             Approval = "rejected"
         };
@@ -693,7 +709,7 @@ public class AdminBookingsAndSessionsTests
         BookingsAndSessionsModel.CompletedSessionItem historicalRejectedItem =
             Assert.Single(historical.Sessions, session =>
                 session.StudentName == "Historical Rejected Student");
-        Assert.Equal("Awaiting review", historicalRejectedItem.AdminApprovalLabel);
+        Assert.Equal("Not queued", historicalRejectedItem.AdminApprovalLabel);
         Assert.Equal("is-awaiting", historicalRejectedItem.AdminApprovalCssClass);
     }
 

@@ -423,7 +423,7 @@
                 </a>
                 }
                 <a asp-page="/Administrator/Admin/BookingsAndSessions"
-                   asp-route-Queue="admin"
+                   asp-route-Stat="@(User.IsInRole(nameof(BcUserRole.SuperAdmin)) ? "pending-final" : "pending-admin")"
                    class="admin-quick-action">
                     <span class="admin-quick-action-icon is-reviews" aria-hidden="true">
                         <svg viewBox="0 0 24 24">

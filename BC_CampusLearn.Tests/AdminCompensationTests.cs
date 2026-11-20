@@ -263,10 +263,10 @@ public class AdminCompensationTests
         await page.OnGetAsync(CancellationToken.None);
         Assert.Equal(1, page.ApprovedSessionCount);
         Assert.Equal(125.50m, page.TotalEarnings);
-        await details.OnPostSuperAdminReviewAsync(1, false, CancellationToken.None);
+        Assert.IsType<BadRequestResult>(await details.OnPostSuperAdminReviewAsync(1, false, CancellationToken.None));
         await page.OnGetAsync(CancellationToken.None);
-        Assert.Equal(0, page.ApprovedSessionCount);
-        Assert.Equal(0m, page.TotalEarnings);
+        Assert.Equal(1, page.ApprovedSessionCount);
+        Assert.Equal(125.50m, page.TotalEarnings);
     }
 
     [Fact]

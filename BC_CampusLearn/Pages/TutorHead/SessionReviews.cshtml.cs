@@ -154,7 +154,9 @@ public class SessionReviewsModel(
             .Where(booking =>
                 booking.Status == BookingStatus.Completed &&
                 booking.StudentEvaluation != null &&
-                booking.TutorEvaluation != null);
+                booking.TutorEvaluation != null &&
+                (booking.SessionReviews.Any(review => review.Reviewer.Role == BcUserRole.HeadOfTutors) ||
+                 (booking.AdminSessionReview == null && booking.SuperAdminSessionReview == null)));
 
         IQueryable<Booking> activeReviewSessions = eligibleSessions.Where(
             booking =>
