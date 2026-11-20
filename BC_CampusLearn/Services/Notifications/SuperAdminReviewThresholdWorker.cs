@@ -1,16 +1,19 @@
 using BC_CampusLearn.Data;
 using BC_CampusLearn.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace BC_CampusLearn.Services.Notifications;
 
 public sealed class SuperAdminReviewThresholdWorker(
     IServiceScopeFactory scopeFactory,
     TimeProvider timeProvider,
+    IOptions<EmailNotificationOptions> emailOptions,
     ILogger<SuperAdminReviewThresholdWorker> logger)
     : BackgroundService
 {
     private const int Threshold = 5;
+    public const string EventKeyPrefix = "superadmin-review-threshold:";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -49,7 +52,11 @@ public sealed class SuperAdminReviewThresholdWorker(
 
             if (count <= Threshold)
             {
-                if (settings.IsSuperAdminReviewThresholdAlertActive)
+                // Keep the alert active while any part of the same review
+                // backlog remains. Resetting at the threshold allowed the
+                // queue to flap between five and six and send a new email on
+                // every crossing.
+                if (count == 0 && settings.IsSuperAdminReviewThresholdAlertActive)
                 {
                     settings.IsSuperAdminReviewThresholdAlertActive = false;
                     await context.SaveChangesAsync(cancellationToken);
@@ -80,17 +87,20 @@ public sealed class SuperAdminReviewThresholdWorker(
                     LinkUrl = "/Administrator/Admin/BookingsAndSessions",
                     CreatedAt = now
                 });
-                NotificationEmailQueue.Add(
-                    context,
-                    $"superadmin-review-threshold:{settings.SuperAdminReviewThresholdSequence}:{superAdmin.BcUserId}",
-                    superAdmin.Email,
-                    superAdmin.DisplayName,
-                    "Sessions require Super Admin review",
-                    $"{NotificationEmailQueue.Greeting(superAdmin.DisplayName)}" +
-                    $"{Environment.NewLine}{Environment.NewLine}" +
-                    $"There are currently {count} sessions awaiting Super Admin review.",
-                    "/Administrator/Admin/BookingsAndSessions",
-                    now);
+                if (emailOptions.Value.SuperAdminReviewThresholdEmailEnabled)
+                {
+                    NotificationEmailQueue.Add(
+                        context,
+                        $"{EventKeyPrefix}{settings.SuperAdminReviewThresholdSequence}:{superAdmin.BcUserId}",
+                        superAdmin.Email,
+                        superAdmin.DisplayName,
+                        "Sessions require Super Admin review",
+                        $"{NotificationEmailQueue.Greeting(superAdmin.DisplayName)}" +
+                        $"{Environment.NewLine}{Environment.NewLine}" +
+                        $"There are currently {count} sessions awaiting Super Admin review.",
+                        "/Administrator/Admin/BookingsAndSessions",
+                        now);
+                }
             }
 
             await context.SaveChangesAsync(cancellationToken);

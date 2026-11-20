@@ -60,6 +60,18 @@ public sealed class EmailNotificationWorker(
 
             foreach (EmailNotificationOutbox email in pending)
             {
+                if (!options.Value.SuperAdminReviewThresholdEmailEnabled &&
+                    email.EventKey.StartsWith(
+                        SuperAdminReviewThresholdWorker.EventKeyPrefix,
+                        StringComparison.Ordinal))
+                {
+                    email.FailedAt = timeProvider.GetUtcNow();
+                    email.LastError =
+                        "Super Admin review threshold emails are disabled.";
+                    await context.SaveChangesAsync(cancellationToken);
+                    continue;
+                }
+
                 try
                 {
                     await client.SendAsync(email, cancellationToken);

@@ -11,6 +11,7 @@ public sealed class EmailNotificationOptions
 {
     public const string SectionName = "EmailNotifications";
     public bool Enabled { get; set; } = true;
+    public bool SuperAdminReviewThresholdEmailEnabled { get; set; }
     public string SenderMailbox { get; set; } =
         "mzalaconnect@belgiumcampus.ac.za";
     public string PublicBaseUrl { get; set; } = string.Empty;
