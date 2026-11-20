@@ -418,16 +418,17 @@ public class BookingsAndSessionsModel(
 
         public string AdminApprovalLabel => IsAdminApproved switch
         {
-            true => "Recommended valid",
-            false => "Recommended invalid",
-            _ when SessionReviewWorkflow.IsTutorHeadApproval(TutorHeadDecision) => "Awaiting review",
-            _ => "Not queued"
+            true => "Valid",
+            false => "Invalid",
+            _ when !HasTutorHeadReview || SessionReviewWorkflow.IsTutorHeadApproval(TutorHeadDecision) => "Awaiting review",
+            _ => TutorHeadDecisionLabel
         };
 
         public string AdminApprovalCssClass => IsAdminApproved switch
         {
             true => "is-reviewed",
             false => "is-rejected",
+            _ when HasTutorHeadReview && !SessionReviewWorkflow.IsTutorHeadApproval(TutorHeadDecision) => TutorHeadDecisionCssClass,
             _ => "is-awaiting"
         };
 

@@ -496,7 +496,8 @@
     color: #246b35;
 }
 
-.session-approval.is-awaiting {
+.session-approval.is-awaiting,
+.session-approval.is-escalated {
     background-color: #e5e7ea;
     color: #4b5057;
 }
